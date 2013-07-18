@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import datetime
 from sqlalchemy import *
 
@@ -13,7 +15,7 @@ database = 'video_dev'
 print "Creating SQLAlchemy engine for:", database
 engine = create_engine( 'mysql+mysqldb://'
                         +username+':'+password
-                        +'@TBD/'
+                        +'@videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com:3306/'
                         +database, echo=verbose )
 
 # Extract schema inforation from the database.

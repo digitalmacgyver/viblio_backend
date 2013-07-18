@@ -12,7 +12,7 @@ class SchemaTest( unittest.TestCase ):
 
     engine = create_engine( 'mysql+mysqldb://'
                             +username+':'+password
-                            +'@TBD/'
+                            +'@videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com:3306/'
                             +database, echo=verbose )
 
     meta = None
@@ -160,13 +160,13 @@ class SchemaTest( unittest.TestCase ):
             trans.rollback()
 
     def insert_image_rows( self ):
-        for encodingId, videoId in self.conn.execute( select( [self.video_encoding.c.id, self.video_encoding.c.video_id ] ).where( self.video_encoding.c.format == 'unit_test_insert' ) ):
-            print "Adding image for video encoding:", encodingId[0]
+        for ids in self.conn.execute( select( [self.video_encoding.c.id, self.video_encoding.c.video_id ] ).where( self.video_encoding.c.format == 'unit_test_insert' ) ):
+            print "Adding image for video encoding:", ids[0]
 
             self.conn.execute( self.image.insert(),
                                id=None,
-                               video_encoding_id=encodingId[0],
-                               video_id=videoId[0],
+                               video_encoding_id=ids[0],
+                               video_id=ids[1],
                                time_stamp=33.004999,
                                url='http://s3/video/0000123.jpg',
                                metadata_url='http://s3/video/0000123.json',
