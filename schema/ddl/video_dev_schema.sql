@@ -5,18 +5,18 @@
 
 use video_dev;
 
---DROP TABLE IF EXISTS `video`;
+-- DROP TABLE IF EXISTS `video`;
 		
 CREATE TABLE `video` (
   `id` INT NOT NULL AUTO_INCREMENT DEFAULT NULL,
-  `owner_id` INTEGER NOT NULL DEFAULT NULL,
+  `owner_id` INTEGER NULL DEFAULT NULL,
   `title` VARCHAR(400) NULL DEFAULT NULL,
   `filename` VARCHAR(1024) NULL DEFAULT NULL,
   `description` VARCHAR(4000) NULL DEFAULT NULL,
   `lat` DECIMAL(11,8) NULL DEFAULT NULL,
   `lng` DECIMAL(11,8) NULL DEFAULT NULL,
   `recording_date` DATETIME NULL DEFAULT NULL,
-  `created` DATETIME NOT NULL DEFAULT 'NULL',
+  `created` DATETIME NOT NULL,
   PRIMARY KEY (`id`)
 );
 
@@ -25,19 +25,19 @@ CREATE TABLE `video` (
 -- 
 -- ---
 
---DROP TABLE IF EXISTS `image`;
+-- DROP TABLE IF EXISTS `image`;
 		
 CREATE TABLE `image` (
   `id` INT NOT NULL AUTO_INCREMENT DEFAULT NULL,
-  `video_encoding_id` INT NOT NULL DEFAULT NULL,
+  `video_encoding_id` INT NOT NULL,
   `video_id` INT NULL DEFAULT NULL,
-  `time_stamp` DECIMAL(14,6) NOT NULL DEFAULT NULL,
+  `time_stamp` DECIMAL(14,6) NOT NULL,
   `url` VARCHAR(2000) NOT NULL DEFAULT 'NULL',
   `metadata_url` VARCHAR(2000) NULL DEFAULT NULL,
   `format` VARCHAR(40) NULL DEFAULT NULL,
   `width` INT NULL DEFAULT NULL,
   `height` INT NULL DEFAULT NULL,
-  `created` DATETIME NULL DEFAULT NULL,
+  `created` DATETIME NOT NULL,
   PRIMARY KEY (`id`)
 );
 
@@ -46,11 +46,11 @@ CREATE TABLE `image` (
 -- 
 -- ---
 
---DROP TABLE IF EXISTS `video_encoding`;
+-- DROP TABLE IF EXISTS `video_encoding`;
 		
 CREATE TABLE `video_encoding` (
   `id` INT NULL AUTO_INCREMENT DEFAULT NULL,
-  `video_id` INT NOT NULL AUTO_INCREMENT DEFAULT NULL,
+  `video_id` INT NOT NULL,
   `url` VARCHAR(2000) NULL DEFAULT NULL,
   `metadata_url` VARCHAR(2000) NULL DEFAULT NULL,
   `format` VARCHAR(12) NULL DEFAULT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE `video_encoding` (
   `length` DECIMAL(14,6) NULL DEFAULT NULL,
   `width` INT NULL DEFAULT NULL,
   `height` INT NULL DEFAULT NULL,
-  `created` DATETIME NOT NULL DEFAULT 'NULL',
+  `created` DATETIME NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY (`id`, `video_id`)
 );
@@ -68,9 +68,9 @@ CREATE TABLE `video_encoding` (
 -- Foreign Keys 
 -- ---
 
-ALTER TABLE `image` ADD FOREIGN KEY (video_encoding_id) REFERENCES `video_encoding` (`id`);
-ALTER TABLE `image` ADD FOREIGN KEY (video_id) REFERENCES `video_encoding` (`video_id`);
 ALTER TABLE `video_encoding` ADD FOREIGN KEY (video_id) REFERENCES `video` (`id`);
+ALTER TABLE `image` ADD FOREIGN KEY (video_encoding_id, video_id) REFERENCES `video_encoding` (`id`, `video_id`);
+
 
 -- ---
 -- Table Properties
@@ -101,6 +101,7 @@ BEGIN
 	set NEW.created = NOW();
 END;
 |
+DELIMITER ;
 
 
 -- ---

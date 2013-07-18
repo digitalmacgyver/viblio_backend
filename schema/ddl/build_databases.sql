@@ -12,3 +12,4 @@ use video_prod;
 source video_prod_user.sql
 source video_prod_schema.sql
 
+
