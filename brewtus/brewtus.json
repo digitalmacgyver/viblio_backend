@@ -1,0 +1,9 @@
+{
+	"host":"54.218.27.45",
+	"port":8080, 
+	"server": "BrewTUS/0.1",
+	"files":"/mnt/uploaded_files/",
+	"logDir": "logs",
+	"logRotateSize": 10485760,
+	"logLevel": "info"
+}
