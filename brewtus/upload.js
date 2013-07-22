@@ -12,14 +12,16 @@
 
   Upload = (function() {
 
-    function Upload(config, fileId) {
+      function Upload(config, fileId, uid) {
       this.fileId = fileId;
+      this.uid = uid;
       this.filePath = path.join(config.files, fileId);
       this.infoPath = path.resolve("" + this.filePath + ".json");
+      this.mdPath   = path.resolve("" + this.filePath + "_metadata.json");
       this.info = null;
     }
 
-    Upload.prototype.create = function(finalLength) {
+    Upload.prototype.create = function(finalLength, metadata) {
       var info;
       try {
         fs.closeSync(fs.openSync(this.filePath, 'w'));
@@ -31,6 +33,8 @@
       }
       try {
         info = {
+          uid: this.uid || 'unknown',
+	  fileId: this.fileId,
           finalLength: finalLength,
           state: "created",
           createdOn: Date.now(),
@@ -42,6 +46,14 @@
         winston.error(util.inspect(error));
         return {
           error: [500, "Create Failed - Metadata"]
+        };
+      }
+      try {
+        fs.writeFileSync(this.mdPath, metadata);
+      } catch (error) {
+        winston.error(util.inspect(error));
+        return {
+          error: [500, "Create Failed - POST Body"]
         };
       }
       return {
@@ -100,8 +112,8 @@
 
   })();
 
-  exports.Upload = function(config, fileId) {
-    return new Upload(config, fileId);
+    exports.Upload = function(config, fileId, uid) {
+	return new Upload(config, fileId, uid);
   };
 
 }).call(this);

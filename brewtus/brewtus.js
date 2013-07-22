@@ -56,25 +56,44 @@
   };
 
   createFile = function(req, res, query, matches) {
-    var fileId, finalLength, status;
-    fileId = matches[2];
-    if (fileId != null) {
-      return httpStatus(res, 400, "Invalid Request");
-    }
-    if (req.headers["final-length"] == null) {
-      return httpStatus(res, 400, "Final-Length Required");
-    }
-    finalLength = parseInt(req.headers["final-length"]);
-    if (isNaN(finalLength || finalLength < 0)) {
-      return httpStatus(res, 400, "Final-Length Must be Non-Negative");
-    }
-    fileId = uuid.v1();
-    status = upload.Upload(config, fileId).create(finalLength);
-    if (status.error != null) {
-      return httpStatus(res, status.error[0], status.error[1]);
-    }
-    res.setHeader("Location", "http://" + config.host + ":" + config.port + "/files/" + fileId);
-    return httpStatus(res, 201, "Created");
+      var fileId, finalLength, status;
+      fileId = matches[2];
+      if (fileId != null) {
+	  return httpStatus(res, 400, "Invalid Request");
+      }
+      if (req.headers["final-length"] == null) {
+	  return httpStatus(res, 400, "Final-Length Required");
+      }
+      finalLength = parseInt(req.headers["final-length"]);
+      if (isNaN(finalLength || finalLength < 0)) {
+	  return httpStatus(res, 400, "Final-Length Must be Non-Negative");
+      }
+      fileId = uuid.v1();
+
+      // Capture the post body
+      var body='';
+      req.on( 'data', function( data ) {
+	  body += data;
+      });
+      req.on( 'end', function() {
+	  var uid='unknown';
+	  if ( body != '' ) {
+	      try {
+		  var metadata = JSON.parse( body );
+		  uid = metadata['uuid'];
+		  delete metadata['uuid'];
+		  body = JSON.stringify( metadata );
+	      } catch(e) {
+		  winston.error( 'Failed to parse CREATE body: ' + util.inspect(e) );
+	      }
+	  }
+	  status = upload.Upload(config, fileId, uid).create(finalLength, body);
+	  if (status.error != null) {
+	      return httpStatus(res, status.error[0], status.error[1]);
+	  }
+	  res.setHeader("Location", "http://" + config.host + ":" + config.port + "/files/" + fileId);
+	  return httpStatus(res, 201, "Created");
+      });
   };
 
   headFile = function(req, res, query, matches) {
@@ -159,7 +178,7 @@
     });
     req.on("end", function() {
       if (!res.headersSent) {
-        httpStatus(res, 200, "Ok");
+          httpStatus(res, 200, "Ok", JSON.stringify(info));
       }
       return u.save(info);
     });
