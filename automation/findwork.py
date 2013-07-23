@@ -25,7 +25,7 @@ while True:
     for filename in os.listdir(config.upload_dir):
         if filename.endswith('.json'):
             if filename.endswith('_metadata.json'):
-                print 'ignore metadata file' + filename
+                print 'ignoring metadata file' + filename
             else:
                 file_contents = open(config.upload_dir + filename)
                 try:
@@ -33,10 +33,9 @@ while True:
                     if parsed_contents.get('finalLength') == parsed_contents.get('offset'):
                         cmd = ["python", config.worker, filename]
                         child = subprocess.call( cmd, shell=False )
-                        print cmd
+                        print 'calling worker to process' + filename
                 except:
                     print'bad json file: ' + filename
                     pass
-    print 'looped'
+    print 'completed loop'
     time.sleep(60)
-
