@@ -61,12 +61,19 @@ try:
 
     bucket_contents.key = s3_directory + '/' + filename_only + '_poster.jpg'
     bucket_contents.set_contents_from_filename(local_filename_with_path + '_poster.jpg')
+
+    bucket_contents.key = s3_directory + '/' + filename_only + '_metadata.json'
+    bucket_contents.set_contents_from_filename(local_filename_with_path + '_metadata.json')    
+    
     print 'uploaded ' + local_filename_with_path
     
 # delete files, but check successful transfer before delete
+    os.remove(local_filename_with_path + '.json')
     os.remove(local_filename_with_path)
     os.remove(local_filename_with_path + '_thumbnail.jpg')
     os.remove(local_filename_with_path + '_poster.jpg')
+    os.remove(local_filename_with_path + '_metadata.json')
+    
     
 except:
     print 'S3 upload unsucessful'
