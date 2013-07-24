@@ -178,7 +178,8 @@
     });
     req.on("end", function() {
       if (!res.headersSent) {
-          httpStatus(res, 200, "Ok", JSON.stringify(info));
+          // httpStatus(res, 200, "Ok", JSON.stringify(info));
+          httpStatus(res, 200, "Ok");
       }
       return u.save(info);
     });
