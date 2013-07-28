@@ -2,7 +2,7 @@
 Media information endpoints
 """
 import web
-import json;
+import json
 
 import datetime
 from sqlalchemy import *

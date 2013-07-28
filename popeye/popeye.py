@@ -3,7 +3,7 @@
 # Video Processor front end server.
 #
 import web
-import json;
+import json
 
 # Application modules
 import dev

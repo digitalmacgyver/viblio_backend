@@ -1,5 +1,5 @@
 import web
-import json;
+import json
 import os
 
 from config import Config

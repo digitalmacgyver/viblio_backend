@@ -1,5 +1,5 @@
 import web
-import json;
+import json
 
 urls = (
     '/ping', 'ping',
