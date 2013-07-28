@@ -1,9 +1,0 @@
-sudo easy_install <pkg>
-
-pkgs:
-  web.py
-  wsgilog
-  config
-  sqlalchemy
-
-sudo apt-get install python-mysqldb
