@@ -1,3 +1,5 @@
+use video_dev;
+
 alter table video add uuid varchar(40);
 alter table video add user_id varchar(40);
 alter table video add mimetype varchar( 40);
