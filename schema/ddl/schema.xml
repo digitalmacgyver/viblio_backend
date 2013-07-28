@@ -37,13 +37,14 @@
     <type label="SET" length="1" sql="SET" quote=""/>
     <type label="Bit" length="0" sql="bit" quote=""/>
   </group>
-</datatypes><table x="92" y="98" name="video">
-<row name="id" null="0" autoincrement="1">
-<datatype>INT</datatype>
+</datatypes><table x="202" y="24" name="video">
+<row name="uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
 </row>
-<row name="owner_id" null="1" autoincrement="0">
-<datatype>INTEGER</datatype>
-<default>NULL</default></row>
+<row name="user_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="user" row="uuid" />
+</row>
 <row name="title" null="1" autoincrement="0">
 <datatype>VARCHAR(400)</datatype>
 <default>NULL</default></row>
@@ -65,29 +66,32 @@
 <row name="created" null="1" autoincrement="0">
 <datatype>DATETIME</datatype>
 <default>NULL</default></row>
+<row name="updated" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
 <key type="PRIMARY" name="">
-<part>id</part>
+<part>uuid</part>
 </key>
 </table>
-<table x="476" y="73" name="image">
-<row name="id" null="0" autoincrement="1">
-<datatype>INT</datatype>
-<default>NULL</default></row>
-<row name="video_encoding_id" null="0" autoincrement="0">
-<datatype>INT</datatype>
-<relation table="video_encoding" row="id" />
+<table x="287" y="623" name="image">
+<row name="uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
 </row>
-<row name="video_id" null="1" autoincrement="0">
-<datatype>INT</datatype>
-<default>NULL</default><relation table="video_encoding" row="video_id" />
+<row name="video_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<default>'NULL'</default><relation table="video_encoding" row="uuid" />
+</row>
+<row name="video_encoding_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="video_encoding" row="video_uuid" />
 </row>
 <row name="time_stamp" null="0" autoincrement="0">
 <datatype>DECIMAL(14,6)</datatype>
 <default>NULL</default></row>
-<row name="url" null="0" autoincrement="0">
+<row name="uri" null="0" autoincrement="0">
 <datatype>VARCHAR(2000)</datatype>
 <default>'NULL'</default></row>
-<row name="metadata_url" null="1" autoincrement="0">
+<row name="metadata_uri" null="1" autoincrement="0">
 <datatype>VARCHAR(2000)</datatype>
 <default>NULL</default></row>
 <row name="format" null="1" autoincrement="0">
@@ -102,22 +106,30 @@
 <row name="created" null="1" autoincrement="0">
 <datatype>DATETIME</datatype>
 <default>NULL</default></row>
+<row name="updated" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
 <key type="PRIMARY" name="">
-<part>id</part>
+<part>uuid</part>
+</key>
+<key type="UNIQUE" name="">
+<part>uuid</part>
+<part>video_uuid</part>
+<part>video_encoding_uuid</part>
 </key>
 </table>
-<table x="247" y="74" name="video_encoding">
-<row name="id" null="1" autoincrement="1">
-<datatype>INT</datatype>
-<default>NULL</default></row>
-<row name="video_id" null="0" autoincrement="1">
-<datatype>INT</datatype>
-<relation table="video" row="id" />
+<table x="349" y="283" name="video_encoding">
+<row name="uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
 </row>
-<row name="url" null="1" autoincrement="0">
+<row name="video_uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
+<relation table="video" row="uuid" />
+</row>
+<row name="uri" null="1" autoincrement="0">
 <datatype>VARCHAR(2000)</datatype>
 <default>NULL</default></row>
-<row name="metadata_url" null="1" autoincrement="0">
+<row name="metadata_uri" null="1" autoincrement="0">
 <datatype>VARCHAR(2000)</datatype>
 <default>NULL</default></row>
 <row name="format" null="1" autoincrement="0">
@@ -141,12 +153,173 @@
 <row name="created" null="1" autoincrement="0">
 <datatype>DATETIME</datatype>
 <default>NULL</default></row>
+<row name="updated" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
 <key type="PRIMARY" name="">
-<part>id</part>
+<part>uuid</part>
 </key>
 <key type="UNIQUE" name="">
-<part>id</part>
-<part>video_id</part>
+<part>uuid</part>
+<part>video_uuid</part>
+</key>
+</table>
+<table x="72" y="48" name="user">
+<row name="uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+</row>
+<row name="email" null="1" autoincrement="0">
+<datatype>VARCHAR(200)</datatype>
+<default>NULL</default></row>
+<row name="created" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<row name="updated" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<key type="PRIMARY" name="">
+<part>uuid</part>
+</key>
+</table>
+<table x="755" y="40" name="part">
+<row name="uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
+</row>
+<row name="video_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="video" row="uuid" />
+</row>
+<row name="face_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="face" row="uuid" />
+</row>
+<row name="actor_uuid" null="1" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<default>NULL</default><relation table="actor" row="uuid" />
+</row>
+<row name="created" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<row name="updated" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<key type="PRIMARY" name="">
+<part>uuid</part>
+</key>
+</table>
+<table x="581" y="519" name="face">
+<row name="uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
+</row>
+<row name="image_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="image" row="uuid" />
+</row>
+<row name="video_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="image" row="video_uuid" />
+</row>
+<row name="video_encoding" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="image" row="video_encoding_uuid" />
+</row>
+<row name="x1" null="0" autoincrement="0">
+<datatype>DECIMAL(6,3)</datatype>
+</row>
+<row name="y1" null="0" autoincrement="0">
+<datatype>DECIMAL(6,3)</datatype>
+</row>
+<row name="x2" null="0" autoincrement="0">
+<datatype>DECIMAL(6,3)</datatype>
+</row>
+<row name="y2" null="0" autoincrement="0">
+<datatype>DECIMAL(6,3)</datatype>
+</row>
+<row name="created" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<row name="updated" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<key type="PRIMARY" name="">
+<part>uuid</part>
+</key>
+</table>
+<table x="549" y="235" name="present">
+<row name="uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
+</row>
+<row name="part_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="part" row="uuid" />
+</row>
+<row name="video_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="video_encoding" row="uuid" />
+</row>
+<row name="videl_encoding_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="video_encoding" row="video_uuid" />
+</row>
+<row name="start" null="0" autoincrement="0">
+<datatype>DECIMAL(14,6)</datatype>
+</row>
+<row name="end" null="0" autoincrement="0">
+<datatype>DECIMAL(14,6)</datatype>
+</row>
+<row name="created" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<row name="updated" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<key type="PRIMARY" name="">
+<part>uuid</part>
+</key>
+</table>
+<table x="927" y="15" name="actor">
+<row name="uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
+</row>
+<row name="first_name" null="1" autoincrement="0">
+<datatype>VARCHAR(50)</datatype>
+<default>NULL</default></row>
+<row name="last_name" null="1" autoincrement="0">
+<datatype>VARCHAR(50)</datatype>
+<default>NULL</default></row>
+<row name="email" null="1" autoincrement="0">
+<datatype>VARCHAR(200)</datatype>
+<default>NULL</default></row>
+<row name="created" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<row name="updated" null="1" autoincrement="0">
+<datatype>DATETIME</datatype>
+<default>NULL</default></row>
+<key type="PRIMARY" name="">
+<part>uuid</part>
+</key>
+</table>
+<table x="762" y="264" name="headshot">
+<row name="uuid" null="0" autoincrement="1">
+<datatype>CHAR(36)</datatype>
+</row>
+<row name="actor_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="actor" row="uuid" />
+</row>
+<row name="face_uuid" null="0" autoincrement="0">
+<datatype>CHAR(36)</datatype>
+<relation table="face" row="uuid" />
+</row>
+<row name="created" null="0" autoincrement="0">
+<datatype>DATETIME</datatype>
+</row>
+<row name="updated" null="0" autoincrement="0">
+<datatype>DATETIME</datatype>
+</row>
+<key type="PRIMARY" name="">
+<part>uuid</part>
 </key>
 </table>
 </sql>
