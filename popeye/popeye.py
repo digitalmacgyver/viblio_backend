@@ -9,7 +9,7 @@ import json
 # the actual server endpoints and application
 # logic
 import dev
-import worker
+import processor
 import media
 
 # wsgilog will manage logging to the main server's
@@ -47,7 +47,7 @@ def load_sqla(handler):
 #
 urls = (
     '/dev', dev.dev_app,
-    '/processor', worker.worker_app,
+    '/processor', processor.processor_app,
     '/media', media.media_app
 )
 

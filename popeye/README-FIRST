@@ -13,15 +13,15 @@ models.py
 
 dev.py
 media.py
-worker.py
+processor.py
   The popeye "endpoints"; the functions that are responsible
   for responding to incoming HTTP requests.  Each module lives
   in its own url name space.
 
-processor.py
+worker.py
   This is the guts of the video processor; contains the logic
   that the original "worker.py" file did under the "automation"
   folder.  Transcode, thumbnail, poster, s3 upload, etc.  This
-  is a log running function that gets run as a background thread
-  by the worker.py
+  is a long running function that gets run as a background thread
+  by processor.py
 
