@@ -4,7 +4,7 @@ import json;
 urls = (
     '/ping', 'ping',
     '/error/(.+)', 'error'
-)
+    )
 
 # /test/ping?args
 #

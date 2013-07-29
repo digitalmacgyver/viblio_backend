@@ -3,9 +3,11 @@
 # Video Processor front end server.
 #
 import web
-import json;
+import json
 
-# Application modules
+# Application modules.  These modules contain
+# the actual server endpoints and application
+# logic
 import dev
 import worker
 import media
@@ -18,6 +20,27 @@ from wsgilog import WsgiLog
 # Our application config
 from config import Config
 config = Config( 'popeye.cfg' )
+
+# Create a webpy session-like thing for SQLAlchemy,
+# so the database session is available to all web 
+# endpoints in web.ctx.orm.
+from sqlalchemy.orm import scoped_session, sessionmaker
+from models import *
+def load_sqla(handler):
+    web.ctx.orm = scoped_session(sessionmaker(bind=engine))
+    try:
+        return handler()
+    except web.HTTPError:
+       web.ctx.orm.commit()
+       raise
+    except:
+        web.ctx.orm.rollback()
+        raise
+    finally:
+        web.ctx.orm.commit()
+        # If the above alone doesn't work, uncomment 
+        # the following line:
+        #web.ctx.orm.expunge_all() 
 
 # This bolts our application modules into
 # the global endpoint name space.
@@ -44,6 +67,7 @@ class Log(WsgiLog):
             )
 
 app = web.application(urls, locals())
+app.add_processor( load_sqla )
 
 if __name__ == "__main__":
     app.run(Log)
