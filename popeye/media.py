@@ -8,6 +8,7 @@ from config import Config
 config = Config( 'popeye.cfg' )
 
 from models import *
+from sqlalchemy import desc
 
 urls = (
     '/get', 'get',
@@ -45,7 +46,7 @@ class get:
         # Do the database query
         result = None
         if not mid:
-            result = web.ctx.orm.query( Video ).filter_by( user_id = uid )
+            result = web.ctx.orm.query( Video ).filter_by( user_id = uid ).order_by( Video.id.desc() )
         else:
             result = web.ctx.orm.query( Video ).filter_by( user_id = uid, uuid = mid ).first()
 
