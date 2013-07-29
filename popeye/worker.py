@@ -69,8 +69,9 @@ class process:
         # and return control immediately to here
         # so we can respond back to brewtus
         #
-        # data = process_video( res, web.ctx.orm )
-
+        # NOTE ... is this cool with web.ctx.orm?  Do
+        # we need to worry about some sort of locking?
+        #
         thread = threading.Thread( target=process_video, args=(res, web.ctx.orm) )
         thread.start()
 
