@@ -1,0 +1,27 @@
+File Tour
+---------
+
+popeye.py
+  The main server.  Executable.  Useage: ./popeye [port]
+
+popeye.cfg
+  Application config file.
+
+models.py
+  The RDS data models.  These correspond to the RDS SQL table
+  definitions.  Used by the ORM.
+
+dev.py
+media.py
+worker.py
+  The popeye "endpoints"; the functions that are responsible
+  for responding to incoming HTTP requests.  Each module lives
+  in its own url name space.
+
+processor.py
+  This is the guts of the video processor; contains the logic
+  that the original "worker.py" file did under the "automation"
+  folder.  Transcode, thumbnail, poster, s3 upload, etc.  This
+  is a log running function that gets run as a background thread
+  by the worker.py
+
