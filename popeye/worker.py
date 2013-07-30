@@ -34,6 +34,17 @@ def process_video( c, orm ):
     except Exception, e:
         return perror( 'Failed to open and parse %s' % c['info'] )
 
+    # Brewtus writes the uploaded file as <fileid> without an extenstion,
+    # but the info struct has an extenstion.  See if its something other than
+    # '' and if so, move the file under its extension so transcoding works.
+    if 'fileExt' in info:
+        src = c['video']['input']
+        tar = src + info['fileExt']
+        if not src == tar:
+            if not os.system( "/bin/mv %s %s" % ( src, tar ) ) == 0:
+                return perror( "Failed to execute: /bin/mv %s %s" % ( src, tar ) )
+            c['video']['input'] = tar
+
     # Get the mimetype of the video file
     mimetype, uu = mimetypes.guess_type( c['video']['input'] )
 

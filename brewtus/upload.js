@@ -12,8 +12,9 @@
 
   Upload = (function() {
 
-      function Upload(config, fileId, uid) {
+      function Upload(config, fileId, uid, fileExt) {
       this.fileId = fileId;
+      this.fileExt = fileExt;
       this.uid = uid;
       this.filePath = path.join(config.files, fileId);
       this.infoPath = path.resolve("" + this.filePath + ".json");
@@ -35,6 +36,7 @@
         info = {
           uid: this.uid || 'unknown',
 	  fileId: this.fileId,
+	  fileExt: this.fileExt || '.unknown',
           finalLength: finalLength,
           state: "created",
           createdOn: Date.now(),
@@ -61,7 +63,7 @@
       };
     };
 
-    Upload.prototype.save = function() {
+    Upload.prototype.save = function( callback ) {
       try {
         fs.writeFileSync(this.infoPath, JSON.stringify(this.info));
       } catch (error) {
@@ -70,6 +72,8 @@
           error: [500, "Save Failed - Metadata"]
         };
       }
+	if ( (this.info.bytesReceived == this.info.finalLength) && callback )
+        callback()
       return {
         info: this.info
       };
@@ -112,8 +116,8 @@
 
   })();
 
-    exports.Upload = function(config, fileId, uid) {
-	return new Upload(config, fileId, uid);
+    exports.Upload = function(config, fileId, uid, fileExt) {
+	return new Upload(config, fileId, uid, fileExt);
   };
 
 }).call(this);
