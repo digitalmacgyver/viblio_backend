@@ -34,6 +34,15 @@ def process_video( c, orm ):
     except Exception, e:
         return perror( 'Failed to open and parse %s' % c['info'] )
 
+    # Get the client metadata too.  It includes the original file's
+    # filename for instance...
+    if os.path.isfile( c['metadata']['input'] ):
+        try:
+            f = open( c['metadata']['input'] )
+            md = json.load( f )
+        except Exception, e:
+            perror( 'Failed to parse %s' % c['metadata']['input'] )
+
     # Brewtus writes the uploaded file as <fileid> without an extenstion,
     # but the info struct has an extenstion.  See if its something other than
     # '' and if so, move the file under its extension so transcoding works.
@@ -112,11 +121,17 @@ def process_video( c, orm ):
     except Exception, e:
         return perror( 'Failed to upload to s3: %s' % e.message )
 
+    # Default the filename, then try to obtain it from the
+    # client side metadata.
+    filename = os.path.basename( c['video']['input'] )
+    if md and md['file'] and md['file']['Path']:
+        filename = md['file']['Path']
+
     # Add the mediafile to the database
     data = {
         'uuid': c['uuid'],
         'user_id': info['uid'],
-        'filename': os.path.basename( c['video']['input'] ),
+        'filename': filename,
         'mimetype': mimetype,
         'uri': video_key,
         'size': os.path.getsize( c['video']['output'] )
@@ -140,9 +155,14 @@ def process_video( c, orm ):
 
     # And finally, notify the Cat server
     data['location'] = 'us'
+    data['bucket_name'] = config.bucket_name
+    data['uid'] = data['user_id']
     try:
         print 'Notifying Cat server ...'
         res = requests.get(config.viblio_server_url, params=data)
+        jdata = json.loads( res.text )
+        if 'error' in jdata:
+            raise Exception( jdata['message'] )
     except Exception, e:
         return perror( 'Failed to notify Cat: %s' % e.message )
 
