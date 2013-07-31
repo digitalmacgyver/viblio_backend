@@ -10,8 +10,12 @@ config = Config( 'popeye.cfg' )
 from models import *
 from sqlalchemy import desc
 
+import boto
+from boto.s3.key import Key
+
 urls = (
     '/get', 'get',
+    '/delete', 'delete'
 )
 
 """
@@ -60,5 +64,49 @@ class get:
             return json.dumps({ 'media': a}, cls=SWEncoder, indent=2)
         else:
             return result.toJSON()
+
+class delete:
+    def GET(self):
+        # Get input params
+        data = web.input()
+
+        # Prepare response
+        web.header('Content-Type', 'application/json')
+        res = {}
+
+        if not 'uid' in data:
+            return json.dumps({'error': True, 'message': 'Missing uid param'})
+        uid = data.uid
+        
+        if not 'mid' in data:
+            return json.dumps({'error': True, 'message': 'Missing mid param'})
+        mid = data.mid
+        
+        # Do the database query
+        result = web.ctx.orm.query( Video ).filter_by( user_id = uid, uuid = mid ).first()
+
+        if not result:
+            return json.dumps({'error':True, 'message':'Mediafile not found for %s' % mid})
+
+        # Delete it from S3
+        try:
+            s3 = boto.connect_s3(config.awsAccess, config.awsSecret)
+            bucket = s3.get_bucket(config.bucket_name)
+        except Exception, e:
+            return json.dumps({'error':True, 'message': 'Failed to obtain s3 bucket: %s' % e.message})
+
+        try:
+            for key in bucket.list( prefix=mid ):
+                key.delete()
+        except Exception, e:
+            return json.dumps({'error':True, 'message': 'Failed to delete from bucket: %s' % e.message})
+
+        # Now the database record delete
+        try:
+            web.ctx.orm.delete( result )
+        except Exception, e:
+            return json.dumps({'error':True, 'message': 'Failed to delete from ORMt: %s' % e.message})
+
+        return json.dumps({})
 
 media_app = web.application(urls, locals())
