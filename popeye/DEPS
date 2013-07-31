@@ -5,5 +5,6 @@ pkgs:
   wsgilog
   config
   sqlalchemy
+  qtfaststart
 
 sudo apt-get install python-mysqldb

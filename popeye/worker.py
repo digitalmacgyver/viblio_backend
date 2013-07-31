@@ -58,11 +58,21 @@ def process_video( c, orm ):
     mimetype, uu = mimetypes.guess_type( c['video']['input'] )
 
     # If the input video is not mp4, then transcode it into mp4
+    #ffopts = '-strict -2'
+    ffopts = ''
     if not mimetype == 'video/mp4':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -movflags faststart -i %s %s' % ( c['video']['input'], c['video']['output'] )
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
         print cmd
         if not os.system( cmd ) == 0:
             return perror( 'Failed to execute: %s' % cmd )
+
+        # Move the metadata atom(s) to the front of the file.  -movflags faststart is
+        # not a valid option in our version of ffmpeg, so cannot do it there.  qt-faststart
+        # is broken.  qtfaststart is a python based solution that has worked much better for me
+        cmd = '/usr/local/bin/qtfaststart %s' % c['video']['output']
+        print cmd
+        if not os.system( cmd ) == 0:
+            perror( 'Failed to run qtfaststart on the output file' )
 
         mimetype = 'video/mp4'
     else:
@@ -167,6 +177,7 @@ def process_video( c, orm ):
         return perror( 'Failed to notify Cat: %s' % e.message )
 
     # Remove all local files
+    """
     try:
         print 'Removing temp files ...'
         for f in ['video','thumbnail','poster','metadata']:
@@ -177,6 +188,7 @@ def process_video( c, orm ):
         os.remove( c['info'] )
     except Exception, e:
         print 'Some trouble removing temp files: %s' % e.message
+    """
 
     print 'DONE WITH %s' % c['uuid']
     return {}
