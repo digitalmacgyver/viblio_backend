@@ -177,7 +177,6 @@ def process_video( c, orm ):
         return perror( 'Failed to notify Cat: %s' % e.message )
 
     # Remove all local files
-    """
     try:
         print 'Removing temp files ...'
         for f in ['video','thumbnail','poster','metadata']:
@@ -188,7 +187,6 @@ def process_video( c, orm ):
         os.remove( c['info'] )
     except Exception, e:
         print 'Some trouble removing temp files: %s' % e.message
-    """
 
     print 'DONE WITH %s' % c['uuid']
     return {}
