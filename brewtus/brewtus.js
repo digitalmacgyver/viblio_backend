@@ -23,6 +23,9 @@
 
   upload = require("./upload");
 
+  Config = require( "konphyg" )( __dirname );
+  sys = require( "sys" );
+
   setup = new events.EventEmitter();
 
   config = {};
@@ -332,13 +335,7 @@
   initApp = function(args) {
     var configFileName, fileNamePrefix, logDir, logFileName;
     fileNamePrefix = path.basename(__filename, path.extname(__filename));
-    configFileName = path.join(__dirname, "" + fileNamePrefix + ".json");
-    winston.debug("Reading " + configFileName);
-    try {
-      config = require(configFileName);
-    } catch (error) {
-      winston.error("Failed to load " + configFileName);
-    }
+    config = Config( 'brewtus' )
     winston.debug(util.inspect(config));
     logDir = config.logDir || path.join(__dirname, "logs");
     logFileName = path.join(logDir, "" + fileNamePrefix + ".log");

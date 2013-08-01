@@ -18,8 +18,12 @@ import sys, logging
 from wsgilog import WsgiLog
 
 # Our application config
-from config import Config
-config = Config( 'popeye.cfg' )
+from appconfig import AppConfig
+try:
+    config = AppConfig( 'popeye' ).config()
+except Exception, e:
+    print( str(e) )
+    sys.exit(1)
 
 # Create a webpy session-like thing for SQLAlchemy,
 # so the database session is available to all web 

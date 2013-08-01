@@ -10,8 +10,8 @@ import datetime
 import json
 
 # Application config
-from config import Config
-config = Config( 'popeye.cfg' )
+from appconfig import AppConfig
+config = AppConfig( 'popeye' ).config()
 
 # Create the database engine
 engine = create_engine( 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name )

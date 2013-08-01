@@ -3,8 +3,8 @@ import json
 from models import *
 import os
 
-from config import Config
-config = Config( 'popeye.cfg' )
+from appconfig import AppConfig
+config = AppConfig( 'popeye' ).config()
 
 import sys
 import boto

@@ -1,0 +1,7 @@
+brewtus.json is the base, development config file.
+brewtus.*.json are deployment config files.
+
+env NODE_ENV=staging node brewtus
+
+will first read brewtus.config, then merge in
+brewtus.staging.config.  

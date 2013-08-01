@@ -8,7 +8,8 @@
         "coffee-script": "latest",
         "node-uuid": "latest",
         "winston": "latest",
-	"request": "latest"
+	"request": "latest",
+	"konphyg": "1.2.x"
      },
     "keywords": [
         "upload",

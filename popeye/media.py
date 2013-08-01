@@ -4,8 +4,8 @@ Media information endpoints
 import web
 import json;
 
-from config import Config
-config = Config( 'popeye.cfg' )
+from appconfig import AppConfig
+config = AppConfig( 'popeye' ).config()
 
 from models import *
 from sqlalchemy import desc

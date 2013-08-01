@@ -4,8 +4,9 @@ File Tour
 popeye.py
   The main server.  Executable.  Useage: ./popeye [port]
 
-popeye.cfg
-  Application config file.
+*.config
+  Application config files.  popeye.config is the base file.
+  Others are used for deployment overrides.
 
 models.py
   The RDS data models.  These correspond to the RDS SQL table

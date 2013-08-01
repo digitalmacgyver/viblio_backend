@@ -5,8 +5,8 @@ import threading
 
 from worker import process_video
 
-from config import Config
-config = Config( 'popeye.cfg' )
+from appconfig import AppConfig
+config = AppConfig( 'popeye' ).config()
 
 urls = (
     '/process', 'process',
