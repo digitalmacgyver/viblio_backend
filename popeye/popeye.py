@@ -14,7 +14,7 @@ import media
 
 # wsgilog will manage logging to the main server's
 # log files over WSGI
-import sys, logging
+import sys
 from wsgilog import WsgiLog
 
 # Our application config
@@ -46,6 +46,12 @@ def load_sqla(handler):
         # the following line:
         #web.ctx.orm.expunge_all() 
 
+# Create a more convienent way to access the
+# logger on the webpy context
+def attach_logger( handler ):
+    web.ctx.log = web.ctx.environ['wsgilog.logger']
+    return handler()
+
 # This bolts our application modules into
 # the global endpoint name space.
 #
@@ -61,18 +67,30 @@ class Log(WsgiLog):
         WsgiLog.__init__(
             self,
             application,
-            logformat = '%(asctime)s %(levelname)-4s %(message)s',
-            loglevel = logging.DEBUG,
+            logformat = '%(name)s: %(asctime)s %(levelname)-4s %(message)s',
+            loglevel = config.loglevel,
+            logname = 'popeye',
             tostream = True,
             tofile = True,
             toprint = True,
-            file = config.log_file,
-            tohtml = False
+            file = config.logfile
             )
 
+"""
 app = web.application(urls, locals())
 app.add_processor( load_sqla )
 
 if __name__ == "__main__":
     app.run(Log)
+"""
+if __name__ == "__main__":
+    app = web.application(urls, globals())
+    app.add_processor( attach_logger )
+    app.add_processor( load_sqla ) 
+    app.run(Log)
+else:
+    app = web.application(urls, globals(), autoreload=False)
+    app.add_processor( attach_logger )
+    app.add_processor( load_sqla )
+    application = app.wsgifunc(Log)
 

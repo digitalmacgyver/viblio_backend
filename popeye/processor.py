@@ -72,7 +72,8 @@ class process:
         # NOTE ... is this cool with web.ctx.orm?  Do
         # we need to worry about some sort of locking?
         #
-        thread = threading.Thread( target=process_video, args=(res, web.ctx.orm) )
+        web.ctx.log.info( 'Starting a worker thread for ' + res['uuid'] )
+        thread = threading.Thread( target=process_video, args=(res, web.ctx.orm, web.ctx.log) )
         thread.start()
 
         return json.dumps(res)

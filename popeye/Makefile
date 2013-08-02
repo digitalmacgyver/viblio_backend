@@ -13,3 +13,5 @@ PYPKGS:= \
 install_deps:
 	easy_install $(PYPKGS)
 	apt-get install python-mysqldb
+	apt-get install apache2
+	apt-get install libapache2-mod-wsgi

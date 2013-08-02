@@ -44,12 +44,26 @@ time script that runs your program in production.
 """
 import os
 from config import Config, ConfigMerger
+import logging
+
+# Our app config needs to decide which config
+# files to read; development, staging or production.
+# It does this based on a DEPLOYMENT env variable.
+# But when running under Apache/WSGI, there are no
+# env variables, so we use the wsgi process-group
+# name to determine what mode we are in:
+try:
+    import mod_wsgi
+    os.environ['DEPLOYMENT'] = mod_wsgi.process_group
+except:
+    pass
 
 class AppConfig:
     def __init__(self, basename):
         basefile = basename+'.config'
         try:
             base = Config( basefile )
+            base.addNamespace(logging)
         except Exception, e:
             raise Exception( 'Cannot open/read/parse %s: %s' % (basefile, str(e)) )
 
@@ -57,6 +71,7 @@ class AppConfig:
             deployment = os.environ['DEPLOYMENT']+'.config'
             try:
                 dep = Config( deployment )
+                dep.addNamespace(logging)
             except Exception, e:
                 raise Exception( 'Cannot open/read/parse %s: %s' % (deployment, str(e)) )
 

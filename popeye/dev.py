@@ -32,7 +32,7 @@ class error:
         web.header('Content-Type', 'application/json')
 
         if etype == 'stdout':
-            # STDOUT is logged to the application log file (/tmp/popeye.log)
+            # STDOUT is logged to the application log file as DEBUG
             print 'Error: etype is: %s' % etype
             return json.dumps(data)
 
@@ -43,7 +43,7 @@ class error:
             try:
                 raise Exception( 'bummer' );
             except Exception, e:
-                return json.dumps({'error': True, 'message': e.message})
+                return json.dumps({'error': True, 'message': str(e)})
                 
 
 dev_app = web.application(urls, locals())

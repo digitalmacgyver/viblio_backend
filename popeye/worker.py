@@ -13,26 +13,26 @@ from boto.s3.key import Key
 
 import mimetypes
 
-def perror( msg ):
-    print msg
+def perror( log, msg ):
+    log.error( msg )
     return { 'error': True, 'message': msg }
 
-def process_video( c, orm ):
-    
+def process_video( c, orm, log ):
+
     # If the main input file (video) is not present we're toast
     if not os.path.isfile( c['video']['input'] ):
-        return perror( 'File does not exist: %s' % c['video']['input'] )
+        return perror( log,  'File does not exist: %s' % c['video']['input'] )
 
     # We need the brewtus metadata too
     if not os.path.isfile( c['info'] ):
-        return perror( 'File does not exist: %s' % c['info'] )
+        return perror( log,  'File does not exist: %s' % c['info'] )
 
     # Get the brewtus info
     try:
         f = open( c['info'] )
         info = json.load( f )
     except Exception, e:
-        return perror( 'Failed to open and parse %s' % c['info'] )
+        return perror( log,  'Failed to open and parse %s' % c['info'] )
 
     # Get the client metadata too.  It includes the original file's
     # filename for instance...
@@ -41,7 +41,7 @@ def process_video( c, orm ):
             f = open( c['metadata']['input'] )
             md = json.load( f )
         except Exception, e:
-            perror( 'Failed to parse %s' % c['metadata']['input'] )
+            perror( log,  'Failed to parse %s' % c['metadata']['input'] )
 
     # Brewtus writes the uploaded file as <fileid> without an extenstion,
     # but the info struct has an extenstion.  See if its something other than
@@ -51,7 +51,7 @@ def process_video( c, orm ):
         tar = src + info['fileExt']
         if not src == tar:
             if not os.system( "/bin/mv %s %s" % ( src, tar ) ) == 0:
-                return perror( "Failed to execute: /bin/mv %s %s" % ( src, tar ) )
+                return perror( log,  "Failed to execute: /bin/mv %s %s" % ( src, tar ) )
             c['video']['input'] = tar
 
     # Get the mimetype of the video file
@@ -62,17 +62,17 @@ def process_video( c, orm ):
     ffopts = ''
     if not mimetype == 'video/mp4':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
-        print cmd
+        log.info( cmd )
         if not os.system( cmd ) == 0:
-            return perror( 'Failed to execute: %s' % cmd )
+            return perror( log,  'Failed to execute: %s' % cmd )
 
         # Move the metadata atom(s) to the front of the file.  -movflags faststart is
         # not a valid option in our version of ffmpeg, so cannot do it there.  qt-faststart
         # is broken.  qtfaststart is a python based solution that has worked much better for me
         cmd = '/usr/local/bin/qtfaststart %s' % c['video']['output']
-        print cmd
+        log.info( cmd )
         if not os.system( cmd ) == 0:
-            perror( 'Failed to run qtfaststart on the output file' )
+            perror( log,  'Failed to run qtfaststart on the output file' )
 
         mimetype = 'video/mp4'
     else:
@@ -80,15 +80,15 @@ def process_video( c, orm ):
 
     # Generate the poster
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 320x240 %s' % ( c['poster']['input'], c['poster']['output'] )
-    print cmd
+    log.info( cmd )
     if not os.system( cmd ) == 0:
-        return perror( 'Failed to execute: %s' % cmd )
+        return perror( log,  'Failed to execute: %s' % cmd )
 
     # The thumbnail
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 128x128 %s' % ( c['thumbnail']['input'], c['thumbnail']['output'] )
-    print cmd
+    log.info( cmd )
     if not os.system( cmd ) == 0:
-        return perror( 'Failed to execute: %s' % cmd )
+        return perror( log,  'Failed to execute: %s' % cmd )
 
     # Upload to S3
     video_key      = c['uuid'] + '/' + os.path.basename( c['video']['output'] )
@@ -101,35 +101,35 @@ def process_video( c, orm ):
         bucket = s3.get_bucket(config.bucket_name)
         bucket_contents = Key(bucket)
     except Exception, e:
-        return perror( 'Failed to obtain s3 bucket: %s' % e.message )
+        return perror( log,  'Failed to obtain s3 bucket: %s' % e.message )
 
-    print 'Uploading to s3: %s' % c['video']['output']
+    log.info( 'Uploading to s3: %s' % c['video']['output'] )
     try:
         bucket_contents.key = video_key
         bucket_contents.set_contents_from_filename( c['video']['output'] )
     except Exception, e:
-        return perror( 'Failed to upload to s3: %s' % e.message )
+        return perror( log,  'Failed to upload to s3: %s' % e.message )
 
-    print 'Uploading to s3: %s' % c['thumbnail']['output']
+    log.info( 'Uploading to s3: %s' % c['thumbnail']['output'] )
     try:
         bucket_contents.key = thumbnail_key
         bucket_contents.set_contents_from_filename( c['thumbnail']['output'] )
     except Exception, e:
-        return perror( 'Failed to upload to s3: %s' % e.message )
+        return perror( log,  'Failed to upload to s3: %s' % e.message )
 
-    print 'Uploading to s3: %s' % c['poster']['output']
+    log.info( 'Uploading to s3: %s' % c['poster']['output'] )
     try:
         bucket_contents.key = poster_key
         bucket_contents.set_contents_from_filename( c['poster']['output'] )
     except Exception, e:
-        return perror( 'Failed to upload to s3: %s' % e.message )
+        return perror( log,  'Failed to upload to s3: %s' % e.message )
 
-    print 'Uploading to s3: %s' % c['metadata']['output']
+    log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
     try:
         bucket_contents.key = metadata_key
         bucket_contents.set_contents_from_filename( c['metadata']['output'] )
     except Exception, e:
-        return perror( 'Failed to upload to s3: %s' % e.message )
+        return perror( log,  'Failed to upload to s3: %s' % e.message )
 
     # Default the filename, then try to obtain it from the
     # client side metadata.
@@ -149,7 +149,7 @@ def process_video( c, orm ):
 
     try:
         # filename, uuid, user_id, mimetype, size, uri
-        print 'Adding DB record ...'
+        log.info( 'Adding DB record ...' )
         mediafile = Video( 
             filename=data['filename'],
             uuid=data['uuid'],
@@ -161,24 +161,24 @@ def process_video( c, orm ):
         orm.add( mediafile )
         orm.commit()
     except Exception, e:
-        return perror( 'Failed to add mediafile to database!: %s' % e.message )
+        return perror( log,  'Failed to add mediafile to database!: %s' % e.message )
 
     # And finally, notify the Cat server
     data['location'] = 'us'
     data['bucket_name'] = config.bucket_name
     data['uid'] = data['user_id']
     try:
-        print 'Notifying Cat server ...'
+        log.info( 'Notifying Cat server ...' )
         res = requests.get(config.viblio_server_url, params=data)
         jdata = json.loads( res.text )
         if 'error' in jdata:
             raise Exception( jdata['message'] )
     except Exception, e:
-        return perror( 'Failed to notify Cat: %s' % e.message )
+        return perror( log,  'Failed to notify Cat: %s' % e.message )
 
     # Remove all local files
     try:
-        print 'Removing temp files ...'
+        log.info( 'Removing temp files ...' )
         for f in ['video','thumbnail','poster','metadata']:
             if os.path.isfile( c[f]['output'] ):
                 os.remove( c[f]['output'] )
@@ -186,8 +186,8 @@ def process_video( c, orm ):
                 os.remove( c[f]['input'] )
         os.remove( c['info'] )
     except Exception, e:
-        print 'Some trouble removing temp files: %s' % e.message
+        log.error( 'Some trouble removing temp files: %s' % str(e) )
 
-    print 'DONE WITH %s' % c['uuid']
+    log.info( 'DONE WITH %s' % c['uuid'] )
     return {}
 
