@@ -1,0 +1,48 @@
+Popeye - The video processor frontend daemon
+
+  Works with Brewtus (get it?  Popeye and Brutus!)
+
+Popeye is a video processing daemon that processes videos uploaded by the 
+Brewtus server, persists the video information in a local database, and
+provides that information to other parties via HTTP web apis.
+
+Lifecycle
+
+When brewtus has finished uploading a file, that file resides in the
+local file system, along with a small json file containing brewtus
+information, and a larger json file containing metadata sent by the
+tray app.  At this point brewtus sends a HTTP GET to Popeye:
+
+  http://popeye/processor/process?path=/path/to/video/file
+
+Popeye receives that message and immediately responds, so brewtus can
+go back to uploading files.  Popeye runs a processing function as a
+background thread, and goes back to listening for other requests.
+
+The background thread performs a series of operations on the video
+file; transcodes if it needs to, creates a thumbnail and a poster.
+It uploads these derived assets to S3.  It creates an entry for
+this new video in the RDS SQL database.  It removes all temporary
+files.  It then notifies the Cat server that a new file is ready.
+The Cat server does not store this information anymore, but can
+ping the user's GUI so the new media file can be included in the
+user's present web view.
+
+The Cat server no longer stores mediafile information in its
+database.  Now it uses Popeye apis to get media file information.
+The Popeye api the Cat server uses is
+
+  http://popeye/media/get?uid=user-uuid[&mid=mediafile-uuid]
+
+So it can get the list of all media files for a particular user,
+or it can retrieve a single mediafile from a user's list of media.
+Other apis will be added shortly.
+
+Implementation
+
+Popeye uses web.py for the web server function.  Web.py is WSGI
+complient, meaning that in production it can be run behind nginx,
+lighttpd or apache, or any other WSGI complient server.  Means
+Popeye can be easily scaled, reverse proxied, etc.  In development,
+web.py has its own built in server.
+

@@ -19,7 +19,12 @@
 
   winston = require("winston");
 
+  request = require("request");
+
   upload = require("./upload");
+
+  Config = require( "konphyg" )( __dirname );
+  sys = require( "sys" );
 
   setup = new events.EventEmitter();
 
@@ -56,7 +61,7 @@
   };
 
   createFile = function(req, res, query, matches) {
-      var fileId, finalLength, status;
+      var fileId, fileExt, finalLength, status;
       fileId = matches[2];
       if (fileId != null) {
 	  return httpStatus(res, 400, "Invalid Request");
@@ -69,6 +74,7 @@
 	  return httpStatus(res, 400, "Final-Length Must be Non-Negative");
       }
       fileId = uuid.v1();
+      fileExt = '';
 
       // Capture the post body
       var body='';
@@ -82,12 +88,20 @@
 		  var metadata = JSON.parse( body );
 		  uid = metadata['uuid'];
 		  delete metadata['uuid'];
+
+		  // Hopefully the original filename is in the
+		  // metadata.  Use that to capture the file extension
+		  var path = require( "path" );
+		  if ( metadata['file'] && metadata['file']['Path'] ) {
+		      fileExt = path.extname( metadata['file']['Path'] );
+		  }
+
 		  body = JSON.stringify( metadata );
 	      } catch(e) {
 		  winston.error( 'Failed to parse CREATE body: ' + util.inspect(e) );
 	      }
 	  }
-	  status = upload.Upload(config, fileId, uid).create(finalLength, body);
+	  status = upload.Upload(config, fileId, uid, fileExt).create(finalLength, body);
 	  if (status.error != null) {
 	      return httpStatus(res, status.error[0], status.error[1]);
 	  }
@@ -176,13 +190,29 @@
         return httpStatus(res, 500, "Exceeded Content-Length");
       }
     });
-    req.on("end", function() {
-      if (!res.headersSent) {
-          // httpStatus(res, 200, "Ok", JSON.stringify(info));
-          httpStatus(res, 200, "Ok");
-      }
-      return u.save(info);
-    });
+      req.on("end", function() {
+	  if (!res.headersSent) {
+              // httpStatus(res, 200, "Ok", JSON.stringify(info));
+              httpStatus(res, 200, "Ok");
+	  }
+	  return u.save( function() {
+	      request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
+		  if ( res.statusCode != 200 ) {
+		      winston.error( "Popeye error: " + res.statusCode );
+		  }
+		  else {
+		      try {
+			  var r = JSON.parse( body );
+			  if ( r.error ) {
+			      winston.error( "Popeye error: " + r.message );
+			  }
+		      } catch( e ) {
+			  winston.error( "Popeye error: " + e.message );
+		      }
+		  }
+	      });
+	  });
+      });
     req.on("close", function() {
       winston.error("client abort. close the file stream " + fileId);
       return ws.end();
@@ -305,13 +335,7 @@
   initApp = function(args) {
     var configFileName, fileNamePrefix, logDir, logFileName;
     fileNamePrefix = path.basename(__filename, path.extname(__filename));
-    configFileName = path.join(__dirname, "" + fileNamePrefix + ".json");
-    winston.debug("Reading " + configFileName);
-    try {
-      config = require(configFileName);
-    } catch (error) {
-      winston.error("Failed to load " + configFileName);
-    }
+    config = Config( 'brewtus' )
     winston.debug(util.inspect(config));
     logDir = config.logDir || path.join(__dirname, "logs");
     logFileName = path.join(logDir, "" + fileNamePrefix + ".log");

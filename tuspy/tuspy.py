@@ -110,6 +110,7 @@ with open("/tmp/md.json","r") as myfile:
     data=myfile.read()
 md=json.loads(data)
 md['uuid'] = UUID
+md['file'] = { 'Path': options.filename };
 
 filename = options.filename
 filesize = os.path.getsize(filename)
