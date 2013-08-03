@@ -4,6 +4,7 @@
 #   sudo make install_deps
 #
 PYPKGS=\
+	boto \
 	web.py \
 	wsgilog \
 	config \
