@@ -3,12 +3,12 @@
 # This target should be run as root, ie.:
 #   sudo make install_deps
 #
-PYPKGS:= \
-  web.py
-  wsgilog
-  config
-  sqlalchemy
-  qtfaststart
+PYPKGS=\
+	web.py \
+	wsgilog \
+	config \
+	sqlalchemy \
+	qtfaststart
 
 install_deps:
 	easy_install $(PYPKGS)
