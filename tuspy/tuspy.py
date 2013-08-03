@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from optparse import OptionParser
 import os
 import sys
@@ -52,9 +54,9 @@ def upload(location, filename, offset=0, upload_speed=None):
         response_code = c.getinfo(pycurl.RESPONSE_CODE)
         response_data = bout.getvalue()
         response_hdr = hout.getvalue()
-        print "DATA", response_data
+        #print "DATA", response_data
         #print response_hdr
-        print "patch->", response_code
+        #print "patch->", response_code
         return response_code == 200
     finally:
         if c: c.close()
@@ -67,10 +69,10 @@ parser.add_option("-u", "--upload_speed",
                   help="upload speed in bytes per second")
 
 parser.add_option("-e", "--email",
-                  dest="email", default="aqpeeb@gmail.com",
+                  dest="email",
                   help="email address for authentication")
 parser.add_option("-p", "--password",
-                  dest="password", default="password",
+                  dest="password",
                   help="password for authentication")
 parser.add_option("-r", "--realm",
                   dest="realm", default="db",
@@ -86,6 +88,14 @@ parser.add_option("-t", "--content-type",
 
 
 if not options.filename:
+    parser.print_help()
+    sys.exit(0)
+
+if not options.email:
+    parser.print_help()
+    sys.exit(0)
+
+if not options.password:
     parser.print_help()
     sys.exit(0)
 
@@ -111,6 +121,8 @@ with open("/tmp/md.json","r") as myfile:
 md=json.loads(data)
 md['uuid'] = UUID
 md['file'] = { 'Path': options.filename };
+
+print( 'Uploading media file for user: %s' % UUID )
 
 filename = options.filename
 filesize = os.path.getsize(filename)

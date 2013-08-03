@@ -9,10 +9,12 @@ PYPKGS=\
 	wsgilog \
 	config \
 	sqlalchemy \
+	requests \
 	qtfaststart
 
 install_deps:
+	apt-get -y install python-pip
 	easy_install $(PYPKGS)
-	apt-get install python-mysqldb
-	apt-get install apache2
-	apt-get install libapache2-mod-wsgi
+	apt-get -y install python-mysqldb
+	apt-get -y install apache2
+	apt-get -y install libapache2-mod-wsgi
