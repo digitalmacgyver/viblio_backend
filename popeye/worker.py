@@ -65,7 +65,11 @@ def process_video( c, orm, log ):
         log.info( cmd )
         if not os.system( cmd ) == 0:
             return perror( log,  'Failed to execute: %s' % cmd )
+        mimetype = 'video/mp4'
+    else:
+        c['video']['output'] = c['video']['input']
 
+    if mimetype == 'video/mp4':
         # Move the metadata atom(s) to the front of the file.  -movflags faststart is
         # not a valid option in our version of ffmpeg, so cannot do it there.  qt-faststart
         # is broken.  qtfaststart is a python based solution that has worked much better for me
@@ -73,10 +77,6 @@ def process_video( c, orm, log ):
         log.info( cmd )
         if not os.system( cmd ) == 0:
             perror( log,  'Failed to run qtfaststart on the output file' )
-
-        mimetype = 'video/mp4'
-    else:
-        c['video']['output'] = c['video']['input']
 
     # Generate the poster
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 320x240 %s' % ( c['poster']['input'], c['poster']['output'] )
