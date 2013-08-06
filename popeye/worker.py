@@ -1,5 +1,6 @@
 import web
 import json
+import uuid
 from models import *
 import os
 
@@ -42,6 +43,13 @@ def process_video( c, orm, log ):
             md = json.load( f )
         except Exception, e:
             perror( log,  'Failed to parse %s' % c['metadata']['input'] )
+
+    # Try to obtain the user from the database
+    try:
+        user = orm.query( User ).filter_by( uuid = info['uid'] ).one()
+    except Exception, e:
+        return perror( log, 'Failed to look up user by uuid: %s: %s' % ( info['uid'], str(e) ) )
+    log.debug( user.toJSON() )
 
     # Brewtus writes the uploaded file as <fileid> without an extenstion,
     # but the info struct has an extenstion.  See if its something other than
@@ -148,17 +156,65 @@ def process_video( c, orm, log ):
         }
 
     try:
-        # filename, uuid, user_id, mimetype, size, uri
-        log.info( 'Adding DB record ...' )
-        mediafile = Video( 
-            filename=data['filename'],
-            uuid=data['uuid'],
-            user_id=data['user_id'],
-            mimetype=data['mimetype'],
-            size=data['size'],
-            uri=data['uri']
-            )
-        orm.add( mediafile )
+
+        video_t = orm.query( MediaType ).filter_by( type_t = 'original' ).one()
+        if not video_t:
+            log.debug( 'Failed to obtain video type!' );
+
+        media = Media( user_id=user.id,
+                       uuid=data['uuid'],
+                       media_type=video_t.type_t,
+                       filename=data['filename'] )
+
+        orm.add( media )
+
+        # main view
+
+        asset_t = orm.query( AssetType ).filter_by( type_t = 'main' ).one()
+        if not asset_t:
+            log.debug( 'Failed to obtain asset type!' );
+
+        asset = MediaAsset( uuid=str(uuid.uuid4()),
+                            media_id=media.id,
+                            asset_type=asset_t.type_t,
+                            mimetype=data['mimetype'],
+                            metadata_uri=metadata_key,
+                            bytes=data['size'],
+                            uri=data['uri'],
+                            location='us' )
+        orm.add( asset )
+
+        # thumbnail
+        asset_t = orm.query( AssetType ).filter_by( type_t = 'thumbnail' ).one()
+        if not asset_t:
+            log.debug( 'Failed to obtain asset type!' );
+
+        asset = MediaAsset( uuid=str(uuid.uuid4()),
+                            media_id=media.id,
+                            asset_type=asset_t.type_t,
+                            mimetype='image/jpg',
+                            bytes=os.path.getsize( c['thumbnail']['output'] ),
+                            width=128, height=128,
+                            uri=thumbnail_key,
+                            location='us' )
+        orm.add( asset )
+
+        # poster
+        asset_t = orm.query( AssetType ).filter_by( type_t = 'poster' ).one()
+        if not asset_t:
+            log.debug( 'Failed to obtain asset type!' );
+
+        asset = MediaAsset( uuid=str(uuid.uuid4()),
+                            media_id=media.id,
+                            asset_type=asset_t.type_t,
+                            mimetype='image/jpg',
+                            bytes=os.path.getsize( c['poster']['output'] ),
+                            width=320, height=240,
+                            uri=poster_key,
+                            location='us' )
+        orm.add( asset )
+
+
         orm.commit()
     except Exception, e:
         return perror( log,  'Failed to add mediafile to database!: %s' % e.message )

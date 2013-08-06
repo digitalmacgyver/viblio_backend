@@ -41,6 +41,14 @@ class get:
         if not 'uid' in data:
             return json.dumps({'error': True, 'message': 'Missing uid param'})
         uid = data.uid
+
+        try:
+            user = web.ctx.orm.query( 'User' ).filter_by( uuid = uid ).one()
+        except Exception, e:
+            return json.dumps({'error': True, 'message': str(e) })
+
+        if not user:
+            return json.dumps({'error': True, 'message': 'User not found for uuid=%s' % uid })
         
         # If mid is present, we're fetching a single mediafile
         mid = None

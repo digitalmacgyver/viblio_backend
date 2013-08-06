@@ -5,7 +5,11 @@ database operations.  See http://docs.sqlalchemy.org/en/rel_0_8/orm/tutorial.htm
 
 """
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, Numeric, DateTime
+from sqlalchemy import Column, Integer, String, Numeric, DateTime, Boolean, ForeignKey
+
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declarative_base
+
 import datetime
 import json
 
@@ -15,8 +19,6 @@ config = AppConfig( 'popeye' ).config()
 
 # Create the database engine
 engine = create_engine( 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name )
-
-from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
@@ -59,36 +61,77 @@ def SWJsonify(*args, **kwargs):
 
 """ END """
 
+## User 
 ##
-## Video Object
+class User( Base, Serializer ):
+    __tablename__ = 'users'
+    __public__ = [ 'uuid', 'provider', 'provider_id',
+                   'username', 'email',
+                   'displayname' ]
+
+    id = Column(Integer, primary_key=True)
+    media = relationship( 'Media' )
+
+    uuid = Column(String(36))
+    provider = Column(String(16))
+    provider_id = Column(String(45))
+    username = Column(String(128))
+    password = Column(String(128))
+    email = Column(String(256))
+    displayname = Column(String(128))
+    active = Column(String(32))
+    accepted_terms = Column(Boolean)
+    created_date = Column(DateTime)
+    updated_date = Column(DateTime)
+
+    def __repr__(self):
+        return "<User('%s', '%s')>" % (self.uuid, self.username)
+
+    def toJSON( self ):
+        return json.dumps(self, cls=SWEncoder, indent=2)
+
+class MediaType( Base ):
+    __tablename__ = 'media_types'
+    type_t = Column('type',String(16), primary_key=True)
+    created_date = Column(DateTime)
+    updated_date = Column(DateTime)
+
+class AssetType( Base ):
+    __tablename__ = 'asset_types'
+    type_t = Column('type',String(16), primary_key=True)
+    created_date = Column(DateTime)
+    updated_date = Column(DateTime)
+
 ##
-class Video(Base, Serializer):
-    __tablename__ = 'video'
+## Media Object
+##
+class Media(Base, Serializer):
+    __tablename__ = 'media'
 
     ## Ony public columns get serialized for output through web services!!
     __public__ = [ 'title', 'description',
-                   'filename', 'mimetype',
+                   'filename', 'media_type',
                    'lat', 'lng',
-                   'created',
-                   'uuid', 'user_id',
-                   'size', 'uri' ]
+                   'created_date',
+                   'uuid' ]
 
     id = Column(Integer, primary_key=True)
+    user_id    = Column(Integer, ForeignKey('users.id'))
+    assets = relationship( 'MediaAsset' )
 
-    owner_id    = Column(Integer)
-    title       = Column(String(400))
-    description = Column(String(4000))
+    uuid        = Column(String(36))
+    media_type = Column(String(16), ForeignKey('media_types.type'))
+    title       = Column(String(200))
     filename    = Column(String(1024))
+    description = Column(String(1024))
+    recording_date = Column(DateTime)
+    view_count = Column(Integer)
     lat         = Column(Numeric(11,8))
     lng         = Column(Numeric(11,8))
-    recording_date = Column(DateTime)
-    created     = Column(DateTime)
-    uuid        = Column(String(40))
-    user_id     = Column(String(40))
-    mimetype    = Column(String(40))
-    size        = Column(Integer)
-    uri         = Column(String)
-    
+    created_date = Column(DateTime)
+    updated_date = Column(DateTime)
+
+    """
     def __init__( self, filename, uuid, user_id, mimetype, size, uri ):
         self.filename = filename
         self.uuid = uuid
@@ -96,13 +139,59 @@ class Video(Base, Serializer):
         self.mimetype = mimetype
         self.size = size
         self.uri = uri
+    """
 
     def __repr__(self):
-        return "<Video('%s', '%s')>" % (self.uuid, self.uri)
+        return "<Media('%s', '%s')>" % (self.uuid, self.filename)
 
     def toJSON( self ):
         return json.dumps(self, cls=SWEncoder, indent=2)
 
-videos_table = Video.__table__
+##
+## Media Asset Object
+##
+class MediaAsset(Base, Serializer):
+    __tablename__ = 'media_assets'
+
+    ## Ony public columns get serialized for output through web services!!
+    __public__ = [ 'uuid', 'asset_type',
+                   'filename', 'mimetype',
+                   'uuid', 'location',
+                   'size', 'uri' ]
+
+    id = Column(Integer, primary_key=True)
+    media_id    = Column(Integer, ForeignKey('media.id'))
+
+    uuid        = Column(String(36))
+    asset_type  = Column(String(16), ForeignKey('asset_types.type'))
+    mimetype    = Column(String(40))
+    filename    = Column(String(1024))
+    uri         = Column(String)
+    location    = Column(String(28))
+    format      = Column(String(40))
+    duration    = Column(Numeric(14,16))
+    bytes       = Column(Integer)
+    width       = Column(Integer)
+    height      = Column(Integer)
+    time_stamp   = Column(Numeric(14,16))
+    metadata_uri = Column(String)
+    provider = Column(String(16))
+    provider_id = Column(String(45))
+    view_count = Column(Integer)
+    created_date = Column(DateTime)
+    updated_date = Column(DateTime)
+    
+    def __repr__(self):
+        return "<MediaAsset('%s', '%s')>" % (self.uuid, self.uri)
+
+    def toJSON( self ):
+        return json.dumps(self, cls=SWEncoder, indent=2)
+
+users_table = User.__table__
+media_types_table = MediaType.__table__
+media_table = Media.__table__
+asset_types_table = AssetType.__table__
+media_assets_table = MediaAsset.__table__
+
 metadata = Base.metadata
 
