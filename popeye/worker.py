@@ -46,10 +46,9 @@ def process_video( c, orm, log ):
 
     # Try to obtain the user from the database
     try:
-        user = orm.query( User ).filter_by( uuid = info['uid'] ).one()
+        user = orm.query( Users ).filter_by( uuid = info['uid'] ).one()
     except Exception, e:
         return perror( log, 'Failed to look up user by uuid: %s: %s' % ( info['uid'], str(e) ) )
-    log.debug( user.toJSON() )
 
     # Brewtus writes the uploaded file as <fileid> without an extenstion,
     # but the info struct has an extenstion.  See if its something other than
@@ -66,7 +65,6 @@ def process_video( c, orm, log ):
     mimetype, uu = mimetypes.guess_type( c['video']['input'] )
 
     # If the input video is not mp4, then transcode it into mp4
-    #ffopts = '-strict -2'
     ffopts = ''
     if not mimetype == 'video/mp4':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
@@ -98,47 +96,14 @@ def process_video( c, orm, log ):
     if not os.system( cmd ) == 0:
         return perror( log,  'Failed to execute: %s' % cmd )
 
-    # Upload to S3
     video_key      = c['uuid'] + '/' + os.path.basename( c['video']['output'] )
     thumbnail_key  = c['uuid'] + '/' + os.path.basename( c['thumbnail']['output'] )
     poster_key     = c['uuid'] + '/' + os.path.basename( c['poster']['output'] )
     metadata_key   = c['uuid'] + '/' + os.path.basename( c['metadata']['output'] )
 
-    try:
-        s3 = boto.connect_s3(config.awsAccess, config.awsSecret)
-        bucket = s3.get_bucket(config.bucket_name)
-        bucket_contents = Key(bucket)
-    except Exception, e:
-        return perror( log,  'Failed to obtain s3 bucket: %s' % e.message )
-
-    log.info( 'Uploading to s3: %s' % c['video']['output'] )
-    try:
-        bucket_contents.key = video_key
-        bucket_contents.set_contents_from_filename( c['video']['output'] )
-    except Exception, e:
-        return perror( log,  'Failed to upload to s3: %s' % e.message )
-
-    log.info( 'Uploading to s3: %s' % c['thumbnail']['output'] )
-    try:
-        bucket_contents.key = thumbnail_key
-        bucket_contents.set_contents_from_filename( c['thumbnail']['output'] )
-    except Exception, e:
-        return perror( log,  'Failed to upload to s3: %s' % e.message )
-
-    log.info( 'Uploading to s3: %s' % c['poster']['output'] )
-    try:
-        bucket_contents.key = poster_key
-        bucket_contents.set_contents_from_filename( c['poster']['output'] )
-    except Exception, e:
-        return perror( log,  'Failed to upload to s3: %s' % e.message )
-
-    log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
-    try:
-        bucket_contents.key = metadata_key
-        bucket_contents.set_contents_from_filename( c['metadata']['output'] )
-    except Exception, e:
-        return perror( log,  'Failed to upload to s3: %s' % e.message )
-
+    ###########################################################################
+    # DATABASE
+    #
     # Default the filename, then try to obtain it from the
     # client side metadata.
     filename = os.path.basename( c['video']['input'] )
@@ -156,68 +121,89 @@ def process_video( c, orm, log ):
         }
 
     try:
-
-        video_t = orm.query( MediaType ).filter_by( type_t = 'original' ).one()
-        if not video_t:
-            log.debug( 'Failed to obtain video type!' );
-
-        media = Media( user_id=user.id,
-                       uuid=data['uuid'],
-                       media_type=video_t.type_t,
+        media = Media( uuid=data['uuid'],
+                       media_type='original',
                        filename=data['filename'] )
 
-        orm.add( media )
-
-        # main view
-
-        asset_t = orm.query( AssetType ).filter_by( type_t = 'main' ).one()
-        if not asset_t:
-            log.debug( 'Failed to obtain asset type!' );
-
-        asset = MediaAsset( uuid=str(uuid.uuid4()),
-                            media_id=media.id,
-                            asset_type=asset_t.type_t,
+        # main
+        asset = MediaAssets( uuid=str(uuid.uuid4()),
+                            asset_type='main',
                             mimetype=data['mimetype'],
                             metadata_uri=metadata_key,
                             bytes=data['size'],
                             uri=data['uri'],
                             location='us' )
-        orm.add( asset )
+        media.assets.append( asset )
 
         # thumbnail
-        asset_t = orm.query( AssetType ).filter_by( type_t = 'thumbnail' ).one()
-        if not asset_t:
-            log.debug( 'Failed to obtain asset type!' );
-
-        asset = MediaAsset( uuid=str(uuid.uuid4()),
-                            media_id=media.id,
-                            asset_type=asset_t.type_t,
+        asset = MediaAssets( uuid=str(uuid.uuid4()),
+                            asset_type='thumbnail',
                             mimetype='image/jpg',
                             bytes=os.path.getsize( c['thumbnail']['output'] ),
                             width=128, height=128,
                             uri=thumbnail_key,
                             location='us' )
-        orm.add( asset )
+        media.assets.append( asset )
 
         # poster
-        asset_t = orm.query( AssetType ).filter_by( type_t = 'poster' ).one()
-        if not asset_t:
-            log.debug( 'Failed to obtain asset type!' );
-
-        asset = MediaAsset( uuid=str(uuid.uuid4()),
-                            media_id=media.id,
-                            asset_type=asset_t.type_t,
+        asset = MediaAssets( uuid=str(uuid.uuid4()),
+                            asset_type='poster',
                             mimetype='image/jpg',
                             bytes=os.path.getsize( c['poster']['output'] ),
                             width=320, height=240,
                             uri=poster_key,
                             location='us' )
-        orm.add( asset )
+        media.assets.append( asset )
 
+        user.media.append( media )
 
+    except Exception, e:
+        return perror( log,  'Failed to add mediafile to database!: %s' % str(e) )
+
+    ###########################################################################
+
+    # Upload to S3
+    #
+    try:
+        s3 = boto.connect_s3(config.awsAccess, config.awsSecret)
+        bucket = s3.get_bucket(config.bucket_name)
+        bucket_contents = Key(bucket)
+    except Exception, e:
+        return perror( log,  'Failed to obtain s3 bucket: %s' % str(e) )
+
+    log.info( 'Uploading to s3: %s' % c['video']['output'] )
+    try:
+        bucket_contents.key = video_key
+        bucket_contents.set_contents_from_filename( c['video']['output'] )
+    except Exception, e:
+        return perror( log,  'Failed to upload to s3: %s' % str(e) )
+
+    log.info( 'Uploading to s3: %s' % c['thumbnail']['output'] )
+    try:
+        bucket_contents.key = thumbnail_key
+        bucket_contents.set_contents_from_filename( c['thumbnail']['output'] )
+    except Exception, e:
+        return perror( log,  'Failed to upload to s3: %s' % str(e) )
+
+    log.info( 'Uploading to s3: %s' % c['poster']['output'] )
+    try:
+        bucket_contents.key = poster_key
+        bucket_contents.set_contents_from_filename( c['poster']['output'] )
+    except Exception, e:
+        return perror( log,  'Failed to upload to s3: %s' % str(e) )
+
+    log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
+    try:
+        bucket_contents.key = metadata_key
+        bucket_contents.set_contents_from_filename( c['metadata']['output'] )
+    except Exception, e:
+        return perror( log,  'Failed to upload to s3: %s' % str(e) )
+
+    # We're OK with S3, lets commit the database.
+    try:
         orm.commit()
     except Exception, e:
-        return perror( log,  'Failed to add mediafile to database!: %s' % e.message )
+        return perror( log, 'Failed to commit the database: %s' % str(e) )
 
     # And finally, notify the Cat server
     data['location'] = 'us'
@@ -230,7 +216,7 @@ def process_video( c, orm, log ):
         if 'error' in jdata:
             raise Exception( jdata['message'] )
     except Exception, e:
-        return perror( log,  'Failed to notify Cat: %s' % e.message )
+        return perror( log,  'Failed to notify Cat: %s' % str(e) )
 
     # Remove all local files
     try:

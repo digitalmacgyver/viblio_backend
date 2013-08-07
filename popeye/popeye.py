@@ -28,10 +28,26 @@ except Exception, e:
 # Create a webpy session-like thing for SQLAlchemy,
 # so the database session is available to all web 
 # endpoints in web.ctx.orm.
+from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models import *
+
+"""
+Someone who knows web.py and SQLAlchemy should review this
+scoped_session() stuff and the code in base/models.py to
+make sure I ain't doing something stupid/low performance
+with this code.  I had a tough time getting it to
+do what I needed (i.e. work!)
+
+"""
+web.__mapped = None
 def load_sqla(handler):
-    web.ctx.orm = scoped_session(sessionmaker(bind=engine))
+    conn = 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name
+    engine = create_engine( conn )
+    sess = sessionmaker( bind=engine )
+    web.ctx.orm = scoped_session( sess )
+    if not web.__mapped:
+        web.__mapped = map( engine )[0];
     try:
         return handler()
     except web.HTTPError:
@@ -71,8 +87,8 @@ class Log(WsgiLog):
             loglevel = config.loglevel,
             logname = 'popeye',
             tostream = True,
-            tofile = True,
             toprint = True,
+            tofile = True,
             file = config.logfile
             )
 

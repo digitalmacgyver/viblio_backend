@@ -2,12 +2,13 @@
 Media information endpoints
 """
 import web
-import json;
 
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
 
 from models import *
+from base import toJSON
+from sqlalchemy.orm import *
 from sqlalchemy import desc
 
 import boto
@@ -39,39 +40,34 @@ class get:
         res = {}
 
         if not 'uid' in data:
-            return json.dumps({'error': True, 'message': 'Missing uid param'})
+            return toJSON({'error': True, 'message': 'Missing uid param'})
         uid = data.uid
 
         try:
-            user = web.ctx.orm.query( 'User' ).filter_by( uuid = uid ).one()
+            user = web.ctx.orm.query( Users ).filter_by( uuid = uid ).one()
         except Exception, e:
-            return json.dumps({'error': True, 'message': str(e) })
+            return toJSON({'error': True, 'message': str(e) })
 
         if not user:
-            return json.dumps({'error': True, 'message': 'User not found for uuid=%s' % uid })
+            return toJSON({'error': True, 'message': 'User not found for uuid=%s' % uid })
+
+        web.ctx.log.debug( user.toJSON() )
         
         # If mid is present, we're fetching a single mediafile
         mid = None
         if 'mid' in data:
             mid = data.mid
 
-        # Do the database query
-        result = None
-        if not mid:
-            result = web.ctx.orm.query( Video ).filter_by( user_id = uid ).order_by( Video.id.desc() )
-        else:
-            result = web.ctx.orm.query( Video ).filter_by( user_id = uid, uuid = mid ).first()
+        try:
+            if not mid:
+                result = user.media.options(eagerload_all(Media.assets)).order_by( Media.id.desc() ).all()
+            else:
+                result = user.media.options(eagerload_all(Media.assets)).filter_by( uuid = mid ).one()
+        except Exception, e:
+            return toJSON({ 'error': True, 'message': str(e) })
 
-        if not result:
-            return json.dumps({'error':True, 'message':'Mediafile not found for %s' % mid})
-
-        if not mid:
-            # map the result into a array of serializable objects
-            a = map( lambda mf: mf.to_serializable_dict(), result )
-            # Return the JSON, USING THE CORRECT DECODER!!
-            return json.dumps({ 'media': a}, cls=SWEncoder, indent=2)
-        else:
-            return result.toJSON()
+        if not result: result = []
+        return toJSON({ 'media': result })
 
 class delete:
     def GET(self):
@@ -83,38 +79,38 @@ class delete:
         res = {}
 
         if not 'uid' in data:
-            return json.dumps({'error': True, 'message': 'Missing uid param'})
+            return toJSON({'error': True, 'message': 'Missing uid param'})
         uid = data.uid
         
         if not 'mid' in data:
-            return json.dumps({'error': True, 'message': 'Missing mid param'})
+            return toJSON({'error': True, 'message': 'Missing mid param'})
         mid = data.mid
         
         # Do the database query
         result = web.ctx.orm.query( Video ).filter_by( user_id = uid, uuid = mid ).first()
 
         if not result:
-            return json.dumps({'error':True, 'message':'Mediafile not found for %s' % mid})
+            return toJSON({'error':True, 'message':'Mediafile not found for %s' % mid})
 
         # Delete it from S3
         try:
             s3 = boto.connect_s3(config.awsAccess, config.awsSecret)
             bucket = s3.get_bucket(config.bucket_name)
         except Exception, e:
-            return json.dumps({'error':True, 'message': 'Failed to obtain s3 bucket: %s' % e.message})
+            return toJSON({'error':True, 'message': 'Failed to obtain s3 bucket: %s' % e.message})
 
         try:
             for key in bucket.list( prefix=mid ):
                 key.delete()
         except Exception, e:
-            return json.dumps({'error':True, 'message': 'Failed to delete from bucket: %s' % e.message})
+            return toJSON({'error':True, 'message': 'Failed to delete from bucket: %s' % e.message})
 
         # Now the database record delete
         try:
             web.ctx.orm.delete( result )
         except Exception, e:
-            return json.dumps({'error':True, 'message': 'Failed to delete from ORMt: %s' % e.message})
+            return toJSON({'error':True, 'message': 'Failed to delete from ORMt: %s' % e.message})
 
-        return json.dumps({})
+        return toJSON({})
 
 media_app = web.application(urls, locals())
