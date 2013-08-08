@@ -7,15 +7,17 @@ from sqlalchemy import *
 
 verbose = False
 
-username = 'video_dev'
-password = 'video_dev'
-database = 'video_dev'
+username = 'video_dev_1'
+password = 'video_dev_1'
+database = 'video_dev_1'
+
+db_server = '@testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com:3306/'
 
 # Connect to the database.
 print "Creating SQLAlchemy engine for:", database
 engine = create_engine( 'mysql+mysqldb://'
                         +username+':'+password
-                        +'@videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com:3306/'
+                        +db_server
                         +database, echo=verbose )
 
 # Extract schema inforation from the database.
@@ -26,111 +28,134 @@ meta.reflect( bind=engine )
 for table in meta.tables:
     print "Found table:", table
 
-video = meta.tables['video']
-video_encoding = meta.tables['video_encoding']
-image = meta.tables['image']
+users = meta.tables['users']
+media = meta.tables['media']
+media_assets = meta.tables['media_assets']
+media_asset_features = meta.tables['media_asset_features']
+media_comments = meta.tables['media_comments']
+contacts = meta.tables['contacts']
 
 # Get a connection to issue SQL with.
 print "Creating a database connection."
 conn = engine.connect()
 
 # Create a metadata structure appropriate for insert statements to the
-# video table.
-ins = video.insert()
+# users table.
+ins = users.insert()
 
 # Perform a single row insert by assigning column names to values.
-print "Inserting a row into the video table."
-result = conn.execute( ins, 
-                       id=None, # Populated by the database.
-                       owner_id = 23,
-                       title='unit_test_insert',
-                       filename='C:\User\Desktop\Movie.mpg',
-                       description='unit_test_insert',
-                       lat=120.00432,
-                       lng=233.001233,
-                       recording_date=datetime.datetime.now() );
+print "Inserting a row into the users table."
+result = conn.execute( ins,
+                       id             = None, # Populated by the database.
+                       uuid           = 'unit_test_insert',
+                       provider       = 'local',
+                       provider_id    = 0,
+                       username       = 'unit_test_insert',
+                       password       = 'unit_test_insert',
+                       email          = 'unit_test_insert',
+                       displayname    = 'unit_test_insert',
+                       active         = 'unit_test_insert',
+                       accepted_terms = True,
+                       # created_date and updated_date are populated
+                       # by database triggers.  In fact, we don't need
+                       # to include them here at all.
+                       created_date   = None,
+                       updated_date   = None )
 
 # Get the id number of the recently inserted row. 
 # 
 # Note, this technique is only availbale for single row inserts.
-print "Inserted video id was:", result.inserted_primary_key
+print "Inserted user id was:", result.inserted_primary_key[0]
 
 # Perform a batch insert that adds many rows at one time.
 #
-# Illustrate the "returning()" method of getting data back from the
-# database about our insert.
-#
 # Note 1: all rows must have the same columns.
 # Note 2: Any columns not defined will recieve default values.
-print "Inserting multiple rows into the video table."
-result = conn.execute( video.insert(),
+print "Inserting multiple rows into the users table."
+result = conn.execute( users.insert(),
                        [
-        { 'description' : 'unit_test_insert', 'lat' : 220.4, 'lng' : 2.123 },
-        { 'description' : 'unit_test_insert', 'lat' : 110.2, 'lng' : 321.132 },
+        { 'username' : 'unit_test_insert', 'uuid' : 'user2' },
+        { 'username' : 'unit_test_insert', 'uuid' : 'user3' },
         # Note, we can have as many rows as we want here.
         ] )
 # Further note - unlike the one by one rows above you can't get the
 # IDs of rows inserted in this way.
 
-print "Updating a row in the video table."
-result = conn.execute( video.update().where( video.c.lat == 220.4 ).values( lat=330.6 ) );
+print "Updating a row in the users table."
+result = conn.execute( users.update().where( users.c.uuid == 'user2' ).values( active = 'yes' ) );
 
-# Add a video_encoding for each video.  Note that we must provide a
-# video_id that matches an Id found in the video table when adding
+# Add some media for each user.  Note that we must provide a
+# user_id that matches an id found in the users table when adding
 # these rows.
 #
-# Begin by getting a list of videos in the video table.
-for videoId in conn.execute( 
-    select( [video.c.id] )
-    .where( video.c.description == 'unit_test_insert' ) ):
-    # Then for each video, add a child row in the video_encoding_insert table.
-    print "Adding a video_encoding row associated with video id:", videoId[0]
-    result = conn.execute( video_encoding.insert(),
-                                id=None,
-                                video_id=videoId[0],
-                                url="http://s3/video-name.mp4",
-                                metadata_url="http://s3/video-name.json",
-                                format='unit_test_insert',
-                                type='MP4',
-                                hash='A523B30432934590012E',
-                                lenth=2202.23,
-                                width=720,
-                                height=480 );
-    print "Inserted video_encoding had id:", result.inserted_primary_key[0]
+# Begin by getting a list of users in the users table.
+for user_id in conn.execute( 
+    select( [users.c.id] )
+    .where( users.c.username == 'unit_test_insert' ) ):
+    # Then for each user, add a child row in the media table.
+    print "Adding a media row associated with user id:", user_id[0]
+    result = conn.execute( media.insert(), 
+                           id             = None, # Populated by the database.
+                           user_id        = user_id[0],
+                           uuid           = 'unit_test_insert' + str( user_id[0] ),
+                           media_type     = 'original',
+                           title          = 'unit_test_insert',
+                           filename       = 'unit_test_insert',
+                           description    = 'unit_test_insert',
+                           recording_date = datetime.datetime.now(),
+                           view_count     = 0,
+                           lat            = 123.45,
+                           lng            = 184.32 )
+    # NOTE: We can omit most columns that are not required.
+    # created_date   = None,
+    # updated_date   = None )
+
+    media_id = result.inserted_primary_key[0]
+
+    print "Inserted media had id:", media_id
     result.close()
 
-        
-for ids in conn.execute( 
-    select( [video_encoding.c.id, video_encoding.c.video_id ] )
-    .where( video_encoding.c.format == 'unit_test_insert' ) ):
-    print "Adding image for video encoding:", ids[0]
+    # Add an asset for the media we just added.
+    print "Adding asset for media:", media_id
+    
+    conn.execute( media_assets.insert(), 
+                  id             = None, # Populated by the database.
+                  media_id       = media_id,
+                  uuid           = 'unit_test_insert' + str( media_id ),
+                  asset_type     = 'thumbnail',
+                  mimetype       = 'unit_test_insert',
+                  filename       = 'unit_test_insert',
+                  uri            = 'unit_test_insert',
+                  location       = 'unit_test_insert',
+                  bytes          = 0,
+                  width          = 0,
+                  height         = 0,
+                  time_stamp     = 120.343,
+                  metadata_uri   = 'unit_test_insert',
+                  provider       = 'facebook',
+                  provider_id    = 'unit_test_insert',
+                  view_count     = 0,
+                  created_date   = None,
+                  updated_date   = None )
 
-    conn.execute( image.insert(),
-                       id=None,
-                       video_encoding_id=ids[0],
-                       video_id=ids[1],
-                       time_stamp=33.004999,
-                       url='http://s3/video/0000123.jpg',
-                       metadata_url='http://s3/video/0000123.json',
-                       format='unit_test_insert',
-                       width=1024,
-                       height=768 )
+# We could go on to insert rows for media_comments,
+# media_asset_features, and contacts.
 
 # Clean up our tests.
-print "Deleting rows from image."
+print "Deleting rows from media_assets."
 conn.execute( 
-    image.delete()
-    .where( image.c.format == 'unit_test_insert' ) )
+    media_assets.delete()
+    .where( media_assets.c.filename == 'unit_test_insert' ) )
 
-print "Deleting rows from video_encoding."
+print "Deleting rows from media."
 conn.execute( 
-    video_encoding.delete()
-    .where( video_encoding.c.format == 'unit_test_insert' ) )
+    media.delete()
+    .where( media.c.description == 'unit_test_insert' ) )
 
-print "Deleting rows from video."
+print "Deleting rows from users."
 conn.execute( 
-    video.delete()
-    .where( video.c.description == 'unit_test_insert' ) )
+    users.delete()
+    .where( users.c.username == 'unit_test_insert' ) )
 
 # Close our connections.
 print "Closing database connection."
