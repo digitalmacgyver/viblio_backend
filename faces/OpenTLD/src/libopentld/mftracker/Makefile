@@ -6,11 +6,11 @@ Lk.cpp\
 Median.cpp
 
 OBJS=$(SOURCES:.cpp=.o)
-CFLAGS=-std=c++11 
+CFLAGS=-std=c++0x
 LIBNAME=libmftracker.a
 
 %.o : %.cpp
-	g++-4.7 -c $(CFLAGS) $< -o $@
+	g++ -c $(CFLAGS) $< -o $@
 
 $(LIBNAME) : $(OBJS)
 	ar rcs $@ $^

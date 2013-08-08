@@ -1,6 +1,3 @@
-CC?= gcc-4.7
-CXX?= g++-4.7
-
 all : cvblobs tld mftracker analytics FileSystem VideoSource viblio
 
 cvblobs : 

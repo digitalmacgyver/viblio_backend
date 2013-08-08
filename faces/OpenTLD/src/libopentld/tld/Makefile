@@ -11,11 +11,11 @@ TLDUtil.cpp\
 VarianceFilter.cpp
 
 OBJS=$(SOURCES:.cpp=.o)
-CFLAGS=-std=c++11 -I../../3rdparty/cvblobs -I../mftracker
+CFLAGS=-std=c++0x -I../../3rdparty/cvblobs -I../mftracker -fpermissive
 LIBNAME=libOpenTld.a
 
 %.o : %.cpp
-	g++-4.7 -c $(CFLAGS) $< -o $@
+	g++ -c $(CFLAGS) $< -o $@
 
 $(LIBNAME) : $(OBJS)
 	ar rcs $@ $^

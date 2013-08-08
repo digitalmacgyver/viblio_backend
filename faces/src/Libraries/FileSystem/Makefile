@@ -4,7 +4,7 @@ CFLAGS=
 LIBNAME=libFileSystem.a
 
 %.o : %.cpp
-	g++-4.7 -c $(CFLAGS) $< -o $@
+	g++ -c $(CFLAGS) $< -o $@
 
 $(LIBNAME) : $(OBJS)
 	ar rcs $@ $^
