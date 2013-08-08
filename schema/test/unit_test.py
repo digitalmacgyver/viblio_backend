@@ -6,24 +6,25 @@ import sys
 class SchemaTest( unittest.TestCase ):
     verbose = False
 
-    username = 'video_dev'
-    password = 'video_dev'
-    database = 'video_dev'
+    username = 'video_dev_1'
+    password = 'video_dev_1'
+    database = 'video_dev_1'
 
     engine = create_engine( 'mysql+mysqldb://'
                             +username+':'+password
-                            +'@videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com:3306/'
+                            +'@testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com:3306/'
                             +database, echo=verbose )
 
     meta = None
     conn = None
 
-    detector = None
-    image = None
-    image_label = None
-    video = None
-    video_label = None
-    
+    users = None
+    media = None
+    media_assets = None
+    media_asset_features = None
+    media_comments = None
+    contacts = None
+
     @classmethod
     def setUpClass( self ):
         try:
@@ -37,9 +38,12 @@ class SchemaTest( unittest.TestCase ):
 
         try:
             print "Validating metadata import"
-            self.video = self.meta.tables['video']
-            self.video_encoding = self.meta.tables['video_encoding']
-            self.image = self.meta.tables['image']
+            self.users = self.meta.tables['users']
+            self.media = self.meta.tables['media']
+            self.media_assets = self.meta.tables['media_assets']
+            self.media_asset_features = self.meta.tables['media_asset_features']
+            self.media_comments = self.meta.tables['media_comments']
+            self.contacts = self.meta.tables['contacts']
 
             print "Cleaning up any stale rows from prior tests."
             self.delete_test_rows()
@@ -68,14 +72,20 @@ class SchemaTest( unittest.TestCase ):
     @classmethod
     def delete_test_rows( self ):
         self.conn.execute( 
-            self.image.delete()
-            .where( self.image.c.format == 'unit_test_insert' ) )
+            self.media_assets.delete()
+            .where( self.media_assets.c.filename == 'unit_test_insert' ) )
         self.conn.execute( 
-            self.video_encoding.delete()
-            .where( self.video_encoding.c.format == 'unit_test_insert' ) )
+            self.media_comments.delete()
+            .where( self.media_comments.c.comment == 'unit_test_insert' ) )
         self.conn.execute( 
-            self.video.delete()
-            .where( self.video.c.description == 'unit_test_insert' ) )
+            self.contacts.delete()
+            .where( self.contacts.c.contact_name == 'unit_test_insert' ) )
+        self.conn.execute( 
+            self.media.delete()
+            .where( self.media.c.description == 'unit_test_insert' ) )
+        self.conn.execute( 
+            self.users.delete()
+            .where( self.users.c.username == 'unit_test_insert' ) )
 
     def test_metadata( self ):
         def test_table( table_name ):
@@ -83,112 +93,223 @@ class SchemaTest( unittest.TestCase ):
 
         try:
             print "Validating metadata."
-            test_table( 'video' )
-            test_table( 'video_encoding' )
-            test_table( 'image' )
+            test_table( 'users' )
+            test_table( 'media' )
+            test_table( 'media_assets' )
+            test_table( 'media_asset_features' )
+            test_table( 'media_comments' )
+            test_table( 'contacts' )
+
         except:
             print "ERROR during metadata validation."
             raise
 
-    def insert_video_rows( self ):
-        ins = self.video.insert()
-        # id of None because of auto sequencing of the ID.
-        self.conn.execute( ins, 
-                           id=None, # Populated by the database.
-                           owner_id = 23,
-                           title='unit_test_insert',
-                           filename='C:\User\Desktop\Movie.mpg',
-                           description='unit_test_insert',
-                           lat=120.00432,
-                           lng=233.001233,
-                           recording_date=datetime.datetime.now() );
-        
-        # Bulk insert a few more rows.
-        self.conn.execute( self.video.insert(), [
-                { 'description' : 'unit_test_insert' },
-                { 'description' : 'unit_test_insert' },
-                ] )
+    def insert_users_rows( self ):
+        self.conn.execute( self.users.insert(),
+                           id             = None, # Populated by the database.
+                           uuid           = 'unit_test_insert',
+                           provider       = 'local',
+                           provider_id    = 0,
+                           username       = 'unit_test_insert',
+                           password       = 'unit_test_insert',
+                           email          = 'unit_test_insert',
+                           displayname    = 'unit_test_insert',
+                           active         = 'unit_test_insert',
+                           accepted_terms = True,
+                           created_date   = None,
+                           updated_date   = None )
 
-
-    def test_video_insert( self ):
+    def test_users_insert( self ):
         trans = self.conn.begin()
         try:
-            print "Testing insertion to video table."
-            self.insert_video_rows()
+            print "Testing insertion to users table."
+            self.insert_users_rows()
 
             # Run a select and get back the right number of rows.
-            rows = self.conn.execute( select( [ func.count() ] ).where( self.video.c.description == 'unit_test_insert' ) ).fetchone()[0]
-            self.assertEquals( rows, 3, msg="There should have been 3 matching rows in video, instead there were "+str( rows ) )
+            rows = self.conn.execute( select( [ func.count() ] ).where( self.users.c.username == 'unit_test_insert' ) ).fetchone()[0]
+            self.assertEquals( rows, 1, msg="There should have been 1 matching row in users, instead there were "+str( rows ) )
 
         except:
-            print "Something went wrong testing inserts to video."
+            print "Something went wrong testing inserts to users."
             raise
         finally:
             trans.rollback()
 
-    def insert_video_encoding_rows( self ):
-        for result in self.conn.execute( select( [self.video.c.id] ).where( self.video.c.description == 'unit_test_insert' ) ):
-            self.conn.execute( self.video_encoding.insert(),
-                               id=None,
-                               video_id=result[0],
-                               url="http://s3/video-name.mp4",
-                               metadata_url="http://s3/video-name.json",
-                               format='unit_test_insert',
-                               type='MP4',
-                               hash='A523B30432934590012E',
-                               lenth=2202.23,
-                               width=720,
-                               height=480 );
+    def insert_media_rows( self ):
+        for result in self.conn.execute( select( [self.users.c.id] ).where( self.users.c.username == 'unit_test_insert' ) ):
+            self.conn.execute( self.media.insert(), 
+                               id             = None, # Populated by the database.
+                               user_id        = result[0],
+                               uuid           = 'unit_test_insert',
+                               media_type     = 'original',
+                               title          = 'unit_test_insert',
+                               filename       = 'unit_test_insert',
+                               description    = 'unit_test_insert',
+                               recording_date = datetime.datetime.now(),
+                               view_count     = 0,
+                               lat            = 123.45,
+                               lng            = 184.32,
+                               created_date   = None,
+                               updated_date   = None )
 
-
-    def test_video_encoding_insert( self ):
+    def test_media_insert( self ):
         trans = self.conn.begin()
         try:
-            print "Testing insertion into video_encoding table."
-            # Add a few video labels.
-            self.insert_video_rows()
-            self.insert_video_encoding_rows()
+            print "Testing insertion to media table."
+            self.insert_users_rows()
+            self.insert_media_rows()
 
             # Run a select and get back the right number of rows.
-            rows = self.conn.execute( select( [ func.count() ] ).where( self.video_encoding.c.format == 'unit_test_insert' ) ).fetchone()[0]
-            self.assertEquals( rows, 3, msg="There should have been 3 matching rows in video_encoding, instead there were "+str( rows ) )
+            rows = self.conn.execute( select( [ func.count() ] ).where( self.media.c.description == 'unit_test_insert' ) ).fetchone()[0]
+            self.assertEquals( rows, 1, msg="There should have been 1 matching row in media, instead there were "+str( rows ) )
 
         except:
-            print "Something went wrong testing inserts to video_label."
+            print "Something went wrong testing inserts to media."
             raise
         finally:
             trans.rollback()
 
-    def insert_image_rows( self ):
-        for ids in self.conn.execute( select( [self.video_encoding.c.id, self.video_encoding.c.video_id ] ).where( self.video_encoding.c.format == 'unit_test_insert' ) ):
-            print "Adding image for video encoding:", ids[0]
+    def insert_media_assets_rows( self ):
+        for result in self.conn.execute( select( [self.media.c.id] ).where( self.media.c.description == 'unit_test_insert' ) ):
+            self.conn.execute( self.media_assets.insert(), 
+                               id             = None, # Populated by the database.
+                               media_id       = result[0],
+                               uuid           = 'unit_test_insert',
+                               asset_type     = 'thumbnail',
+                               mimetype       = 'unit_test_insert',
+                               filename       = 'unit_test_insert',
+                               uri            = 'unit_test_insert',
+                               location       = 'unit_test_insert',
+                               bytes          = 0,
+                               width          = 0,
+                               height         = 0,
+                               time_stamp     = 120.343,
+                               metadata_uri   = 'unit_test_insert',
+                               provider       = 'facebook',
+                               provider_id    = 'unit_test_insert',
+                               view_count     = 0,
+                               created_date   = None,
+                               updated_date   = None )
 
-            self.conn.execute( self.image.insert(),
-                               id=None,
-                               video_encoding_id=ids[0],
-                               video_id=ids[1],
-                               time_stamp=33.004999,
-                               url='http://s3/video/0000123.jpg',
-                               metadata_url='http://s3/video/0000123.json',
-                               format='unit_test_insert',
-                               width=1024,
-                               height=768 )
-
-    def test_image_insert( self ):
+    def test_media_assets_insert( self ):
         trans = self.conn.begin()
         try:
-            print "Testing insertion into image table."
-            # Add a few images.
-            self.insert_video_rows()
-            self.insert_video_encoding_rows()
-            self.insert_image_rows()
+            print "Testing insertion to media_assets table."
+            self.insert_users_rows()
+            self.insert_media_rows()
+            self.insert_media_assets_rows()
 
             # Run a select and get back the right number of rows.
-            rows = self.conn.execute( select( [ func.count() ] ).where( self.image.c.format == 'unit_test_insert' ) ).fetchone()[0]
-            self.assertEquals( rows, 3, msg="There should have been 3 matching rows in image, instead there were "+str( rows ) )
+            rows = self.conn.execute( select( [ func.count() ] ).where( self.media_assets.c.filename == 'unit_test_insert' ) ).fetchone()[0]
+            self.assertEquals( rows, 1, msg="There should have been 1 matching row in media_assets, instead there were "+str( rows ) )
 
         except:
-            print "Something went wrong testing inserts to image."
+            print "Something went wrong testing inserts to media_assets."
+            raise
+        finally:
+            trans.rollback()
+
+    def insert_media_comments_rows( self ):
+        for media_id in self.conn.execute( select( [self.media.c.id] ).where( self.media.c.description == 'unit_test_insert' ) ):
+            for user_id in self.conn.execute( select( [self.users.c.id] ).where( self.users.c.username == 'unit_test_insert' ) ):
+                self.conn.execute( self.media_comments.insert(), 
+                                   id             = None, # Populated by the database.
+                                   media_id       = media_id[0],
+                                   user_id        = user_id[0],
+                                   uuid           = 'unit_test_insert',
+                                   comment        = 'unit_test_insert',
+                                   comment_number = 0,
+                                   created_date   = None,
+                                   updated_date   = None )
+
+    def test_media_comments_insert( self ):
+        trans = self.conn.begin()
+        try:
+            print "Testing insertion to media_comments table."
+            self.insert_users_rows()
+            self.insert_media_rows()
+            self.insert_media_assets_rows()
+            self.insert_media_comments_rows()
+
+            # Run a select and get back the right number of rows.
+            rows = self.conn.execute( select( [ func.count() ] ).where( self.media_comments.c.comment == 'unit_test_insert' ) ).fetchone()[0]
+            self.assertEquals( rows, 1, msg="There should have been 1 matching row in media_comments, instead there were "+str( rows ) )
+
+        except:
+            print "Something went wrong testing inserts to media_comments."
+            raise
+        finally:
+            trans.rollback()
+
+    def insert_contacts_rows( self ):
+        for user_id in self.conn.execute( select( [self.users.c.id] ).where( self.users.c.username == 'unit_test_insert' ) ):
+            self.conn.execute( self.contacts.insert(), 
+                               id                = None, # Populated by the database.
+                               user_id           = user_id[0],
+                               contact_name      = 'unit_test_insert',
+                               contact_email     = 'unit_test_insert',
+                               contact_viblio_id = user_id[0],
+                               provider          = 'facebook',
+                               provider_id       = 0,
+                               created_date   = None,
+                               updated_date   = None )
+
+    def test_contacts_insert( self ):
+        trans = self.conn.begin()
+        try:
+            print "Testing insertion to contacts table."
+            self.insert_users_rows()
+            self.insert_contacts_rows()
+
+            # Run a select and get back the right number of rows.
+            rows = self.conn.execute( select( [ func.count() ] ).where( self.contacts.c.contact_name == 'unit_test_insert' ) ).fetchone()[0]
+            self.assertEquals( rows, 1, msg="There should have been 1 matching row in contacts, instead there were "+str( rows ) )
+
+        except:
+            print "Something went wrong testing inserts to contacts."
+            raise
+        finally:
+            trans.rollback()
+
+    def insert_media_asset_features_rows( self ):
+        inserted_ids = []
+        for media_asset_id in self.conn.execute( select( [self.media_assets.c.id] ).where( self.media_assets.c.filename == 'unit_test_insert' ) ):
+            for contact_id in self.conn.execute( select( [self.contacts.c.id] ).where( self.contacts.c.contact_name == 'unit_test_insert' ) ):
+                result = self.conn.execute( self.media_asset_features.insert(), 
+                                            id             = None, # Populated by the database.
+                                            media_asset_id = media_asset_id[0],
+                                            feature_type   = 'face',
+                                            coordinates    = 'unit_test_insert',
+                                            contact_id     = contact_id[0],
+                                            created_date   = None,
+                                            updated_date   = None )
+                inserted_ids.append( result.inserted_primary_key[0] )
+        return inserted_ids
+                
+    def delete_media_asset_features_rows( self, inserted_ids ):
+        for inserted_id in inserted_ids:
+            self.conn.execute( 
+                self.media_asset_features.delete()
+                .where( self.media_asset_features.c.id == inserted_id ) )
+
+    def test_media_asset_features_insert( self ):
+        trans = self.conn.begin()
+        try:
+            print "Testing insertion to media_asset_features table."
+            self.insert_users_rows()
+            self.insert_contacts_rows()
+            self.insert_media_rows()
+            self.insert_media_assets_rows()
+            inserted_ids = self.insert_media_asset_features_rows()
+
+            # Run a select and get back the right number of rows.
+            rows = self.conn.execute( select( [ func.count() ] ).where( self.media_asset_features.c.id.in_( inserted_ids ) ) ).fetchone()[0]
+            self.assertEquals( rows, 1, msg="There should have been 1 matching row in media_asset_features, instead there were "+str( rows ) )
+
+            self.delete_media_asset_features_rows( inserted_ids )
+
+        except:
+            print "Something went wrong testing inserts to media_asset_features."
             raise
         finally:
             trans.rollback()

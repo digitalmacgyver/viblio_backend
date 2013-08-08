@@ -228,7 +228,7 @@ ENGINE = InnoDB;
 -- Table `video_dev`.`media_comments`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev`.`media_comments` (
-  `id` INT(11) NOT NULL ,
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `media_id` INT(11) NOT NULL ,
   `user_id` INT(11) NOT NULL ,
   `comment` VARCHAR(2048) NULL DEFAULT NULL ,
