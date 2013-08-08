@@ -1,6 +1,7 @@
 import web
 import json
 import uuid
+import hmac
 from models import *
 import os
 
@@ -211,7 +212,8 @@ def process_video( c, orm, log ):
     data['uid'] = data['user_id']
     try:
         log.info( 'Notifying Cat server ...' )
-        res = requests.get(config.viblio_server_url, params=data)
+        site_token = hmac.new( config.site_secret, data['user_id']).hexdigest()
+        res = requests.get(config.viblio_server_url, params={ 'uid': data['user_id'], 'mid': data['uuid'], 'site-token': site_token })
         jdata = json.loads( res.text )
         if 'error' in jdata:
             raise Exception( jdata['message'] )

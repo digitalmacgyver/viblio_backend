@@ -86,6 +86,7 @@ def reflect(engine, models):
     metadata.reflect()
     mappers = {}
     for table_name in metadata.tables:
+        if table_name == 'user_ctas_test': continue
         model_name = "".join(part.capitalize()
                              for part in table_name.split("_"))
         try:
