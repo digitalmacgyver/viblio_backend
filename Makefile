@@ -1,4 +1,5 @@
-LVL=staging
+# make LVL=<staging|prod|local>
+LVL ?= staging
 deploy:
 	-rm -rf /deploy/$(LVL)/brewtus.prev
 	-rm -rf /deploy/$(LVL)/popeye.prev
@@ -16,12 +17,13 @@ deploy:
 development:
 	( cd brewtus; npm install -g; chmod oug+rw ~/.npm; npm install; chmod oug+rw node_modules )
 	( cd popeye; make install_deps )
-	mkdir -p /deploy/development
+	mkdir -p /mnt/uploaded_files; chmod oug+rw /mnt/uploaded_files
+	mkdir -p /deploy/local
 	chmod -R oug+rw /deploy
-	ln -s `pwd`/brewtus /deploy/development/
-	ln -s `pwd`/popeye /deploy/development/
-	ln -s /deploy/development/brewtus/brewtus-development.init.d /etc/init.d/brewtus
-	ln -s /deploy/development/popeye/deployment/init.d/popeye-development /etc/init.d/popeye
+	ln -s `pwd`/brewtus /deploy/local/
+	ln -s `pwd`/popeye /deploy/local/
+	ln -s /deploy/local/brewtus/brewtus-local.init.d /etc/init.d/brewtus
+	ln -s /deploy/local/popeye/deployment/init.d/popeye-local /etc/init.d/popeye
 	( cd /etc/init.d; update-rc.d brewtus defaults; update-rc.d popeye defaults )
 	/etc/init.d/brewtus start
 	/etc/init.d/popeye start

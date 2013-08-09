@@ -344,6 +344,7 @@
       fs.mkdirSync(config.files);
     } catch (error) {
       if ((error != null) && error.code !== "EEXIST") {
+	  console.log(util.inspect(error));
         winston.error(util.inspect(error));
         process.exit(1);
       }

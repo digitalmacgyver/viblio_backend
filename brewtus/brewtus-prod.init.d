@@ -9,7 +9,7 @@
 ### END INIT INFO 
 . /lib/lsb/init-functions
 
-SERVICE_TYPE=development
+SERVICE_TYPE=prod
 
 APPNAME=brewtus
 APPDIR=/deploy/$SERVICE_TYPE/brewtus

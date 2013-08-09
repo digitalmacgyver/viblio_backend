@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides: popeye
+# Provides: brewtus
 # Required-Start: $local_fs $network $named
 # Required-Stop: $local_fs $network $named
 # Default-Start: 2 3 4 5
@@ -9,15 +9,13 @@
 ### END INIT INFO 
 . /lib/lsb/init-functions
 
-SERVICE_TYPE=development
+SERVICE_TYPE=local
 
-APPNAME=popeye
-APPDIR=/deploy/$SERVICE_TYPE/popeye
+APPNAME=brewtus
+APPDIR=/deploy/$SERVICE_TYPE/brewtus
 
-DEPLOYMENT=$SERVICE_TYPE
-export DEPLOYMENT
-
-PORT=2222
+NODE_ENV=$SERVICE_TYPE
+export NODE_ENV
 
 USER=www-data
 GROUP=www-data
@@ -40,10 +38,10 @@ check_running() {
 }
 
 _start() {
-    start-stop-daemon --verbose --start --make-pidfile --pidfile $PIDFILE \
+    start-stop-daemon --start --make-pidfile --pidfile $PIDFILE \
     --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP --background \
-    --startas /usr/bin/python -- ${APPNAME}.py $PORT
+    --startas /usr/local/bin/node -- $APPNAME
 
     for i in 1 2 3 4 5 6 7 8 9 10; do
         sleep 1
@@ -64,7 +62,12 @@ start() {
 
     rm -f $PIDFILE 2>/dev/null
 
-    [ -f /tmp/popeye.log ] && chown $USER:$GROUP /tmp/popeye.log
+    [ -d /mnt/uploaded_files ] || {
+	mkdir -p /mnt/uploaded_files
+    }
+    chown -R $USER:$GROUP /mnt/uploaded_files
+
+    [ -f /tmp/brewtus.log ] && chown $USER:$GROUP /tmp/brewtus.log
 
     _start
     log_end_msg $?

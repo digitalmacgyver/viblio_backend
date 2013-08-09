@@ -8,7 +8,8 @@
 # Short-Description: Worker service for viblio-server
 ### END INIT INFO 
 . /lib/lsb/init-functions
-SERVICE_TYPE=staging
+
+SERVICE_TYPE=local
 
 APPNAME=popeye
 APPDIR=/deploy/$SERVICE_TYPE/popeye
