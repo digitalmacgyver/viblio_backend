@@ -179,6 +179,18 @@ def process_video( c, orm, log ):
         user.media.append( media )
 
     except Exception, e:
+        # Remove all local files
+        try:
+            log.info( 'Removing temp files ...' )
+            for f in ['video','thumbnail','poster','metadata','face']:
+                if os.path.isfile( c[f]['output'] ):
+                    os.remove( c[f]['output'] )
+                if os.path.isfile( c[f]['input'] ):
+                    os.remove( c[f]['input'] )
+            os.remove( c['info'] )
+        except Exception, e:
+            log.error( 'Some trouble removing temp files: %s' % str(e) )
+
         return perror( log,  'Failed to add mediafile to database!: %s' % str(e) )
 
     ###########################################################################
@@ -251,7 +263,7 @@ def process_video( c, orm, log ):
     # Remove all local files
     try:
         log.info( 'Removing temp files ...' )
-        for f in ['video','thumbnail','poster','metadata']:
+        for f in ['video','thumbnail','poster','metadata','face']:
             if os.path.isfile( c[f]['output'] ):
                 os.remove( c[f]['output'] )
             if os.path.isfile( c[f]['input'] ):
