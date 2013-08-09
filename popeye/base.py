@@ -85,8 +85,31 @@ def reflect(engine, models):
     metadata.bind = engine
     metadata.reflect()
     mappers = {}
+
+    orm_tables = {
+        'asset_types' : True,
+        'contacts' : True,
+        'feature_types' : True,
+        'media' : True,
+        'media_asset_features' : True,
+        'media_assets' : True,
+        'media_comments' : True,
+        'media_shares' : True,
+        'media_types' : True,
+        'media_workorders' : True,
+        'password_resets' : True,
+        'pending_users' : True,
+        'providers' : True,
+        'roles' : True,
+        'sessions' : True,
+        'share_types' : True,
+        'user_roles' : True,
+        'users' : True,
+        'workorders' : True
+        }
+
     for table_name in metadata.tables:
-        if table_name == 'user_ctas_test': continue
+        if table_name not in orm_tables: continue
         model_name = "".join(part.capitalize()
                              for part in table_name.split("_"))
         try:
