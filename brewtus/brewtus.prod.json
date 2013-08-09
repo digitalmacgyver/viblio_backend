@@ -1,0 +1,10 @@
+{
+	"host":"upload.viblio.com",
+	"port":8080, 
+	"server": "BrewTUS/0.1",
+	"files":"/mnt/uploaded_files",
+	"logDir": "/tmp",
+	"logRotateSize": 10485760,
+	"logLevel": "info",
+	"popeye": "http://localhost:2222/processor/process"
+}

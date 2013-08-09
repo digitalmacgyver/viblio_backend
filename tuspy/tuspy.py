@@ -10,7 +10,6 @@ import traceback
 import requests
 import pycurl
 
-import config
 import json
 
 #exponential backoff
@@ -61,12 +60,34 @@ def upload(location, filename, offset=0, upload_speed=None):
     finally:
         if c: c.close()
 
+cdb = {
+    'local': {
+        'auth': 'http://localhost/services/na/authenticate',
+        'server': 'http://localhost:8080/files'
+        },
+    'staging': {
+        'auth': 'http://staging.viblio.com/services/na/authenticate',
+        'server': 'http://staging.viblio.com:8080/files'
+        },
+    'prod': {
+        'auth': 'http://prod.viblio.com/services/na/authenticate',
+        'server': 'http://upload.viblio.com:8080/files'
+        }
+    }
+
 parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename",
                   help="file to upload")
 parser.add_option("-u", "--upload_speed",
                   dest="upload_speed", default=None,
                   help="upload speed in bytes per second")
+
+parser.add_option("-a", "--auth",
+                  dest="auth",
+                  help="auth server: local, staging or prod")
+parser.add_option("-s", "--server",
+                  dest="server",
+                  help="upload server: local, staging or prod")
 
 parser.add_option("-e", "--email",
                   dest="email",
@@ -78,11 +99,6 @@ parser.add_option("-r", "--realm",
                   dest="realm", default="db",
                   help="authentication realm: db or facebook")
 
-"""
-parser.add_option("-t", "--content-type",
-                  dest="content_type", default="binary/octet-stream",
-                  help="content-type")
-"""
 
 (options, args) = parser.parse_args()
 
@@ -99,17 +115,25 @@ if not options.password:
     parser.print_help()
     sys.exit(0)
 
+if not options.auth:
+    parser.print_help()
+    sys.exit(0)
+
+if not options.server:
+    parser.print_help()
+    sys.exit(0)
+
 upload_speed = None
 try:
     if options.upload_speed:
         upload_speed = int(options.upload_speed)
 except:
     parser.print_help()
-    sys.exit(0)    
+    sys.exit(0)
 
-c = requests.get( config.AUTH_ENDPT, params={'email': options.email, 'password': options.password, 'realm': options.realm } )
+c = requests.get( cdb[options.auth]['auth'], params={'email': options.email, 'password': options.password, 'realm': options.realm } )
 if c.status_code != 200:
-    die("failure to connect to %s: %s" % config.AUTH_ENDPT, c.reason )
+    die("failure to connect to %s: %s" % cdb[options.auth]['auth'], c.reason )
 r = json.loads( c.content )
 if 'error' in r:
     die("failure to authenticate: %s" % r['message'] )
@@ -129,7 +153,7 @@ filesize = os.path.getsize(filename)
 
 payload = json.dumps(md)
 
-c  = requests.post(config.CREATE_ENDPT, headers={"Final-Length": filesize}, data=payload)
+c  = requests.post(cdb[options.server]['server'], headers={"Final-Length": filesize}, data=payload)
 
 if c.status_code != 201:
     die("create failure. reason: %s"  % c.reason)
