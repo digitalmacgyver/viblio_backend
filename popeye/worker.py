@@ -97,10 +97,19 @@ def process_video( c, orm, log ):
     if not os.system( cmd ) == 0:
         return perror( log,  'Failed to execute: %s' % cmd )
 
+    # The face
+    cmd = 'python /viblio/bin/extract_face.py %s %s' % ( c['face']['input'], c['face']['output'] )
+    log.info( cmd )
+    found_faces = True
+    if not os.system( cmd ) == 0:
+        found_faces = False
+        perror( log,  'Failed to find any faces in video for command: %s' % cmd )
+
     video_key      = c['uuid'] + '/' + os.path.basename( c['video']['output'] )
     thumbnail_key  = c['uuid'] + '/' + os.path.basename( c['thumbnail']['output'] )
     poster_key     = c['uuid'] + '/' + os.path.basename( c['poster']['output'] )
     metadata_key   = c['uuid'] + '/' + os.path.basename( c['metadata']['output'] )
+    face_key       = c['uuid'] + '/' + os.path.basename( c['face']['output'] ) 
 
     ###########################################################################
     # DATABASE
@@ -156,6 +165,17 @@ def process_video( c, orm, log ):
                             location='us' )
         media.assets.append( asset )
 
+        # face
+        if found_faces:
+            asset = MediaAssets( uuid=str(uuid.uuid4()),
+                                 asset_type='face',
+                                 mimetype='image/jpg',
+                                 bytes=os.path.getsize( c['face']['output'] ),
+                                 width=128, height=128,
+                                 uri=face_key,
+                                 location='us' )
+            media.assets.append( asset )
+
         user.media.append( media )
 
     except Exception, e:
@@ -193,6 +213,14 @@ def process_video( c, orm, log ):
     except Exception, e:
         return perror( log,  'Failed to upload to s3: %s' % str(e) )
 
+    if found_faces:
+        log.info( 'Uploading to s3: %s' % c['face']['output'] )
+        try:
+            bucket_contents.key = face_key
+            bucket_contents.set_contents_from_filename( c['face']['output'] )
+        except Exception, e:
+            return perror( log,  'Failed to upload to s3: %s' % str(e) )
+        
     log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
     try:
         bucket_contents.key = metadata_key

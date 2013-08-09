@@ -43,6 +43,7 @@ class process:
         output_thumbnail = os.path.join( dirname, basename + '_thumbnail.jpg' )
         output_poster = os.path.join( dirname, basename + '_poster.jpg' )
         output_metadata = input_metadata
+        output_face = os.path.join( dirname, basename + '_face01.jpg' )
 
         res = {
             'uuid': uuid,
@@ -62,6 +63,10 @@ class process:
             'metadata': {
                 'input': input_metadata,
                 'output': output_metadata
+                },
+            'face': {
+                'input': output_video,
+                'output': output_face
                 }
             }
 
