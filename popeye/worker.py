@@ -251,14 +251,21 @@ def process_video( c, orm, log ):
     data['bucket_name'] = config.bucket_name
     data['uid'] = data['user_id']
     try:
-        log.info( 'Notifying Cat server ...' )
+        log.info( 'Notifying Cat server at %s' %  config.viblio_server_url )
         site_token = hmac.new( config.site_secret, data['user_id']).hexdigest()
         res = requests.get(config.viblio_server_url, params={ 'uid': data['user_id'], 'mid': data['uuid'], 'site-token': site_token })
-        jdata = json.loads( res.text )
+        body = ''
+        if hasattr( res, 'text' ):
+            body = res.text
+        elif hasattr( res, 'content' ):
+            body = str( res.content )
+        else:
+            log.error( 'Cannot find body in response!' )
+        jdata = json.loads( body )
         if 'error' in jdata:
             raise Exception( jdata['message'] )
     except Exception, e:
-        return perror( log,  'Failed to notify Cat: %s' % str(e) )
+        perror( log,  'Failed to notify Cat: %s' % str(e) )
 
     # Remove all local files
     try:
