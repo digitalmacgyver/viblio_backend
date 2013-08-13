@@ -48,7 +48,7 @@ def get_uuid_for_email( engine, email ):
         users = meta.tables['users']
         return conn.execute( select( [users.c.uuid] ).where( users.c.email == email ) ).fetchall()
     except Exception, e:
-        print "Failed to look up user for email", e
+        print "Failed to look up user for email, error:", e
 
 def get_user_for_uuid( engine, user_uuid ):
     try:
@@ -190,6 +190,34 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                 
     except Exception, e:
         log.critical( "Failed to set up test data. Error: %s" % ( e ) )
+        raise
+
+def create_test_comments( engine, user_id, videos ):
+    try: 
+        conn = _get_conn( engine )
+        meta = _get_meta( engine )
+        media_comments = meta.tables['media_comments']
+
+        for video in videos:
+            video_id = video['id']
+            log.info( "Inserting gibberish comments by user_id %s for video %s" % ( user_id, video_id ) )
+            
+            # Add between 0 and 100 comments.
+            for c in range( int( random.uniform( 0, 101 ) ) ):
+                # Each comment is between 0 and 10 UUIDs
+                sentence = ''
+                for s in range( int( random.uniform( 0, 11 ) ) ):
+                    sentence += str( uuid.uuid4() ).replace( '-', ' ' ) + ' '
+                log.info( "Inserting comment number %s: %s" % ( c, sentence ) )
+                conn.execute( media_comments.insert(),
+                              id = None,
+                              media_id = video_id,
+                              user_id = user_id,
+                              comment = sentence,
+                              comment_number = c )
+
+    except Exception, e:
+        log.critical( "Failed to insert comment. Error: %s" )
         raise
 
 def _s3_copy( src_bucket, src_key, dst_bucket, dst_key ):
