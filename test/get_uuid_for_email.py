@@ -36,6 +36,11 @@ if __name__ == '__main__':
     else:
         email = options.email
 
+    found = False
     for uuid in get_uuid_for_email( engine, email ):
         print "Found uuid:", uuid[0], "for email:", email
+        found = True
+
+    if not found:
+        print "No user found for email:", email
 
