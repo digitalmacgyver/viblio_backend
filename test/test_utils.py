@@ -41,6 +41,15 @@ def _get_meta( engine ):
         log.critical( "Failed to get SQLAlchemy metadata. Error: %s" % e )
         raise
 
+def get_uuid_for_email( engine, email ):
+    try:
+        conn = _get_conn( engine )
+        meta = _get_meta( engine )
+        users = meta.tables['users']
+        return conn.execute( select( [users.c.uuid] ).where( users.c.email == email ) ).fetchall()
+    except Exception, e:
+        print "Failed to look up user for email", e
+
 def get_user_for_uuid( engine, user_uuid ):
     try:
         conn = _get_conn( engine )
