@@ -2,13 +2,13 @@ SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 
-CREATE SCHEMA IF NOT EXISTS `video_prod` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ;
-USE `video_prod` ;
+CREATE SCHEMA IF NOT EXISTS `video_dev` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ;
+USE `video_dev` ;
 
 -- -----------------------------------------------------
--- Table `video_prod`.`providers`
+-- Table `video_dev`.`providers`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`providers` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`providers` (
   `provider` VARCHAR(16) NOT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
@@ -17,9 +17,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`users`
+-- Table `video_dev`.`users`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`users` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`users` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `uuid` VARCHAR(36) NOT NULL ,
   `provider` VARCHAR(16) NULL DEFAULT NULL ,
@@ -37,16 +37,16 @@ CREATE  TABLE IF NOT EXISTS `video_prod`.`users` (
   UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
   CONSTRAINT `fk_users_providers`
     FOREIGN KEY (`provider` )
-    REFERENCES `video_prod`.`providers` (`provider` )
+    REFERENCES `video_dev`.`providers` (`provider` )
     ON DELETE RESTRICT
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`media_types`
+-- Table `video_dev`.`media_types`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`media_types` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media_types` (
   `type` VARCHAR(16) NOT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
@@ -55,9 +55,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`media`
+-- Table `video_dev`.`media`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`media` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `user_id` INT(11) NOT NULL ,
   `uuid` VARCHAR(36) NOT NULL ,
@@ -77,21 +77,21 @@ CREATE  TABLE IF NOT EXISTS `video_prod`.`media` (
   INDEX `fk_media_users1` (`user_id` ASC) ,
   CONSTRAINT `fk_media_media_types1`
     FOREIGN KEY (`media_type` )
-    REFERENCES `video_prod`.`media_types` (`type` )
+    REFERENCES `video_dev`.`media_types` (`type` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_users1`
     FOREIGN KEY (`user_id` )
-    REFERENCES `video_prod`.`users` (`id` )
+    REFERENCES `video_dev`.`users` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`feature_types`
+-- Table `video_dev`.`feature_types`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`feature_types` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`feature_types` (
   `type` VARCHAR(16) NOT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
@@ -100,9 +100,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`contacts`
+-- Table `video_dev`.`contacts`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`contacts` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`contacts` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `user_id` INT(11) NOT NULL ,
   `contact_name` VARCHAR(128) NULL DEFAULT NULL ,
@@ -118,26 +118,26 @@ CREATE  TABLE IF NOT EXISTS `video_prod`.`contacts` (
   INDEX `fk_contacts_users2` (`contact_viblio_id` ASC) ,
   CONSTRAINT `fk_contacts_providers1`
     FOREIGN KEY (`provider` )
-    REFERENCES `video_prod`.`providers` (`provider` )
+    REFERENCES `video_dev`.`providers` (`provider` )
     ON DELETE RESTRICT
     ON UPDATE CASCADE,
   CONSTRAINT `fk_contacts_users1`
     FOREIGN KEY (`user_id` )
-    REFERENCES `video_prod`.`users` (`id` )
+    REFERENCES `video_dev`.`users` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_contacts_users2`
     FOREIGN KEY (`contact_viblio_id` )
-    REFERENCES `video_prod`.`users` (`id` )
+    REFERENCES `video_dev`.`users` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`asset_types`
+-- Table `video_dev`.`asset_types`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`asset_types` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`asset_types` (
   `type` VARCHAR(16) NOT NULL ,
   `created_date` DATETIME NULL ,
   `updated_date` DATETIME NULL ,
@@ -146,9 +146,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`media_assets`
+-- Table `video_dev`.`media_assets`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`media_assets` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media_assets` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `media_id` INT(11) NOT NULL ,
   `uuid` VARCHAR(36) NOT NULL ,
@@ -175,26 +175,26 @@ CREATE  TABLE IF NOT EXISTS `video_prod`.`media_assets` (
   UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
   CONSTRAINT `fk_media_assets_media1`
     FOREIGN KEY (`media_id` )
-    REFERENCES `video_prod`.`media` (`id` )
+    REFERENCES `video_dev`.`media` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_assets_providers1`
     FOREIGN KEY (`provider` )
-    REFERENCES `video_prod`.`providers` (`provider` )
+    REFERENCES `video_dev`.`providers` (`provider` )
     ON DELETE RESTRICT
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_assets_asset_types1`
     FOREIGN KEY (`asset_type` )
-    REFERENCES `video_prod`.`asset_types` (`type` )
+    REFERENCES `video_dev`.`asset_types` (`type` )
     ON DELETE RESTRICT
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`media_asset_features`
+-- Table `video_dev`.`media_asset_features`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`media_asset_features` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media_asset_features` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `media_asset_id` INT(11) NOT NULL ,
   `feature_type` VARCHAR(16) NOT NULL ,
@@ -208,26 +208,26 @@ CREATE  TABLE IF NOT EXISTS `video_prod`.`media_asset_features` (
   INDEX `fk_media_asset_features_media_assets1` (`media_asset_id` ASC) ,
   CONSTRAINT `fk_media_asset_features_feature_types1`
     FOREIGN KEY (`feature_type` )
-    REFERENCES `video_prod`.`feature_types` (`type` )
+    REFERENCES `video_dev`.`feature_types` (`type` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_asset_features_contacts1`
     FOREIGN KEY (`contact_id` )
-    REFERENCES `video_prod`.`contacts` (`id` )
+    REFERENCES `video_dev`.`contacts` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_asset_features_media_assets1`
     FOREIGN KEY (`media_asset_id` )
-    REFERENCES `video_prod`.`media_assets` (`id` )
+    REFERENCES `video_dev`.`media_assets` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`media_comments`
+-- Table `video_dev`.`media_comments`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`media_comments` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media_comments` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `media_id` INT(11) NOT NULL ,
   `user_id` INT(11) NOT NULL ,
@@ -240,21 +240,21 @@ CREATE  TABLE IF NOT EXISTS `video_prod`.`media_comments` (
   INDEX `fk_media_comments_media1` (`media_id` ASC) ,
   CONSTRAINT `fk_media_comments_users1`
     FOREIGN KEY (`user_id` )
-    REFERENCES `video_prod`.`users` (`id` )
+    REFERENCES `video_dev`.`users` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_comments_media1`
     FOREIGN KEY (`media_id` )
-    REFERENCES `video_prod`.`media` (`id` )
+    REFERENCES `video_dev`.`media` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`share_types`
+-- Table `video_dev`.`share_types`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`share_types` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`share_types` (
   `type` VARCHAR(16) NOT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
@@ -263,9 +263,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`media_shares`
+-- Table `video_dev`.`media_shares`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`media_shares` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media_shares` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `media_id` INT(11) NOT NULL ,
   `user_id` INT(11) NOT NULL ,
@@ -279,26 +279,26 @@ CREATE  TABLE IF NOT EXISTS `video_prod`.`media_shares` (
   INDEX `fk_media_shares_media1` (`media_id` ASC) ,
   CONSTRAINT `fk_media_shares_users1`
     FOREIGN KEY (`user_id` )
-    REFERENCES `video_prod`.`users` (`id` )
+    REFERENCES `video_dev`.`users` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_shares_share_types1`
     FOREIGN KEY (`share_type` )
-    REFERENCES `video_prod`.`share_types` (`type` )
+    REFERENCES `video_dev`.`share_types` (`type` )
     ON DELETE RESTRICT
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_shares_media1`
     FOREIGN KEY (`media_id` )
-    REFERENCES `video_prod`.`media` (`id` )
+    REFERENCES `video_dev`.`media` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`sessions`
+-- Table `video_dev`.`sessions`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`sessions` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`sessions` (
   `id` CHAR(72) NOT NULL ,
   `session_data` TEXT NULL ,
   `expires` VARCHAR(45) NULL ,
@@ -309,9 +309,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`roles`
+-- Table `video_dev`.`roles`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`roles` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`roles` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `role` VARCHAR(16) NOT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
@@ -321,9 +321,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`pending_users`
+-- Table `video_dev`.`pending_users`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`pending_users` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`pending_users` (
   `email` VARCHAR(128) NOT NULL ,
   `password` VARCHAR(128) NULL ,
   `username` VARCHAR(128) NULL ,
@@ -336,9 +336,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`password_resets`
+-- Table `video_dev`.`password_resets`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`password_resets` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`password_resets` (
   `email` VARCHAR(128) NOT NULL ,
   `code` TEXT NULL ,
   `created_date` DATETIME NULL ,
@@ -348,9 +348,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`workorders`
+-- Table `video_dev`.`workorders`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`workorders` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`workorders` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `name` TEXT NULL ,
   `state` VARCHAR(24) NOT NULL DEFAULT 'WO_NEW' ,
@@ -364,57 +364,99 @@ CREATE  TABLE IF NOT EXISTS `video_prod`.`workorders` (
   INDEX `fk_workorder_user1` (`user_id` ASC) ,
   CONSTRAINT `fk_workorder_user1`
     FOREIGN KEY (`user_id` )
-    REFERENCES `video_prod`.`users` (`id` )
+    REFERENCES `video_dev`.`users` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`media_workorders`
+-- Table `video_dev`.`media_workorders`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`media_workorders` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media_workorders` (
   `media_id` INT(11) NOT NULL ,
   `workorder_id` INT(11) NOT NULL ,
   PRIMARY KEY (`media_id`, `workorder_id`) ,
   INDEX `fk_media_workorders_workorders1` (`workorder_id` ASC) ,
   CONSTRAINT `fk_media_workorders_media1`
     FOREIGN KEY (`media_id` )
-    REFERENCES `video_prod`.`media` (`id` )
+    REFERENCES `video_dev`.`media` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_workorders_workorders1`
     FOREIGN KEY (`workorder_id` )
-    REFERENCES `video_prod`.`workorders` (`id` )
+    REFERENCES `video_dev`.`workorders` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_prod`.`user_roles`
+-- Table `video_dev`.`user_roles`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_prod`.`user_roles` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`user_roles` (
   `user_id` INT NOT NULL ,
   `role_id` INT(11) NOT NULL ,
   PRIMARY KEY (`user_id`, `role_id`) ,
   INDEX `fk_users_roles1` (`role_id` ASC) ,
   CONSTRAINT `fk_user_roles_users1`
     FOREIGN KEY (`user_id` )
-    REFERENCES `video_prod`.`users` (`id` )
+    REFERENCES `video_dev`.`users` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_user_roles_roles1`
     FOREIGN KEY (`role_id` )
-    REFERENCES `video_prod`.`roles` (`id` )
+    REFERENCES `video_dev`.`roles` (`id` )
     ON DELETE RESTRICT
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
-USE `video_prod`;
+
+-- -----------------------------------------------------
+-- Table `video_dev`.`profiles`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev`.`profiles` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `image` MEDIUMBLOB NULL ,
+  `image_mimetype` VARCHAR(40) NULL ,
+  `image_size` INT(11) NULL ,
+  `created_date` DATETIME NULL ,
+  `updated_date` DATETIME NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_profiles_users1` (`user_id` ASC) ,
+  CONSTRAINT `fk_profiles_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `video_dev`.`users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev`.`profile_fields`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev`.`profile_fields` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `profiles_id` INT NOT NULL ,
+  `name` VARCHAR(1024) NULL ,
+  `value` VARCHAR(1024) NULL ,
+  `public` TINYINT(1) NULL DEFAULT 0 ,
+  `created_date` DATETIME NULL ,
+  `updated_date` VARCHAR(45) NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_profile_fields_profiles1` (`profiles_id` ASC) ,
+  CONSTRAINT `fk_profile_fields_profiles1`
+    FOREIGN KEY (`profiles_id` )
+    REFERENCES `video_dev`.`profiles` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+USE `video_dev`;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -424,7 +466,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -438,7 +480,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -448,7 +490,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -462,7 +504,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -472,7 +514,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -486,7 +528,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -496,7 +538,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -510,7 +552,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -520,7 +562,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -534,7 +576,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -544,7 +586,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -558,7 +600,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -568,7 +610,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -582,7 +624,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -592,7 +634,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -606,7 +648,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -616,7 +658,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -630,7 +672,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -640,7 +682,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -654,7 +696,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -664,7 +706,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -678,7 +720,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -688,7 +730,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -702,7 +744,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -712,7 +754,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -726,7 +768,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -736,7 +778,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -750,7 +792,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -760,7 +802,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -774,7 +816,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -784,7 +826,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -798,7 +840,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -808,7 +850,7 @@ BEGIN
 END;
 $$
 
-USE `video_prod`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -821,69 +863,120 @@ $$
 
 DELIMITER ;
 
+DELIMITER $$
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER profile_created BEFORE INSERT ON profiles FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER profile_updated BEFORE UPDATE ON profiles FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER profile_field_created BEFORE INSERT ON profile_fields FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER profile_field_updated BEFORE UPDATE ON profile_fields FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+CREATE USER `video_dev` IDENTIFIED BY 'video_dev';
+
+
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
 -- -----------------------------------------------------
--- Data for table `video_prod`.`providers`
+-- Data for table `video_dev`.`providers`
 -- -----------------------------------------------------
 START TRANSACTION;
-USE `video_prod`;
-INSERT INTO `video_prod`.`providers` (`provider`, `created_date`, `updated_date`) VALUES ('facebook', NULL, NULL);
-INSERT INTO `video_prod`.`providers` (`provider`, `created_date`, `updated_date`) VALUES ('local', NULL, NULL);
+USE `video_dev`;
+INSERT INTO `video_dev`.`providers` (`provider`, `created_date`, `updated_date`) VALUES ('facebook', NULL, NULL);
+INSERT INTO `video_dev`.`providers` (`provider`, `created_date`, `updated_date`) VALUES ('local', NULL, NULL);
 
 COMMIT;
 
 -- -----------------------------------------------------
--- Data for table `video_prod`.`media_types`
+-- Data for table `video_dev`.`media_types`
 -- -----------------------------------------------------
 START TRANSACTION;
-USE `video_prod`;
-INSERT INTO `video_prod`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('original', NULL, NULL);
+USE `video_dev`;
+INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('original', NULL, NULL);
 
 COMMIT;
 
 -- -----------------------------------------------------
--- Data for table `video_prod`.`feature_types`
+-- Data for table `video_dev`.`feature_types`
 -- -----------------------------------------------------
 START TRANSACTION;
-USE `video_prod`;
-INSERT INTO `video_prod`.`feature_types` (`type`, `created_date`, `updated_date`) VALUES ('face', NULL, NULL);
+USE `video_dev`;
+INSERT INTO `video_dev`.`feature_types` (`type`, `created_date`, `updated_date`) VALUES ('face', NULL, NULL);
 
 COMMIT;
 
 -- -----------------------------------------------------
--- Data for table `video_prod`.`asset_types`
+-- Data for table `video_dev`.`asset_types`
 -- -----------------------------------------------------
 START TRANSACTION;
-USE `video_prod`;
-INSERT INTO `video_prod`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('main', NULL, NULL);
-INSERT INTO `video_prod`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('poster', NULL, NULL);
-INSERT INTO `video_prod`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('thumbnail', NULL, NULL);
-INSERT INTO `video_prod`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('video', NULL, NULL);
-INSERT INTO `video_prod`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('image', NULL, NULL);
+USE `video_dev`;
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('main', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('poster', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('thumbnail', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('video', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('image', NULL, NULL);
 
 COMMIT;
 
 -- -----------------------------------------------------
--- Data for table `video_prod`.`share_types`
+-- Data for table `video_dev`.`share_types`
 -- -----------------------------------------------------
 START TRANSACTION;
-USE `video_prod`;
-INSERT INTO `video_prod`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('private', NULL, NULL);
-INSERT INTO `video_prod`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('hidden', NULL, NULL);
-INSERT INTO `video_prod`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('public', NULL, NULL);
+USE `video_dev`;
+INSERT INTO `video_dev`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('private', NULL, NULL);
+INSERT INTO `video_dev`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('hidden', NULL, NULL);
+INSERT INTO `video_dev`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('public', NULL, NULL);
 
 COMMIT;
 
 -- -----------------------------------------------------
--- Data for table `video_prod`.`roles`
+-- Data for table `video_dev`.`roles`
 -- -----------------------------------------------------
 START TRANSACTION;
-USE `video_prod`;
-INSERT INTO `video_prod`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (1, 'admin', NULL, NULL);
-INSERT INTO `video_prod`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (2, 'dbadmin', NULL, NULL);
-INSERT INTO `video_prod`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (3, 'instructor', NULL, NULL);
+USE `video_dev`;
+INSERT INTO `video_dev`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (1, 'admin', NULL, NULL);
+INSERT INTO `video_dev`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (2, 'dbadmin', NULL, NULL);
+INSERT INTO `video_dev`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (3, 'instructor', NULL, NULL);
 
 COMMIT;
