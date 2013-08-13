@@ -133,14 +133,13 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
             _s3_copy( test_video_bucket, video_base_uri + '_metadata.json' , config.bucket_name, video['uuid']+'/'+video['uuid']+'_metadata.json' )
 
             # Add the thumbnail row
-            # DEBUG - doesn't set bytes.
             video['thumbnail_uuid'] = str( uuid.uuid4() )
             result_id = add_asset( conn=conn, media_assets=media_assets, row=video, 
                                    uuid=video['thumbnail_uuid'], 
                                    asset_type='thumbnail', 
                                    mimetype='image/jpg',
                                    uri=video['uuid']+'/'+video['uuid']+'_thumbnail.jpg',
-                                   metadata_uri=None )
+                                   metadata_uri=None, bytes=video['thumbnail_bytes'] )
             video['thumbnail_id'] = result_id
             _s3_copy( test_video_bucket, video_base_uri + '_thumbnail.jpg' , config.bucket_name, video['uuid']+'/'+video['uuid']+'_thumbnail.jpg' )
 
@@ -152,7 +151,7 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                                    asset_type='poster', 
                                    mimetype='image/jpg',
                                    uri=video['uuid']+'/'+video['uuid']+'_poster.jpg',
-                                   metadata_uri=None )
+                                   metadata_uri=None, bytes=video['poster_bytes'] )
             video['poster_id'] = result_id
             _s3_copy( test_video_bucket, video_base_uri + '_poster.jpg' , config.bucket_name, video['uuid']+'/'+video['uuid']+'_poster.jpg' )
 
@@ -225,7 +224,8 @@ def add_asset( conn, media_assets, row, uuid, asset_type, mimetype, uri, metadat
                                uri            = uri,
                                location       = 'us',
                                metadata_uri   = metadata_uri,
-                               view_count     = 0
+                               view_count     = 0,
+                               bytes          = bytes
                                )
         log.info( "Inserted asset has id %s" % ( result.inserted_primary_key[0] ) )
         return result.inserted_primary_key[0]
