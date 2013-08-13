@@ -18,6 +18,8 @@ logging.basicConfig( filename = config['logfile'], level = config.loglevel )
 
 log = logging.getLogger( __name__ )
 
+test_video_bucket = 'viblio-uploaded-files'
+
 def _get_conn( engine ):
     try:
         if not hasattr( _get_meta, 'conn' ):
@@ -102,14 +104,15 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
         for video in videos:
             # Add the media row
             video['uuid'] = str( uuid.uuid4() )
+            video_base_uri = video['s3_key'][:-4]
             v_result = conn.execute( media.insert(),
                                      id             = None, # Populated by the database.
                                      user_id        = user_id,
                                      uuid           = video['uuid'],
                                      media_type     = 'original',
-                                     title          = 'unit_test_insert',
+                                     title          = 'VIBLIO_TEST_VIDEO',
                                      filename       = video['s3_key'],
-                                     description    = 'unit_test_insert',
+                                     description    = 'VIBLIO_TEST_VIDEO',
                                      recording_date = datetime.datetime.now(),
                                      view_count     = 0,
                                      lat            = float( "%.8f" % random.uniform(-180,180) ),
@@ -117,19 +120,19 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
             video['id'] = v_result.inserted_primary_key[0]
 
             # Add the main asset row
-            # DEBUG - assumes this URI exists in S3 already
-            # DEBUG - doesn't set bytes.
             video['main_uuid'] = str( uuid.uuid4() )
             result_id = add_asset( conn=conn, media_assets=media_assets, row=video, 
                                    uuid=video['main_uuid'],
                                    asset_type='main', 
                                    mimetype='video/mp4',
                                    uri=video['uuid']+'/'+video['uuid']+'.mp4',
-                                   metadata_uri=video['uuid']+'/'+video['uuid']+'_metadata.json' )
+                                   metadata_uri=video['uuid']+'/'+video['uuid']+'_metadata.json', bytes=video['bytes'] )
             video['main_id'] = result_id
 
+            _s3_copy( test_video_bucket, video_base_uri + '.mp4', config.bucket_name, video['uuid']+'/'+video['uuid']+'.mp4' )
+            _s3_copy( test_video_bucket, video_base_uri + '_metadata.json' , config.bucket_name, video['uuid']+'/'+video['uuid']+'_metadata.json' )
+
             # Add the thumbnail row
-            # DEBUG - assumes this URI exists in S3 already
             # DEBUG - doesn't set bytes.
             video['thumbnail_uuid'] = str( uuid.uuid4() )
             result_id = add_asset( conn=conn, media_assets=media_assets, row=video, 
@@ -139,9 +142,9 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                                    uri=video['uuid']+'/'+video['uuid']+'_thumbnail.jpg',
                                    metadata_uri=None )
             video['thumbnail_id'] = result_id
+            _s3_copy( test_video_bucket, video_base_uri + '_thumbnail.jpg' , config.bucket_name, video['uuid']+'/'+video['uuid']+'_thumbnail.jpg' )
 
             # Add the poster row
-            # DEBUG - assumes this URI exists in S3 already
             # DEBUG - doesn't set bytes.
             video['poster_uuid'] = str( uuid.uuid4() )
             result_id = add_asset( conn=conn, media_assets=media_assets, row=video, 
@@ -151,6 +154,7 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                                    uri=video['uuid']+'/'+video['uuid']+'_poster.jpg',
                                    metadata_uri=None )
             video['poster_id'] = result_id
+            _s3_copy( test_video_bucket, video_base_uri + '_poster.jpg' , config.bucket_name, video['uuid']+'/'+video['uuid']+'_poster.jpg' )
 
             for face_idx in video['face_idx']:
                 # Add a face row for each face
@@ -164,9 +168,7 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                                      uri=face_uri,
                                      metadata_uri=None, bytes=face['size'] )
 
-                log.info( 'S3 copy of face from %s to %s' % ( face['s3_key'], face_uri  ) ) 
-                bucket = _get_bucket()
-                bucket.copy_key( face_uri, config.bucket_name, face['s3_key'] )
+                _s3_copy( test_video_bucket, face['s3_key'], config.bucket_name, face_uri )
 
                 # Add a feature row for each face
                 contact_id = None
@@ -182,6 +184,20 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
         log.critical( "Failed to set up test data. Error: %s" % ( e ) )
         raise
 
+def _s3_copy( src_bucket, src_key, dst_bucket, dst_key ):
+    try: 
+        log.info( "S3 copy from %s/%s to %s/%s" % ( src_bucket, src_key, dst_bucket, dst_key  ) ) 
+
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+        if src_bucket == dst_bucket:
+            bucket = s3.get_bucket( src_bucket )
+            bucket.copy_key( dst_key, src_bucket, src_key )
+        else:
+            k = Key( s3.get_bucket( src_bucket ), src_key )
+            k.copy( s3.get_bucket( dst_bucket ), dst_key )
+
+    except Exception, e:
+        log.critical( "Failed to copy s3 file. Error: %s" % ( e ) )
 
 def add_feature( conn, media_asset_features, media_asset_id, feature_type, coordinates, contact_id ):
     try:
@@ -216,8 +232,6 @@ def add_asset( conn, media_assets, row, uuid, asset_type, mimetype, uri, metadat
     except Exception, e:
         log.critical( "Failed to insert asset. Error: %s" % ( e ) )
         raise
-
-
 
 def _get_bucket():
     try:

@@ -51,8 +51,6 @@ if __name__ == '__main__':
 
     create_test_contacts( engine, user_id, contacts )
 
-    # DEBUG - today this doesn't put anything in S3, it just formulates
-    # the rows in the database.
     create_test_videos( engine, user_id, videos, faces, contacts )
 
 
