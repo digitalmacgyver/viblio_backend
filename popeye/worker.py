@@ -100,7 +100,7 @@ def process_video( c, orm, log ):
     # The face
     cmd = 'python /viblio/bin/extract_face.py %s %s' % ( c['face']['input'], c['face']['output'] )
     log.info( cmd )
-    found_faces = True
+    found_faces = False
     if not os.system( cmd ) == 0:
         found_faces = False
         perror( log,  'Failed to find any faces in video for command: %s' % cmd )
