@@ -4,13 +4,40 @@ import os
 import threading
 
 from worker import process_video
+from facebook import sync
 
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
 
 urls = (
     '/process', 'process',
+    '/facebook', 'fb'
 )
+
+# Incoming request from Cat server to get facebook data
+#
+class fb:
+    def GET(self):
+        # Get input params
+        data = web.input()
+
+        # Prepare response
+        web.header('Content-Type', 'application/json')
+
+        if not 'uid' in data:
+            return json.dumps({'error': True, 'message': 'Missing uid param'})
+
+        if not 'access_token' in data:
+            return json.dumps({'error': True, 'message': 'Missing access_token param'})
+
+        if not 'id' in data:
+            return json.dumps({'error': True, 'message': 'Missing id param'})
+
+        web.ctx.log.info( 'Starting a facebook sync thread for ' + data['uid'] )
+        thread = threading.Thread( target=sync, args=(data, web.ctx.orm, web.ctx.log) )
+        thread.start()
+
+        return json.dumps({})
 
 # Brewtus has successfully uploaded a new file.  It will
 # call this endpoint with path=xxx where xxx is the full
