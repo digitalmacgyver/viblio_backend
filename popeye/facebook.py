@@ -20,4 +20,7 @@ def perror( log, msg ):
     return { 'error': True, 'message': msg }
 
 def sync( c, orm, log ):
-    log.info( "Doing a Facebook Sync for user: " . c['uid'] )
+    log.debug( "Doing a Facebook Sync for user: " + c['uid'] )
+
+def unsync( c, orm, log ):
+    log.debug( "Doing a Facebook Un-Sync for user: " + c['uid'] )
