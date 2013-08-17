@@ -5,10 +5,11 @@ deploy:
 	-rm -rf /deploy/$(LVL)/popeye.prev
 	-mv /deploy/$(LVL)/brewtus /deploy/$(LVL)/brewtus.prev
 	-mv /deploy/$(LVL)/popeye /deploy/$(LVL)/popeye.prev
-	tar --exclude node_modules -zcf - brewtus popeye | \
+	tar --exclude node_modules --exclude '*.pyc' -zcf - brewtus popeye | \
 		(cd /deploy/$(LVL); tar zxf -)
 	( cd /deploy/$(LVL)/brewtus; npm install )
-
+	( cd /deploy/$(LVL); chown -R www-data:www-data brewtus; chown -R www-data:www-data popeye )
+ 
 # Execute this only once when you are building
 # a new development machine.  Execute it with sudo:
 #
@@ -20,8 +21,7 @@ development:
 	mkdir -p /mnt/uploaded_files; chmod oug+rw /mnt/uploaded_files
 	mkdir -p /deploy/local
 	chmod -R oug+rw /deploy
-	ln -s `pwd`/brewtus /deploy/local/
-	ln -s `pwd`/popeye /deploy/local/
+	make LVL=local deploy
 	ln -s /deploy/local/brewtus/brewtus-local.init.d /etc/init.d/brewtus
 	ln -s /deploy/local/popeye/deployment/init.d/popeye-local /etc/init.d/popeye
 	( cd /etc/init.d; update-rc.d brewtus defaults; update-rc.d popeye defaults )
