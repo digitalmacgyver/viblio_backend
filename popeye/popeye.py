@@ -3,6 +3,8 @@
 # Video Processor front end server.
 #
 import web
+web.config.debug = False
+
 import json
 
 # Application modules.  These modules contain
@@ -40,24 +42,30 @@ with this code.  I had a tough time getting it to
 do what I needed (i.e. work!)
 
 """
-web.__mapped = None
+
+conn = 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name
+engine = create_engine( conn )
+SessionFactory = map( engine )
+Session = scoped_session( SessionFactory )
+
 def load_sqla(handler):
-    conn = 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name
-    engine = create_engine( conn )
-    sess = sessionmaker( bind=engine )
-    web.ctx.orm = scoped_session( sess )
-    if not web.__mapped:
-        web.__mapped = map( engine )[0];
+    print( "Getting a new session...")
+    web.ctx.orm = Session()
+    web.ctx.Session = Session
     try:
         return handler()
     except web.HTTPError:
-       web.ctx.orm.commit()
-       raise
+        web.ctx.log.debug( "Committing on HTTPError" );
+        web.ctx.orm.commit()
+        raise
     except:
+        web.ctx.log.debug( "Rolling back on exception" );
         web.ctx.orm.rollback()
         raise
     finally:
+        web.ctx.log.debug( "Committing on request done" );
         web.ctx.orm.commit()
+        web.ctx.orm.close()
         # If the above alone doesn't work, uncomment 
         # the following line:
         #web.ctx.orm.expunge_all() 
@@ -80,6 +88,7 @@ urls = (
 # The WSGI Logger
 class Log(WsgiLog):
     def __init__(self, application):
+        print("Initializing WSGI Logger" )
         WsgiLog.__init__(
             self,
             application,
@@ -92,13 +101,6 @@ class Log(WsgiLog):
             file = config.logfile
             )
 
-"""
-app = web.application(urls, locals())
-app.add_processor( load_sqla )
-
-if __name__ == "__main__":
-    app.run(Log)
-"""
 if __name__ == "__main__":
     app = web.application(urls, globals())
     app.add_processor( attach_logger )
@@ -109,4 +111,3 @@ else:
     app.add_processor( attach_logger )
     app.add_processor( load_sqla )
     application = app.wsgifunc(Log)
-

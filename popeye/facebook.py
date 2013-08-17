@@ -15,12 +15,17 @@ from boto.s3.key import Key
 
 import mimetypes
 
-def perror( log, msg ):
-    log.error( msg )
-    return { 'error': True, 'message': msg }
+from background import Background
 
-def sync( c, orm, log ):
-    log.debug( "Doing a Facebook Sync for user: " + c['uid'] )
+class FacebookSync(Background):
+    def run( self ):
+        orm = self.orm
+        log = self.log
+        c   = self.data
+        log.debug( "Doing a Facebook Sync for user: " + c['uid'] )
+        for user in orm.query( Users ).order_by( Users.id ):
+            print "%s: %s" % ( user.email, user.uuid )
 
-def unsync( c, orm, log ):
-    log.debug( "Doing a Facebook Un-Sync for user: " + c['uid'] )
+class FacebookUnsync(Background):
+    def run( self ):
+        self.log.debug( "Doing a Facebook Un-Sync for user: " + self.data['uid'] )

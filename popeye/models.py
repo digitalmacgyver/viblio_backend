@@ -80,7 +80,7 @@ you automatically!
 """
 def map(engine):
     models=modules['models']
-    mappers, tables, Session = reflect(engine, models)
+    mappers, tables, SessionFactory = reflect(engine, models)
     mappers["users"].add_properties({
             "media": relationship(models.Media,
                                   lazy="dynamic",
@@ -93,5 +93,6 @@ def map(engine):
                                    cascade="all, delete-orphan")
 
             })
-    return (mappers, tables, Session)
+    # return (mappers, tables, Session)
+    return SessionFactory
 

@@ -121,6 +121,6 @@ def reflect(engine, models):
 
     # I took this Session out in favor of the scoped_session() being
     # done in load_sqla() in popeye.py, when new requests come in.
-    # Session = sessionmaker(metadata.bind, autocommit=False, autoflush=True)
-    Session = None
-    return (mappers, metadata.tables, Session)
+    SessionFactory = sessionmaker(metadata.bind, autocommit=False, autoflush=True)
+    # Session = None
+    return (mappers, metadata.tables, SessionFactory)

@@ -3,8 +3,8 @@ import json;
 import os
 import threading
 
-from worker import process_video
-from facebook import sync, unsync
+from worker   import Worker
+from facebook import FacebookSync, FacebookUnsync
 
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
@@ -35,7 +35,10 @@ class fbsync:
             return json.dumps({'error': True, 'message': 'Missing id param'})
 
         web.ctx.log.info( 'Starting a facebook sync thread for ' + data['uid'] )
-        thread = threading.Thread( target=sync, args=(data, web.ctx.orm, web.ctx.log) )
+
+        orm = web.ctx.Session()
+        fb = FacebookSync( orm, web.ctx.log, data )
+        thread = threading.Thread( target=fb.start )
         thread.start()
 
         return json.dumps({})
@@ -60,7 +63,10 @@ class fbunsync:
             return json.dumps({'error': True, 'message': 'Missing id param'})
 
         web.ctx.log.info( 'Starting a facebook un-sync thread for ' + data['uid'] )
-        thread = threading.Thread( target=unsync, args=(data, web.ctx.orm, web.ctx.log) )
+
+        orm = web.ctx.Session()
+        fb = FacebookUnsync( orm, web.ctx.log, data )
+        thread = threading.Thread( target=fb.start )
         thread.start()
 
         return json.dumps({})
@@ -131,7 +137,10 @@ class process:
         # we need to worry about some sort of locking?
         #
         web.ctx.log.info( 'Starting a worker thread for ' + res['uuid'] )
-        thread = threading.Thread( target=process_video, args=(res, web.ctx.orm, web.ctx.log) )
+
+        orm = web.ctx.Session()
+        wrk = Worker( orm, web.ctx.log, res )
+        thread = threading.Thread( target=wrk.start )
         thread.start()
 
         return json.dumps(res)

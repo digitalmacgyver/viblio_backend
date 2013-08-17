@@ -1,9 +1,11 @@
 import web
 import json;
+from models import *
 
 urls = (
     '/ping', 'ping',
-    '/error/(.+)', 'error'
+    '/error/(.+)', 'error',
+    '/users', 'users'
     )
 
 # /test/ping?args
@@ -15,8 +17,18 @@ urls = (
 class ping:
     def GET(self):
         data = web.input()
+        web.ctx.log.debug( "PING()" )
         web.header('Content-Type', 'application/json')
         return json.dumps(data)
+
+class users:
+    def GET(self):
+        print "Users in Database:"
+        data = {}
+        for user in web.ctx.orm.query( Users ).order_by( Users.id ):
+            print "%s: %s" % ( user.email, user.uuid )
+            data[user.email] = user.uuid
+        return json.dumps(data, indent=2)
 
 # /error/<type>
 #
