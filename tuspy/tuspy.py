@@ -88,6 +88,9 @@ parser.add_option("-a", "--auth",
 parser.add_option("-s", "--server",
                   dest="server",
                   help="upload server: local, staging or prod")
+parser.add_option("-S", "--Server",
+                  dest="manual",
+                  help="upload server: IP address or hostname")
 
 parser.add_option("-e", "--email",
                   dest="email",
@@ -119,10 +122,15 @@ if not options.auth:
     parser.print_help()
     sys.exit(0)
 
-if not options.server:
+if not options.server and not options.manual:
     parser.print_help()
     sys.exit(0)
 
+if options.manual:
+    cdb[options.manual] = {}
+    cdb[options.manual]['server'] = 'http://' + options.manual + ':8080/files'
+    options.server = options.manual
+    
 upload_speed = None
 try:
     if options.upload_speed:
@@ -139,10 +147,13 @@ if 'error' in r:
     die("failure to authenticate: %s" % r['message'] )
 UUID = r['user']['uuid']
 
-os.system( "/usr/local/bin/ffprobe -v quiet -print_format json=c=1 -show_format -show_streams %s > /tmp/md.json" % options.filename )
-with open("/tmp/md.json","r") as myfile:
-    data=myfile.read()
-md=json.loads(data)
+md={}
+if os.path.isfile( "/usr/local/bin/ffprobe" ):
+    os.system( "/usr/local/bin/ffprobe -v quiet -print_format json=c=1 -show_format -show_streams %s > /tmp/md.json" % options.filename )
+    with open("/tmp/md.json","r") as myfile:
+        data=myfile.read()
+    md=json.loads(data)
+
 md['uuid'] = UUID
 md['file'] = { 'Path': options.filename };
 
@@ -153,13 +164,15 @@ filesize = os.path.getsize(filename)
 
 payload = json.dumps(md)
 
+print "posting to: " + cdb[options.server]['server']
+
 c  = requests.post(cdb[options.server]['server'], headers={"Final-Length": filesize}, data=payload)
 
 if c.status_code != 201:
     die("create failure. reason: %s"  % c.reason)
 
 location = c.headers["Location"]
-print location
+print "Location header is: " + location
 
 def get_offset(location):
     h = requests.head(location)
