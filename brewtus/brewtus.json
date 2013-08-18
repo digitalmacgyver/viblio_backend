@@ -1,5 +1,4 @@
 {
-	"host":"localhost",
 	"port":8080, 
 	"server": "BrewTUS/0.1",
 	"files":"/mnt/uploaded_files",

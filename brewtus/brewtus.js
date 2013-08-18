@@ -105,7 +105,8 @@
 	  if (status.error != null) {
 	      return httpStatus(res, status.error[0], status.error[1]);
 	  }
-	  res.setHeader("Location", "http://" + config.host + ":" + config.port + "/files/" + fileId);
+	  winston.info( "Our Location header is: " + req.headers.host );
+	  res.setHeader("Location", "http://" + req.headers.host + "/files/" + fileId);
 	  return httpStatus(res, 201, "Created");
       });
   };
@@ -358,7 +359,7 @@
       server = http.createServer(tusHandler);
       server.timeout = 30000;
       server.listen(config.port);
-      return winston.info("Server running at http://" + config.host + ":" + config.port + "/");
+	return winston.info("Server running on port " + config.port );
     });
     return initApp(args);
   };
