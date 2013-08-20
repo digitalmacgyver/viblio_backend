@@ -36,8 +36,7 @@ class fbsync:
 
         web.ctx.log.info( 'Starting a facebook sync thread for ' + data['uid'] )
 
-        orm = web.ctx.Session()
-        fb = FacebookSync( orm, web.ctx.log, data )
+        fb = FacebookSync( web.ctx.SessionFactory, web.ctx.log, data )
         thread = threading.Thread( target=fb.start )
         thread.start()
 
@@ -64,8 +63,7 @@ class fbunsync:
 
         web.ctx.log.info( 'Starting a facebook un-sync thread for ' + data['uid'] )
 
-        orm = web.ctx.Session()
-        fb = FacebookUnsync( orm, web.ctx.log, data )
+        fb = FacebookUnsync( web.ctx.SessionFactory, web.ctx.log, data )
         thread = threading.Thread( target=fb.start )
         thread.start()
 
@@ -138,8 +136,7 @@ class process:
         #
         web.ctx.log.info( 'Starting a worker thread for ' + res['uuid'] )
 
-        orm = web.ctx.Session()
-        wrk = Worker( orm, web.ctx.log, res )
+        wrk = Worker( web.ctx.SessionFactory, web.ctx.log, res )
         thread = threading.Thread( target=wrk.start )
         thread.start()
 

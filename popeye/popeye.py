@@ -51,7 +51,7 @@ Session = scoped_session( SessionFactory )
 def load_sqla(handler):
     print( "Getting a new session...")
     web.ctx.orm = Session()
-    web.ctx.Session = Session
+    web.ctx.SessionFactory = SessionFactory
     try:
         return handler()
     except web.HTTPError:
