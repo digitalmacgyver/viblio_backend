@@ -178,25 +178,32 @@
     info.state = "patched";
     info.patchedOn = Date.now();
     info.bytesReceived = 0;
-    req.pipe(ws);
-    req.on("data", function(buffer) {
-      winston.debug("old Offset " + info.offset);
-      info.bytesReceived += buffer.length;
-      info.offset += buffer.length;
-      winston.debug("new Offset " + info.offset);
-      if (info.offset > info.finalLength) {
-        return httpStatus(res, 500, "Exceeded Final-Length");
-      }
-      if (info.received > contentLength) {
-        return httpStatus(res, 500, "Exceeded Content-Length");
-      }
-    });
+      // This req.pipe(ws) was finishing before the req.on(end was getting
+      // the last bytes.  So do the write in req.on(end to keep things in
+      // sync.
+      //
+      // req.pipe(ws);
+      req.on("data", function(buffer) {
+	  winston.debug("old Offset " + info.offset + " of " + info.finalLength );
+	  info.bytesReceived += buffer.length;
+	  info.offset += buffer.length;
+	  winston.debug("new Offset " + info.offset + " of " + info.finalLength);
+	  if (info.offset > info.finalLength) {
+              return httpStatus(res, 500, "Exceeded Final-Length");
+	  }
+	  if (info.received > contentLength) {
+              return httpStatus(res, 500, "Exceeded Content-Length");
+	  }
+	  // Do the write HERE
+	  ws.write(buffer);
+      });
       req.on("end", function() {
 	  if (!res.headersSent) {
               // httpStatus(res, 200, "Ok", JSON.stringify(info));
               httpStatus(res, 200, "Ok");
 	  }
 	  return u.save( function() {
+	      winston.debug( "Sending popeye request to: " + config.popeye );
 	      request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
 		  if ( res.statusCode != 200 ) {
 		      winston.error( "Popeye error: " + res.statusCode );
@@ -215,16 +222,16 @@
 	  });
       });
     req.on("close", function() {
-      winston.error("client abort. close the file stream " + fileId);
-      return ws.end();
+	winston.error("client abort. close the file stream " + fileId);
+	return ws.end();
     });
     ws.on("close", function() {
-      winston.info("closed the file stream " + fileId);
-      return winston.debug(util.inspect(res));
+	winston.info("closed the file stream " + fileId);
+	return winston.debug("ws.on(close)");
     });
     return ws.on("error", function(e) {
-      winston.error("closed the file stream " + fileId + " " + (util.inspect(e)));
-      return httpStatus(res, 500, "File Error");
+	winston.error("closed the file stream " + fileId + " " + (util.inspect(e)));
+	return httpStatus(res, 500, "File Error");
     });
   };
 
@@ -253,7 +260,7 @@
 
   route = function(req, res) {
     var matches, parsed, pattern, query, urlPath, _i, _len, _ref;
-    winston.debug(util.inspect(req));
+      //winston.debug(util.inspect(req));
     if (_ref = req.method, __indexOf.call(ALLOWED_METHODS, _ref) < 0) {
       return httpStatus(res, 405, "Not Allowed");
     }
