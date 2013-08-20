@@ -72,7 +72,7 @@
           error: [500, "Save Failed - Metadata"]
         };
       }
-	if ( (this.info.bytesReceived == this.info.finalLength) && callback )
+	if ( (this.info.offset == this.info.finalLength) && callback )
         callback()
       return {
         info: this.info

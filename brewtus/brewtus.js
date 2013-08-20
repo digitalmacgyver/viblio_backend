@@ -178,11 +178,8 @@
     info.state = "patched";
     info.patchedOn = Date.now();
     info.bytesReceived = 0;
-      // This req.pipe(ws) was finishing before the req.on(end was getting
-      // the last bytes.  So do the write in req.on(end to keep things in
-      // sync.
-      //
-      // req.pipe(ws);
+    req.pipe(ws);
+
       req.on("data", function(buffer) {
 	  winston.debug("old Offset " + info.offset + " of " + info.finalLength );
 	  info.bytesReceived += buffer.length;
@@ -194,8 +191,6 @@
 	  if (info.received > contentLength) {
               return httpStatus(res, 500, "Exceeded Content-Length");
 	  }
-	  // Do the write HERE
-	  ws.write(buffer);
       });
       req.on("end", function() {
 	  if (!res.headersSent) {
