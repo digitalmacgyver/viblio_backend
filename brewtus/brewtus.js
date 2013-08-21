@@ -119,9 +119,11 @@
     }
     status = upload.Upload(config, fileId).load();
     if (status.error != null) {
-      return httpStatus(res, status.error[0], status.error[1]);
+	winston.debug( "In HEAD: error" + status.error[1] );
+	return httpStatus(res, status.error[0], status.error[1]);
     }
     info = status.info;
+      winston.debug( "HEAD: info: " + util.inspect(info) );
     res.setHeader("Offset", info.offset);
     res.setHeader("Connection", "close");
     return httpStatus(res, 200, "Ok");
@@ -177,9 +179,13 @@
     info.offset = offsetIn;
     info.state = "patched";
     info.patchedOn = Date.now();
+      winston.debug( "Setting bytes received to zero for new request" );
     info.bytesReceived = 0;
-    req.pipe(ws);
-
+      // This req.pipe(ws) was finishing before the req.on(end was getting
+      // the last bytes.  So do the write in req.on(end to keep things in
+      // sync.
+      //
+      req.pipe(ws);
       req.on("data", function(buffer) {
 	  winston.debug("old Offset " + info.offset + " of " + info.finalLength );
 	  info.bytesReceived += buffer.length;
@@ -191,10 +197,14 @@
 	  if (info.received > contentLength) {
               return httpStatus(res, 500, "Exceeded Content-Length");
 	  }
+	  // Do the write HERE
+	  // ws.write(buffer);
       });
       req.on("end", function() {
+	  winston.debug( "Request end: bytes received=" +  info.offset );
 	  if (!res.headersSent) {
               // httpStatus(res, 200, "Ok", JSON.stringify(info));
+	      winston.debug( "Sending HEADERs..." );
               httpStatus(res, 200, "Ok");
 	  }
 	  return u.save( function() {
@@ -261,7 +271,7 @@
     }
     parsed = url.parse(req.url, true);
     urlPath = parsed.pathname;
-    winston.info("URLPATH: " + urlPath);
+    winston.info("URLPATH: " + urlPath + ", METHOD: " + req.method );
     if (urlPath === "/") {
       if (req.method !== "GET") {
         return httpStatus(res, 405, "Not Allowed");

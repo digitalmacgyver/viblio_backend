@@ -64,19 +64,31 @@
     };
 
     Upload.prototype.save = function( callback ) {
-      try {
-        fs.writeFileSync(this.infoPath, JSON.stringify(this.info));
-      } catch (error) {
-        winston.error(util.inspect(error));
-        return {
-          error: [500, "Save Failed - Metadata"]
-        };
-      }
+	winston.debug( "In save, br=" + this.info.offset + ", fl=" + this.info.finalLength );
+	try {
+            fs.writeFileSync(this.infoPath, JSON.stringify(this.info));
+	} catch (error) {
+            winston.error(util.inspect(error));
+            return {
+		error: [500, "Save Failed - Metadata"]
+            };
+	}
 	if ( (this.info.offset == this.info.finalLength) && callback )
-        callback()
-      return {
-        info: this.info
-      };
+            callback()
+	
+	Info = {
+            info: {
+		fileId: this.info.fileId,
+		finalLength: this.info.finalLength,
+		state: this.info.state,
+		createdOn: this.info.createdOn,
+		offset: this.info.offset,
+		patchedOn: this.info.patchedOn,
+		bytesReceived: this.info.bytesReceived
+	    }
+	};
+	winston.debug( "Returning (from save): " + util.inspect( Info ) );
+	return Info
     };
 
     Upload.prototype.load = function() {
