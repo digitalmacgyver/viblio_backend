@@ -22,6 +22,7 @@ def perror( log, msg ):
     log.error( msg )
     return { 'error': True, 'message': msg }
 
+#Sample comment for Pivotal integration testing.
 class Worker(Background):
     def run(self):
         orm = self.orm
@@ -40,7 +41,7 @@ class Worker(Background):
         dirname   = os.path.dirname( full_filename )
         basename, ext = os.path.splitext( full_filename )
 
-        uuid = basename
+        media_uuid = basename
 
         input_video = full_filename
         input_info  = os.path.join( dirname, basename + '.json' )
@@ -54,7 +55,7 @@ class Worker(Background):
         output_face = os.path.join( dirname, basename + '_face01.jpg' )
 
         c = {
-            'uuid': uuid,
+            'uuid': media_uuid,
             'info': input_info,
             'video': {
                 'input': input_video,
@@ -226,6 +227,9 @@ class Worker(Background):
 
             # face
             if found_faces:
+
+                log.info ('Face detected')
+
                 asset = MediaAssets( uuid=str(uuid.uuid4()),
                                      asset_type='face',
                                      mimetype='image/jpg',
@@ -236,7 +240,6 @@ class Worker(Background):
                 media.assets.append( asset )
 
             user.media.append( media )
-
 
         except Exception, e:
             # Remove all local files
