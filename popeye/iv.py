@@ -18,37 +18,43 @@ raw_date = datetime.datetime.now(time_zone)
 formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')
 
 ## Open session API
-url = iv_host + 'session'
-session_xml = '<?xml version="1.0"?>\r\n<session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<partnerId>VIBLIO</partnerId>\r\n<apiKey>AAA111BBB222</apiKey>\r\n<localId>9876543210</localId>\r\n</session>\r\n'
-headers = {'Content-Type':'text/xml', 'Date':formatted_date}
-
-r = requests.post(url, data=session_xml, headers=headers)
-print r, r.content
-
-if r.status_code == requests.codes.ok:
-    soup = BeautifulSoup(r.content, 'lxml')
-    try:
-        session_key = str(soup.find('sessionkey').text)
-        session_secret = str(soup.find('sessionsecret').text)
-        print session_key, session_secret
-    except:
-        print 'Failed to extract session info'
+def open_session():
+    url = iv_host + 'session'
+    session_xml = '<?xml version="1.0"?>\r\n<session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<partnerId>VIBLIO</partnerId>\r\n<apiKey>AAA111BBB222</apiKey>\r\n<localId>9876543210</localId>\r\n</session>\r\n'
+    headers = {'Content-Type':'text/xml', 'Date':formatted_date}
     
+    r = requests.post(url, data=session_xml, headers=headers)
+    print r, r.content
+    
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        try:
+            session_key = str(soup.find('sessionkey').text)
+            session_secret = str(soup.find('sessionsecret').text)
+            return({'session_key': session_key, 'session_secret': session_secret})
+        except:
+            print 'Failed to extract session info'
+
 ## compute hashed values for subsequent API calls
-sha_instance = hashlib.sha1()
-sha_instance.update(partner_id + formatted_date)
-hashed_partner_id = sha_instance.hexdigest()
+def generate_headers():
+    ## Compute and format date
+    raw_date = datetime.datetime.now(time_zone)
+    formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')
+
+    sha_instance = hashlib.sha1()
+    sha_instance.update(partner_id + formatted_date)
+    hashed_partner_id = sha_instance.hexdigest()
+        
+    sha_instance = hashlib.sha1()
+    sha_instance.update(local_id + formatted_date)
+    hashed_local_id = sha_instance.hexdigest()
     
-sha_instance = hashlib.sha1()
-sha_instance.update(local_id + formatted_date)
-hashed_local_id = sha_instance.hexdigest()
-
-sha_instance = hashlib.sha1()
-sha_instance.update(session_secret + formatted_date)
-hashed_session_secret = sha_instance.hexdigest()
-
-headers = {'Content-Type': 'text/xml', 'Date': formatted_date, 'sessionKey': session_key, 'sessionSecret': hashed_session_secret, 'partnerId': hashed_partner_id, 'localId': hashed_local_id}
-print headers
+    sha_instance = hashlib.sha1()
+    sha_instance.update(session_secret + formatted_date)
+    hashed_session_secret = sha_instance.hexdigest()
+    
+    headers = {'Content-Type': 'text/xml', 'Date': formatted_date, 'sessionKey': session_key, 'sessionSecret': hashed_session_secret, 'partnerId': hashed_partner_id, 'localId': hashed_local_id}
+    return(headers)
 
 ## Close session API
 url = iv_host + 'endSession'
@@ -144,12 +150,9 @@ if r.status_code == requests.codes.ok:
     soup = BeautifulSoup(r.content, 'lxml')
     if str(soup.result.status.text) == 'Success':
         for url in soup.findAll('bestfaceframe'):
-            print url.text
-
-
-
-with open('output.jpg', 'wb') as handle:
-    request = requests.get('http://www.example.com/image.jpg', prefetch=False)
+            file_name = str(url.text.split('/')[-1])
+            with open('/mnt/uploaded_files' + file_name, 'wb') as handle:
+                request = requests.get(url.text)
 
 >>> r.content
 <?xml version="1.0"?>
