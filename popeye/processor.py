@@ -84,48 +84,7 @@ class process:
 
         if not 'path' in data:
             return json.dumps({'error': True, 'message': 'Missing path param'})
-
-        main_file = os.path.basename( data.path )
-        dirname   = os.path.dirname( data.path )
-        basename, ext = os.path.splitext( main_file )
-
-        uuid = basename
-
-        input_video = data.path
-        input_info  = os.path.join( dirname, basename + '.json' )
-        input_metadata = os.path.join( dirname, basename + '_metadata.json' )
-
-        # Output file names
-        output_video = os.path.join( dirname, basename + '.mp4' )
-        output_thumbnail = os.path.join( dirname, basename + '_thumbnail.jpg' )
-        output_poster = os.path.join( dirname, basename + '_poster.jpg' )
-        output_metadata = input_metadata
-        output_face = os.path.join( dirname, basename + '_face01.jpg' )
-
-        res = {
-            'uuid': uuid,
-            'info': input_info,
-            'video': {
-                'input': input_video,
-                'output': output_video
-                },
-            'thumbnail': {
-                'input': output_video,
-                'output': output_thumbnail
-                },
-            'poster': {
-                'input': output_video,
-                'output': output_poster
-                },
-            'metadata': {
-                'input': input_metadata,
-                'output': output_metadata
-                },
-            'face': {
-                'input': output_video,
-                'output': output_face
-                }
-            }
+        res = {'full_filename': data.path}
 
         # Go do the work.  This routine will "fork"
         # and return control immediately to here
@@ -134,7 +93,7 @@ class process:
         # NOTE ... is this cool with web.ctx.orm?  Do
         # we need to worry about some sort of locking?
         #
-        web.ctx.log.info( 'Starting a worker thread for ' + res['uuid'] )
+        web.ctx.log.info( 'Starting a worker thread for ' + res['full_filename'] )
 
         wrk = Worker( web.ctx.SessionFactory, web.ctx.log, res )
         thread = threading.Thread( target=wrk.start )
