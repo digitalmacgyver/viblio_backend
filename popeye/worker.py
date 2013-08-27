@@ -49,7 +49,7 @@ class Worker(Background):
         # Output file names
         output_video = os.path.join( dirname, basename + '.mp4' )
         output_thumbnail = os.path.join( dirname, basename + '_thumbnail.jpg' )
-        output_poster = os.path.join( dirname, basename + '_poster.jpg' )pwd
+        output_poster = os.path.join( dirname, basename + '_poster.jpg' )
         output_metadata = input_metadata
         output_face = os.path.join( dirname, basename + '_face01.jpg' )
 
