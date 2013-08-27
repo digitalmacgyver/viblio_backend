@@ -22,6 +22,7 @@ def perror( log, msg ):
     log.error( msg )
     return { 'error': True, 'message': msg }
 
+#Sample comment for Pivotal integration testing.
 class Worker(Background):
     def run(self):
         orm = self.orm
