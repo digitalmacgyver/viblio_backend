@@ -13,6 +13,7 @@ import boto
 import requests
 from boto.s3.key import Key
 
+import helpers
 import mimetypes
 
 from background import Background
@@ -25,7 +26,57 @@ class Worker(Background):
     def run(self):
         orm = self.orm
         log = self.log
-        c   = self.data
+        data = self.data
+
+        full_filename = str(data['full_filename'])
+        log.info( 'Starting to process: ' + full_filename )
+
+        # Extract relevant EXIF data using exiftool
+        exif = helpers.exif(full_filename)
+        log.info ('Latitude: ' + str(exif['lat']))
+        log.info ('Longitude: ' + str(exif['lng']))
+        log.info( 'EXIF data extracted: ' + str(exif))
+
+        dirname   = os.path.dirname( full_filename )
+        basename, ext = os.path.splitext( full_filename )
+
+        uuid = basename
+
+        input_video = full_filename
+        input_info  = os.path.join( dirname, basename + '.json' )
+        input_metadata = os.path.join( dirname, basename + '_metadata.json' )
+
+        # Output file names
+        output_video = os.path.join( dirname, basename + '.mp4' )
+        output_thumbnail = os.path.join( dirname, basename + '_thumbnail.jpg' )
+        output_poster = os.path.join( dirname, basename + '_poster.jpg' )pwd
+        output_metadata = input_metadata
+        output_face = os.path.join( dirname, basename + '_face01.jpg' )
+
+        c = {
+            'uuid': uuid,
+            'info': input_info,
+            'video': {
+                'input': input_video,
+                'output': output_video
+                },
+            'thumbnail': {
+                'input': output_video,
+                'output': output_thumbnail
+                },
+            'poster': {
+                'input': output_video,
+                'output': output_poster
+                },
+            'metadata': {
+                'input': input_metadata,
+                'output': output_metadata
+                },
+            'face': {
+                'input': output_video,
+                'output': output_face
+                }
+            }
 
         # If the main input file (video) is not present we're toast
         if not os.path.isfile( c['video']['input'] ):
@@ -139,8 +190,10 @@ class Worker(Background):
         try:
             media = Media( uuid=data['uuid'],
                            media_type='original',
+                           recording_date=exif['create_date'],
+                           lat=exif['lat'],
+                           lng=exif['lng'],
                            filename=data['filename'] )
-
             # main
             asset = MediaAssets( uuid=str(uuid.uuid4()),
                                 asset_type='main',
@@ -184,6 +237,7 @@ class Worker(Background):
 
             user.media.append( media )
 
+
         except Exception, e:
             # Remove all local files
             try:
@@ -198,6 +252,7 @@ class Worker(Background):
                 log.error( 'Some trouble removing temp files: %s' % str(e) )
 
             return perror( log,  'Failed to add mediafile to database!: %s' % str(e) )
+
 
         ###########################################################################
 
