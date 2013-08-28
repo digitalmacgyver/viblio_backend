@@ -54,14 +54,13 @@ def generate_headers(session_info):
 
 ## Close session API
 def close_session(session_info):
-url = iv_host + 'endSession'
-
-
-r = requests.delete(url, headers=headers)
-if r.status_code == requests.codes.ok:
-    print 'session closed'
-else:
-    print "error"
+    url = iv_config.iv_host + 'endSession'
+    headers = generate_headers(session_info)
+    r = requests.delete(url, headers=headers)
+    if r.status_code == requests.codes.ok:
+        print 'session closed' + r.content
+    else:
+        print "error" + r.content
 
 
 ## Register User API
@@ -86,13 +85,12 @@ def login(session_info):
     headers = generate_headers(session_info)
     login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<loginName>bp001</loginName>\r\n<password>12345678</password>\r\n</login>'
     r = requests.post(url, data=login_xml, headers=headers)
-    return(r.content)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         if (str(soup.status.text) == 'Success'):
                 user_id = str(soup.id.text)
                 print user_id
-                return (soup)
+                return (user_id)
         else:
             print "Error: ", r.content
 
@@ -122,36 +120,36 @@ else:
     print "Error" + r.content
 
 ## Analyze face API
-url = iv_host + 'user/' + userId + '/analyzeFaces'
-media_url = 'http://s3-us-west-2.amazonaws.com/viblio-iv-test/test2.avi'
-
-analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + userId + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
-
-headers = {'Content-Type': 'text/xml', 'Date': date, 'sessionKey': sessionKey.text, 'sessionSecret': hashed_sessionSecret, 'partnerId': hashed_partnerId, 'localId': hashed_localId}
-
-r = requests.post(url, data=analyze_xml, headers=headers)
-
-if r.status_code == requests.codes.ok:
-    soup = BeautifulSoup(r.content, 'lxml')
-    if str(soup.result.status.text) == 'Success':
-        file_id = soup.result.fileid.text
-        wait_time = soup.result.expectedwaitseconds.text
-        print 'Success, file_id = ' + file_id + 'wait_time= ' + wait_time
+def analyze(session_info, user_id, media_url):
+    url = iv_config.iv_host + 'user/' + user_id + '/analyzeFaces'
+    analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
+    headers = generate_headers(session_info)
+    r = requests.post(url, data=analyze_xml, headers=headers)
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        if str(soup.result.status.text) == 'Success':
+            file_id = str(soup.result.fileid.text)
+            wait_time = str(soup.result.expectedwaitseconds.text)
+            print 'Success, file_id = ' + file_id + ', wait_time= ' + wait_time
+            return(file_id)
     else: print 'Failed: ' + str(soup)
+
 <html><body><result><status>Success</status><fileid>4</fileid><expectedwaitseconds>69</expectedwaitseconds></result></body></html>
 
 ## Retrieve Faces API
-url = iv_host + 'user/' + userId + '/retrieveFaces?fileID=' + fileId 
-
-r = requests.get(url, headers=headers)
-if r.status_code == requests.codes.ok:
-    soup = BeautifulSoup(r.content, 'lxml')
-    if str(soup.result.status.text) == 'Success':
-        for url in soup.findAll('bestfaceframe'):
-            file_name = str(url.text.split('/')[-1])
-            with open('/mnt/uploaded_files' + file_name, 'wb') as handle:
-                request = requests.get(url.text)
-
+def retrieve(session_info, user_id, file_id):
+    url = iv_config.iv_host + 'user/' + user_id + '/retrieveFaces?fileID=' + file_id 
+    headers = generate_headers(session_info)
+    r = requests.get(url, headers=headers)
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        if str(soup.result.status.text) == 'Success':
+            for url in soup.findAll('bestfaceframe'):
+                file_name = str(url.text.split('/')[-1])
+                with open('/mnt/uploaded_files/' + file_name, 'wb') as handle:
+                    request = requests.get(url.text)
+        return(soup)
+    
 >>> r.content
 <?xml version="1.0"?>
 <Result><Status>Success</Status><ExpectedWaitSeconds>0</ExpectedWaitSeconds><Tracks><NumberOfTracks>1</NumberOfTracks><Track><TrackId>0</TrackId><PersonId>-1</PersonId><BestFaceFrame>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam5_16-08-2013_14-40-14-236_0.bmp</BestFaceFrame><StartTime>2013-08-16 14:40:14</StartTime><EndTime>2013-08-16 14:40:14</EndTime><Width>229</Width><Height>229</Height><FaceCenterX>308</FaceCenterX><FaceCenterY>183</FaceCenterY><DetectionScore>36</DetectionScore><RecognitionConfidence>0.00</RecognitionConfidence></Track></Tracks></Result>
@@ -162,18 +160,15 @@ if r.status_code == requests.codes.ok:
 >>> 
 
 ## Add Person API
-url = iv_host + 'user/' + userId + '/addPerson'
-
-add_person_xml = '<personDetails xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><firstName>Bhupesh</firstName><lastName>Bansal</lastName><description>Friend</description></personDetails>'
-
-headers = {'Content-Type': 'text/xml', 'Date': date, 'sessionKey': sessionKey.text, 'sessionSecret': hashed_sessionSecret, 'partnerId': hashed_partnerId, 'localId': hashed_localId}
-
-r = requests.post(url, data=add_person_xml, headers=headers)
-if r.status_code == requests.codes.ok:
-    tree = ET.fromstring(r.content)
-    status = tree.find('Status')
-    Id = tree.find('Id')
-    PersonId = Id.text
+def add_person():
+    url = iv_config.iv_host + 'user/' + user_id + '/addPerson'
+    add_person_xml = '<personDetails xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><firstName>Bhupesh</firstName><lastName>Bansal</lastName><description>Friend</description></personDetails>'
+    headers = generate_headers(session_info)
+    r = requests.post(url, data=add_person_xml, headers=headers)
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        if str(soup.result.status.text) == 'Success':
+            person_id = str(soup.Person.Id.text)
     print status.text, r.content
 else:
     print "Error"
@@ -202,7 +197,13 @@ http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam5_16-08-2013_14-40-14-2
 
 
 session_info = open_session()
-headers = generate_headers(session_info)
+user_id = login(session_info)
+media_url = 'http://s3-us-west-2.amazonaws.com/viblio-iv-test/test2.avi'
+file_id = analyze(session_info, user_id, media_url)
+x = retrieve(session_info, user_id, file_id)
+close_session(session_info)
+
+
 
 
 
