@@ -7,54 +7,53 @@ import iv_config
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 
-## Compute and format date
-raw_date = datetime.datetime.now(iv_config.time_zone)
-formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')
+def perror( log, msg ):
+    log.error( msg )
+    return { 'error': True, 'message': msg }
 
-## Open session API
 def open_session():
+    raw_date = datetime.datetime.now(iv_config.time_zone)
+    formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')  
     url = iv_config.iv_host + 'session'
     session_xml = '<?xml version="1.0"?>\r\n<session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<partnerId>VIBLIO</partnerId>\r\n<apiKey>AAA111BBB222</apiKey>\r\n<localId>9876543210</localId>\r\n</session>\r\n'
     headers = {'Content-Type':'text/xml', 'Date':formatted_date}
-    
     r = requests.post(url, data=session_xml, headers=headers)
     print r, r.content
-    
     if r.status_code == requests.codes.ok:
+        print r.content
         soup = BeautifulSoup(r.content, 'lxml')
         try:
             session_key = str(soup.find('sessionkey').text)
             session_secret = str(soup.find('sessionsecret').text)
-            log.info ('Received Key: ' + session_key + 'and Secret: '+ session_secret)
-            return({'key': session_key, 'secret': session_secret})
+            print ('Received Key: ' + session_key + 'and Secret: '+ session_secret)
+            session_info = {'key': session_key, 'secret': session_secret}
+            return(session_info)
         except:
-            return perror(log, 'Failed to extract session info')
+            print('Failed to extract session info')
+            return ('False')
 
 ## compute hashed values for subsequent API calls
-def generate_headers(key, secret):
-    session_key = key
-    session_secret = secret
-
+def generate_headers(session_info):
+    session_key = session_info['key']
+    session_secret = session_info['secret']
     ## Compute and format date
     raw_date = datetime.datetime.now(iv_config.time_zone)
     formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')
-
     sha_instance = hashlib.sha1()
     sha_instance.update(iv_config.partner_id + formatted_date)
     hashed_partner_id = sha_instance.hexdigest()
-        
     sha_instance = hashlib.sha1()
     sha_instance.update(iv_config.local_id + formatted_date)
     hashed_local_id = sha_instance.hexdigest()
-    
     sha_instance = hashlib.sha1()
     sha_instance.update(session_secret + formatted_date)
-    hashed_session_secret = sha_instance.hexdigest()
-    
+    hashed_session_secret = sha_instance.hexdigest()    
     headers = {'Content-Type': 'text/xml', 'Date': formatted_date, 'sessionKey': session_key, 'sessionSecret': hashed_session_secret, 'partnerId': hashed_partner_id, 'localId': hashed_local_id}
+    print headers
     return(headers)
 
 ## Close session API
+def close_session(session_info):
 url = iv_host + 'endSession'
 
 
@@ -72,7 +71,7 @@ register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo
 headers = {'Content-Type': 'text/xml', 'Date': date, 'sessionKey': sessionKey.text, 'sessionSecret': hashed_sessionSecret, 'partnerId': hashed_partnerId, 'localId': hashed_localId}
 
 r = requests.post(url, data=register_xml, headers=headers)
-if r.status_code == requests.codes.ok:
+if r.status_code == requests.codes.ok
     tree = ET.fromstring(r.content)
     status = tree.find('Status')
     description = tree.find('Description')
@@ -82,26 +81,27 @@ else:
 
 
 ## Login API
-url = iv_host + 'user/login'
-login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<loginName>bp001</loginName>\r\n<password>12345678</password>\r\n</login>'
-
-r = requests.post(url, data=login_xml, headers=headers)
-if r.status_code == requests.codes.ok:
-    tree = ET.fromstring(r.content)
-    status = tree.find('Status')
-    if (status.text == 'Success'):
-        Id = tree.find('Id')
-        userId = Id.text
-    print status.text, Id.text
-else:
-    print "Error: ", r.content
+def login(session_info):
+    url = iv_config.iv_host + 'user/login'
+    headers = generate_headers(session_info)
+    login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<loginName>bp001</loginName>\r\n<password>12345678</password>\r\n</login>'
+    r = requests.post(url, data=login_xml, headers=headers)
+    return(r.content)
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        if (str(soup.status.text) == 'Success'):
+                user_id = str(soup.id.text)
+                print user_id
+                return (soup)
+        else:
+            print "Error: ", r.content
 
 
 ## Get User Details API
-url = iv_host + 'user/' + userId + '/getUser'
+url = iv_config.iv_host + 'user/' + user_id + '/getUser'
 
 r = requests.get(url, headers=headers)
-if r.status_code == requests.codes.ok:
+if r.status_code == requests.codes.OK:
     tree = ET.fromstring(r.content)
     status = tree.find('Status')
     print status.text
@@ -201,6 +201,8 @@ http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam5_16-08-2013_14-40-14-2
 >>> 
 
 
+session_info = open_session()
+headers = generate_headers(session_info)
 
 
 
