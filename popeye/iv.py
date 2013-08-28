@@ -1,25 +1,19 @@
 import datetime
-import pytz
 import sys
 import requests
 import hashlib
+import iv_config
+
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 
-
-## Define parameters
-partner_id = 'VIBLIO'
-local_id = '9876543210'
-iv_host = 'http://71.6.45.227/FDFRRstService/RestService.svc/'
-time_zone = pytz.timezone("GMT")
-
 ## Compute and format date
-raw_date = datetime.datetime.now(time_zone)
+raw_date = datetime.datetime.now(iv_config.time_zone)
 formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')
 
 ## Open session API
 def open_session():
-    url = iv_host + 'session'
+    url = iv_config.iv_host + 'session'
     session_xml = '<?xml version="1.0"?>\r\n<session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<partnerId>VIBLIO</partnerId>\r\n<apiKey>AAA111BBB222</apiKey>\r\n<localId>9876543210</localId>\r\n</session>\r\n'
     headers = {'Content-Type':'text/xml', 'Date':formatted_date}
     
@@ -31,22 +25,26 @@ def open_session():
         try:
             session_key = str(soup.find('sessionkey').text)
             session_secret = str(soup.find('sessionsecret').text)
-            return({'session_key': session_key, 'session_secret': session_secret})
+            log.info ('Received Key: ' + session_key + 'and Secret: '+ session_secret)
+            return({'key': session_key, 'secret': session_secret})
         except:
-            print 'Failed to extract session info'
+            return perror(log, 'Failed to extract session info')
 
 ## compute hashed values for subsequent API calls
-def generate_headers():
+def generate_headers(key, secret):
+    session_key = key
+    session_secret = secret
+
     ## Compute and format date
-    raw_date = datetime.datetime.now(time_zone)
+    raw_date = datetime.datetime.now(iv_config.time_zone)
     formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')
 
     sha_instance = hashlib.sha1()
-    sha_instance.update(partner_id + formatted_date)
+    sha_instance.update(iv_config.partner_id + formatted_date)
     hashed_partner_id = sha_instance.hexdigest()
         
     sha_instance = hashlib.sha1()
-    sha_instance.update(local_id + formatted_date)
+    sha_instance.update(iv_config.local_id + formatted_date)
     hashed_local_id = sha_instance.hexdigest()
     
     sha_instance = hashlib.sha1()
