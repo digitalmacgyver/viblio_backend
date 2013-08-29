@@ -60,7 +60,6 @@ def close_session(session_info):
     else:
         print "error" + r.content
 
-
 ## Register User API
 url = iv_host + 'user'
 register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<name>Bidyut Parruck</name>\r\n<loginName>bp001</loginName>\r\n<password>12345678</password>\r\n<metadata>\r\n\t<email>bparruck@gmail.com</email>\r\n\t<contactno>408-728-8130</contactno>\r\n</metadata>\r\n</user>\r\n'
@@ -92,17 +91,18 @@ def login(session_info):
         else:
             print "Error: ", r.content
 
-
 ## Get User Details API
-url = iv_config.iv_host + 'user/' + user_id + '/getUser'
-
-r = requests.get(url, headers=headers)
-if r.status_code == requests.codes.OK:
-    tree = ET.fromstring(r.content)
-    status = tree.find('Status')
-    print status.text
-else:
-    print "Error" + r.content
+def get_user_details(session_info, user_id):
+    url = iv_config.iv_host + 'user/' + user_id + '/getUser'
+    headers = generate_headers(session_info)
+    r = requests.get(url, headers=headers)
+        soup = BeautifulSoup(r.content, 'lxml')
+        if (str(soup.status.text) == 'Success'):
+                user_id = str(soup.id.text)
+                print user_id
+                return (user_id)
+        else:
+            print "Error: ", r.content
 
 ## Logout user API
 def logout(session_info, user_id):
@@ -182,8 +182,12 @@ media_url = 'http://s3-us-west-2.amazonaws.com/viblio-iv-test/test2.avi'
 file_id = analyze(session_info, user_id, media_url)
 x = retrieve(session_info, user_id, file_id)
 
+train_person(session_info, user_id, person_id, track_id, file_id, media_url)
+
+
 logout(session_info, user_id)
 close_session(session_info)
+get_user_details(session_info, user_id)
 
 
 
