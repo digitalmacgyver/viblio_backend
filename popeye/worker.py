@@ -22,7 +22,6 @@ def perror( log, msg ):
     log.error( msg )
     return { 'error': True, 'message': msg }
 
-#Sample comment for Pivotal integration testing.
 class Worker(Background):
     def run(self):
         orm = self.orm
@@ -39,24 +38,27 @@ class Worker(Background):
         log.info( 'EXIF data extracted: ' + str(exif))
 
         dirname   = os.path.dirname( full_filename )
+        # Basename includes the absolute path and everything up to the
+        # extension.
         basename, ext = os.path.splitext( full_filename )
         
         # Rename the file so its extension is in lower case.
         basename, ext = helpers.lc_extension( basename, ext )
 
-        media_uuid = basename
+        # By convention the filename is the media_uuid.
+        media_uuid = os.path.split( basename )[1]
 
         input_video = full_filename
-        input_info  = os.path.join( dirname, basename + '.json' )
-        input_metadata = os.path.join( dirname, basename + '_metadata.json' )
+        input_info  = basename + '.json'
+        input_metadata = basename + '_metadata.json'
 
         # Output file names
-        output_video = os.path.join( dirname, basename + '.mp4' )
-        output_thumbnail = os.path.join( dirname, basename + '_thumbnail.jpg' )
-        output_poster = os.path.join( dirname, basename + '_poster.jpg' )
+        output_video = basename + '.mp4'
+        output_thumbnail = basename + '_thumbnail.jpg'
+        output_poster = basename + '_poster.jpg'
         output_metadata = input_metadata
-        output_face = os.path.join( dirname, basename + '_face01.jpg' )
-        output_exif = os.path.join( dirname, basename + '_exif.json' )
+        output_face = basename + '_face01.jpg'
+        output_exif = basename + '_exif.json'
 
         c = {
             'uuid': media_uuid,
