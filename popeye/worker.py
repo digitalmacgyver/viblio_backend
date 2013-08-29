@@ -40,6 +40,9 @@ class Worker(Background):
 
         dirname   = os.path.dirname( full_filename )
         basename, ext = os.path.splitext( full_filename )
+        
+        # Rename the file so its extension is in lower case.
+        basename, ext = helpers.lc_extension( basename, ext )
 
         media_uuid = basename
 
@@ -53,6 +56,7 @@ class Worker(Background):
         output_poster = os.path.join( dirname, basename + '_poster.jpg' )
         output_metadata = input_metadata
         output_face = os.path.join( dirname, basename + '_face01.jpg' )
+        output_exif = os.path.join( dirname, basename + '_exif.json' )
 
         c = {
             'uuid': media_uuid,
@@ -76,6 +80,9 @@ class Worker(Background):
             'face': {
                 'input': output_video,
                 'output': output_face
+                },
+            'exif': {
+                'output': output_exif
                 }
             }
 
@@ -114,7 +121,7 @@ class Worker(Background):
         # '' and if so, move the file under its extension so transcoding works.
         if 'fileExt' in info:
             src = c['video']['input']
-            tar = src + info['fileExt']
+            tar = src + info['fileExt'].lower()
             if not src == tar:
                 if not os.system( "/bin/mv %s %s" % ( src, tar ) ) == 0:
                     return perror( log,  "Failed to execute: /bin/mv %s %s" % ( src, tar ) )
@@ -123,16 +130,42 @@ class Worker(Background):
         # Get the mimetype of the video file
         mimetype, uu = mimetypes.guess_type( c['video']['input'] )
 
-        # If the input video is not mp4, then transcode it into mp4
+        # Transcode to mp4 and rotate to to have no rotation of necessary.
         ffopts = ''
-        if not mimetype == 'video/mp4':
-            cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
+        rotation = exif['rotation']
+
+        if rotation == '0' and mimetype == 'video/mp4':
+            log.info( 'Video is non-rotated mp4, leaving it alone.' )
+            c['video']['output'] = c['video']['input']
+        else:
+            if rotation == '90':
+                log.info( 'Video is rotated 90 degrees, rotating.' )
+                ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
+            elif rotation == '180':
+                log.info( 'Video is rotated 180 degrees, rotating.' )
+                ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
+            elif rotation == '270':
+                log.info( 'Video is rotated 270 degrees, rotating.' )
+                ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
+
+            cmd = '/usr/local/bin/ffmpeg -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
             log.info( cmd )
             if not os.system( cmd ) == 0:
-                return perror( log,  'Failed to execute: %s' % cmd )
+                return perror( log, 'Failed to execute: %s' % cmd )
             mimetype = 'video/mp4'
-        else:
-            c['video']['output'] = c['video']['input']
+
+        ## DEBUG 
+        # If the input video is not mp4, then transcode it into mp4
+        #ffopts = ''
+        #if not mimetype == 'video/mp4':
+        #    cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
+        #    log.info( cmd )
+        #    if not os.system( cmd ) == 0:
+        #        return perror( log,  'Failed to execute: %s' % cmd )
+        #    mimetype = 'video/mp4'
+        #else:
+        #    c['video']['output'] = c['video']['input']
+        ## DEBUG
 
         if mimetype == 'video/mp4':
             # Move the metadata atom(s) to the front of the file.  -movflags faststart is
@@ -245,7 +278,7 @@ class Worker(Background):
             # Remove all local files
             try:
                 log.info( 'Removing temp files ...' )
-                for f in ['video','thumbnail','poster','metadata','face']:
+                for f in ['video','thumbnail','poster','metadata','face','exif']:
                     if os.path.isfile( c[f]['output'] ):
                         os.remove( c[f]['output'] )
                     if os.path.isfile( c[f]['input'] ):
@@ -334,7 +367,7 @@ class Worker(Background):
         # Remove all local files
         try:
             log.info( 'Removing temp files ...' )
-            for f in ['video','thumbnail','poster','metadata','face']:
+            for f in ['video','thumbnail','poster','metadata','face','exif']:
                 if os.path.isfile( c[f]['output'] ):
                     os.remove( c[f]['output'] )
                 if os.path.isfile( c[f]['input'] ):
