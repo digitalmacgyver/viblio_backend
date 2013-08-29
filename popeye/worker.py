@@ -148,7 +148,7 @@ class Worker(Background):
                 log.info( 'Video is rotated 270 degrees, rotating.' )
                 ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
 
-            cmd = '/usr/local/bin/ffmpeg -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
+            cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
             log.info( cmd )
             if not os.system( cmd ) == 0:
                 return perror( log, 'Failed to execute: %s' % cmd )
