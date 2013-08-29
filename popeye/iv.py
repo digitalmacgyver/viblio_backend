@@ -3,8 +3,6 @@ import sys
 import requests
 import hashlib
 import iv_config
-
-import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 
 def perror( log, msg ):
@@ -107,17 +105,17 @@ else:
     print "Error" + r.content
 
 ## Logout user API
-url = iv_host + 'user/' + userId + '/logout'
-
-headers = {'Content-Type': 'text/xml', 'Date': date, 'sessionKey': sessionKey.text, 'sessionSecret': hashed_sessionSecret, 'partnerId': hashed_partnerId, 'localId': hashed_localId}
-
-r = requests.get(url, headers=headers)
-if r.status_code == requests.codes.ok:
-    tree = ET.fromstring(r.content)
-    status = tree.find('Status')
-    print status.text
-else:
-    print "Error" + r.content
+def logout(session_info, user_id):
+    url = iv_config.iv_host + 'user/' + user_id + '/logout'
+    headers = generate_headers(session_info)
+    r = requests.get(url, headers=headers)
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        if (str(soup.status.text) == 'Success'):
+            print r.content
+            return (user_id)
+        else:
+            print "Error: ", r.content
 
 ## Analyze face API
 def analyze(session_info, user_id, media_url):
@@ -133,8 +131,7 @@ def analyze(session_info, user_id, media_url):
             print 'Success, file_id = ' + file_id + ', wait_time= ' + wait_time
             return(file_id)
     else: print 'Failed: ' + str(soup)
-
-<html><body><result><status>Success</status><fileid>4</fileid><expectedwaitseconds>69</expectedwaitseconds></result></body></html>
+## <html><body><result><status>Success</status><fileid>4</fileid><expectedwaitseconds>69</expectedwaitseconds></result></body></html>
 
 ## Retrieve Faces API
 def retrieve(session_info, user_id, file_id):
@@ -148,16 +145,8 @@ def retrieve(session_info, user_id, file_id):
                 file_name = str(url.text.split('/')[-1])
                 with open('/mnt/uploaded_files/' + file_name, 'wb') as handle:
                     request = requests.get(url.text)
-        return(soup)
-    
->>> r.content
-<?xml version="1.0"?>
-<Result><Status>Success</Status><ExpectedWaitSeconds>0</ExpectedWaitSeconds><Tracks><NumberOfTracks>1</NumberOfTracks><Track><TrackId>0</TrackId><PersonId>-1</PersonId><BestFaceFrame>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam5_16-08-2013_14-40-14-236_0.bmp</BestFaceFrame><StartTime>2013-08-16 14:40:14</StartTime><EndTime>2013-08-16 14:40:14</EndTime><Width>229</Width><Height>229</Height><FaceCenterX>308</FaceCenterX><FaceCenterY>183</FaceCenterY><DetectionScore>36</DetectionScore><RecognitionConfidence>0.00</RecognitionConfidence></Track></Tracks></Result>
-
-
->>> soup
-<html><body><result><status>Success</status><expectedwaitseconds>0</expectedwaitseconds><tracks><numberoftracks>4</numberoftracks><track><trackid>0</trackid><personid>0</personid><bestfaceframe>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam4_17-08-2013_21-42-36-833_0.bmp</bestfaceframe><starttime>2013-08-16 14:29:46</starttime><endtime>2013-08-16 14:29:46</endtime><width>192</width><height>192</height><facecenterx>271</facecenterx><facecentery>183</facecentery><detectionscore>61</detectionscore><recognitionconfidence>75.84</recognitionconfidence></track><track><trackid>2</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam4_16-08-2013_14-29-59-908_2.bmp</bestfaceframe><starttime>2013-08-16 14:29:59</starttime><endtime>2013-08-16 14:30:00</endtime><width>83</width><height>83</height><facecenterx>353</facecenterx><facecentery>325</facecentery><detectionscore>5</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>3</trackid><personid>0</personid><bestfaceframe>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam4_27-08-2013_15-02-16-554_3.bmp</bestfaceframe><starttime>2013-08-16 14:30:01</starttime><endtime>2013-08-16 14:30:01</endtime><width>196</width><height>196</height><facecenterx>396</facecenterx><facecentery>170</facecentery><detectionscore>12</detectionscore><recognitionconfidence>79.23</recognitionconfidence></track><track><trackid>5</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam4_16-08-2013_14-30-11-737_5.bmp</bestfaceframe><starttime>2013-08-16 14:30:11</starttime><endtime>2013-08-16 14:30:11</endtime><width>168</width><height>168</height><facecenterx>114</facecenterx><facecentery>153</facecentery><detectionscore>30</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track></tracks></result></body></html>
->>> 
+        return(soup)   
+##<Result><Status>Success</Status><ExpectedWaitSeconds>0</ExpectedWaitSeconds><Tracks><NumberOfTracks>1</NumberOfTracks><Track><TrackId>0</TrackId><PersonId>-1</PersonId><BestFaceFrame>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam5_16-08-2013_14-40-14-236_0.bmp</BestFaceFrame><StartTime>2013-08-16 14:40:14</StartTime><EndTime>2013-08-16 14:40:14</EndTime><Width>229</Width><Height>229</Height><FaceCenterX>308</FaceCenterX><FaceCenterY>183</FaceCenterY><DetectionScore>36</DetectionScore><RecognitionConfidence>0.00</RecognitionConfidence></Track></Tracks></Result>
 
 ## Add Person API
 def add_person():
@@ -169,38 +158,31 @@ def add_person():
         soup = BeautifulSoup(r.content, 'lxml')
         if str(soup.result.status.text) == 'Success':
             person_id = str(soup.Person.Id.text)
-    print status.text, r.content
-else:
-    print "Error"
+            print status.text, r.content
+        else:
+            print "Error"
+#'<?xml version="1.0"?>\r\n<Person><Status>Success</Status><Id>0</Id></Person>\r\n'
 
->>> r.content
-'<?xml version="1.0"?>\r\n<Person><Status>Success</Status><Id>0</Id></Person>\r\n'
+def train_person(session_info, user_id, person_id, track_id, file_id, media_url):
+    url = iv_host + 'user/' + user_id + '/trainPerson?personID=' + person_id + '&trackID=' + track_id + '&fileID=' + file_id
+    analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
+    headers = generate_headers(session_info)
+    r = requests.post(url, data=analyze_xml, headers=headers)
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        print soup
+        if str(soup.result.status.text) == 'Success':
+            return('Success' + str(r.content))
+##'<?xml version="1.0"?>\r\n<Result><Status>Success</Status></Result>\r\n'
 
-## Train Person API
-url = iv_host + 'user/' + userId + '/trainPerson?personID=' + personId + '&trackID=' + trackId + '&fileID=' + fileId
-
-headers = {'Content-Type': 'text/xml', 'Date': date, 'sessionKey': sessionKey.text, 'sessionSecret': hashed_sessionSecret, 'partnerId': hashed_partnerId, 'localId': hashed_localId}
-
-analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + userId + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
-
-r = requests.post(url, data=analyze_xml, headers=headers)
-
->>> r.content
-'<?xml version="1.0"?>\r\n<Result><Status>Success</Status></Result>\r\n'
-
-
->>> for x in soup.findAll('bestfaceframe'):
-...     print x.text
-... 
-http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam5_16-08-2013_14-40-14-236_0.bmp
->>> 
-
-
+## Main code
 session_info = open_session()
 user_id = login(session_info)
 media_url = 'http://s3-us-west-2.amazonaws.com/viblio-iv-test/test2.avi'
 file_id = analyze(session_info, user_id, media_url)
 x = retrieve(session_info, user_id, file_id)
+
+logout(session_info, user_id)
 close_session(session_info)
 
 
