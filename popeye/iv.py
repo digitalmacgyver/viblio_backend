@@ -61,20 +61,22 @@ def close_session(session_info):
         print "error" + r.content
 
 ## Register User API
-url = iv_host + 'user'
-register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<name>Bidyut Parruck</name>\r\n<loginName>bp001</loginName>\r\n<password>12345678</password>\r\n<metadata>\r\n\t<email>bparruck@gmail.com</email>\r\n\t<contactno>408-728-8130</contactno>\r\n</metadata>\r\n</user>\r\n'
-
-headers = {'Content-Type': 'text/xml', 'Date': date, 'sessionKey': sessionKey.text, 'sessionSecret': hashed_sessionSecret, 'partnerId': hashed_partnerId, 'localId': hashed_localId}
-
-r = requests.post(url, data=register_xml, headers=headers)
-if r.status_code == requests.codes.ok
-    tree = ET.fromstring(r.content)
-    status = tree.find('Status')
-    description = tree.find('Description')
-    print status.text, description.text
-else:
-    print "error"
-
+def register_user(session_info, uid):
+    url = iv_config.iv_host + 'user'
+    sha_instance = hashlib.sha1()
+    sha_instance.update(uid)
+    password = sha_instance.hexdigest()
+    register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password '</password><metadata><email>bparruck@gmail.com</email><contactno>408-728-8130</contactno></metadata></user>'
+    headers = generate_headers(session_info)
+    r = requests.post(url, data=register_xml, headers=headers)
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        if (str(soup.status.text) == 'Success'):
+                user_id = str(soup.id.text)
+                print user_id
+                return (user_id)
+        else:
+            print "Error: ", r.content
 
 ## Login API
 def login(session_info):
@@ -149,9 +151,9 @@ def retrieve(session_info, user_id, file_id):
 ##<Result><Status>Success</Status><ExpectedWaitSeconds>0</ExpectedWaitSeconds><Tracks><NumberOfTracks>1</NumberOfTracks><Track><TrackId>0</TrackId><PersonId>-1</PersonId><BestFaceFrame>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam5_16-08-2013_14-40-14-236_0.bmp</BestFaceFrame><StartTime>2013-08-16 14:40:14</StartTime><EndTime>2013-08-16 14:40:14</EndTime><Width>229</Width><Height>229</Height><FaceCenterX>308</FaceCenterX><FaceCenterY>183</FaceCenterY><DetectionScore>36</DetectionScore><RecognitionConfidence>0.00</RecognitionConfidence></Track></Tracks></Result>
 
 ## Add Person API
-def add_person():
+def add_person(session_info, first_name, last_name):
     url = iv_config.iv_host + 'user/' + user_id + '/addPerson'
-    add_person_xml = '<personDetails xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><firstName>Bhupesh</firstName><lastName>Bansal</lastName><description>Friend</description></personDetails>'
+    add_person_xml = '<personDetails xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><firstName>' + first_name + '</firstName><lastName>' + last_name + '</lastName><description>Friend</description></personDetails>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=add_person_xml, headers=headers)
     if r.status_code == requests.codes.ok:
