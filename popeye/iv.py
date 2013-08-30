@@ -66,7 +66,7 @@ def register_user(session_info, uid):
     sha_instance = hashlib.sha1()
     sha_instance.update(uid)
     password = sha_instance.hexdigest()
-    register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password '</password><metadata><email>bparruck@gmail.com</email><contactno>408-728-8130</contactno></metadata></user>'
+    register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password + '</password><metadata><email>bparruck@gmail.com</email><contactno>408-728-8130</contactno></metadata></user>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=register_xml, headers=headers)
     if r.status_code == requests.codes.ok:
@@ -98,6 +98,7 @@ def get_user_details(session_info, user_id):
     url = iv_config.iv_host + 'user/' + user_id + '/getUser'
     headers = generate_headers(session_info)
     r = requests.get(url, headers=headers)
+    if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         if (str(soup.status.text) == 'Success'):
                 user_id = str(soup.id.text)
@@ -177,19 +178,19 @@ def train_person(session_info, user_id, person_id, track_id, file_id, media_url)
             return('Success' + str(r.content))
 ##'<?xml version="1.0"?>\r\n<Result><Status>Success</Status></Result>\r\n'
 
-## Main code
-session_info = open_session()
-user_id = login(session_info)
-media_url = 'http://s3-us-west-2.amazonaws.com/viblio-iv-test/test2.avi'
-file_id = analyze(session_info, user_id, media_url)
-x = retrieve(session_info, user_id, file_id)
-
-train_person(session_info, user_id, person_id, track_id, file_id, media_url)
-
-
-logout(session_info, user_id)
-close_session(session_info)
-get_user_details(session_info, user_id)
+# ## Main code
+# session_info = open_session()
+# user_id = login(session_info)
+# media_url = 'http://s3-us-west-2.amazonaws.com/viblio-iv-test/test2.avi'
+# file_id = analyze(session_info, user_id, media_url)
+# x = retrieve(session_info, user_id, file_id)
+#  
+# train_person(session_info, user_id, person_id, track_id, file_id, media_url)
+#  
+#  
+# logout(session_info, user_id)
+# close_session(session_info)
+# get_user_details(session_info, user_id)
 
 
 
