@@ -7,7 +7,7 @@ def exif( media_file ):
     exif_file = os.path.join( dirname, basename + '_exif.json' )
    
     try:
-        command = '/home/viblio/exiftool/exiftool -j -w! _exif.json -c %+.6f ' + media_file
+        command = '/usr/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
         os.system( command )
     except Exception, e:
         print 'EXIF extraction failed, error was: %s' % ( e )
