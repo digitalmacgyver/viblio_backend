@@ -13,7 +13,7 @@ def open_session():
     raw_date = datetime.datetime.now(iv_config.time_zone)
     formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')  
     url = iv_config.iv_host + 'session'
-    session_xml = '<?xml version="1.0"?>\r\n<session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<partnerId>VIBLIO</partnerId>\r\n<apiKey>AAA111BBB222</apiKey>\r\n<localId>9876543210</localId>\r\n</session>\r\n'
+    session_xml = '<?xml version="1.0"?><session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><partnerId>VIBLIO</partnerId><apiKey>AAA111BBB222</apiKey><localId>9876543210</localId></session>'
     headers = {'Content-Type':'text/xml', 'Date':formatted_date}
     r = requests.post(url, data=session_xml, headers=headers)
     print r, r.content
@@ -66,7 +66,7 @@ def register_user(session_info, uid):
     sha_instance = hashlib.sha1()
     sha_instance.update(uid)
     password = sha_instance.hexdigest()
-    register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password + '</password><metadata><email>bparruck@gmail.com</email><contactno>408-728-8130</contactno></metadata></user>'
+    register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password + '</password><metadata><email>bidyut@viblio.com</email><contactno>408-728-8130</contactno></metadata></user>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=register_xml, headers=headers)
     if r.status_code == requests.codes.ok:
@@ -79,10 +79,13 @@ def register_user(session_info, uid):
             print "Error: ", r.content
 
 ## Login API
-def login(session_info):
+def login(session_info, uid):
     url = iv_config.iv_host + 'user/login'
+    sha_instance = hashlib.sha1()
+    sha_instance.update(uid)
+    password = sha_instance.hexdigest()
     headers = generate_headers(session_info)
-    login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo">\r\n<loginName>bp001</loginName>\r\n<password>12345678</password>\r\n</login>'
+    login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><loginName>' + uid + '</loginName><password>' + password + '</password></login>'
     r = requests.post(url, data=login_xml, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
@@ -179,18 +182,18 @@ def train_person(session_info, user_id, person_id, track_id, file_id, media_url)
 ##'<?xml version="1.0"?>\r\n<Result><Status>Success</Status></Result>\r\n'
 
 # ## Main code
-# session_info = open_session()
-# user_id = login(session_info)
+# session_info = iv.open_session()
+# user_id = iv.login(session_info, iv_config.uid)
 # media_url = 'http://s3-us-west-2.amazonaws.com/viblio-iv-test/test2.avi'
-# file_id = analyze(session_info, user_id, media_url)
-# x = retrieve(session_info, user_id, file_id)
+# file_id = iv.analyze(session_info, user_id, media_url)
+# x = iv.retrieve(session_info, user_id, file_id)
 #  
-# train_person(session_info, user_id, person_id, track_id, file_id, media_url)
+# iv.train_person(session_info, user_id, person_id, track_id, file_id, media_url)
 #  
 #  
-# logout(session_info, user_id)
-# close_session(session_info)
-# get_user_details(session_info, user_id)
+# iv.logout(session_info, user_id)
+# iv.close_session(session_info)
+# iv.get_user_details(session_info, user_id)
 
 
 
