@@ -13,6 +13,7 @@ import boto
 import requests
 from boto.s3.key import Key
 
+import helpers
 import mimetypes
 
 from background import Background
@@ -25,7 +26,67 @@ class Worker(Background):
     def run(self):
         orm = self.orm
         log = self.log
-        c   = self.data
+        data = self.data
+
+        full_filename = str(data['full_filename'])
+        log.info( 'Starting to process: ' + full_filename )
+
+        # Extract relevant EXIF data using exiftool
+        exif = helpers.exif(full_filename)
+        log.info ('Latitude: ' + str(exif['lat']))
+        log.info ('Longitude: ' + str(exif['lng']))
+        log.info( 'EXIF data extracted: ' + str(exif))
+
+        dirname   = os.path.dirname( full_filename )
+        # Basename includes the absolute path and everything up to the
+        # extension.
+        basename, ext = os.path.splitext( full_filename )
+        
+        # Rename the file so its extension is in lower case.
+        basename, ext = helpers.lc_extension( basename, ext )
+
+        # By convention the filename is the media_uuid.
+        media_uuid = os.path.split( basename )[1]
+
+        input_video = full_filename
+        input_info  = basename + '.json'
+        input_metadata = basename + '_metadata.json'
+
+        # Output file names
+        output_video = basename + '.mp4'
+        output_thumbnail = basename + '_thumbnail.jpg'
+        output_poster = basename + '_poster.jpg'
+        output_metadata = input_metadata
+        output_face = basename + '_face01.jpg'
+        output_exif = basename + '_exif.json'
+
+        c = {
+            'uuid': media_uuid,
+            'info': input_info,
+            'video': {
+                'input': input_video,
+                'output': output_video
+                },
+            'thumbnail': {
+                'input': output_video,
+                'output': output_thumbnail
+                },
+            'poster': {
+                'input': output_video,
+                'output': output_poster
+                },
+            'metadata': {
+                'input': input_metadata,
+                'output': output_metadata
+                },
+            'face': {
+                'input': output_video,
+                'output': output_face
+                },
+            'exif': {
+                'output': output_exif
+                }
+            }
 
         # If the main input file (video) is not present we're toast
         if not os.path.isfile( c['video']['input'] ):
@@ -62,7 +123,7 @@ class Worker(Background):
         # '' and if so, move the file under its extension so transcoding works.
         if 'fileExt' in info:
             src = c['video']['input']
-            tar = src + info['fileExt']
+            tar = src + info['fileExt'].lower()
             if not src == tar:
                 if not os.system( "/bin/mv %s %s" % ( src, tar ) ) == 0:
                     return perror( log,  "Failed to execute: /bin/mv %s %s" % ( src, tar ) )
@@ -71,16 +132,42 @@ class Worker(Background):
         # Get the mimetype of the video file
         mimetype, uu = mimetypes.guess_type( c['video']['input'] )
 
-        # If the input video is not mp4, then transcode it into mp4
+        # Transcode to mp4 and rotate to to have no rotation of necessary.
         ffopts = ''
-        if not mimetype == 'video/mp4':
+        rotation = exif['rotation']
+
+        if rotation == '0' and mimetype == 'video/mp4':
+            log.info( 'Video is non-rotated mp4, leaving it alone.' )
+            c['video']['output'] = c['video']['input']
+        else:
+            if rotation == '90':
+                log.info( 'Video is rotated 90 degrees, rotating.' )
+                ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
+            elif rotation == '180':
+                log.info( 'Video is rotated 180 degrees, rotating.' )
+                ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
+            elif rotation == '270':
+                log.info( 'Video is rotated 270 degrees, rotating.' )
+                ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
+
             cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
             log.info( cmd )
             if not os.system( cmd ) == 0:
-                return perror( log,  'Failed to execute: %s' % cmd )
+                return perror( log, 'Failed to execute: %s' % cmd )
             mimetype = 'video/mp4'
-        else:
-            c['video']['output'] = c['video']['input']
+
+        ## DEBUG 
+        # If the input video is not mp4, then transcode it into mp4
+        #ffopts = ''
+        #if not mimetype == 'video/mp4':
+        #    cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
+        #    log.info( cmd )
+        #    if not os.system( cmd ) == 0:
+        #        return perror( log,  'Failed to execute: %s' % cmd )
+        #    mimetype = 'video/mp4'
+        #else:
+        #    c['video']['output'] = c['video']['input']
+        ## DEBUG
 
         if mimetype == 'video/mp4':
             # Move the metadata atom(s) to the front of the file.  -movflags faststart is
@@ -139,8 +226,10 @@ class Worker(Background):
         try:
             media = Media( uuid=data['uuid'],
                            media_type='original',
+                           recording_date=exif['create_date'],
+                           lat=exif['lat'],
+                           lng=exif['lng'],
                            filename=data['filename'] )
-
             # main
             asset = MediaAssets( uuid=str(uuid.uuid4()),
                                 asset_type='main',
@@ -173,6 +262,9 @@ class Worker(Background):
 
             # face
             if found_faces:
+
+                log.info ('Face detected')
+
                 asset = MediaAssets( uuid=str(uuid.uuid4()),
                                      asset_type='face',
                                      mimetype='image/jpg',
@@ -188,7 +280,7 @@ class Worker(Background):
             # Remove all local files
             try:
                 log.info( 'Removing temp files ...' )
-                for f in ['video','thumbnail','poster','metadata','face']:
+                for f in ['video','thumbnail','poster','metadata','face','exif']:
                     if os.path.isfile( c[f]['output'] ):
                         os.remove( c[f]['output'] )
                     if os.path.isfile( c[f]['input'] ):
@@ -198,6 +290,7 @@ class Worker(Background):
                 log.error( 'Some trouble removing temp files: %s' % str(e) )
 
             return perror( log,  'Failed to add mediafile to database!: %s' % str(e) )
+
 
         ###########################################################################
 
@@ -276,7 +369,7 @@ class Worker(Background):
         # Remove all local files
         try:
             log.info( 'Removing temp files ...' )
-            for f in ['video','thumbnail','poster','metadata','face']:
+            for f in ['video','thumbnail','poster','metadata','face','exif']:
                 if os.path.isfile( c[f]['output'] ):
                     os.remove( c[f]['output'] )
                 if os.path.isfile( c[f]['input'] ):
