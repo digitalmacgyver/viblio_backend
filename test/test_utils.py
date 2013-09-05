@@ -124,8 +124,8 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                                      description    = 'VIBLIO_TEST_VIDEO',
                                      recording_date = datetime.datetime.now(),
                                      view_count     = 0,
-                                     lat            = float( "%.8f" % random.uniform(-180,180) ),
-                                     lng            = float( "%.8f" % random.uniform(-180,180) ) )
+                                     lat            = float( "%.8f" % random.uniform(37,38) ),
+                                     lng            = float( "%.8f" % random.uniform(-122,-123) ) )
             video['id'] = v_result.inserted_primary_key[0]
 
             # Add the main asset row
