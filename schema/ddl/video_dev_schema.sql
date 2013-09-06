@@ -104,6 +104,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`contacts` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `uuid` VARCHAR(36) NULL ,
   `user_id` INT(11) NOT NULL ,
   `contact_name` VARCHAR(128) NULL DEFAULT NULL ,
   `contact_email` VARCHAR(128) NULL DEFAULT NULL ,
@@ -116,6 +117,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`contacts` (
   INDEX `fk_contacts_providers1` (`provider` ASC) ,
   INDEX `fk_contacts_users1` (`user_id` ASC) ,
   INDEX `fk_contacts_users2` (`contact_viblio_id` ASC) ,
+  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
   CONSTRAINT `fk_contacts_providers1`
     FOREIGN KEY (`provider` )
     REFERENCES `video_dev_1`.`providers` (`provider` )
@@ -229,6 +231,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_comments` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `uuid` VARCHAR(36) NULL ,
   `media_id` INT(11) NOT NULL ,
   `user_id` INT(11) NOT NULL ,
   `comment` VARCHAR(2048) NULL DEFAULT NULL ,
@@ -238,6 +241,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_comments` (
   PRIMARY KEY (`id`) ,
   INDEX `fk_media_comments_users1` (`user_id` ASC) ,
   INDEX `fk_media_comments_media1` (`media_id` ASC) ,
+  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
   CONSTRAINT `fk_media_comments_users1`
     FOREIGN KEY (`user_id` )
     REFERENCES `video_dev_1`.`users` (`id` )
