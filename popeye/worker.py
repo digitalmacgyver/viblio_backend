@@ -281,9 +281,9 @@ class Worker(Background):
             try:
                 log.info( 'Removing temp files ...' )
                 for f in ['video','thumbnail','poster','metadata','face','exif']:
-                    if ( f in c ) and ( output in c[f] ) and os.path.isfile( c[f]['output'] ):
+                    if ( f in c ) and ( 'output' in c[f] ) and os.path.isfile( c[f]['output'] ):
                         os.remove( c[f]['output'] )
-                    if ( f in c ) and ( input in c[f] ) and os.path.isfile( c[f]['input'] ):
+                    if ( f in c ) and ( 'input' in c[f] ) and os.path.isfile( c[f]['input'] ):
                         os.remove( c[f]['input'] )
                 os.remove( c['info'] )
             except Exception, e_inner:
