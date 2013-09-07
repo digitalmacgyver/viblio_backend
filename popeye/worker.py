@@ -84,6 +84,7 @@ class Worker(Background):
                 'output': output_face
                 },
             'exif': {
+                'input' : 'N/A',
                 'output': output_exif
                 }
             }
@@ -281,15 +282,15 @@ class Worker(Background):
             try:
                 log.info( 'Removing temp files ...' )
                 for f in ['video','thumbnail','poster','metadata','face','exif']:
-                    if os.path.isfile( c[f]['output'] ):
+                    if ( f in c ) and ( output in c[f] ) and os.path.isfile( c[f]['output'] ):
                         os.remove( c[f]['output'] )
-                    if os.path.isfile( c[f]['input'] ):
+                    if ( f in c ) and ( input in c[f] ) and os.path.isfile( c[f]['input'] ):
                         os.remove( c[f]['input'] )
                 os.remove( c['info'] )
-            except Exception, e:
-                log.error( 'Some trouble removing temp files: %s' % str(e) )
+            except Exception, e_inner:
+                log.error( 'Some trouble removing temp files: %s' % str( e_inner ) )
 
-            return perror( log,  'Failed to add mediafile to database!: %s' % str(e) )
+            return perror( log,  'Failed to add mediafile to database!: %s' % str( e ) )
 
 
         ###########################################################################
