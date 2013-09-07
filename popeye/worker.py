@@ -84,7 +84,6 @@ class Worker(Background):
                 'output': output_face
                 },
             'exif': {
-                'input' : 'N/A',
                 'output': output_exif
                 }
             }
