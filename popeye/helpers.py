@@ -47,4 +47,80 @@ def lc_extension( basename, ext ):
 
     return basename, lc_ext
 
-        
+def get_faces(avi_video):
+    basename, ext = os.path.splitext( avi_video )
+    media_uuid = os.path.split( basename )[1]
+    media_url = 'http://s3-us-west-2.amazonaws.com/viblio-uploaded-files/' + media_uuid + '/' + media_uuid + ext
+    print media_url
+    print basename
+    session_info = iv.open_session()
+    user_id = iv.login(session_info, iv_config.uid)
+    file_id = iv.analyze(session_info, user_id, media_url)
+    print file_id
+    x = iv.retrieve(session_info, user_id, file_id, basename)
+    iv.logout(session_info, user_id)
+    iv.close_session(session_info)
+    return (x)
+
+def create_filenames (full_filename):
+    # Basename includes the absolute path and everything up to the extension.
+    basename, ext = os.path.splitext( full_filename )
+    # Rename the file so its extension is in lower case.
+    basename, ext = lc_extension( basename, ext )
+    # By convention the filename is the media_uuid.
+    media_uuid = os.path.split( basename )[1]
+    input_video = full_filename
+    input_info = basename + '.json'
+    input_metadata = basename + '_metadata.json'
+    # Output file names
+    output_video = basename + '.mp4'
+    avi_video = basename + '.avi'
+    output_thumbnail = basename + '_thumbnail.jpg'
+    output_poster = basename + '_poster.jpg'
+    output_metadata = input_metadata
+    output_face = basename + '_face0.jpg'
+    output_exif = basename + '_exif.json'
+    
+    video_key = media_uuid + '/' + os.path.basename( output_video )
+    avi_key = media_uuid + '/' + os.path.basename( avi_video )
+    thumbnail_key = media_uuid + '/' + os.path.basename( output_thumbnail )
+    poster_key = media_uuid + '/' + os.path.basename( output_poster )
+    metadata_key = media_uuid + '/' + os.path.basename( output_metadata )
+    face_key = media_uuid + '/' + os.path.basename( output_face )
+    exif_key = media_uuid + '/' + os.path.basename( output_exif )
+    c = {
+        'uuid': media_uuid,
+        'info': input_info,
+        'video_key': video_key,
+        'avi_key': avi_key,
+        'thumbnail_key': thumbnail_key,
+        'poster_key': poster_key,
+        'metadata_key': metadata_key,
+        'face_key': face_key,
+        'exif_key': exif_key,
+        'video': {
+            'input': input_video,
+            'output': output_video,
+            'avi': avi_video
+            },
+        'thumbnail': {
+            'input': output_video,
+            'output': output_thumbnail
+            },
+        'poster': {
+            'input': output_video,
+            'output': output_poster
+            },
+        'metadata': {
+            'input': input_metadata,
+            'output': output_metadata
+            },
+        'face': {
+            'input': output_video,
+            'output': output_face
+            },
+        'exif': {
+            'output': output_exif
+            }
+        }
+    return(c)        
