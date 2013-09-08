@@ -194,9 +194,3 @@ def train_person(session_info, user_id, person_id, track_id, file_id, media_url)
 # iv.logout(session_info, user_id)
 # iv.close_session(session_info)
 # iv.get_user_details(session_info, user_id)
-
-
-
-
-
-
