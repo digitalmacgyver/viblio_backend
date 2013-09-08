@@ -1,10 +1,9 @@
 import json
 import os
 
-def exif( media_file ):
-    basename, ext = os.path.splitext( media_file )
-    dirname = os.path.dirname( media_file )
-    exif_file = os.path.join( dirname, basename + '_exif.json' )
+def exif( filenames ):
+    media_file = filenames['video']['input']
+    exif_file = filenames['exif']['output']
    
     try:
         command = '/usr/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
@@ -88,7 +87,7 @@ def create_filenames (full_filename):
     metadata_key = media_uuid + '/' + os.path.basename( output_metadata )
     face_key = media_uuid + '/' + os.path.basename( output_face )
     exif_key = media_uuid + '/' + os.path.basename( output_exif )
-    c = {
+    filenames = {
         'uuid': media_uuid,
         'info': input_info,
         'video_key': video_key,
@@ -123,4 +122,4 @@ def create_filenames (full_filename):
             'output': output_exif
             }
         }
-    return(c)        
+    return(filenames)        

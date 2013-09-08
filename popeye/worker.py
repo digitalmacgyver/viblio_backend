@@ -29,64 +29,64 @@ class Worker(Background):
         data = self.data
 
         full_filename = str(data['full_filename'])
-        log.info( 'Starting to process: ' + full_filename )
+        log.info( 'Worker.py, starting to process: ' + full_filename )
+        c = helpers.create_filenames(full_filename)
+        ## log.info('received filenames: ' + str(c))
 
         # Extract relevant EXIF data using exiftool
-        exif = helpers.exif(full_filename)
-        log.info ('Latitude: ' + str(exif['lat']))
-        log.info ('Longitude: ' + str(exif['lng']))
+        exif = helpers.exif(c)
         log.info( 'EXIF data extracted: ' + str(exif))
 
-        dirname   = os.path.dirname( full_filename )
-        # Basename includes the absolute path and everything up to the
-        # extension.
-        basename, ext = os.path.splitext( full_filename )
-        
-        # Rename the file so its extension is in lower case.
-        basename, ext = helpers.lc_extension( basename, ext )
-
-        # By convention the filename is the media_uuid.
-        media_uuid = os.path.split( basename )[1]
-
-        input_video = full_filename
-        input_info  = basename + '.json'
-        input_metadata = basename + '_metadata.json'
-
-        # Output file names
-        output_video = basename + '.mp4'
-        output_thumbnail = basename + '_thumbnail.jpg'
-        output_poster = basename + '_poster.jpg'
-        output_metadata = input_metadata
-        output_face = basename + '_face01.jpg'
-        output_exif = basename + '_exif.json'
-
-        c = {
-            'uuid': media_uuid,
-            'info': input_info,
-            'video': {
-                'input': input_video,
-                'output': output_video
-                },
-            'thumbnail': {
-                'input': output_video,
-                'output': output_thumbnail
-                },
-            'poster': {
-                'input': output_video,
-                'output': output_poster
-                },
-            'metadata': {
-                'input': input_metadata,
-                'output': output_metadata
-                },
-            'face': {
-                'input': output_video,
-                'output': output_face
-                },
-            'exif': {
-                'output': output_exif
-                }
-            }
+#         dirname   = os.path.dirname( full_filename )
+#         # Basename includes the absolute path and everything up to the
+#         # extension.
+#         basename, ext = os.path.splitext( full_filename )
+#         
+#         # Rename the file so its extension is in lower case.
+#         basename, ext = helpers.lc_extension( basename, ext )
+# 
+#         # By convention the filename is the media_uuid.
+#         media_uuid = os.path.split( basename )[1]
+# 
+#         input_video = full_filename
+#         input_info  = basename + '.json'
+#         input_metadata = basename + '_metadata.json'
+# 
+#         # Output file names
+#         output_video = basename + '.mp4'
+#         output_thumbnail = basename + '_thumbnail.jpg'
+#         output_poster = basename + '_poster.jpg'
+#         output_metadata = input_metadata
+#         output_face = basename + '_face01.jpg'
+#         output_exif = basename + '_exif.json'
+# 
+#         c = {
+#             'uuid': media_uuid,
+#             'info': input_info,
+#             'video': {
+#                 'input': input_video,
+#                 'output': output_video
+#                 },
+#             'thumbnail': {
+#                 'input': output_video,
+#                 'output': output_thumbnail
+#                 },
+#             'poster': {
+#                 'input': output_video,
+#                 'output': output_poster
+#                 },
+#             'metadata': {
+#                 'input': input_metadata,
+#                 'output': output_metadata
+#                 },
+#             'face': {
+#                 'input': output_video,
+#                 'output': output_face
+#                 },
+#             'exif': {
+#                 'output': output_exif
+#                 }
+#             }
 
         # If the main input file (video) is not present we're toast
         if not os.path.isfile( c['video']['input'] ):
