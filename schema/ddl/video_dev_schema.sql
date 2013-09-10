@@ -35,6 +35,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`users` (
   PRIMARY KEY (`id`) ,
   INDEX `fk_users_providers1` (`provider` ASC) ,
   UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
+  UNIQUE INDEX `email_UNIQUE` (`email` ASC) ,
   CONSTRAINT `fk_users_providers`
     FOREIGN KEY (`provider` )
     REFERENCES `video_dev_1`.`providers` (`provider` )
@@ -71,7 +72,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media` (
   `lng` DECIMAL(11,8) NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
-  PRIMARY KEY (`id`) ,
+  PRIMARY KEY (`id`, `user_id`) ,
   INDEX `fk_media_media_types1` (`media_type` ASC) ,
   UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
   INDEX `fk_media_users1` (`user_id` ASC) ,
@@ -104,13 +105,15 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`contacts` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `uuid` VARCHAR(36) NULL ,
+  `uuid` VARCHAR(36) NOT NULL ,
   `user_id` INT(11) NOT NULL ,
   `contact_name` VARCHAR(128) NULL DEFAULT NULL ,
   `contact_email` VARCHAR(128) NULL DEFAULT NULL ,
   `contact_viblio_id` INT(11) NULL DEFAULT NULL ,
   `provider` VARCHAR(16) NULL DEFAULT NULL ,
   `provider_id` VARCHAR(45) NULL DEFAULT NULL ,
+  `intellivision_id` INT NULL DEFAULT NULL ,
+  `picture_uri` VARCHAR(2048) NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
   PRIMARY KEY (`id`) ,
@@ -153,6 +156,7 @@ ENGINE = InnoDB;
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_assets` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `media_id` INT(11) NOT NULL ,
+  `user_id` INT(11) NOT NULL ,
   `uuid` VARCHAR(36) NOT NULL ,
   `asset_type` VARCHAR(16) NULL ,
   `mimetype` VARCHAR(40) NULL DEFAULT NULL ,
@@ -169,17 +173,14 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_assets` (
   `provider` VARCHAR(16) NULL DEFAULT NULL ,
   `provider_id` VARCHAR(45) NULL DEFAULT NULL ,
   `view_count` INT NULL DEFAULT NULL ,
+  `intellivision_file_id` INT NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
-  PRIMARY KEY (`id`, `media_id`) ,
+  PRIMARY KEY (`id`, `media_id`, `user_id`) ,
   INDEX `fk_media_assets_providers1` (`provider` ASC) ,
   INDEX `fk_media_assets_asset_types1` (`asset_type` ASC) ,
   UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
-  CONSTRAINT `fk_media_assets_media1`
-    FOREIGN KEY (`media_id` )
-    REFERENCES `video_dev_1`.`media` (`id` )
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
+  INDEX `fk_media_assets_media1` (`media_id` ASC, `user_id` ASC) ,
   CONSTRAINT `fk_media_assets_providers1`
     FOREIGN KEY (`provider` )
     REFERENCES `video_dev_1`.`providers` (`provider` )
@@ -189,6 +190,11 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_assets` (
     FOREIGN KEY (`asset_type` )
     REFERENCES `video_dev_1`.`asset_types` (`type` )
     ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_media_assets_media1`
+    FOREIGN KEY (`media_id` , `user_id` )
+    REFERENCES `video_dev_1`.`media` (`id` , `user_id` )
+    ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
@@ -199,15 +205,19 @@ ENGINE = InnoDB;
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_asset_features` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `media_asset_id` INT(11) NOT NULL ,
+  `media_id` INT(11) NOT NULL ,
+  `user_id` INT(11) NOT NULL ,
   `feature_type` VARCHAR(16) NOT NULL ,
   `coordinates` TEXT NULL DEFAULT NULL ,
   `contact_id` INT(11) NULL DEFAULT NULL ,
+  `detection_confidence` DECIMAL(9,6) NULL DEFAULT NULL ,
+  `recognition_confidence` DECIMAL(9,6) NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
   INDEX `fk_media_asset_features_feature_types1` (`feature_type` ASC) ,
   INDEX `fk_media_asset_features_contacts1` (`contact_id` ASC) ,
-  PRIMARY KEY (`id`) ,
-  INDEX `fk_media_asset_features_media_assets1` (`media_asset_id` ASC) ,
+  PRIMARY KEY (`id`, `media_asset_id`, `media_id`, `user_id`) ,
+  INDEX `fk_media_asset_features_media_assets1` (`media_asset_id` ASC, `media_id` ASC, `user_id` ASC) ,
   CONSTRAINT `fk_media_asset_features_feature_types1`
     FOREIGN KEY (`feature_type` )
     REFERENCES `video_dev_1`.`feature_types` (`type` )
@@ -219,8 +229,8 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_asset_features` (
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_asset_features_media_assets1`
-    FOREIGN KEY (`media_asset_id` )
-    REFERENCES `video_dev_1`.`media_assets` (`id` )
+    FOREIGN KEY (`media_asset_id` , `media_id` , `user_id` )
+    REFERENCES `video_dev_1`.`media_assets` (`id` , `media_id` , `user_id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
@@ -231,7 +241,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_comments` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `uuid` VARCHAR(36) NULL ,
+  `uuid` VARCHAR(36) NOT NULL ,
   `media_id` INT(11) NOT NULL ,
   `user_id` INT(11) NOT NULL ,
   `comment` VARCHAR(2048) NULL DEFAULT NULL ,
@@ -380,16 +390,17 @@ ENGINE = InnoDB;
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_workorders` (
   `media_id` INT(11) NOT NULL ,
   `workorder_id` INT(11) NOT NULL ,
-  PRIMARY KEY (`media_id`, `workorder_id`) ,
+  PRIMARY KEY (`workorder_id`, `media_id`) ,
   INDEX `fk_media_workorders_workorders1` (`workorder_id` ASC) ,
-  CONSTRAINT `fk_media_workorders_media1`
-    FOREIGN KEY (`media_id` )
-    REFERENCES `video_dev_1`.`media` (`id` )
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
+  INDEX `fk_media_workorders_media1` (`media_id` ASC) ,
   CONSTRAINT `fk_media_workorders_workorders1`
     FOREIGN KEY (`workorder_id` )
     REFERENCES `video_dev_1`.`workorders` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_media_workorders_media1`
+    FOREIGN KEY (`media_id` )
+    REFERENCES `video_dev_1`.`media` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
@@ -455,6 +466,26 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`profile_fields` (
     REFERENCES `video_dev_1`.`profiles` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`links`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`links` (
+  `id` INT NOT NULL ,
+  `user_id` INT(11) NOT NULL ,
+  `provider` VARCHAR(40) NOT NULL ,
+  `data` TEXT NOT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` VARCHAR(45) NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_links_users1` (`user_id` ASC) ,
+  CONSTRAINT `fk_links_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `video_dev_1`.`users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 USE `video_dev_1`;
@@ -907,6 +938,30 @@ USE `video_dev_1`$$
 
 CREATE
 	TRIGGER profile_field_updated BEFORE UPDATE ON profile_fields FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER link_created BEFORE INSERT ON links FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER link_updated BEFORE UPDATE ON links FOR EACH ROW
 BEGIN
 	set NEW.updated_date = NOW();
 END;
