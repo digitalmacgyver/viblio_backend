@@ -6,14 +6,13 @@ def exif( filenames ):
     exif_file = filenames['exif']['output']
    
     try:
-        command = '/usr/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
+        command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
         os.system( command )
     except Exception, e:
         print 'EXIF extraction failed, error was: %s' % ( e )
         raise
 
     file_handle = open( exif_file )
-
     info = json.load( file_handle )
 
     exif_data = {}
@@ -98,13 +97,10 @@ def create_filenames (full_filename):
         'metadata_key': metadata_key,
         'face_key': face_key,
         'exif_key': exif_key,
-        'avi' : {
-            'input': output_video,
-            'output': avi_video
-            },
         'video': {
             'input': input_video,
-            'output': output_video
+            'output': output_video,
+            'avi': avi_video
             },
         'thumbnail': {
             'input': output_video,
