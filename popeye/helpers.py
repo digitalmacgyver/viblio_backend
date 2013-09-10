@@ -98,10 +98,13 @@ def create_filenames (full_filename):
         'metadata_key': metadata_key,
         'face_key': face_key,
         'exif_key': exif_key,
+        'avi' : {
+            'input': output_video,
+            'output': avi_video
+            },
         'video': {
             'input': input_video,
-            'output': output_video,
-            'avi': avi_video
+            'output': output_video
             },
         'thumbnail': {
             'input': output_video,

@@ -37,57 +37,6 @@ class Worker(Background):
         exif = helpers.exif(c)
         log.info( 'EXIF data extracted: ' + str(exif))
 
-#         dirname   = os.path.dirname( full_filename )
-#         # Basename includes the absolute path and everything up to the
-#         # extension.
-#         basename, ext = os.path.splitext( full_filename )
-#         
-#         # Rename the file so its extension is in lower case.
-#         basename, ext = helpers.lc_extension( basename, ext )
-# 
-#         # By convention the filename is the media_uuid.
-#         media_uuid = os.path.split( basename )[1]
-# 
-#         input_video = full_filename
-#         input_info  = basename + '.json'
-#         input_metadata = basename + '_metadata.json'
-# 
-#         # Output file names
-#         output_video = basename + '.mp4'
-#         output_thumbnail = basename + '_thumbnail.jpg'
-#         output_poster = basename + '_poster.jpg'
-#         output_metadata = input_metadata
-#         output_face = basename + '_face01.jpg'
-#         output_exif = basename + '_exif.json'
-# 
-#         c = {
-#             'uuid': media_uuid,
-#             'info': input_info,
-#             'video': {
-#                 'input': input_video,
-#                 'output': output_video
-#                 },
-#             'thumbnail': {
-#                 'input': output_video,
-#                 'output': output_thumbnail
-#                 },
-#             'poster': {
-#                 'input': output_video,
-#                 'output': output_poster
-#                 },
-#             'metadata': {
-#                 'input': input_metadata,
-#                 'output': output_metadata
-#                 },
-#             'face': {
-#                 'input': output_video,
-#                 'output': output_face
-#                 },
-#             'exif': {
-#                 'output': output_exif
-#                 }
-#             }
-
         # If the main input file (video) is not present we're toast
         if not os.path.isfile( c['video']['input'] ):
             return perror( log,  'File does not exist: %s' % c['video']['input'] )
@@ -158,23 +107,10 @@ class Worker(Background):
 
         # Also generate AVI for IntelliVision (temporary)
         ffopts = ''
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['video']['avi'] )
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
         log.info( cmd )
         if not os.system( cmd ) == 0:
             return perror( log, 'Failed to generate AVI file: %s' % cmd )
-
-        ## DEBUG 
-        # If the input video is not mp4, then transcode it into mp4
-        #ffopts = ''
-        #if not mimetype == 'video/mp4':
-        #    cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
-        #    log.info( cmd )
-        #    if not os.system( cmd ) == 0:
-        #        return perror( log,  'Failed to execute: %s' % cmd )
-        #    mimetype = 'video/mp4'
-        #else:
-        #    c['video']['output'] = c['video']['input']
-        ## DEBUG
 
         if mimetype == 'video/mp4':
             # Move the metadata atom(s) to the front of the file.  -movflags faststart is
@@ -197,13 +133,16 @@ class Worker(Background):
         if not os.system( cmd ) == 0:
             return perror( log,  'Failed to execute: %s' % cmd )
 
-        # The face
-        cmd = 'python /viblio/bin/extract_face.py %s %s' % ( c['face']['input'], c['face']['output'] )
-        log.info( cmd )
+        # The face - The strange boolean structure here allows us to
+        # easily turn it on and off.
         found_faces = True
-        if not os.system( cmd ) == 0:
-            found_faces = False
-            perror( log,  'Failed to find any faces in video for command: %s' % cmd )
+        if found_faces:
+            cmd = 'python /viblio/bin/extract_face.py %s %s' % ( c['face']['input'], c['face']['output'] )
+            log.info( cmd )
+            found_faces = True
+            if not os.system( cmd ) == 0:
+                found_faces = False
+                perror( log,  'Failed to find any faces in video for command: %s' % cmd )
 
         ###########################################################################
         # DATABASE
@@ -238,6 +177,15 @@ class Worker(Background):
                                 metadata_uri=c['metadata_key'],
                                 bytes=data['size'],
                                 uri=data['uri'],
+                                location='us' )
+            media.assets.append( asset )
+
+            # AVI
+            asset = MediaAssets( uuid=str(uuid.uuid4()),
+                                asset_type='intellivision',
+                                mimetype='video/avi',
+                                bytes=os.path.getsize( c['avi']['output'] ),
+                                uri=c['avi_key'],
                                 location='us' )
             media.assets.append( asset )
 
@@ -281,7 +229,7 @@ class Worker(Background):
             # Remove all local files
             try:
                 log.info( 'Removing temp files ...' )
-                for f in ['video','thumbnail','poster','metadata','face','exif']:
+                for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
                     if ( f in c ) and ( 'output' in c[f] ) and os.path.isfile( c[f]['output'] ):
                         os.remove( c[f]['output'] )
                     if ( f in c ) and ( 'input' in c[f] ) and os.path.isfile( c[f]['input'] ):
@@ -311,10 +259,10 @@ class Worker(Background):
         except Exception, e:
             return perror( log,  'Failed to upload to s3: %s' % str(e) )
 
-        log.info( 'Uploading to s3: %s' % c['video']['avi'] )
+        log.info( 'Uploading to s3: %s' % c['avi']['output'] )
         try:
             bucket_contents.key = c['avi_key']
-            bucket_contents.set_contents_from_filename( c['video']['avi'] )
+            bucket_contents.set_contents_from_filename( c['avi']['output'] )
             bucket_contents.make_public()
         except Exception, e:
             return perror( log, 'Failed to upload to s3: %s' % str(e) )
@@ -378,14 +326,14 @@ class Worker(Background):
         # Remove all local files
         try:
             log.info( 'Removing temp files ...' )
-            for f in ['video','thumbnail','poster','metadata','face','exif']:
-                if os.path.isfile( c[f]['output'] ):
+            for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
+                if ( f in c ) and ( 'output' in c[f] ) and os.path.isfile( c[f]['output'] ):
                     os.remove( c[f]['output'] )
-                if os.path.isfile( c[f]['input'] ):
+                if ( f in c ) and ( 'input' in c[f] ) and os.path.isfile( c[f]['input'] ):
                     os.remove( c[f]['input'] )
             os.remove( c['info'] )
-        except Exception, e:
-            log.error( 'Some trouble removing temp files: %s' % str(e) )
+        except Exception, e_inner:
+            log.error( 'Some trouble removing temp files: %s' % str( e_inner ) )
 
         log.info( 'DONE WITH %s' % c['uuid'] )
         return {}
