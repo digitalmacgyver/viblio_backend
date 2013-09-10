@@ -156,6 +156,13 @@ class Worker(Background):
                 return perror( log, 'Failed to execute: %s' % cmd )
             mimetype = 'video/mp4'
 
+        # Also generate AVI for IntelliVision (temporary)
+        ffopts = ''
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['video']['avi'] )
+        log.info( cmd )
+        if not os.system( cmd ) == 0:
+            return perror( log, 'Failed to generate AVI file: %s' % cmd )
+
         ## DEBUG 
         # If the input video is not mp4, then transcode it into mp4
         #ffopts = ''
@@ -198,12 +205,6 @@ class Worker(Background):
             found_faces = False
             perror( log,  'Failed to find any faces in video for command: %s' % cmd )
 
-        video_key      = c['uuid'] + '/' + os.path.basename( c['video']['output'] )
-        thumbnail_key  = c['uuid'] + '/' + os.path.basename( c['thumbnail']['output'] )
-        poster_key     = c['uuid'] + '/' + os.path.basename( c['poster']['output'] )
-        metadata_key   = c['uuid'] + '/' + os.path.basename( c['metadata']['output'] )
-        face_key       = c['uuid'] + '/' + os.path.basename( c['face']['output'] ) 
-
         ###########################################################################
         # DATABASE
         #
@@ -219,7 +220,7 @@ class Worker(Background):
             'user_id': info['uid'],
             'filename': filename,
             'mimetype': mimetype,
-            'uri': video_key,
+            'uri': c['video_key'],
             'size': os.path.getsize( c['video']['output'] )
             }
 
@@ -234,7 +235,7 @@ class Worker(Background):
             asset = MediaAssets( uuid=str(uuid.uuid4()),
                                 asset_type='main',
                                 mimetype=data['mimetype'],
-                                metadata_uri=metadata_key,
+                                metadata_uri=c['metadata_key'],
                                 bytes=data['size'],
                                 uri=data['uri'],
                                 location='us' )
@@ -246,7 +247,7 @@ class Worker(Background):
                                 mimetype='image/jpg',
                                 bytes=os.path.getsize( c['thumbnail']['output'] ),
                                 width=128, height=128,
-                                uri=thumbnail_key,
+                                uri=c['thumbnail_key'],
                                 location='us' )
             media.assets.append( asset )
 
@@ -256,7 +257,7 @@ class Worker(Background):
                                 mimetype='image/jpg',
                                 bytes=os.path.getsize( c['poster']['output'] ),
                                 width=320, height=240,
-                                uri=poster_key,
+                                uri=c['poster_key'],
                                 location='us' )
             media.assets.append( asset )
 
@@ -270,7 +271,7 @@ class Worker(Background):
                                      mimetype='image/jpg',
                                      bytes=os.path.getsize( c['face']['output'] ),
                                      width=128, height=128,
-                                     uri=face_key,
+                                     uri=c['face_key'],
                                      location='us' )
                 media.assets.append( asset )
 
@@ -305,21 +306,29 @@ class Worker(Background):
 
         log.info( 'Uploading to s3: %s' % c['video']['output'] )
         try:
-            bucket_contents.key = video_key
+            bucket_contents.key = c['video_key']
             bucket_contents.set_contents_from_filename( c['video']['output'] )
         except Exception, e:
             return perror( log,  'Failed to upload to s3: %s' % str(e) )
 
+        log.info( 'Uploading to s3: %s' % c['video']['avi'] )
+        try:
+            bucket_contents.key = c['avi_key']
+            bucket_contents.set_contents_from_filename( c['video']['avi'] )
+            bucket_contents.make_public()
+        except Exception, e:
+            return perror( log, 'Failed to upload to s3: %s' % str(e) )
+        
         log.info( 'Uploading to s3: %s' % c['thumbnail']['output'] )
         try:
-            bucket_contents.key = thumbnail_key
+            bucket_contents.key = c['thumbnail_key']
             bucket_contents.set_contents_from_filename( c['thumbnail']['output'] )
         except Exception, e:
             return perror( log,  'Failed to upload to s3: %s' % str(e) )
 
         log.info( 'Uploading to s3: %s' % c['poster']['output'] )
         try:
-            bucket_contents.key = poster_key
+            bucket_contents.key = c['poster_key']
             bucket_contents.set_contents_from_filename( c['poster']['output'] )
         except Exception, e:
             return perror( log,  'Failed to upload to s3: %s' % str(e) )
@@ -327,14 +336,14 @@ class Worker(Background):
         if found_faces:
             log.info( 'Uploading to s3: %s' % c['face']['output'] )
             try:
-                bucket_contents.key = face_key
+                bucket_contents.key = c['face_key']
                 bucket_contents.set_contents_from_filename( c['face']['output'] )
             except Exception, e:
                 return perror( log,  'Failed to upload to s3: %s' % str(e) )
 
         log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
         try:
-            bucket_contents.key = metadata_key
+            bucket_contents.key = c['metadata_key']
             bucket_contents.set_contents_from_filename( c['metadata']['output'] )
         except Exception, e:
             return perror( log,  'Failed to upload to s3: %s' % str(e) )
