@@ -127,6 +127,7 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                                      lat            = float( "%.8f" % random.uniform(37,38) ),
                                      lng            = float( "%.8f" % random.uniform(-122,-123) ) )
             video['id'] = v_result.inserted_primary_key[0]
+            video['user_id'] = user_id
 
             # Add the main asset row
             video['main_uuid'] = str( uuid.uuid4() )
@@ -184,9 +185,11 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                     contact_id = contacts[face['contact_idx']]['id']
                 add_feature( conn=conn, media_asset_features=media_asset_features,
                              media_asset_id = face_id,
-                             feature_type = 'face',
-                             coordinates = "{ 'x1':0, 'y1':0, 'x2':"+str( face['width'] )+", 'y2':"+str( face['height'] )+" }",
-                             contact_id = contact_id )
+                             media_id       = video['id'], 
+                             user_id        = video['user_id'],
+                             feature_type   = 'face',
+                             coordinates    = "{ 'x1':0, 'y1':0, 'x2':"+str( face['width'] )+", 'y2':"+str( face['height'] )+" }",
+                             contact_id     = contact_id )
                 
     except Exception, e:
         log.critical( "Failed to set up test data. Error: %s" % ( e ) )
@@ -235,15 +238,17 @@ def _s3_copy( src_bucket, src_key, dst_bucket, dst_key ):
     except Exception, e:
         log.critical( "Failed to copy s3 file. Error: %s" % ( e ) )
 
-def add_feature( conn, media_asset_features, media_asset_id, feature_type, coordinates, contact_id ):
+def add_feature( conn, media_asset_features, media_asset_id, media_id, user_id, feature_type, coordinates, contact_id ):
     try:
         log.info( "Inserting feature for asset %s of type %s" % ( media_asset_id, feature_type ) )
         result = conn.execute( media_asset_features.insert(),
                       id = None,
                       media_asset_id = media_asset_id,
-                      feature_type = feature_type,
-                      coordinates = coordinates,
-                      contact_id = contact_id )
+                      media_id       = media_id,
+                      user_id        = user_id,
+                      feature_type   = feature_type,
+                      coordinates    = coordinates,
+                      contact_id     = contact_id )
         log.info( "Inserted feature has id: %s" % ( result.inserted_primary_key[0] ) )
     except Exception, e:
         log.critical( "Failed to insert feature. Error: %s" % ( e ) ) 
@@ -255,6 +260,7 @@ def add_asset( conn, media_assets, row, uuid, asset_type, mimetype, uri, metadat
         result = conn.execute( media_assets.insert(),
                                id             = None, # Populated by the database.
                                media_id       = row['id'],
+                               user_id        = row['user_id'],
                                uuid           = uuid,
                                asset_type     = asset_type,
                                mimetype       = mimetype,

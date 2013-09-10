@@ -13,6 +13,7 @@ def exif( filenames ):
         raise
 
     file_handle = open( exif_file )
+
     info = json.load( file_handle )
 
     exif_data = {}
