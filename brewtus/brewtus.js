@@ -208,22 +208,27 @@
               httpStatus(res, 200, "Ok");
 	  }
 	  return u.save( function() {
-	      winston.debug( "Sending popeye request to: " + config.popeye );
-	      request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
-		  if ( res.statusCode != 200 ) {
-		      winston.error( "Popeye error: " + res.statusCode );
-		  }
-		  else {
-		      try {
-			  var r = JSON.parse( body );
-			  if ( r.error ) {
-			      winston.error( "Popeye error: " + r.message );
-			  }
-		      } catch( e ) {
-			  winston.error( "Popeye error: " + e.message );
+	      if ( config.popeye != "none" ) {
+		  winston.debug( "Sending popeye request to: " + config.popeye );
+		  request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
+		      if ( res.statusCode != 200 ) {
+			  winston.error( "Popeye error: " + res.statusCode );
 		      }
-		  }
-	      });
+		      else {
+			  try {
+			      var r = JSON.parse( body );
+			      if ( r.error ) {
+				  winston.error( "Popeye error: " + r.message );
+			      }
+			  } catch( e ) {
+			      winston.error( "Popeye error: " + e.message );
+			  }
+		      }
+		  });
+	      }
+	      else {
+		  winston.debug( "Popeye disabled, not sending message." );
+	      }
 	  });
       });
     req.on("close", function() {
@@ -297,7 +302,7 @@
     res.setHeader("Server", config.server);
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", ALLOWED_METHODS_STR);
-    res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Final-Length, Offset");
+    res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Final-Length, Offset, Content-Range, Content-Disposition");
     return res.setHeader("Access-Control-Expose-Headers", "Location");
   };
 
@@ -370,6 +375,7 @@
       var server;
       server = http.createServer(tusHandler);
       server.timeout = 30000;
+	winston.debug( 'Trying port ' + config.port );
       server.listen(config.port);
 	return winston.info("Server running on port " + config.port );
     });
