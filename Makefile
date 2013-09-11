@@ -16,7 +16,7 @@ deploy:
 #
 #  sudo make development
 #
-development:
+development: exiftool
 	( cd brewtus; npm install -g; chmod oug+rw ~/.npm; npm install; chmod oug+rw node_modules )
 	( cd popeye; make install_deps )
 	mkdir -p /mnt/uploaded_files; chmod oug+rw /mnt/uploaded_files
@@ -28,3 +28,11 @@ development:
 	( cd /etc/init.d; update-rc.d brewtus defaults; update-rc.d popeye defaults )
 	/etc/init.d/brewtus start
 	/etc/init.d/popeye start
+
+exiftool:
+	cd /tmp
+	wget http://www.sno.phy.queensu.ca/~phil/exiftool/Image-ExifTool-9.36.tar.gz
+	tar zxf Image-ExifTool-9.36.tar.gz
+	cd Image-ExifTool-9.36
+	/usr/bin/perl Makefile.PL
+	make test && make install
