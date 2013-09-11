@@ -122,16 +122,18 @@ class Worker(Background):
                 perror( log,  'Failed to run qtfaststart on the output file' )
 
         # Generate the poster
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 320x240 %s' % ( c['poster']['input'], c['poster']['output'] )
-        log.info( cmd )
-        if not os.system( cmd ) == 0:
-            return perror( log,  'Failed to execute: %s' % cmd )
+#         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 320x240 %s' % ( c['poster']['input'], c['poster']['output'] )
+#         log.info( cmd )
+#         if not os.system( cmd ) == 0:
+#             return perror( log,  'Failed to execute: %s' % cmd )
+        helpers.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'])
 
         # The thumbnail
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 128x128 %s' % ( c['thumbnail']['input'], c['thumbnail']['output'] )
-        log.info( cmd )
-        if not os.system( cmd ) == 0:
-            return perror( log,  'Failed to execute: %s' % cmd )
+#         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 128x128 %s' % ( c['thumbnail']['input'], c['thumbnail']['output'] )
+#         log.info( cmd )
+#         if not os.system( cmd ) == 0:
+#            return perror( log,  'Failed to execute: %s' % cmd )
+        helpers.generate_poster(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'])
 
         # The face - The strange boolean structure here allows us to
         # easily turn it on and off.

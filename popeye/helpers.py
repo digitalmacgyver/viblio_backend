@@ -1,6 +1,10 @@
 import json
 import os
 
+def perror( log, msg ):
+    log.error( msg )
+    return { 'error': True, 'message': msg }
+
 def exif( filenames ):
     media_file = filenames['video']['input']
     exif_file = filenames['exif']['output']
@@ -13,6 +17,7 @@ def exif( filenames ):
         raise
 
     file_handle = open( exif_file )
+
     info = json.load( file_handle )
 
     exif_data = {}
@@ -97,10 +102,13 @@ def create_filenames (full_filename):
         'metadata_key': metadata_key,
         'face_key': face_key,
         'exif_key': exif_key,
+        'avi' : {
+            'input': output_video,
+            'output': avi_video
+            },
         'video': {
             'input': input_video,
-            'output': output_video,
-            'avi': avi_video
+            'output': output_video
             },
         'thumbnail': {
             'input': output_video,
@@ -122,4 +130,28 @@ def create_filenames (full_filename):
             'output': output_exif
             }
         }
-    return(filenames)        
+    return(filenames)
+
+def generate_poster(input_video, output_jpg, rotation):
+    if rotation == '0' or rotation == '180':
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=320:-1,pad=320:240:0:oh/2-ih/2 %s' %(input_video, output_jpg)
+        print cmd
+        if not os.system( cmd ) == 0:
+            print 'Failed to execute: %s' %cmd
+    elif rotation == '90' or rotation == '270':
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:240,pad=320:240:ow/2-iw/2:0 %s' %(input_video, output_jpg)
+        print cmd
+        if not os.system( cmd ) == 0:
+            print 'Failed to execute: %s' %cmd
+        
+def generate_thumbnail(input_video, output_jpg, rotation):
+    if rotation == '0' or rotation == '180':
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %(input_video, output_jpg)
+        print cmd
+        if not os.system( cmd ) == 0:
+            print 'Failed to execute: %s' %cmd
+    elif rotation == '90' or rotation == '270':
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %(input_video, output_jpg)
+        print cmd
+        if not os.system( cmd ) == 0:
+            print 'Failed to execute: %s' %cmd
