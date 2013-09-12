@@ -30,9 +30,9 @@ development: exiftool
 	/etc/init.d/popeye start
 
 exiftool:
-	cd /tmp
-	wget http://www.sno.phy.queensu.ca/~phil/exiftool/Image-ExifTool-9.36.tar.gz
-	tar zxf Image-ExifTool-9.36.tar.gz
-	cd Image-ExifTool-9.36
-	/usr/bin/perl Makefile.PL
-	make test && make install
+	( cd /tmp; \
+	  wget http://www.sno.phy.queensu.ca/~phil/exiftool/Image-ExifTool-9.36.tar.gz; \
+	  tar zxf Image-ExifTool-9.36.tar.gz; \
+	  cd Image-ExifTool-9.36 ; \
+	  /usr/bin/perl Makefile.PL; \
+	  make test && make install)
