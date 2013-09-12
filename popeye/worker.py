@@ -202,14 +202,14 @@ class Worker(Background):
             media.assets.append( asset )
 
             # poster
-            asset = MediaAssets( uuid=str(uuid.uuid4()),
+            poster_asset = MediaAssets( uuid=str(uuid.uuid4()),
                                 asset_type='poster',
                                 mimetype='image/jpg',
                                 bytes=os.path.getsize( c['poster']['output'] ),
                                 width=320, height=240,
                                 uri=c['poster_key'],
                                 location='us' )
-            media.assets.append( asset )
+            media.assets.append( poster_asset )
 
             # face
             if found_faces:
@@ -226,6 +226,15 @@ class Worker(Background):
                 media.assets.append( asset )
 
             user.media.append( media )
+
+            # DEBUG Test adding a feature.
+            #log.info( 'Adding a feature to the poster.' )
+            #
+            #row = MediaAssetFeatures( feature_type = 'face',
+            #                          detection_confidence = 3.14159
+            #                          )
+            #poster_asset.media_asset_features.append( row )
+            
 
         except Exception, e:
             # Remove all local files
