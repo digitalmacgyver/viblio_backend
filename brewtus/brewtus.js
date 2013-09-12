@@ -60,6 +60,26 @@
     return u.stream().pipe(res);
   };
 
+    deleteFile = function(req, res, query, matches) {
+	fileId = matches[2];
+	if (fileId == null) {
+	    return httpStatus(res, 404, "Not Found");
+	}
+	winston.debug( 'Cancel upload ' + fileId );
+	filePath = path.join(config.files, fileId);
+	if (!fs.existsSync(filePath)) {
+	    return httpStatus(res, 404, "Not Found");
+	}
+	infoPath = filePath + '.json';
+	mdPath   = filePath + '_metadata.json';
+	fs.unlinkSync( filePath );
+	if ( fs.existsSync( infoPath ) ) 
+	    fs.unlinkSync( infoPath );
+	if ( fs.existsSync( mdPath ) ) 
+	    fs.unlinkSync( mdPath );
+	return httpStatus(res, 200, "Ok");
+    };
+
   createFile = function(req, res, query, matches) {
       var fileId, fileExt, finalLength, status;
       fileId = matches[2];
@@ -253,7 +273,7 @@
     return res.end(body);
   };
 
-  ALLOWED_METHODS = ["HEAD", "PATCH", "POST", "OPTIONS", "GET"];
+    ALLOWED_METHODS = ["HEAD", "PATCH", "POST", "OPTIONS", "GET", "DELETE"];
 
   ALLOWED_METHODS_STR = ALLOWED_METHODS.join(",");
 
@@ -264,6 +284,7 @@
       PATCH: patchFile,
       POST: createFile,
       OPTIONS: optionsFile,
+	DELETE: deleteFile,
       GET: getFile
     }
   ];
