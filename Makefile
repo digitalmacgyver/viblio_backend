@@ -2,6 +2,7 @@
 LVL ?= staging
 deploy:
 	mkdir -p /deploy/$(LVL)
+	mkdir -p /mnt/uploaded_files/errors; 
 	-rm -rf /deploy/$(LVL)/brewtus.prev
 	-rm -rf /deploy/$(LVL)/popeye.prev
 	-mv /deploy/$(LVL)/brewtus /deploy/$(LVL)/brewtus.prev
@@ -20,6 +21,7 @@ development: exiftool
 	( cd brewtus; npm install -g; chmod oug+rw ~/.npm; npm install; chmod oug+rw node_modules )
 	( cd popeye; make install_deps )
 	mkdir -p /mnt/uploaded_files; chmod oug+rw /mnt/uploaded_files
+	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
 	mkdir -p /deploy/local
 	chmod -R oug+rw /deploy
 	make LVL=local deploy
