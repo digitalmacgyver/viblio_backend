@@ -302,7 +302,7 @@ class Worker(Background):
             #                          )
             #poster_asset.media_asset_features.append( row )
 
-            raise Exception('Oops!')
+#            raise Exception('Oops!')
             
 
         except Exception as e:
