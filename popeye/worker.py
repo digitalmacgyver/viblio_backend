@@ -337,7 +337,7 @@ class Worker(Background):
             if 'error' in jdata:
                 raise Exception( jdata['message'] )
         except Exception as e:
-            handle_errors( c )
+            helpers.handle_errors( c )
             return perror( log,  'Failed to notify Cat: %s' % str( e ) )
 
         ################################################################################

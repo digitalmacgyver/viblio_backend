@@ -2,7 +2,7 @@
 LVL ?= staging
 deploy:
 	mkdir -p /deploy/$(LVL)
-	mkdir -p /mnt/uploaded_files/errors; 
+	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
 	-rm -rf /deploy/$(LVL)/brewtus.prev
 	-rm -rf /deploy/$(LVL)/popeye.prev
 	-mv /deploy/$(LVL)/brewtus /deploy/$(LVL)/brewtus.prev
