@@ -143,7 +143,7 @@ class Worker(Background):
 
         # The face - The strange boolean structure here allows us to
         # easily turn it on and off.
-        found_faces = False
+        found_faces = True
         if found_faces:
             cmd = 'python /viblio/bin/extract_face.py %s %s' % ( c['face']['input'], c['face']['output'] )
             log.info( cmd )
