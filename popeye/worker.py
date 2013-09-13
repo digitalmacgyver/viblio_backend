@@ -26,12 +26,10 @@ class Worker(Background):
     def run(self):
         orm = self.orm
         log = self.log
-        data = self.data
+        full_filename = self.data['full_filename']
 
-        full_filename = str(data['full_filename'])
         log.info( 'Worker.py, starting to process: ' + full_filename )
-        c = helpers.create_filenames(full_filename)
-        ## log.info('received filenames: ' + str(c))
+        c = helpers.create_filenames( full_filename )
 
         # Extract relevant EXIF data using exiftool
         exif = helpers.exif(c)
@@ -39,18 +37,21 @@ class Worker(Background):
 
         # If the main input file (video) is not present we're toast
         if not os.path.isfile( c['video']['input'] ):
+            helpers.handle_errors( c )
             return perror( log,  'File does not exist: %s' % c['video']['input'] )
 
         # We need the brewtus metadata too
         if not os.path.isfile( c['info'] ):
+            helpers.handle_errors( c )
             return perror( log,  'File does not exist: %s' % c['info'] )
 
         # Get the brewtus info
         try:
             f = open( c['info'] )
             info = json.load( f )
-        except Exception, e:
-            return perror( log,  'Failed to open and parse %s' % c['info'] )
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log,  'Failed to open and parse %s error was %s' % ( c['info'], str( e ) ) )
 
         # Get the client metadata too.  It includes the original file's
         # filename for instance...
@@ -58,14 +59,16 @@ class Worker(Background):
             try:
                 f = open( c['metadata']['input'] )
                 md = json.load( f )
-            except Exception, e:
-                perror( log,  'Failed to parse %s' % c['metadata']['input'] )
+            except Exception as e:
+                helpers.handle_errors( c )
+                return perror( log,  'Failed to parse %s error was %s' % ( c['metadata']['input'], str( e ) ) )
 
         # Try to obtain the user from the database
         try:
             user = orm.query( Users ).filter_by( uuid = info['uid'] ).one()
-        except Exception, e:
-            return perror( log, 'Failed to look up user by uuid: %s: %s' % ( info['uid'], str(e) ) )
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log, 'Failed to look up user by uuid: %s error was %s' % ( info['uid'], str( e ) ) )
 
         # Brewtus writes the uploaded file as <fileid> without an extenstion,
         # but the info struct has an extenstion.  See if its something other than
@@ -75,6 +78,7 @@ class Worker(Background):
             tar = src + info['fileExt'].lower()
             if not src == tar:
                 if not os.system( "/bin/mv %s %s" % ( src, tar ) ) == 0:
+                    helpers.handle_errors( c )
                     return perror( log,  "Failed to execute: /bin/mv %s %s" % ( src, tar ) )
                 c['video']['input'] = tar
 
@@ -102,6 +106,7 @@ class Worker(Background):
             cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
             log.info( cmd )
             if not os.system( cmd ) == 0:
+                helpers.handle_errors( c )
                 return perror( log, 'Failed to execute: %s' % cmd )
             mimetype = 'video/mp4'
 
@@ -110,6 +115,7 @@ class Worker(Background):
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
         log.info( cmd )
         if not os.system( cmd ) == 0:
+            helpers.handle_errors( c )
             return perror( log, 'Failed to generate AVI file: %s' % cmd )
 
         if mimetype == 'video/mp4':
@@ -137,7 +143,7 @@ class Worker(Background):
 
         # The face - The strange boolean structure here allows us to
         # easily turn it on and off.
-        found_faces = True
+        found_faces = False
         if found_faces:
             cmd = 'python /viblio/bin/extract_face.py %s %s' % ( c['face']['input'], c['face']['output'] )
             log.info( cmd )
@@ -145,6 +151,67 @@ class Worker(Background):
             if not os.system( cmd ) == 0:
                 found_faces = False
                 perror( log,  'Failed to find any faces in video for command: %s' % cmd )
+
+        ###########################################################################
+        # Upload to S3
+        #
+        try:
+            s3 = boto.connect_s3(config.awsAccess, config.awsSecret)
+            bucket = s3.get_bucket(config.bucket_name)
+            bucket_contents = Key(bucket)
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log,  'Failed to obtain s3 bucket: %s' % str( e ) )
+
+        log.info( 'Uploading to s3: %s' % c['video']['output'] )
+        try:
+            bucket_contents.key = c['video_key']
+            bucket_contents.set_contents_from_filename( c['video']['output'] )
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log,  'Failed to upload to s3: %s' % str( e ) )
+
+        log.info( 'Uploading to s3: %s' % c['avi']['output'] )
+        try:
+            bucket_contents.key = c['avi_key']
+            bucket_contents.set_contents_from_filename( c['avi']['output'] )
+            bucket_contents.make_public()
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log, 'Failed to upload to s3: %s' % str( e ) )
+        
+        log.info( 'Uploading to s3: %s' % c['thumbnail']['output'] )
+        try:
+            bucket_contents.key = c['thumbnail_key']
+            bucket_contents.set_contents_from_filename( c['thumbnail']['output'] )
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log,  'Failed to upload to s3: %s' % str( e ) )
+
+        log.info( 'Uploading to s3: %s' % c['poster']['output'] )
+        try:
+            bucket_contents.key = c['poster_key']
+            bucket_contents.set_contents_from_filename( c['poster']['output'] )
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log,  'Failed to upload to s3: %s' % str( e ) )
+
+        if found_faces:
+            log.info( 'Uploading to s3: %s' % c['face']['output'] )
+            try:
+                bucket_contents.key = c['face_key']
+                bucket_contents.set_contents_from_filename( c['face']['output'] )
+            except Exception as e:
+                helpers.handle_errors( c )
+                return perror( log,  'Failed to upload to s3: %s' % str( e ) )
+
+        log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
+        try:
+            bucket_contents.key = c['metadata_key']
+            bucket_contents.set_contents_from_filename( c['metadata']['output'] )
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
         ###########################################################################
         # DATABASE
@@ -214,7 +281,7 @@ class Worker(Background):
             # face
             if found_faces:
 
-                log.info ('Face detected')
+                log.info( 'Face detected' )
 
                 asset = MediaAssets( uuid=str(uuid.uuid4()),
                                      asset_type='face',
@@ -234,86 +301,24 @@ class Worker(Background):
             #                          detection_confidence = 3.14159
             #                          )
             #poster_asset.media_asset_features.append( row )
+
+            raise Exception('Oops!')
             
 
-        except Exception, e:
-            # Remove all local files
-            try:
-                log.info( 'Removing temp files ...' )
-                for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
-                    if ( f in c ) and ( 'output' in c[f] ) and os.path.isfile( c[f]['output'] ):
-                        os.remove( c[f]['output'] )
-                    if ( f in c ) and ( 'input' in c[f] ) and os.path.isfile( c[f]['input'] ):
-                        os.remove( c[f]['input'] )
-                os.remove( c['info'] )
-            except Exception, e_inner:
-                log.error( 'Some trouble removing temp files: %s' % str( e_inner ) )
-
+        except Exception as e:
+            helpers.handle_error( c )
             return perror( log,  'Failed to add mediafile to database!: %s' % str( e ) )
 
-
-        ###########################################################################
-
-        # Upload to S3
-        #
-        try:
-            s3 = boto.connect_s3(config.awsAccess, config.awsSecret)
-            bucket = s3.get_bucket(config.bucket_name)
-            bucket_contents = Key(bucket)
-        except Exception, e:
-            return perror( log,  'Failed to obtain s3 bucket: %s' % str(e) )
-
-        log.info( 'Uploading to s3: %s' % c['video']['output'] )
-        try:
-            bucket_contents.key = c['video_key']
-            bucket_contents.set_contents_from_filename( c['video']['output'] )
-        except Exception, e:
-            return perror( log,  'Failed to upload to s3: %s' % str(e) )
-
-        log.info( 'Uploading to s3: %s' % c['avi']['output'] )
-        try:
-            bucket_contents.key = c['avi_key']
-            bucket_contents.set_contents_from_filename( c['avi']['output'] )
-            bucket_contents.make_public()
-        except Exception, e:
-            return perror( log, 'Failed to upload to s3: %s' % str(e) )
-        
-        log.info( 'Uploading to s3: %s' % c['thumbnail']['output'] )
-        try:
-            bucket_contents.key = c['thumbnail_key']
-            bucket_contents.set_contents_from_filename( c['thumbnail']['output'] )
-        except Exception, e:
-            return perror( log,  'Failed to upload to s3: %s' % str(e) )
-
-        log.info( 'Uploading to s3: %s' % c['poster']['output'] )
-        try:
-            bucket_contents.key = c['poster_key']
-            bucket_contents.set_contents_from_filename( c['poster']['output'] )
-        except Exception, e:
-            return perror( log,  'Failed to upload to s3: %s' % str(e) )
-
-        if found_faces:
-            log.info( 'Uploading to s3: %s' % c['face']['output'] )
-            try:
-                bucket_contents.key = c['face_key']
-                bucket_contents.set_contents_from_filename( c['face']['output'] )
-            except Exception, e:
-                return perror( log,  'Failed to upload to s3: %s' % str(e) )
-
-        log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
-        try:
-            bucket_contents.key = c['metadata_key']
-            bucket_contents.set_contents_from_filename( c['metadata']['output'] )
-        except Exception, e:
-            return perror( log,  'Failed to upload to s3: %s' % str(e) )
-
-        # We're OK with S3, lets commit the database.
+        # Commit to database.
         try:
             orm.commit()
-        except Exception, e:
-            return perror( log, 'Failed to commit the database: %s' % str(e) )
+        except Exception as e:
+            helpers.handle_error( c )
+            return perror( log, 'Failed to commit the database: %s' % str( e ) )
 
-        # And finally, notify the Cat server
+        ################################################################################
+        # Send notification to CAT server.
+        ################################################################################
         data['location'] = 'us'
         data['bucket_name'] = config.bucket_name
         data['uid'] = data['user_id']
@@ -331,21 +336,26 @@ class Worker(Background):
             jdata = json.loads( body )
             if 'error' in jdata:
                 raise Exception( jdata['message'] )
-        except Exception, e:
-            perror( log,  'Failed to notify Cat: %s' % str(e) )
+        except Exception as e:
+            handle_errors( c )
+            return perror( log,  'Failed to notify Cat: %s' % str( e ) )
 
-        # Remove all local files
+        ################################################################################
+        # Cleanup files on success.
+        ################################################################################
         try:
-            log.info( 'Removing temp files ...' )
+            log.info( 'File successfully processed, removing temp files ...' )
             for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
                 if ( f in c ) and ( 'output' in c[f] ) and os.path.isfile( c[f]['output'] ):
                     os.remove( c[f]['output'] )
                 if ( f in c ) and ( 'input' in c[f] ) and os.path.isfile( c[f]['input'] ):
                     os.remove( c[f]['input'] )
             os.remove( c['info'] )
-        except Exception, e_inner:
+        except Exception as e_inner:
+            helpers.handle_errors( c )
             log.error( 'Some trouble removing temp files: %s' % str( e_inner ) )
 
         log.info( 'DONE WITH %s' % c['uuid'] )
+
         return {}
 

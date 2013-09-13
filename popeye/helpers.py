@@ -1,5 +1,11 @@
 import json
+import logging
 import os
+
+from appconfig import AppConfig
+config = AppConfig( 'popeye' ).config()
+logging.basicConfig( filename = config['logfile'], level = config.loglevel )
+log = logging.getLogger( __name__ )
 
 def perror( log, msg ):
     log.error( msg )
@@ -12,8 +18,8 @@ def exif( filenames ):
     try:
         command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
         os.system( command )
-    except Exception, e:
-        print 'EXIF extraction failed, error was: %s' % ( e )
+    except Exception as e:
+        print 'EXIF extraction failed, error was: %s' % str( e )
         raise
 
     file_handle = open( exif_file )
@@ -168,21 +174,43 @@ def generate_poster(input_video, output_jpg, rotation):
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=320:-1,pad=320:240:0:oh/2-ih/2 %s' %(input_video, output_jpg)
         print cmd
         if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' %cmd
+            print 'Failed to execute: %s' % cmd
     elif rotation == '90' or rotation == '270':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:240,pad=320:240:ow/2-iw/2:0 %s' %(input_video, output_jpg)
         print cmd
         if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' %cmd
+            print 'Failed to execute: %s' % cmd
         
 def generate_thumbnail(input_video, output_jpg, rotation):
     if rotation == '0' or rotation == '180':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %(input_video, output_jpg)
         print cmd
         if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' %cmd
+            print 'Failed to execute: %s' % cmd
     elif rotation == '90' or rotation == '270':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %(input_video, output_jpg)
         print cmd
         if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' %cmd
+            print 'Failed to execute: %s' % cmd
+
+def handle_error( filenames ):
+    '''Copy temporary files to error directory.'''
+    try:
+        log.info( 'Error occured, relocating temp files to error directory...' )
+        for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
+            if ( f in filenames ) and ( 'output' in filenames[f] ) and os.path.isfile( filenames[f]['output'] ):
+                full_name = filenames[f]['output']
+                base_path = os.path.split( full_name )[0]
+                file_name = os.path.split( full_name )[1]
+                os.rename( filenames[f]['output'], base_path + '/errors/' + file_name )
+            if ( f in filenames ) and ( 'input' in filenames[f] ) and os.path.isfile( filenames[f]['input'] ):
+                full_name = filenames[f]['input']
+                base_path = os.path.split( full_name )[0]
+                file_name = os.path.split( full_name )[1]
+                os.rename( filenames[f]['input'], base_path + '/errors/' + file_name )
+        full_name = filenames['info']
+        base_path = os.path.split( full_name )[0]
+        file_name = os.path.split( full_name )[1]
+        os.rename( filenames['info'], base_path + '/errors/' + file_name )
+    except Exception as e_inner:
+        log.error( 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
