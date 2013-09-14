@@ -37,6 +37,8 @@ def exif( filenames ):
     rotation     = str( exif_data.get( 'Rotation', '0' ) )
     frame_rate   = str( exif_data.get( 'VideoFrameRate', '24' ) )
     create_date  = str( exif_data.get( 'MediaCreateDate', '' ) )
+    image_width  = exif_data.get( 'ImageWidth', None)
+    image_height = exif_data.get( 'ImageHeight', None)
 
     return( { 'file_ext'    : file_ext, 
               'mime_type'   : mime_type, 
@@ -44,7 +46,9 @@ def exif( filenames ):
               'lng'         : lng, 
               'create_date' : create_date, 
               'rotation'    : rotation, 
-              'frame_rate'  : frame_rate
+              'frame_rate'  : frame_rate,
+              'width'       : image_width,
+              'height'      : image_height
               } )
 
 def lc_extension( basename, ext ):
