@@ -57,21 +57,6 @@ def lc_extension( basename, ext ):
 
     return basename, lc_ext
 
-def get_faces(avi_video):
-    basename, ext = os.path.splitext( avi_video )
-    media_uuid = os.path.split( basename )[1]
-    media_url = 'http://s3-us-west-2.amazonaws.com/viblio-uploaded-files/' + media_uuid + '/' + media_uuid + ext
-    print media_url
-    print basename
-    session_info = iv.open_session()
-    user_id = iv.login(session_info, iv_config.uid)
-    file_id = iv.analyze(session_info, user_id, media_url)
-    print file_id
-    x = iv.retrieve(session_info, user_id, file_id, basename)
-    iv.logout(session_info, user_id)
-    iv.close_session(session_info)
-    return (x)
-
 def create_filenames (full_filename):
     # Basename includes the absolute path and everything up to the extension.
     basename, ext = os.path.splitext( full_filename )
@@ -137,61 +122,6 @@ def create_filenames (full_filename):
             }
         }
     return(filenames)
-
-def transcode(c, mimetype, rotation):
-    ffopts = ''
-    if rotation == '0' and mimetype == 'video/mp4':
-        print( 'Video is non-rotated mp4, leaving it alone.' )
-        c['video']['output'] = c['video']['input']
-    else:
-        if rotation == '90':
-            print( 'Video is rotated 90 degrees, rotating.' )
-            ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
-        elif rotation == '180':
-            print( 'Video is rotated 180 degrees, rotating.' )
-            ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
-        elif rotation == '270':
-            print( 'Video is rotated 270 degrees, rotating.' )
-            ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
-
-    cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
-    print( cmd )
-    if not os.system( cmd ) == 0:
-        print( 'Failed to execute: %s' % cmd )
-        return
-    mimetype = 'video/mp4'
-
-    # Also generate AVI for IntelliVision (temporary)
-    ffopts = ''
-    cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
-    print( cmd )
-    if not os.system( cmd ) == 0:
-        print( 'Failed to generate AVI file: %s' % cmd )
-        return 
-        
-def generate_poster(input_video, output_jpg, rotation):
-    if rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=320:-1,pad=320:240:0:oh/2-ih/2 %s' %(input_video, output_jpg)
-        print cmd
-        if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' % cmd
-    elif rotation == '90' or rotation == '270':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:240,pad=320:240:ow/2-iw/2:0 %s' %(input_video, output_jpg)
-        print cmd
-        if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' % cmd
-        
-def generate_thumbnail(input_video, output_jpg, rotation):
-    if rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %(input_video, output_jpg)
-        print cmd
-        if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' % cmd
-    elif rotation == '90' or rotation == '270':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %(input_video, output_jpg)
-        print cmd
-        if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' % cmd
 
 def handle_errors( filenames ):
     '''Copy temporary files to error directory.'''
