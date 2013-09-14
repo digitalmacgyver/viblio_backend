@@ -1,14 +1,14 @@
 import json
-import logging
+#import logging
 import os
 
-from appconfig import AppConfig
-config = AppConfig( 'popeye' ).config()
-logging.basicConfig( filename = config['logfile'], level = config.loglevel )
-log = logging.getLogger( __name__ )
+#from appconfig import AppConfig
+#config = AppConfig( 'popeye' ).config()
+#logging.basicConfig( filename = config['logfile'], level = config.loglevel )
+#log = logging.getLogger( __name__ )
 
 def perror( log, msg ):
-    log.error( msg )
+#    log.error( msg )
     return { 'error': True, 'message': msg }
 
 def exif( filenames ):
@@ -196,7 +196,7 @@ def generate_thumbnail(input_video, output_jpg, rotation):
 def handle_error( filenames ):
     '''Copy temporary files to error directory.'''
     try:
-        log.info( 'Error occured, relocating temp files to error directory...' )
+#        log.info( 'Error occured, relocating temp files to error directory...' )
         for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
             if ( f in filenames ) and ( 'output' in filenames[f] ) and os.path.isfile( filenames[f]['output'] ):
                 full_name = filenames[f]['output']
@@ -213,4 +213,5 @@ def handle_error( filenames ):
         file_name = os.path.split( full_name )[1]
         os.rename( filenames['info'], base_path + '/errors/' + file_name )
     except Exception as e_inner:
-        log.error( 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
+#        log.error( 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
+        pass
