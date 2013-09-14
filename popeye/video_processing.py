@@ -64,7 +64,7 @@ def generate_poster(input_video, output_jpg, rotation, width, height):
         aspect_ratio = 4/float(3)
     else:
         aspect_ratio = width/float(height)
-    print aspect_ratio
+    print 'aspect ratio is', aspect_ratio
     if rotation == '90' or rotation == '270' or aspect_ratio < 16/float(9):
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:180,pad=320:180:ow/2-iw/2:0 %s' %(input_video, output_jpg)
         print cmd
