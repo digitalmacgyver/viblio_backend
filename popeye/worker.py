@@ -134,14 +134,14 @@ class Worker(Background):
 #         log.info( cmd )
 #         if not os.system( cmd ) == 0:
 #             return perror( log,  'Failed to execute: %s' % cmd )
-        video_processing.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'])
+        video_processing.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'], exif['width'],exif['height'])
 
         # The thumbnail
 #         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 128x128 %s' % ( c['thumbnail']['input'], c['thumbnail']['output'] )
 #         log.info( cmd )
 #         if not os.system( cmd ) == 0:
 #            return perror( log,  'Failed to execute: %s' % cmd )
-        video_processing.generate_thumbnail(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'])
+        video_processing.generate_thumbnail(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'], exif['width'],exif['height'])
 
         # The face - The strange boolean structure here allows us to
         # easily turn it on and off.
