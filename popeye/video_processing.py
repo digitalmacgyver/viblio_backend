@@ -7,10 +7,6 @@ import os
 #logging.basicConfig( filename = config['logfile'], level = config.loglevel )
 #log = logging.getLogger( __name__ )
 
-def perror( log, msg ):
-#    log.error( msg )
-    return { 'error': True, 'message': msg }
-
 def exif( filenames ):
     media_file = filenames['video']['input']
     exif_file = filenames['exif']['output']
@@ -47,16 +43,6 @@ def exif( filenames ):
               'frame_rate'  : frame_rate
               } )
 
-def lc_extension( basename, ext ):
-    '''Lowercase the extension of our input file, and rename the file
-    to match.'''
-
-    lc_ext = ext.lower()
-    if lc_ext != ext:
-        os.rename( basename + ext, basename + lc_ext )
-
-    return basename, lc_ext
-
 def get_faces(avi_video):
     basename, ext = os.path.splitext( avi_video )
     media_uuid = os.path.split( basename )[1]
@@ -71,72 +57,6 @@ def get_faces(avi_video):
     iv.logout(session_info, user_id)
     iv.close_session(session_info)
     return (x)
-
-def create_filenames (full_filename):
-    # Basename includes the absolute path and everything up to the extension.
-    basename, ext = os.path.splitext( full_filename )
-    # Rename the file so its extension is in lower case.
-    basename, ext = lc_extension( basename, ext )
-    # By convention the filename is the media_uuid.
-    media_uuid = os.path.split( basename )[1]
-    input_video = full_filename
-    input_info = basename + '.json'
-    input_metadata = basename + '_metadata.json'
-    # Output file names
-    output_video = basename + '.mp4'
-    avi_video = basename + '.avi'
-    output_thumbnail = basename + '_thumbnail.jpg'
-    output_poster = basename + '_poster.jpg'
-    output_metadata = input_metadata
-    output_face = basename + '_face0.jpg'
-    output_exif = basename + '_exif.json'
-    
-    video_key = media_uuid + '/' + os.path.basename( output_video )
-    avi_key = media_uuid + '/' + os.path.basename( avi_video )
-    thumbnail_key = media_uuid + '/' + os.path.basename( output_thumbnail )
-    poster_key = media_uuid + '/' + os.path.basename( output_poster )
-    metadata_key = media_uuid + '/' + os.path.basename( output_metadata )
-    face_key = media_uuid + '/' + os.path.basename( output_face )
-    exif_key = media_uuid + '/' + os.path.basename( output_exif )
-    filenames = {
-        'uuid': media_uuid,
-        'info': input_info,
-        'video_key': video_key,
-        'avi_key': avi_key,
-        'thumbnail_key': thumbnail_key,
-        'poster_key': poster_key,
-        'metadata_key': metadata_key,
-        'face_key': face_key,
-        'exif_key': exif_key,
-        'avi' : {
-            'input': output_video,
-            'output': avi_video
-            },
-        'video': {
-            'input': input_video,
-            'output': output_video
-            },
-        'thumbnail': {
-            'input': output_video,
-            'output': output_thumbnail
-            },
-        'poster': {
-            'input': output_video,
-            'output': output_poster
-            },
-        'metadata': {
-            'input': input_metadata,
-            'output': output_metadata
-            },
-        'face': {
-            'input': output_video,
-            'output': output_face
-            },
-        'exif': {
-            'output': output_exif
-            }
-        }
-    return(filenames)
 
 def transcode(c, mimetype, rotation):
     ffopts = ''
@@ -168,6 +88,13 @@ def transcode(c, mimetype, rotation):
     if not os.system( cmd ) == 0:
         print( 'Failed to generate AVI file: %s' % cmd )
         return 
+    # Move the metadata atom(s) to the front of the file.  -movflags faststart is
+    # not a valid option in our version of ffmpeg, so cannot do it there.  qt-faststart
+    # is broken.  qtfaststart is a python based solution that has worked much better for me
+    cmd = '/usr/local/bin/qtfaststart %s' % c['video']['output']
+    print( cmd )
+    if not os.system( cmd ) == 0:
+        print( 'Failed to run qtfaststart on the output file' )
         
 def generate_poster(input_video, output_jpg, rotation):
     if rotation == '0' or rotation == '180':
@@ -192,26 +119,3 @@ def generate_thumbnail(input_video, output_jpg, rotation):
         print cmd
         if not os.system( cmd ) == 0:
             print 'Failed to execute: %s' % cmd
-
-def handle_errors( filenames ):
-    '''Copy temporary files to error directory.'''
-    try:
-#        log.info( 'Error occured, relocating temp files to error directory...' )
-        for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
-            if ( f in filenames ) and ( 'output' in filenames[f] ) and os.path.isfile( filenames[f]['output'] ):
-                full_name = filenames[f]['output']
-                base_path = os.path.split( full_name )[0]
-                file_name = os.path.split( full_name )[1]
-                os.rename( filenames[f]['output'], base_path + '/errors/' + file_name )
-            if ( f in filenames ) and ( 'input' in filenames[f] ) and os.path.isfile( filenames[f]['input'] ):
-                full_name = filenames[f]['input']
-                base_path = os.path.split( full_name )[0]
-                file_name = os.path.split( full_name )[1]
-                os.rename( filenames[f]['input'], base_path + '/errors/' + file_name )
-        full_name = filenames['info']
-        base_path = os.path.split( full_name )[0]
-        file_name = os.path.split( full_name )[1]
-        os.rename( filenames['info'], base_path + '/errors/' + file_name )
-    except Exception as e_inner:
-#        log.error( 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
-        pass

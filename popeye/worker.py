@@ -14,6 +14,7 @@ import requests
 from boto.s3.key import Key
 
 import helpers
+import video_processing
 import mimetypes
 
 from background import Background
@@ -86,60 +87,61 @@ class Worker(Background):
         mimetype, uu = mimetypes.guess_type( c['video']['input'] )
 
         # Transcode to mp4 and rotate to to have no rotation of necessary.
-        ffopts = ''
-        rotation = exif['rotation']
-
-        if rotation == '0' and mimetype == 'video/mp4':
-            log.info( 'Video is non-rotated mp4, leaving it alone.' )
-            c['video']['output'] = c['video']['input']
-        else:
-            if rotation == '90':
-                log.info( 'Video is rotated 90 degrees, rotating.' )
-                ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
-            elif rotation == '180':
-                log.info( 'Video is rotated 180 degrees, rotating.' )
-                ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
-            elif rotation == '270':
-                log.info( 'Video is rotated 270 degrees, rotating.' )
-                ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
-
-            cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
-            log.info( cmd )
-            if not os.system( cmd ) == 0:
-                helpers.handle_errors( c )
-                return perror( log, 'Failed to execute: %s' % cmd )
-            mimetype = 'video/mp4'
-
-        # Also generate AVI for IntelliVision (temporary)
-        ffopts = ''
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
-        log.info( cmd )
-        if not os.system( cmd ) == 0:
-            helpers.handle_errors( c )
-            return perror( log, 'Failed to generate AVI file: %s' % cmd )
-
-        if mimetype == 'video/mp4':
-            # Move the metadata atom(s) to the front of the file.  -movflags faststart is
-            # not a valid option in our version of ffmpeg, so cannot do it there.  qt-faststart
-            # is broken.  qtfaststart is a python based solution that has worked much better for me
-            cmd = '/usr/local/bin/qtfaststart %s' % c['video']['output']
-            log.info( cmd )
-            if not os.system( cmd ) == 0:
-                perror( log,  'Failed to run qtfaststart on the output file' )
+        video_processing.transcode(c, mimetype, exif['rotation'])
+#         ffopts = ''
+#         rotation = exif['rotation']
+# 
+#         if rotation == '0' and mimetype == 'video/mp4':
+#             log.info( 'Video is non-rotated mp4, leaving it alone.' )
+#             c['video']['output'] = c['video']['input']
+#         else:
+#             if rotation == '90':
+#                 log.info( 'Video is rotated 90 degrees, rotating.' )
+#                 ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
+#             elif rotation == '180':
+#                 log.info( 'Video is rotated 180 degrees, rotating.' )
+#                 ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
+#             elif rotation == '270':
+#                 log.info( 'Video is rotated 270 degrees, rotating.' )
+#                 ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
+# 
+#             cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
+#             log.info( cmd )
+#             if not os.system( cmd ) == 0:
+#                 helpers.handle_errors( c )
+#                 return perror( log, 'Failed to execute: %s' % cmd )
+#             mimetype = 'video/mp4'
+# 
+#         # Also generate AVI for IntelliVision (temporary)
+#         ffopts = ''
+#         cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
+#         log.info( cmd )
+#         if not os.system( cmd ) == 0:
+#             helpers.handle_errors( c )
+#             return perror( log, 'Failed to generate AVI file: %s' % cmd )
+# 
+#         if mimetype == 'video/mp4':
+#             # Move the metadata atom(s) to the front of the file.  -movflags faststart is
+#             # not a valid option in our version of ffmpeg, so cannot do it there.  qt-faststart
+#             # is broken.  qtfaststart is a python based solution that has worked much better for me
+#             cmd = '/usr/local/bin/qtfaststart %s' % c['video']['output']
+#             log.info( cmd )
+#             if not os.system( cmd ) == 0:
+#                 perror( log,  'Failed to run qtfaststart on the output file' )
 
         # Generate the poster
 #         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 320x240 %s' % ( c['poster']['input'], c['poster']['output'] )
 #         log.info( cmd )
 #         if not os.system( cmd ) == 0:
 #             return perror( log,  'Failed to execute: %s' % cmd )
-        helpers.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'])
+        video_processing.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'])
 
         # The thumbnail
 #         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 128x128 %s' % ( c['thumbnail']['input'], c['thumbnail']['output'] )
 #         log.info( cmd )
 #         if not os.system( cmd ) == 0:
 #            return perror( log,  'Failed to execute: %s' % cmd )
-        helpers.generate_poster(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'])
+        video_processing.generate_poster(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'])
 
         # The face - The strange boolean structure here allows us to
         # easily turn it on and off.
