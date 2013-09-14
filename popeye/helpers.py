@@ -32,8 +32,8 @@ def exif( filenames ):
 
     file_ext     = str( exif_data.get( 'FileType', '' ) )
     mime_type    = str( exif_data.get( 'MIMEType', '' ) )
-    lat          = str( exif_data.get( 'GPSLatitude', '' ) )
-    lng          = str( exif_data.get( 'GPSLongitude', '' ) )
+    lat          = exif_data.get( 'GPSLatitude', None )
+    lng          = exif_data.get( 'GPSLongitude', None )
     rotation     = str( exif_data.get( 'Rotation', '0' ) )
     frame_rate   = str( exif_data.get( 'VideoFrameRate', '24' ) )
     create_date  = str( exif_data.get( 'MediaCreateDate', '' ) )
