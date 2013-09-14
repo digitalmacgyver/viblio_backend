@@ -44,7 +44,7 @@ do what I needed (i.e. work!)
 """
 
 conn = 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name
-engine = create_engine( conn )
+engine = create_engine( conn, pool_recycle=3600 )
 SessionFactory = map( engine )
 Session = scoped_session( SessionFactory )
 
