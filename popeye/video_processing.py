@@ -1,47 +1,8 @@
 import json
-#import logging
+import helpers
 import os
-
-#from appconfig import AppConfig
-#config = AppConfig( 'popeye' ).config()
-#logging.basicConfig( filename = config['logfile'], level = config.loglevel )
-#log = logging.getLogger( __name__ )
-
-def exif( filenames ):
-    media_file = filenames['video']['input']
-    exif_file = filenames['exif']['output']
-   
-    try:
-        command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
-        os.system( command )
-    except Exception as e:
-        print 'EXIF extraction failed, error was: %s' % str( e )
-        raise
-
-    file_handle = open( exif_file )
-
-    info = json.load( file_handle )
-
-    exif_data = {}
-    if info[0]:
-        exif_data = info[0]
-
-    file_ext     = str( exif_data.get( 'FileType', '' ) )
-    mime_type    = str( exif_data.get( 'MIMEType', '' ) )
-    lat          = exif_data.get( 'GPSLatitude', None )
-    lng          = exif_data.get( 'GPSLongitude', None )
-    rotation     = str( exif_data.get( 'Rotation', '0' ) )
-    frame_rate   = str( exif_data.get( 'VideoFrameRate', '24' ) )
-    create_date  = str( exif_data.get( 'MediaCreateDate', '' ) )
-
-    return( { 'file_ext'    : file_ext, 
-              'mime_type'   : mime_type, 
-              'lat'         : lat, 
-              'lng'         : lng, 
-              'create_date' : create_date, 
-              'rotation'    : rotation, 
-              'frame_rate'  : frame_rate
-              } )
+import iv_config
+import iv
 
 def get_faces(avi_video):
     basename, ext = os.path.splitext( avi_video )
@@ -77,6 +38,7 @@ def transcode(c, mimetype, rotation):
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
     print( cmd )
     if not os.system( cmd ) == 0:
+        helpers.handle_errors( c )
         print( 'Failed to execute: %s' % cmd )
         return
     mimetype = 'video/mp4'
@@ -86,6 +48,7 @@ def transcode(c, mimetype, rotation):
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
     print( cmd )
     if not os.system( cmd ) == 0:
+        helpers.handle_errors( c )
         print( 'Failed to generate AVI file: %s' % cmd )
         return 
     # Move the metadata atom(s) to the front of the file.  -movflags faststart is
