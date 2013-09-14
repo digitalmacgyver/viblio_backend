@@ -141,7 +141,7 @@ class Worker(Background):
 #         log.info( cmd )
 #         if not os.system( cmd ) == 0:
 #            return perror( log,  'Failed to execute: %s' % cmd )
-        video_processing.generate_poster(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'])
+        video_processing.generate_thumbnail(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'])
 
         # The face - The strange boolean structure here allows us to
         # easily turn it on and off.
@@ -308,14 +308,14 @@ class Worker(Background):
             
 
         except Exception as e:
-            helpers.handle_error( c )
+            helpers.handle_errors( c )
             return perror( log,  'Failed to add mediafile to database!: %s' % str( e ) )
 
         # Commit to database.
         try:
             orm.commit()
         except Exception as e:
-            helpers.handle_error( c )
+            helpers.handle_errors( c )
             return perror( log, 'Failed to commit the database: %s' % str( e ) )
 
         ################################################################################
