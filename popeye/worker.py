@@ -153,7 +153,7 @@ class Worker(Background):
             bucket_contents.key = c['metadata_key']
             bucket_contents.set_contents_from_filename( c['metadata']['output'] )
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
         log.info( 'Uploading to s3: %s' % c['exif']['output'] )
@@ -161,7 +161,7 @@ class Worker(Background):
             bucket_contents.key = c['exif_key']
             bucket_contents.set_contents_from_filename( c['exif']['output'] )
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
         if found_faces:
