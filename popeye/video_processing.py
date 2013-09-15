@@ -1,5 +1,5 @@
 import json
-import helpers
+import worker
 import os
 import iv_config
 import iv
@@ -38,7 +38,7 @@ def transcode(c, mimetype, rotation):
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
     print( cmd )
     if os.system( cmd ) != 0 or not os.path.isfile( c['video']['output'] ):
-        helpers.handle_errors( c )
+        worker.handle_errors( c )
         print( 'Failed to generate transcoded video with: %s' % cmd )
         return
     mimetype = 'video/mp4'
@@ -48,7 +48,7 @@ def transcode(c, mimetype, rotation):
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
     print( cmd )
     if os.system( cmd ) != 0 or not os.path.isfile( c['avi']['output'] ):
-        helpers.handle_errors( c )
+        worker.handle_errors( c )
         print( 'Failed to generate AVI file: %s' % cmd )
         return 
     # Move the metadata atom(s) to the front of the file.  -movflags
