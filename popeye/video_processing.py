@@ -37,9 +37,9 @@ def transcode(c, mimetype, rotation):
 
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
     print( cmd )
-    if not os.system( cmd ) == 0:
+    if os.system( cmd ) != 0 or not os.path.isfile( c['video']['output'] ):
         helpers.handle_errors( c )
-        print( 'Failed to execute: %s' % cmd )
+        print( 'Failed to generate transcoded video with: %s' % cmd )
         return
     mimetype = 'video/mp4'
 
@@ -47,38 +47,37 @@ def transcode(c, mimetype, rotation):
     ffopts = ''
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
     print( cmd )
-    if not os.system( cmd ) == 0:
+    if os.system( cmd ) != 0 or not os.path.isfile( c['avi']['output'] ):
         helpers.handle_errors( c )
         print( 'Failed to generate AVI file: %s' % cmd )
         return 
-    # Move the metadata atom(s) to the front of the file.  -movflags faststart is
-    # not a valid option in our version of ffmpeg, so cannot do it there.  qt-faststart
-    # is broken.  qtfaststart is a python based solution that has worked much better for me
+    # Move the metadata atom(s) to the front of the file.  -movflags
+    # faststart is not a valid option in our version of ffmpeg, so
+    # cannot do it there.  qt-faststart is broken.  qtfaststart is a
+    # python based solution that has worked much better for me
     cmd = '/usr/local/bin/qtfaststart %s' % c['video']['output']
     print( cmd )
-    if not os.system( cmd ) == 0:
+    if os.system( cmd ) != 0:
         print( 'Failed to run qtfaststart on the output file' )
         
 def generate_poster(input_video, output_jpg, rotation):
+    cmd = ''
     if rotation == '0' or rotation == '180':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=320:-1,pad=320:240:0:oh/2-ih/2 %s' %(input_video, output_jpg)
-        print cmd
-        if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' % cmd
     elif rotation == '90' or rotation == '270':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:240,pad=320:240:ow/2-iw/2:0 %s' %(input_video, output_jpg)
-        print cmd
-        if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' % cmd
+
+    print cmd
+    if os.system( cmd ) != 0 or not os.path.isfile( output_jpg ):
+        print 'Failed to generate poster with command: %s' % cmd
         
 def generate_thumbnail(input_video, output_jpg, rotation):
+    cmd = ''
+
     if rotation == '0' or rotation == '180':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %(input_video, output_jpg)
-        print cmd
-        if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' % cmd
     elif rotation == '90' or rotation == '270':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %(input_video, output_jpg)
-        print cmd
-        if not os.system( cmd ) == 0:
-            print 'Failed to execute: %s' % cmd
+
+    if os.system( cmd ) != 0 or not os.path.isfile( output_jpg ):
+        print 'Failed to generate thumbnail with command: %s' % cmd

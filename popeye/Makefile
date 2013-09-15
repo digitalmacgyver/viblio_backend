@@ -10,7 +10,8 @@ PYPKGS=\
 	config \
 	sqlalchemy \
 	requests \
-	qtfaststart
+	qtfaststart \
+	pytz
 
 install_deps:
 	apt-get -y install python-pip
@@ -18,3 +19,4 @@ install_deps:
 	apt-get -y install python-mysqldb
 	apt-get -y install apache2
 	apt-get -y install libapache2-mod-wsgi
+	apt-get -y install python-bs4

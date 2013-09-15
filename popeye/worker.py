@@ -38,12 +38,12 @@ class Worker(Background):
 
         # If the main input file (video) is not present we're toast
         if not os.path.isfile( c['video']['input'] ):
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'File does not exist: %s' % c['video']['input'] )
 
         # We need the brewtus metadata too
         if not os.path.isfile( c['info'] ):
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'File does not exist: %s' % c['info'] )
 
         # Get the brewtus info
@@ -51,7 +51,7 @@ class Worker(Background):
             f = open( c['info'] )
             info = json.load( f )
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to open and parse %s error was %s' % ( c['info'], str( e ) ) )
 
         # Get the client metadata too.  It includes the original file's
@@ -61,14 +61,14 @@ class Worker(Background):
                 f = open( c['metadata']['input'] )
                 md = json.load( f )
             except Exception as e:
-                helpers.handle_errors( c )
+                self.handle_errors( c )
                 return perror( log,  'Failed to parse %s error was %s' % ( c['metadata']['input'], str( e ) ) )
 
         # Try to obtain the user from the database
         try:
             user = orm.query( Users ).filter_by( uuid = info['uid'] ).one()
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log, 'Failed to look up user by uuid: %s error was %s' % ( info['uid'], str( e ) ) )
 
         # Brewtus writes the uploaded file as <fileid> without an extenstion,
@@ -79,7 +79,7 @@ class Worker(Background):
             tar = src + info['fileExt'].lower()
             if not src == tar:
                 if not os.system( "/bin/mv %s %s" % ( src, tar ) ) == 0:
-                    helpers.handle_errors( c )
+                    self.handle_errors( c )
                     return perror( log,  "Failed to execute: /bin/mv %s %s" % ( src, tar ) )
                 c['video']['input'] = tar
 
@@ -88,59 +88,11 @@ class Worker(Background):
 
         # Transcode to mp4 and rotate to to have no rotation of necessary.
         video_processing.transcode(c, mimetype, exif['rotation'])
-#         ffopts = ''
-#         rotation = exif['rotation']
-# 
-#         if rotation == '0' and mimetype == 'video/mp4':
-#             log.info( 'Video is non-rotated mp4, leaving it alone.' )
-#             c['video']['output'] = c['video']['input']
-#         else:
-#             if rotation == '90':
-#                 log.info( 'Video is rotated 90 degrees, rotating.' )
-#                 ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
-#             elif rotation == '180':
-#                 log.info( 'Video is rotated 180 degrees, rotating.' )
-#                 ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
-#             elif rotation == '270':
-#                 log.info( 'Video is rotated 270 degrees, rotating.' )
-#                 ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
-# 
-#             cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
-#             log.info( cmd )
-#             if not os.system( cmd ) == 0:
-#                 helpers.handle_errors( c )
-#                 return perror( log, 'Failed to execute: %s' % cmd )
-#             mimetype = 'video/mp4'
-# 
-#         # Also generate AVI for IntelliVision (temporary)
-#         ffopts = ''
-#         cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
-#         log.info( cmd )
-#         if not os.system( cmd ) == 0:
-#             helpers.handle_errors( c )
-#             return perror( log, 'Failed to generate AVI file: %s' % cmd )
-# 
-#         if mimetype == 'video/mp4':
-#             # Move the metadata atom(s) to the front of the file.  -movflags faststart is
-#             # not a valid option in our version of ffmpeg, so cannot do it there.  qt-faststart
-#             # is broken.  qtfaststart is a python based solution that has worked much better for me
-#             cmd = '/usr/local/bin/qtfaststart %s' % c['video']['output']
-#             log.info( cmd )
-#             if not os.system( cmd ) == 0:
-#                 perror( log,  'Failed to run qtfaststart on the output file' )
 
-        # Generate the poster
-#         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 320x240 %s' % ( c['poster']['input'], c['poster']['output'] )
-#         log.info( cmd )
-#         if not os.system( cmd ) == 0:
-#             return perror( log,  'Failed to execute: %s' % cmd )
+        # The poster
         video_processing.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'])
 
         # The thumbnail
-#         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -f image2 -s 128x128 %s' % ( c['thumbnail']['input'], c['thumbnail']['output'] )
-#         log.info( cmd )
-#         if not os.system( cmd ) == 0:
-#            return perror( log,  'Failed to execute: %s' % cmd )
         video_processing.generate_thumbnail(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'])
 
         # The face - The strange boolean structure here allows us to
@@ -154,7 +106,7 @@ class Worker(Background):
                 found_faces = False
                 perror( log,  'Failed to find any faces in video for command: %s' % cmd )
 
-        ###########################################################################
+        ######################################################################
         # Upload to S3
         #
         try:
@@ -162,7 +114,7 @@ class Worker(Background):
             bucket = s3.get_bucket(config.bucket_name)
             bucket_contents = Key(bucket)
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to obtain s3 bucket: %s' % str( e ) )
 
         log.info( 'Uploading to s3: %s' % c['video']['output'] )
@@ -170,7 +122,7 @@ class Worker(Background):
             bucket_contents.key = c['video_key']
             bucket_contents.set_contents_from_filename( c['video']['output'] )
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
         log.info( 'Uploading to s3: %s' % c['avi']['output'] )
@@ -179,7 +131,7 @@ class Worker(Background):
             bucket_contents.set_contents_from_filename( c['avi']['output'] )
             bucket_contents.make_public()
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log, 'Failed to upload to s3: %s' % str( e ) )
         
         log.info( 'Uploading to s3: %s' % c['thumbnail']['output'] )
@@ -187,7 +139,7 @@ class Worker(Background):
             bucket_contents.key = c['thumbnail_key']
             bucket_contents.set_contents_from_filename( c['thumbnail']['output'] )
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
         log.info( 'Uploading to s3: %s' % c['poster']['output'] )
@@ -195,7 +147,7 @@ class Worker(Background):
             bucket_contents.key = c['poster_key']
             bucket_contents.set_contents_from_filename( c['poster']['output'] )
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
         if found_faces:
@@ -204,7 +156,7 @@ class Worker(Background):
                 bucket_contents.key = c['face_key']
                 bucket_contents.set_contents_from_filename( c['face']['output'] )
             except Exception as e:
-                helpers.handle_errors( c )
+                self.handle_errors( c )
                 return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
         log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
@@ -212,10 +164,10 @@ class Worker(Background):
             bucket_contents.key = c['metadata_key']
             bucket_contents.set_contents_from_filename( c['metadata']['output'] )
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
-        ###########################################################################
+        #######################################################################
         # DATABASE
         #
         # Default the filename, then try to obtain it from the
@@ -304,23 +256,23 @@ class Worker(Background):
             #                          )
             #poster_asset.media_asset_features.append( row )
 
-#            raise Exception('Oops!')
+            #raise Exception('Oops!')
             
 
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to add mediafile to database!: %s' % str( e ) )
 
         # Commit to database.
         try:
             orm.commit()
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log, 'Failed to commit the database: %s' % str( e ) )
 
-        ################################################################################
+        #######################################################################
         # Send notification to CAT server.
-        ################################################################################
+        #######################################################################
         data['location'] = 'us'
         data['bucket_name'] = config.bucket_name
         data['uid'] = data['user_id']
@@ -339,12 +291,12 @@ class Worker(Background):
             if 'error' in jdata:
                 raise Exception( jdata['message'] )
         except Exception as e:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             return perror( log,  'Failed to notify Cat: %s' % str( e ) )
 
-        ################################################################################
+        ######################################################################
         # Cleanup files on success.
-        ################################################################################
+        ######################################################################
         try:
             log.info( 'File successfully processed, removing temp files ...' )
             for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
@@ -354,10 +306,37 @@ class Worker(Background):
                     os.remove( c[f]['input'] )
             os.remove( c['info'] )
         except Exception as e_inner:
-            helpers.handle_errors( c )
+            self.handle_errors( c )
             log.error( 'Some trouble removing temp files: %s' % str( e_inner ) )
 
         log.info( 'DONE WITH %s' % c['uuid'] )
 
         return {}
 
+    def handle_errors( self, filenames ):
+        '''Copy temporary files to error directory.'''
+        try:
+            log = self.log
+            log.info( 'Error occured, relocating temp files to error directory...' )
+            for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
+                if ( f in filenames ) and ( 'output' in filenames[f] ) and os.path.isfile( filenames[f]['output'] ):
+                    full_name = filenames[f]['output']
+                    base_path = os.path.split( full_name )[0]
+                    file_name = os.path.split( full_name )[1]
+                    os.rename( filenames[f]['output'], base_path + '/errors/' + file_name )
+                if ( f in filenames ) and ( 'input' in filenames[f] ) and os.path.isfile( filenames[f]['input'] ):
+                    full_name = filenames[f]['input']
+                    base_path = os.path.split( full_name )[0]
+                    file_name = os.path.split( full_name )[1]
+                    os.rename( filenames[f]['input'], base_path + '/errors/' + file_name )
+            if 'info' in filenames:
+                full_name = filenames['info']
+                base_path = os.path.split( full_name )[0]
+                file_name = os.path.split( full_name )[1]
+                os.rename( filenames['info'], base_path + '/errors/' + file_name )
+        except Exception as e_inner:
+            try:
+                log = self.log
+                log.error( 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
+            except:
+                pass
