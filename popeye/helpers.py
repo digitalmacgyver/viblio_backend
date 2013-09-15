@@ -1,14 +1,8 @@
 import json
-#import logging
 import os
 
-#from appconfig import AppConfig
-#config = AppConfig( 'popeye' ).config()
-#logging.basicConfig( filename = config['logfile'], level = config.loglevel )
-#log = logging.getLogger( __name__ )
-
 def perror( log, msg ):
-#    log.error( msg )
+    #log.error( msg )
     return { 'error': True, 'message': msg }
 
 def exif( filenames ):
@@ -127,25 +121,3 @@ def create_filenames (full_filename):
         }
     return(filenames)
 
-def handle_errors( filenames ):
-    '''Copy temporary files to error directory.'''
-    try:
-#        log.info( 'Error occured, relocating temp files to error directory...' )
-        for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
-            if ( f in filenames ) and ( 'output' in filenames[f] ) and os.path.isfile( filenames[f]['output'] ):
-                full_name = filenames[f]['output']
-                base_path = os.path.split( full_name )[0]
-                file_name = os.path.split( full_name )[1]
-                os.rename( filenames[f]['output'], base_path + '/errors/' + file_name )
-            if ( f in filenames ) and ( 'input' in filenames[f] ) and os.path.isfile( filenames[f]['input'] ):
-                full_name = filenames[f]['input']
-                base_path = os.path.split( full_name )[0]
-                file_name = os.path.split( full_name )[1]
-                os.rename( filenames[f]['input'], base_path + '/errors/' + file_name )
-        full_name = filenames['info']
-        base_path = os.path.split( full_name )[0]
-        file_name = os.path.split( full_name )[1]
-        os.rename( filenames['info'], base_path + '/errors/' + file_name )
-    except Exception as e_inner:
-#        log.error( 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
-        pass
