@@ -60,24 +60,31 @@ def transcode(c, mimetype, rotation):
     if os.system( cmd ) != 0:
         print( 'Failed to run qtfaststart on the output file' )
         
-def generate_poster(input_video, output_jpg, rotation):
+def generate_poster(input_video, output_jpg, rotation, width, height):
+    if height == 0: 
+        aspect_ratio = 4/float(3)
+    else:
+        aspect_ratio = width/float(height)
+    print 'aspect ratio is', aspect_ratio
+    
     cmd = ''
-    if rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=320:-1,pad=320:240:0:oh/2-ih/2 %s' %(input_video, output_jpg)
-    elif rotation == '90' or rotation == '270':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:240,pad=320:240:ow/2-iw/2:0 %s' %(input_video, output_jpg)
 
+    if rotation == '90' or rotation == '270' or aspect_ratio < 16/float(9):
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:180,pad=320:180:ow/2-iw/2:0 %s' %(input_video, output_jpg)
+    elif rotation == '0' or rotation == '180':
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=320:-1,pad=320:180:0:oh/2-ih/2 %s' %(input_video, output_jpg)
+        
     print cmd
     if os.system( cmd ) != 0 or not os.path.isfile( output_jpg ):
         print 'Failed to generate poster with command: %s' % cmd
-        
-def generate_thumbnail(input_video, output_jpg, rotation):
+
+def generate_thumbnail(input_video, output_jpg, rotation, width, height):
     cmd = ''
 
-    if rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %(input_video, output_jpg)
-    elif rotation == '90' or rotation == '270':
+    if rotation == '90' or rotation == '270':
         cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %(input_video, output_jpg)
+    elif rotation == '0' or rotation == '180':
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %(input_video, output_jpg)
 
     if os.system( cmd ) != 0 or not os.path.isfile( output_jpg ):
         print 'Failed to generate thumbnail with command: %s' % cmd

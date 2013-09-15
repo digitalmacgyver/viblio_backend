@@ -86,14 +86,12 @@ class Worker(Background):
         # Get the mimetype of the video file
         mimetype, uu = mimetypes.guess_type( c['video']['input'] )
 
-        # Transcode to mp4 and rotate to to have no rotation of necessary.
+        # Transcode to mp4 and rotate if necessary. Also, relocate moov atom for immediate playback
         video_processing.transcode(c, mimetype, exif['rotation'])
 
-        # The poster
-        video_processing.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'])
-
-        # The thumbnail
-        video_processing.generate_thumbnail(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'])
+        # Generate poster and thumbnails.
+        video_processing.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'], exif['width'],exif['height'])
+        video_processing.generate_thumbnail(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'], exif['width'],exif['height'])
 
         # The face - The strange boolean structure here allows us to
         # easily turn it on and off.
@@ -150,6 +148,14 @@ class Worker(Background):
             self.handle_errors( c )
             return perror( log,  'Failed to upload to s3: %s' % str( e ) )
 
+        log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
+        try:
+            bucket_contents.key = c['metadata_key']
+            bucket_contents.set_contents_from_filename( c['metadata']['output'] )
+        except Exception as e:
+            helpers.handle_errors( c )
+            return perror( log,  'Failed to upload to s3: %s' % str( e ) )
+
         if found_faces:
             log.info( 'Uploading to s3: %s' % c['face']['output'] )
             try:
@@ -204,13 +210,13 @@ class Worker(Background):
             media.assets.append( asset )
 
             # AVI
-            asset = MediaAssets( uuid=str(uuid.uuid4()),
+            avi_asset = MediaAssets( uuid=str(uuid.uuid4()),
                                 asset_type='intellivision',
                                 mimetype='video/avi',
                                 bytes=os.path.getsize( c['avi']['output'] ),
                                 uri=c['avi_key'],
                                 location='us' )
-            media.assets.append( asset )
+            media.assets.append( avi_asset )
 
             # thumbnail
             asset = MediaAssets( uuid=str(uuid.uuid4()),
