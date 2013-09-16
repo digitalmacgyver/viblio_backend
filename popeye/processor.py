@@ -17,7 +17,7 @@ urls = (
 
 # Incoming request from Cat server to get facebook data
 #
-class fbsync:
+class fbsync( object ):
     def GET(self):
         # Get input params
         data = web.input()
@@ -44,7 +44,7 @@ class fbsync:
 
 # Incoming request from Cat server to remove facebook data
 #
-class fbunsync:
+class fbunsync( object ):
     def GET(self):
         # Get input params
         data = web.input()
@@ -74,7 +74,7 @@ class fbunsync:
 # pathname/filename of the uploaded file.  From this
 # information, everything else will be guessed.
 #
-class process:
+class process( object ):
     def GET(self):
         # Get input params
         data = web.input()

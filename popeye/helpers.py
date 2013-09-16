@@ -1,19 +1,16 @@
 import json
 import os
 
-def perror( log, msg ):
-    #log.error( msg )
-    return { 'error': True, 'message': msg }
-
-def exif( filenames ):
-    media_file = filenames['video']['input']
-    exif_file = filenames['exif']['output']
+def exif( ifile, ofile, log ):
+    media_file = ifile
+    exif_file = ofile
    
     try:
         command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
+        log.info( 'Running exif extraction command: ' + command )
         os.system( command )
     except Exception as e:
-        print 'EXIF extraction failed, error was: %s' % str( e )
+        log.error( 'EXIF extraction failed, error was: ' + str( e ) )
         raise
 
     file_handle = open( exif_file )
@@ -34,6 +31,8 @@ def exif( filenames ):
     image_width  = exif_data.get( 'ImageWidth', None)
     image_height = exif_data.get( 'ImageHeight', None)
 
+    log.info( 'Returning from exif extraction.' )
+
     return( { 'file_ext'    : file_ext, 
               'mime_type'   : mime_type, 
               'lat'         : lat, 
@@ -44,6 +43,24 @@ def exif( filenames ):
               'width'       : image_width,
               'height'      : image_height
               } )
+
+def rename_upload_with_extension( main_files, info, log ):
+    '''Brewtus writes the uploaded file as <fileid> without an
+    extenstion, but the info struct has an extenstion.  See if its
+    something other than '' and if so, move the file under its
+    extension so transcoding works.'''
+
+    if 'fileExt' in info:
+        src = main_files['ifile']
+        tar = src + info['fileExt'].lower()
+        if not src == tar:
+            try:
+                os.rename( src, tar )
+                main_files['ifile'] = tar
+                return tar
+            except Exception as e:
+                log.error( "Failed to rename %s to %s" % ( src, tar ) )
+                raise
 
 def lc_extension( basename, ext ):
     '''Lowercase the extension of our input file, and rename the file
@@ -82,15 +99,15 @@ def create_filenames (full_filename):
     face_key = media_uuid + '/' + os.path.basename( output_face )
     exif_key = media_uuid + '/' + os.path.basename( output_exif )
     filenames = {
-        'uuid': media_uuid,
-        'info': input_info,
-        'video_key': video_key,
-        'avi_key': avi_key,
-        'thumbnail_key': thumbnail_key,
-        'poster_key': poster_key,
-        'metadata_key': metadata_key,
-        'face_key': face_key,
-        'exif_key': exif_key,
+        'uuid': media_uuid, # Used to insert the row in the database, just the basename of the input file.
+        'info': input_info, # Brewtus metadata from the file, basename+.json
+        'video_key': video_key, # S3 key for main = uid / uid.mp4 filename
+        'avi_key': avi_key, # S3 key for avi = uid / uid.avi
+        'thumbnail_key': thumbnail_key, # S3 key for thumbnail = uid / uid_thumbnail.jpg
+        'poster_key': poster_key, # S3 key for poster = uid / uid_poster.jpg
+        'metadata_key': metadata_key, # S3 key for metadata created by uploader = uid / uid_metadata.json
+        'face_key': face_key, # S3 key for a single face found in the video, by convention.
+        'exif_key': exif_key, # S3 key for exif data = uid / uid_exif.json
         'avi' : {
             'input': output_video,
             'output': avi_video

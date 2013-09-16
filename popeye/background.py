@@ -14,7 +14,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models import *
 
-class Background:
+class Background(object):
     # Subclasses must override this method
     def run():
         pass
