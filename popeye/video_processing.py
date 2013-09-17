@@ -65,7 +65,7 @@ def generate_poster(input_video, output_jpg, rotation, width, height):
         aspect_ratio = 4/float(3)
     else:
         aspect_ratio = width/float(height)
-    print 'aspect ratio is', aspect_ratio
+    print 'aspect ratio is ' + str(aspect_ratio)
     
     cmd = ''
 
