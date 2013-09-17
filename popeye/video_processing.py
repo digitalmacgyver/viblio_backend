@@ -38,9 +38,8 @@ def transcode(c, mimetype, rotation):
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['input'], ffopts, c['video']['output'] )
     print( cmd )
     if os.system( cmd ) != 0 or not os.path.isfile( c['video']['output'] ):
-        worker.handle_errors( c )
         print( 'Failed to generate transcoded video with: %s' % cmd )
-        return
+        raise Exception( 'Failed to generate transcoded video with: %s' % cmd )
     mimetype = 'video/mp4'
 
     # Also generate AVI for IntelliVision (temporary)
@@ -48,9 +47,9 @@ def transcode(c, mimetype, rotation):
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( c['video']['output'], ffopts, c['avi']['output'] )
     print( cmd )
     if os.system( cmd ) != 0 or not os.path.isfile( c['avi']['output'] ):
-        worker.handle_errors( c )
         print( 'Failed to generate AVI file: %s' % cmd )
-        return 
+        raise Exception( 'Failed to generate AVI file: %s' % cmd )
+
     # Move the metadata atom(s) to the front of the file.  -movflags
     # faststart is not a valid option in our version of ffmpeg, so
     # cannot do it there.  qt-faststart is broken.  qtfaststart is a
