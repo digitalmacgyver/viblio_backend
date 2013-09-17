@@ -16,7 +16,6 @@ def open_session():
     session_xml = '<?xml version="1.0"?><session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><partnerId>VIBLIO</partnerId><apiKey>AAA111BBB222</apiKey><localId>9876543210</localId></session>'
     headers = {'Content-Type':'text/xml', 'Date':formatted_date}
     r = requests.post(url, data=session_xml, headers=headers)
-    print r, r.content
     if r.status_code == requests.codes.ok:
         print r.content
         soup = BeautifulSoup(r.content, 'lxml')
@@ -46,8 +45,12 @@ def generate_headers(session_info):
     sha_instance = hashlib.sha1()
     sha_instance.update(session_secret + formatted_date)
     hashed_session_secret = sha_instance.hexdigest()    
-    headers = {'Content-Type': 'text/xml', 'Date': formatted_date, 'sessionKey': session_key, 'sessionSecret': hashed_session_secret, 'partnerId': hashed_partner_id, 'localId': hashed_local_id}
-    print headers
+    headers = {'Content-Type': 'text/xml', 
+               'Date': formatted_date, 
+               'sessionKey': session_key, 
+               'sessionSecret': hashed_session_secret, 
+               'partnerId': hashed_partner_id, 
+               'localId': hashed_local_id}
     return(headers)
 
 ## Close session API
@@ -81,6 +84,7 @@ def register_user(session_info, uid):
 ## Login API
 def login(session_info, uid):
     url = iv_config.iv_host + 'user/login'
+    # Auto-generate password as SHA1 for uid
     sha_instance = hashlib.sha1()
     sha_instance.update(uid)
     password = sha_instance.hexdigest()
@@ -129,14 +133,18 @@ def analyze(session_info, user_id, media_url):
     analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=analyze_xml, headers=headers)
+    print r, r.content
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
-        if str(soup.result.status.text) == 'Success':
-            file_id = str(soup.result.fileid.text)
-            wait_time = str(soup.result.expectedwaitseconds.text)
-            print 'Success, file_id = ' + file_id + ', wait_time= ' + wait_time
-            return(file_id)
-    else: print 'Failed: ' + str(soup)
+        return(soup)
+#         if str(soup.result.status.text) == 'Success':
+#             file_id = str(soup.result.fileid.text)
+#             wait_time = str(soup.result.expectedwaitseconds.text)
+#             print 'Success, file_id = ' + file_id + ', wait_time= ' + wait_time
+#             return(soup)
+    else: 
+        print 'Failed: ' + str(soup)
+        return(soup)
 ## <html><body><result><status>Success</status><fileid>4</fileid><expectedwaitseconds>69</expectedwaitseconds></result></body></html>
 
 ## Retrieve Faces API
@@ -155,7 +163,7 @@ def retrieve(session_info, user_id, file_id):
 ##<Result><Status>Success</Status><ExpectedWaitSeconds>0</ExpectedWaitSeconds><Tracks><NumberOfTracks>1</NumberOfTracks><Track><TrackId>0</TrackId><PersonId>-1</PersonId><BestFaceFrame>http://71.6.45.227/FDFRRstService/Detected/FACES/FDFR_Cam5_16-08-2013_14-40-14-236_0.bmp</BestFaceFrame><StartTime>2013-08-16 14:40:14</StartTime><EndTime>2013-08-16 14:40:14</EndTime><Width>229</Width><Height>229</Height><FaceCenterX>308</FaceCenterX><FaceCenterY>183</FaceCenterY><DetectionScore>36</DetectionScore><RecognitionConfidence>0.00</RecognitionConfidence></Track></Tracks></Result>
 
 ## Add Person API
-def add_person(session_info, first_name, last_name):
+def add_person(session_info, user_id, first_name, last_name):
     url = iv_config.iv_host + 'user/' + user_id + '/addPerson'
     add_person_xml = '<personDetails xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><firstName>' + first_name + '</firstName><lastName>' + last_name + '</lastName><description>Friend</description></personDetails>'
     headers = generate_headers(session_info)
@@ -169,28 +177,27 @@ def add_person(session_info, first_name, last_name):
             print "Error"
 #'<?xml version="1.0"?>\r\n<Person><Status>Success</Status><Id>0</Id></Person>\r\n'
 
+def delete_person(session_info, user_id, person_id):
+    url = iv_config.iv_host + 'user/' + user_id + '/deletePerson/' + person_id
+    headers = generate_headers(session_info)
+    r = requests.delete(url, headers=headers)
+    if r.status_code == requests.codes.ok:
+        soup = BeautifulSoup(r.content, 'lxml')
+        print str(soup)
+        if str(soup.result.status.text) == 'Success':
+            print status.text, r.content
+        else:
+            print "Error"
+    else: print r.content
+#'<?xml version="1.0"?>\r\n<Person><Status>Success</Status><Id>0</Id></Person>\r\n'
 def train_person(session_info, user_id, person_id, track_id, file_id, media_url):
-    url = iv_host + 'user/' + user_id + '/trainPerson?personID=' + person_id + '&trackID=' + track_id + '&fileID=' + file_id
+    url = iv_config.iv_host + 'user/' + user_id + '/trainPerson?personID=' + person_id + '&trackID=' + track_id + '&fileID=' + file_id
     analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=analyze_xml, headers=headers)
-    if r.status_code == requests.codes.ok:
+    if r.status_code == requests.codes.OK:
         soup = BeautifulSoup(r.content, 'lxml')
         print soup
         if str(soup.result.status.text) == 'Success':
             return('Success' + str(r.content))
-##'<?xml version="1.0"?>\r\n<Result><Status>Success</Status></Result>\r\n'
 
-# ## Main code
-# session_info = iv.open_session()
-# user_id = iv.login(session_info, iv_config.uid)
-# media_url = 'http://s3-us-west-2.amazonaws.com/viblio-iv-test/test2.avi'
-# file_id = iv.analyze(session_info, user_id, media_url)
-# x = iv.retrieve(session_info, user_id, file_id)
-#  
-# iv.train_person(session_info, user_id, person_id, track_id, file_id, media_url)
-#  
-#  
-# iv.logout(session_info, user_id)
-# iv.close_session(session_info)
-# iv.get_user_details(session_info, user_id)
