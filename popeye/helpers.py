@@ -1,7 +1,10 @@
 import json
 import os
 
-def exif( ifile, ofile, log ):
+from appconfig import AppConfig
+config = AppConfig( 'popeye' ).config()
+
+def get_exif( ifile, ofile, log, data = None ):
     media_file = ifile
     exif_file = ofile
    
@@ -44,7 +47,9 @@ def exif( ifile, ofile, log ):
               'height'      : image_height
               } )
 
-def rename_upload_with_extension( main_files, info, log ):
+
+
+def rename_upload_with_extension( main_files, info, log, data = None ):
     '''Brewtus writes the uploaded file as <fileid> without an
     extenstion, but the info struct has an extenstion.  See if its
     something other than '' and if so, move the file under its
@@ -62,9 +67,34 @@ def rename_upload_with_extension( main_files, info, log ):
                 log.error( "Failed to rename %s to %s" % ( src, tar ) )
                 raise
 
+def __get_bucket( log ):
+    try:
+        if not hasattr( __get_bucket, "bucket" ):
+            __get_bucket.bucket = None
+        if __get_bucket.bucket == None:
+            s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+            __get_bucket.bucket = s3.get_bucket( config.bucket_name )
+            bucket_contents = Key( __get_bucket.bucket )
+        log.info( 'Got s3 bucket.' )
+        return __get_bucket.bucket
+    except Exception as e:
+        log.error( 'Failed to obtain s3 bucket: %s' % str(e) )
+        raise
+
+def upload_file( file_data, log, data = None ):
+    '''Upload a file to S3'''
+    try:
+        bucket = __get_bucket( log )
+
+        log.info( 'Uploading %s to s3: %s' % ( file_data['output'], file_data['key'] ) )
+        bucket_contents.key = file_data['key']
+        bucket_contents.set_contents_from_filename( file_data['output'] )
+    except Exception as e:
+        log.error( 'Failed to upload to s3: %s' % str( e ) )
+        raise
+
+'''
 def lc_extension( basename, ext ):
-    '''Lowercase the extension of our input file, and rename the file
-    to match.'''
 
     lc_ext = ext.lower()
     if lc_ext != ext:
@@ -137,4 +167,4 @@ def create_filenames (full_filename):
             }
         }
     return(filenames)
-
+'''

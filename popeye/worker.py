@@ -32,6 +32,9 @@ class Worker(Background):
     (e.g. filenames and S3 keys), and which initiates various other
     modules to actually perform the video processing.'''
 
+
+    ######################################################################
+    # Initialization
     def __init__( self, SessionFactory, log, data ):
         '''Initialize the worker object.
 
@@ -52,44 +55,276 @@ class Worker(Background):
             self.log.error( 'No full_filename field found in input data structure.' )
             raise Exception( "Third argument to Worker constructor must have full_filename field" )
 
-    def __initialize_uuid( self, input_filename ):
-        '''Private method: We expect an input filename that is the
-        UUID of the media file that has been uploaded.  We store this
-        value in self.uuid.
-        '''
-        self.__valid_file( input_filename )
-        self.uuid = os.path.splitext( os.path.basename( input_filename ) )[0]
-        self.log.info( "Set uuid to %s" % self.uuid )
+    ######################################################################
+    # Main logic
+    def run( self ):
+        '''Public method: This method is invoked via the following
+        call chain:
+        
+        1) Incoming request is routed to processor.py's processor
+        class GET method.
 
-    def __valid_file( self, input_filename ):
-        '''Private method: Return true if input_filename exists and is
-        readable, and false otherwise.'''
-        self.log.info( 'Checking whether file %s exists and is readable.' % input_filename )
-        if os.path.isfile( input_filename ):
-            self.log.info( 'File %s exists.' % input_filename )
+        2) processor.GET creates a Worker object and calls its start
+        method in a new thread.
 
-            if os.access( input_filename, os.R_OK ):
-                self.log.info( 'File %s is readable.' % input_filename )
-                return True
+        3) Worker.start is defined in the Background base class in
+        background.py, which sets up a database orm connection and
+        then calls Worker's run method.'''
+
+        # Convienience variables.
+        files = self.files
+        log   = self.log
+        orm   = self.orm
+
+        log.info( 'Worker.py, starting to process: ' + self.uuid )
+
+        # Verify the inintial inputs we expect are valid.
+        for label in [ 'main', 'info', 'metadata' ]:
+            if not self.__valid_file( files[label]['ifile'] ):
+                log.error( 'File %s does not exist for label %s' % ( files[label]['ifile'], label ) )
+                self.handle_errors()
+                return
             else:
-                self.log.error( 'File %s is not readable.' % input_filename )
-                return False
-        else:
-            self.log.error( 'File %s does not exist.' % input_filename )
-            return False
+                log.info( '%s input file validated.' % label )
 
-    def __safe_log( logger, message ):
-        '''Private method: Used for when we are trying to log in an
-        exception block - in this case we want to be careful to not
-        blow out our error handling code due to a problem with
-        logging.'''
+        log.info( 'Initializing info field from JSON file: ' + files['info']['ifile'] )
+        self.__initialize_info( self.data['info'], files['info']['ifile'] )
+        log.info( 'info field is: ' + json.dumps( self.data['info'] ) )
+
+        log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
+        self.__initialize_metadata( self.data['metadata'], files['metadata']['ifile'] )
+        log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
+
+        log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
         try:
-            logger( message )
+            new_filename = helpers.rename_upload_with_extension( files['main'], self.data['info'], log )
+            log.info( 'Renamed input file is: ' + new_filename )
         except Exception as e:
-            print "Exception thrown while logging error:" % str( e )
+            self.__safe_log( log.error, 'Could not rename input file, error was: ' + e )
+            self.handle_errors()
+            raise
+
+        log.info( 'Gettin exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
+        try:
+            self.data['exif'] = helpers.get_exif( files['exif']['ifile'], files['exif']['ofile'], log )
+            log.info( 'EXIF data extracted: ' + str( exif ) )
+        except Exception as e:
+            self.__safe_log( log.error, 'Error during exif extraction: ' + e )
+            self.handle_errors()
+
+        log.info( 'Getting mime type of input video.' )
+        try:
+            self.data['mimetype'] = mimetypes.guess_type( files['main']['ifile'] )[0]
+            log.info( 'Mime type was' + self.data['mimetype'] )
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to get mime type, error was: ' + str( e ) )
+            self.handle_errors()
+            raise
+
+        try: 
+            log.info( 'Transcode %s to %s' % ( files['main']['ifile'], files['main']['ofile'] ) )
+            video_processing.transcode_main( files['main']['ifile'], files['main']['ofile'], log, self.data )
+
+            log.info( 'Move atom for: ' + files['main']['ofile'] )
+            video_processing.move_atom( files['main']['ifile'], files['main']['ofile'], log, self.data )
+            
+            log.info( 'Transocde %s to %s' % ( files['avi']['ifile'], files['avi']['ofile'] ) )
+            video_processing.transcode_avi( files['avi']['ifile'], files['avi']['ofile'], log, self.data )
+
+            log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
+            video_processing.generate_poster( files['poster']['ifile'], files['poster']['ofile'], log, self.data )
+            
+            log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ifile'] ) )
+            video_processing.generate_thumbnail( files['thumbnail']['ifile'], files['thumbnail']['ofile'], log, data )
+
+            log.info( 'Generate face from %s to %s' % ( files['faces']['ifile'], files['faces']['ofile'] ) )
+            # If skip = True we simply skip face generation.
+            video_processing.generate_faces( files['faces']['ifile'], files['faces']['ofile'], log, data, skip = False )
+
+        except Exception as e:
+            self.__safe_log( log.error, e )
+            self.handle_error()
+
+        ######################################################################
+        # Upload files to S3.
+        #
+
+        try:
+            for label in files:
+                if files[label]['key'] and files[label]['ofile'] and self.__valid_file( files[label]['ofile'] ):
+                    log.info( 'Starting upload for %s to %s' % ( files[label]['ofile'], files[label]['key'] ) )
+                    helpers.upload_file( files[label] )
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to upload to S3: ' + str( e ) )
+            self.handle_errors()
+            raise
+
+        #######################################################################
+        # DATABASE
+        #
+
+        # Add the mediafile to the database
+#        data = {
+#            'uuid': c['uuid'],
+#            'user_id': info['uid'],
+#            'filename': filename,
+#            'mimetype': mimetype,
+#            'uri': c['video_key'],
+#            'size': os.path.getsize( c['video']['ofile'] )
+#            }
+
+        try:
+            log.info( 'Generating row for media file' )
+            client_filename = os.path.basename( files['main']['ifile'] )
+            if self.data['metadata'] and self.data['metadata']['file'] and self.data['metadata']['file']['Path']:
+                client_filename = self.data['metadata']['file']['Path']
+
+            media = Media( uuid           = self.uuid,
+                           media_type     = 'original',
+                           recording_date = self.data['exif']['create_date'],
+                           lat            = self.data['exif']['lat'],
+                           lng            = self.data['exif']['lng'],
+                           filename       = client_filename )
+
+            log.info( 'Generating row for main media_asset' )
+            asset = MediaAssets( uuid        = str(uuid.uuid4()),
+                                asset_type   = 'main',
+                                mimetype     = data['mimetype'],
+                                metadata_uri = files['metadata']['key'],
+                                bytes        = os.path.getsize( files['main']['ofile'] ),
+                                uri          = files['main']['key'],
+                                location     = 'us' )
+            media.assets.append( asset )
+
+            log.info( 'Generating row for intellivision media_asset' )
+            avi_asset = MediaAssets( uuid       = str(uuid.uuid4()),
+                                     asset_type = 'intellivision',
+                                     mimetype   = 'video/avi',
+                                     bytes      = os.path.getsize( files['avi']['ofile'] ),
+                                     uri        = files['avi']['key'],
+                                     location   = 'us' )
+            media.assets.append( avi_asset )
+
+            log.info( 'Generating row for thumnail media_asset' )
+            asset = MediaAssets( uuid       = str(uuid.uuid4()),
+                                 asset_type = 'thumbnail',
+                                 mimetype   = 'image/jpg',
+                                 bytes      = os.path.getsize( files['thumbnail']['ofile'] ),
+                                 width      = 128, 
+                                 height     = 128,
+                                 uri        = files['thumbnail']['key'],
+                                 location   = 'us' )
+            media.assets.append( asset )
+
+            log.info( 'Generating row for poster media_asset' )
+            poster_asset = MediaAssets( uuid       = str(uuid.uuid4()),
+                                        asset_type = 'poster',
+                                        mimetype   = 'image/jpg',
+                                        bytes      = os.path.getsize( files['poster']['ofile'] ),
+                                        width      = 320,
+                                        height     = 240,
+                                        uri        = files['poster']['key'],
+                                        location   = 'us' )
+            media.assets.append( poster_asset )
+
+            if self.data['found_faces']:
+                log.info( 'Generating row for face media_asset' )
+
+                face_asset = MediaAssets( uuid       = str(uuid.uuid4()),
+                                          asset_type = 'face',
+                                          mimetype   = 'image/jpg',
+                                          bytes      = os.path.getsize( files['face']['ofile'] ),
+                                          width      = 128, 
+                                          height     = 128,
+                                          uri        = files['face']['key'],
+                                          location   = 'us' )
+                media.assets.append( face_asset )
+
+                log.info( 'Generatig for for face media_asset_feature' )
+                face_feature = MediaAssetFeatures( feature_type = 'face',
+                                          )
+                face_asset.media_asset_features.append( face_feature )
+
+            log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
+            user = orm.query( Users ).filter_by( uuid = info['uid'] ).one()
+
+            user.media.append( media )
+
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to add mediafile to database!: %s' % str( e ) )
+            self.handle_errors()
+            raise
+
+        # Commit to database.
+        try:
+            orm.commit()
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to commit the database: %s' % str( e ) )
+            self.handle_errors()
+            raise
+
+        #######################################################################
+        # Send notification to CAT server.
+        #######################################################################
+        try:
+            log.info( 'Notifying Cat server at %s' %  config.viblio_server_url )
+            site_token = hmac.new( config.site_secret, self.data['info']['uid'] ).hexdigest()
+            res = requests.get( config.viblio_server_url, params={ 'uid': self.data['info']['uid'], 'mid': self.uuid, 'site-token': site_token } )
+            body = ''
+            if hasattr( res, 'text' ):
+                body = res.text
+            elif hasattr( res, 'content' ):
+                body = str( res.content )
+            else:
+                log.error( 'Cannot find body in response!' )
+            jdata = json.loads( body )
+            if 'error' in jdata:
+                raise Exception( jdata['message'] )
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to notify Cat: %s' % str( e ) )
+            self.handle_errors()
+            raise
+
+        ######################################################################
+        # Cleanup files on success.
+        ######################################################################
+        try:
+            log.info( 'File successfully processed, removing temp files ...' )
+            for label in files:
+                for file_type in [ 'ifile', 'ofile' ]:
+                    if files[label][file_type] and self.__valid_file( files[label][file_type] ):
+                        os.remove( files[label][file_type] )
+        except Exception as e:
+            self.__safe_log( log.error, 'Some trouble removing temp files: %s' % str( e ) )
+            self.handle_errors()
+
+        log.info( 'DONE WITH %s' % c['uuid'] )
 
         return
 
+    ######################################################################
+    # Error handling
+    def handle_errors( self, filenames ):
+        '''Copy temporary files to error directory.'''
+        try:
+            log = self.log
+            log.info( 'Error occured, relocating temp files to error directory...' )
+
+            for label in files:
+                for file_type in [ 'ifile', 'ofile' ]:
+                    if files[label][file_type] and self.__valid_file( files[label][file_type] ):
+                        try: 
+                            full_name = files[label][file_type]
+                            base_path = os.path.split( full_name )[0]
+                            file_name = os.path.split( full_name )[1]
+                            os.rename( full_name, base_path + '/errors/' + file_name )
+                        except Exception as e_inner:
+                            self.__safe_log( log.error, 'Failed to rename file: ' + full_name )
+        except Exception as e:
+            self.__safe_log( log.error, 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
+
+    ######################################################################
+    # Utility function to add things to our files data structure
     def add_file( self, label, ifile=None, ofile=None, key=None ):
         '''Public method: Attempt to add files[label] = { ifile,
         ofile, key } to the files data structure.
@@ -118,6 +353,73 @@ class Worker(Background):
             self.__safe_log( self.log.error, "Exception thrown while adding file: %s" % str( e ) )
             raise
 
+    ######################################################################
+    # Utility function to check if a given file exists and is readable
+    def __valid_file( self, input_filename ):
+        '''Private method: Return true if input_filename exists and is
+        readable, and false otherwise.'''
+        self.log.info( 'Checking whether file %s exists and is readable.' % input_filename )
+        if os.path.isfile( input_filename ):
+            self.log.info( 'File %s exists.' % input_filename )
+
+            if os.access( input_filename, os.R_OK ):
+                self.log.info( 'File %s is readable.' % input_filename )
+                return True
+            else:
+                self.log.error( 'File %s is not readable.' % input_filename )
+                return False
+        else:
+            self.log.error( 'File %s does not exist.' % input_filename )
+            return False
+
+    ######################################################################
+    # Utility function to log and not throw exceptions if there is an
+    # error while logging.
+    def __safe_log( logger, message ):
+        '''Private method: Used for when we are trying to log in an
+        exception block - in this case we want to be careful to not
+        blow out our error handling code due to a problem with
+        logging.'''
+        try:
+            logger( message )
+        except Exception as e:
+            print "Exception thrown while logging error:" % str( e )
+
+        return
+
+    ######################################################################
+    # Various internal initialization functions below.
+    def __initialize_info( self, ifile ):
+        '''Load the contents of the info input file into the info field from
+        JSON'''
+        try:
+            f = open( ifile )
+            self.info = json.load( f )
+        except Exception as e:
+            log.error( 'Failed to open and parse as JSON: %s error was: %s' % ( ifile, str( e ) ) )
+            self.handle_errors()
+            raise
+
+    def __initialize_uuid( self, input_filename ):
+        '''Private method: We expect an input filename that is the
+        UUID of the media file that has been uploaded.  We store this
+        value in self.uuid.
+        '''
+        self.__valid_file( input_filename )
+        self.uuid = os.path.splitext( os.path.basename( input_filename ) )[0]
+        self.log.info( "Set uuid to %s" % self.uuid )
+
+    def __initialize_metadata( self, ifile ):
+        '''Load the contents of the metadata input file into the
+        metadata field from JSON'''
+        try:
+            f = open( ifile )
+            self.metadata = json.load( f )
+        except Exception as e:
+            log.error( 'Failed to open and parse %s as JSON error was %s' % ( ifile, str( e ) ) )
+            self.handle_errors()
+            raise
+
     def __initialize_files( self, input_filename ):
         '''Private method: Populate the files data structure for the
         worker class.  Files is a dictionary where:
@@ -135,446 +437,72 @@ class Worker(Background):
 
           + key - the key that the output resource will be associated
             with in persistent storage (currently S3)
-            
-          No exception handling - if something goes wrong here we
-          can't proceed reasonably.
           '''
-        self.files = {}
+        try:
+            self.log.info('HERE AT TOP')
+
+            self.files = {}
         
-        abs_basename = os.path.splitext( input_filename )
-        
-        # The 'main' media file, an mp4.
-        self.add_file( 
-            label = 'main',
-            ifile = input_filename, 
-            ofile = abs_basename+'.mp4', 
-            key   = self.uuid + '/' + self.uuid + '.mp4' )
-
-        # The 'thumbnail' media file, a jpg.
-        self.add_file( 
-            label = 'thumbnail',
-            ifile = abs_basename+'.mp4', 
-            ofile = abs_basename+'_thumbnail.jpg', 
-            key   = self.uuid + '/' + self.uuid + '_thumbnail.jpg' )
-
-        # The 'poster' media file, a jpg.
-        self.add_file( 
-            label = 'poster',
-            ifile = abs_basename+'.mp4', 
-            ofile = abs_basename+'_poster.jpg', 
-            key   = self.uuid + '/' + self.uuid + '_poster.jpg' )
-
-        # The 'face' media file, json.
-        self.add_file( 
-            label = 'face',
-            ifile = abs_basename+'.mp4', 
-            ofile = abs_basename+'_face0.jpg', 
-            key   = self.uuid + '/' + self.uuid + '_face0.jpg' )
-
-        # The 'metadata' media file, json.
-        self.add_file( 
-            label = 'metadata',
-            ifile = abs_basename+'_metadata.json', 
-            ofile = abs_basename+'_metadata.json', 
-            key   = self.uuid + '/' + self.uuid + '_metadata.json' )
-
-        # The 'info' media file, json.
-        self.add_file( 
-            label = 'info',
-            ifile = abs_basename+'.json', 
-            ofile = abs_basename+'.json', 
-            key   = None )
-
-        # The 'exif' media file, json
-        self.add_file( 
-            label = 'exif',
-            ifile = input_filename, 
-            ofile = abs_basename+'_exif.json', 
-            key   = self.uuid + '/' + self.uuid + '_exif.json' )
-
-        # The 'intellivision' media file, by convention an AVI.
-        self.add_file( 
-            label = 'intellivision',
-            ifile = abs_basename+'.mp4', 
-            ofile = abs_basename+'.avi', 
-            key   = self.uuid + '/' + self.uuid + '.avi' )
-
-    # DEBUG - search code for info.
-    def __initialize_info( self, ifile ):
-        '''Load the contents of the info input file into the info field from
-        JSON'''
-        try:
-            f = open( ifile )
-            self.info = json.load( f )
-        except Exception as e:
-            log.error( 'Failed to open and parse as JSON: %s error was: %s' % ( ifile, str( e ) ) )
-            self.handle_errors()
-            raise
-
-    # DEBUG - search code for md.
-    def __initialize_metadata( self, ifile ):
-        '''Load the contents of the metadata input file into the
-        metadata field from JSON'''
-        try:
-            f = open( ifile )
-            self.metadata = json.load( f )
-        except Exception as e:
-            log.error( 'Failed to open and parse %s as JSON error was %s' % ( ifile, str( e ) ) )
-            self.handle_errors()
-            raise
-
-    def run( self ):
-        '''Public method: This method is invoked via the following
-        call chain:
-        
-        1) Incoming request is routed to processor.py's processor
-        class GET method.
-
-        2) processor.GET creates a Worker object and calls its start
-        method in a new thread.
-
-        3) Worker.start is defined in the Background base class in
-        background.py, which sets up a database orm connection and
-        then calls Worker's run method.'''
-
-        # Convienience variables.
-        files = self.files
-        log   = self.log
-        orm   = self.orm
-
-        log.info( 'Worker.py, starting to process: ' + self.uuid )
-
-        # Extract relevant EXIF data using exiftool
-        exif = self.__safe_call( helpers.exif( ifile=files['exif']['ifile'], ofile=files['exif']['ofile'], log ) )
-        log.info( 'EXIF data extracted: ' + str( exif ) )
-
-        # Verify the inintial inputs we expect are valid.
-        for label in [ 'main', 'info', 'metadata' ]:
-            if not self.__valid_file( files[label]['ifile'] ):
-                log.error( 'File %s does not exist for label %s' % ( files[label]['ifile'], label ) )
-                self.handle_errors()
-                return
-            else:
-                log.info( '%s input file validated.' % label )
-
-        log.info( 'Initializing info field from JSON file: ' + files['info']['ifile'] )
-        self.__initialize_info( self.info, files['info']['ifile'] )
-        log.info( 'info field is: ' + json.dumps( self.info ) )
-
-        log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
-        self.__initialize_metadata( self.metadata, files['metadata']['ifile'] )
-        log.info( 'metadata field is: ' + json.dumps( self.metadata ) )
-
-
-        log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['input'] )
-        try:
-            new_filename = helpers.rename_upload_with_extension( files['main'], self.info, log )
-        except Exception as e:
-            log.error( 'Could not rename input file, error was: ' + e )
-        finally:
-            self.handle_errors()
-        log.info( 'Renamed input file is: ' new_filename )
-
-        # Get the mimetype of the video file
-        mimetype, uu = mimetypes.guess_type( c['video']['input'] )
-
-        # Transcode to mp4 and rotate if necessary. Also, relocate moov atom for immediate playback
-        video_processing.transcode(c, mimetype, exif['rotation'])
-
-        # Generate poster and thumbnails.
-        video_processing.generate_poster(c['poster']['input'], c['poster']['output'], exif['rotation'], exif['width'],exif['height'])
-        video_processing.generate_thumbnail(c['thumbnail']['input'], c['thumbnail']['output'], exif['rotation'], exif['width'],exif['height'])
-
-        # The face - The strange boolean structure here allows us to
-        # easily turn it on and off.
-        found_faces = False
-        if found_faces:
-            cmd = 'python /viblio/bin/extract_face.py %s %s' % ( c['face']['input'], c['face']['output'] )
-            log.info( cmd )
-            found_faces = True
-            if not os.system( cmd ) == 0:
-                found_faces = False
-                log.error( 'Failed to find any faces in video for command: %s' % cmd )
-
-        ######################################################################
-        # Upload to S3
-        #
-        try:
-            s3 = boto.connect_s3(config.awsAccess, config.awsSecret)
-            bucket = s3.get_bucket(config.bucket_name)
-            bucket_contents = Key(bucket)
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to obtain s3 bucket: %s' % str( e ) )
-            return
-
-        log.info( 'Uploading to s3: %s' % c['video']['output'] )
-        try:
-            bucket_contents.key = c['video_key']
-            bucket_contents.set_contents_from_filename( c['video']['output'] )
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to upload to s3: %s' % str( e ) )
-            return
-
-        log.info( 'Uploading to s3: %s' % c['avi']['output'] )
-        try:
-            bucket_contents.key = c['avi_key']
-            bucket_contents.set_contents_from_filename( c['avi']['output'] )
-            bucket_contents.make_public()
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to upload to s3: %s' % str( e ) )
-            return
-        
-        log.info( 'Uploading to s3: %s' % c['thumbnail']['output'] )
-        try:
-            bucket_contents.key = c['thumbnail_key']
-            bucket_contents.set_contents_from_filename( c['thumbnail']['output'] )
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to upload to s3: %s' % str( e ) )
-            return
-
-        log.info( 'Uploading to s3: %s' % c['poster']['output'] )
-        try:
-            bucket_contents.key = c['poster_key']
-            bucket_contents.set_contents_from_filename( c['poster']['output'] )
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to upload to s3: %s' % str( e ) )
-            return
-
-        log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
-        try:
-            bucket_contents.key = c['metadata_key']
-            bucket_contents.set_contents_from_filename( c['metadata']['output'] )
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to upload to s3: %s' % str( e ) )
-            return
-
-        log.info( 'Uploading to s3: %s' % c['exif']['output'] )
-        try:
-            bucket_contents.key = c['exif_key']
-            bucket_contents.set_contents_from_filename( c['exif']['output'] )
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to upload to s3: %s' % str( e ) )
-            return
-
-        if found_faces:
-            log.info( 'Uploading to s3: %s' % c['face']['output'] )
-            try:
-                bucket_contents.key = c['face_key']
-                bucket_contents.set_contents_from_filename( c['face']['output'] )
-            except Exception as e:
-                self.handle_errors( c )
-                log.error( 'Failed to upload to s3: %s' % str( e ) )
-                return
-
-        log.info( 'Uploading to s3: %s' % c['metadata']['output'] )
-        try:
-            bucket_contents.key = c['metadata_key']
-            bucket_contents.set_contents_from_filename( c['metadata']['output'] )
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to upload to s3: %s' % str( e ) )
-            return
-
-        #######################################################################
-        # DATABASE
-        #
-        # Default the filename, then try to obtain it from the
-        # client side metadata.
-
-        # Get the client metadata too.  It includes the original file's
-        # filename for instance...
-        if os.path.isfile( c['metadata']['input'] ):
-            try:
-                f = open( c['metadata']['input'] )
-                md = json.load( f )
-            except Exception as e:
-                self.handle_errors( c )
-                log.error( 'Failed to parse %s error was %s' % ( c['metadata']['input'], str( e ) ) )
-                return
-
-        filename = os.path.basename( c['video']['input'] )
-        if md and md['file'] and md['file']['Path']:
-            filename = md['file']['Path']
-
-        # Add the mediafile to the database
-        data = {
-            'uuid': c['uuid'],
-            'user_id': info['uid'],
-            'filename': filename,
-            'mimetype': mimetype,
-            'uri': c['video_key'],
-            'size': os.path.getsize( c['video']['output'] )
-            }
-
-        try:
-            media = Media( uuid=data['uuid'],
-                           media_type='original',
-                           recording_date=exif['create_date'],
-                           lat=exif['lat'],
-                           lng=exif['lng'],
-                           filename=data['filename'] )
-            # main
-            asset = MediaAssets( uuid=str(uuid.uuid4()),
-                                asset_type='main',
-                                mimetype=data['mimetype'],
-                                metadata_uri=c['metadata_key'],
-                                bytes=data['size'],
-                                uri=data['uri'],
-                                location='us' )
-            media.assets.append( asset )
-
-            # AVI
-            avi_asset = MediaAssets( uuid=str(uuid.uuid4()),
-                                asset_type='intellivision',
-                                mimetype='video/avi',
-                                bytes=os.path.getsize( c['avi']['output'] ),
-                                uri=c['avi_key'],
-                                location='us' )
-            media.assets.append( avi_asset )
-
-            # thumbnail
-            asset = MediaAssets( uuid=str(uuid.uuid4()),
-                                asset_type='thumbnail',
-                                mimetype='image/jpg',
-                                bytes=os.path.getsize( c['thumbnail']['output'] ),
-                                width=128, height=128,
-                                uri=c['thumbnail_key'],
-                                location='us' )
-            media.assets.append( asset )
-
-            # poster
-            poster_asset = MediaAssets( uuid=str(uuid.uuid4()),
-                                asset_type='poster',
-                                mimetype='image/jpg',
-                                bytes=os.path.getsize( c['poster']['output'] ),
-                                width=320, height=240,
-                                uri=c['poster_key'],
-                                location='us' )
-            media.assets.append( poster_asset )
-
-            # face
-            if found_faces:
-
-                log.info( 'Face detected' )
-
-                asset = MediaAssets( uuid=str(uuid.uuid4()),
-                                     asset_type='face',
-                                     mimetype='image/jpg',
-                                     bytes=os.path.getsize( c['face']['output'] ),
-                                     width=128, height=128,
-                                     uri=c['face_key'],
-                                     location='us' )
-                media.assets.append( asset )
-
-            # Try to obtain the user from the database
-            try:
-                user = orm.query( Users ).filter_by( uuid = info['uid'] ).one()
-            except Exception as e:
-                self.handle_errors( c )
-                log.error( 'Failed to look up user by uuid: %s error was %s' % ( info['uid'], str( e ) ) )
-                return
-
-            user.media.append( media )
-
-            # DEBUG Test adding a feature.
-            #log.info( 'Adding a feature to the poster.' )
-            #
-            #row = MediaAssetFeatures( feature_type = 'face',
-            #                          detection_confidence = 3.14159
-            #                          )
-            #poster_asset.media_asset_features.append( row )
-
-            #raise Exception('Oops!')
+            abs_basename = os.path.splitext( input_filename )
             
+            # The 'main' media file, an mp4.
+            self.add_file( 
+                label = 'main',
+                ifile = input_filename, 
+                ofile = abs_basename+'.mp4', 
+                key   = self.uuid + '/' + self.uuid + '.mp4' )
+            
+            # The 'thumbnail' media file, a jpg.
+            self.add_file( 
+                label = 'thumbnail',
+                ifile = abs_basename+'.mp4', 
+                ofile = abs_basename+'_thumbnail.jpg', 
+                key   = self.uuid + '/' + self.uuid + '_thumbnail.jpg' )
+            
+            # The 'poster' media file, a jpg.
+            self.add_file( 
+                label = 'poster',
+                ifile = abs_basename+'.mp4', 
+                ofile = abs_basename+'_poster.jpg', 
+                key   = self.uuid + '/' + self.uuid + '_poster.jpg' )
+            
+            # The 'face' media file, json.
+            self.add_file( 
+                label = 'face',
+                ifile = abs_basename+'.mp4', 
+                ofile = abs_basename+'_face0.jpg', 
+                key   = self.uuid + '/' + self.uuid + '_face0.jpg' )
+            
+            # The 'metadata' media file, json.
+            self.add_file( 
+                label = 'metadata',
+                ifile = abs_basename+'_metadata.json', 
+                ofile = abs_basename+'_metadata.json', 
+                key   = self.uuid + '/' + self.uuid + '_metadata.json' )
+
+            # The 'info' media file, json.
+            self.add_file( 
+                label = 'info',
+                ifile = abs_basename+'.json', 
+                ofile = abs_basename+'.json', 
+                key   = self.uuid + '/' + self.uuid + '.json' )
+
+            # The 'exif' media file, json
+            self.add_file( 
+                label = 'exif',
+                ifile = input_filename, 
+                ofile = abs_basename+'_exif.json', 
+                key   = self.uuid + '/' + self.uuid + '_exif.json' )
+
+            # The 'intellivision' media file, by convention an AVI.
+            self.add_file( 
+                label = 'intellivision',
+                ifile = abs_basename+'.mp4', 
+                ofile = abs_basename+'.avi', 
+                key   = self.uuid + '/' + self.uuid + '.avi' )
 
         except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to add mediafile to database!: %s' % str( e ) )
-            return
+            self.__safe_log( self.log.error, 'Error while initializing files: ' + e )
+            self.hanld_errors()
+            raise
 
-        # Commit to database.
-        try:
-            orm.commit()
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to commit the database: %s' % str( e ) )
-            return
-
-        #######################################################################
-        # Send notification to CAT server.
-        #######################################################################
-        data['location'] = 'us'
-        data['bucket_name'] = config.bucket_name
-        data['uid'] = data['user_id']
-        try:
-            log.info( 'Notifying Cat server at %s' %  config.viblio_server_url )
-            site_token = hmac.new( config.site_secret, data['user_id']).hexdigest()
-            res = requests.get(config.viblio_server_url, params={ 'uid': data['user_id'], 'mid': data['uuid'], 'site-token': site_token })
-            body = ''
-            if hasattr( res, 'text' ):
-                body = res.text
-            elif hasattr( res, 'content' ):
-                body = str( res.content )
-            else:
-                log.error( 'Cannot find body in response!' )
-            jdata = json.loads( body )
-            if 'error' in jdata:
-                raise Exception( jdata['message'] )
-        except Exception as e:
-            self.handle_errors( c )
-            log.error( 'Failed to notify Cat: %s' % str( e ) )
-            return
-
-        ######################################################################
-        # Cleanup files on success.
-        ######################################################################
-        try:
-            log.info( 'File successfully processed, removing temp files ...' )
-            for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
-                if ( f in c ) and ( 'output' in c[f] ) and os.path.isfile( c[f]['output'] ):
-                    os.remove( c[f]['output'] )
-                if ( f in c ) and ( 'input' in c[f] ) and os.path.isfile( c[f]['input'] ):
-                    os.remove( c[f]['input'] )
-            os.remove( c['info'] )
-        except Exception as e_inner:
-            self.handle_errors( c )
-            log.error( 'Some trouble removing temp files: %s' % str( e_inner ) )
-
-        log.info( 'DONE WITH %s' % c['uuid'] )
-
-        return
-
-    def handle_errors( self, filenames ):
-        '''Copy temporary files to error directory.'''
-        try:
-            log = self.log
-            log.info( 'Error occured, relocating temp files to error directory...' )
-            for f in ['video','thumbnail','poster','metadata','face','exif','avi']:
-                if ( f in filenames ) and ( 'output' in filenames[f] ) and os.path.isfile( filenames[f]['output'] ):
-                    full_name = filenames[f]['output']
-                    base_path = os.path.split( full_name )[0]
-                    file_name = os.path.split( full_name )[1]
-                    os.rename( filenames[f]['output'], base_path + '/errors/' + file_name )
-                if ( f in filenames ) and ( 'input' in filenames[f] ) and os.path.isfile( filenames[f]['input'] ):
-                    full_name = filenames[f]['input']
-                    base_path = os.path.split( full_name )[0]
-                    file_name = os.path.split( full_name )[1]
-                    os.rename( filenames[f]['input'], base_path + '/errors/' + file_name )
-            if 'info' in filenames:
-                full_name = filenames['info']
-                base_path = os.path.split( full_name )[0]
-                file_name = os.path.split( full_name )[1]
-                os.rename( filenames['info'], base_path + '/errors/' + file_name )
-        except Exception as e_inner:
-            try:
-                log = self.log
-                log.error( 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
-            except:
-                pass
