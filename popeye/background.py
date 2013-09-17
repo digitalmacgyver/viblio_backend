@@ -14,6 +14,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models import *
 
+import threading
+
 class Background(object):
     # Subclasses must override this method
     def run():
@@ -26,7 +28,7 @@ class Background(object):
 
     def start( self ):
         try:
-            self.log.info( "Creating a DB session for thread" )
+            self.log.info( "Creating a DB session for thread: " + str( threading.current_thread().ident ) )
             Session = scoped_session( self.SessionFactory )
             self.orm = Session()
 
@@ -37,6 +39,6 @@ class Background(object):
             self.orm.close()
             raise
         finally:
-            self.log.error( "Committing on background task done" )
+            self.log.info( "Committing on background task done" )
             self.orm.commit()
             self.orm.close()

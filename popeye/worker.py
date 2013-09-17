@@ -20,7 +20,6 @@ from background import Background
 
 # TODO:
 # Get seprate error log for each file along side it.
-# Put face detection back in with skip=false.
 
 class Worker(Background):
     '''The class which drives the video processing pipeline.
@@ -84,14 +83,17 @@ class Worker(Background):
             else:
                 log.info( '%s input file validated.' % label )
 
+        # Load data from .json into self.data['info']
         log.info( 'Initializing info field from JSON file: ' + files['info']['ifile'] )
         self.__initialize_info( files['info']['ifile'] )
         log.info( 'info field is: ' + json.dumps( self.data['info'] ) )
 
+        # Load data from _metadata.json into self.data['metadata']
         log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
         self.__initialize_metadata( files['metadata']['ifile'] )
         log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
 
+        # Give the input file an extension.
         log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
         try:
             new_filename = helpers.rename_upload_with_extension( files['main'], self.data['info'], log )
@@ -102,6 +104,7 @@ class Worker(Background):
             self.handle_errors()
             raise
 
+        # Generate _exif.json and load it into self.data['exif']
         log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
         try:
             self.data['exif'] = helpers.get_exif( files['exif']['ifile'], files['exif']['ofile'], log )
@@ -111,6 +114,7 @@ class Worker(Background):
             self.handle_errors()
             raise
 
+        # Extract the mimetype and store it in self.data['mimetype']
         log.info( 'Getting mime type of input video.' )
         try:
             self.data['mimetype'] = mimetypes.guess_type( files['main']['ifile'] )[0]
@@ -121,24 +125,30 @@ class Worker(Background):
             raise
 
         try: 
+            # Transcode into mp4 and rotate as needed.
             log.info( 'Transcode %s to %s' % ( files['main']['ifile'], files['main']['ofile'] ) )
             video_processing.transcode_main( files['main']['ifile'], files['main']['ofile'], log, self.data )
 
+            # Move the atom to the front of the file.
             log.info( 'Move atom for: ' + files['main']['ofile'] )
             video_processing.move_atom( files['main']['ifile'], files['main']['ofile'], log, self.data )
             
+            # Create an AVI for intellivision.
             log.info( 'Transcode %s to %s' % ( files['intellivision']['ifile'], files['intellivision']['ofile'] ) )
             video_processing.transcode_avi( files['intellivision']['ifile'], files['intellivision']['ofile'], log, self.data )
 
+            # Create a poster.
             log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
             video_processing.generate_poster( files['poster']['ifile'], files['poster']['ofile'], log, self.data )
             
+            # Create a thumbnail.
             log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ifile'] ) )
             video_processing.generate_thumbnail( files['thumbnail']['ifile'], files['thumbnail']['ofile'], log, self.data )
 
+            # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            video_processing.generate_face( files['face']['ifile'], files['face']['ofile'], log, self.data, skip = True )
+            video_processing.generate_face( files['face']['ifile'], files['face']['ofile'], log, self.data, skip = False )
 
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
@@ -150,6 +160,7 @@ class Worker(Background):
         #
 
         try:
+            # Iterate over all the labels in files and upload anything with an ofile and a key.
             for label in files:
                 if files[label]['key'] and files[label]['ofile'] and self.__valid_file( files[label]['ofile'] ):
                     log.info( 'Starting upload for %s to %s' % ( files[label]['ofile'], files[label]['key'] ) )
@@ -164,6 +175,7 @@ class Worker(Background):
         #
 
         try:
+            # Media row
             log.info( 'Generating row for media file' )
             client_filename = os.path.basename( files['main']['ifile'] )
             if self.data['metadata'] and self.data['metadata']['file'] and self.data['metadata']['file']['Path']:
@@ -176,6 +188,7 @@ class Worker(Background):
                            lng            = self.data['exif']['lng'],
                            filename       = client_filename )
 
+            # Main media_asset
             log.info( 'Generating row for main media_asset' )
             asset = MediaAssets( uuid        = str(uuid.uuid4()),
                                 asset_type   = 'main',
@@ -186,6 +199,7 @@ class Worker(Background):
                                 location     = 'us' )
             media.assets.append( asset )
 
+            # Intellivision media_asset
             log.info( 'Generating row for intellivision media_asset' )
             avi_asset = MediaAssets( uuid       = str(uuid.uuid4()),
                                      asset_type = 'intellivision',
@@ -195,6 +209,7 @@ class Worker(Background):
                                      location   = 'us' )
             media.assets.append( avi_asset )
 
+            # Thumbnail media_asset
             log.info( 'Generating row for thumbnail media_asset' )
             asset = MediaAssets( uuid       = str(uuid.uuid4()),
                                  asset_type = 'thumbnail',
@@ -206,6 +221,7 @@ class Worker(Background):
                                  location   = 'us' )
             media.assets.append( asset )
 
+            # Poster media_asset
             log.info( 'Generating row for poster media_asset' )
             poster_asset = MediaAssets( uuid       = str(uuid.uuid4()),
                                         asset_type = 'poster',
@@ -220,6 +236,7 @@ class Worker(Background):
             if self.data['found_faces']:
                 log.info( 'Generating row for face media_asset' )
 
+                # Face media_asset.
                 face_asset = MediaAssets( uuid       = str(uuid.uuid4()),
                                           asset_type = 'face',
                                           mimetype   = 'image/jpg',
@@ -232,12 +249,14 @@ class Worker(Background):
 
                 log.info( 'Generating for for face media_asset_feature' )
                 face_feature = MediaAssetFeatures( feature_type = 'face',
-                                          )
+                                                   )
+                # Face media_asset_feature.
                 face_asset.media_asset_features.append( face_feature )
 
             log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
             user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
 
+            # Associate media with user.
             user.media.append( media )
 
         except Exception as e:
@@ -281,6 +300,8 @@ class Worker(Background):
         try:
             log.info( 'File successfully processed, removing temp files ...' )
             for label in files:
+                # Iterate over the files data structure and remove
+                # anything with an ifile or ofile.
                 for file_type in [ 'ifile', 'ofile' ]:
                     if files[label][file_type] and self.__valid_file( files[label][file_type] ):
                         os.remove( files[label][file_type] )

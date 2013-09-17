@@ -50,8 +50,6 @@ def get_exif( ifile, ofile, log, data = None ):
               'height'      : image_height
               } )
 
-
-
 def rename_upload_with_extension( main_files, info, log, data = None ):
     '''Brewtus writes the uploaded file as <fileid> without an
     extenstion, but the info struct has an extenstion.  See if its
