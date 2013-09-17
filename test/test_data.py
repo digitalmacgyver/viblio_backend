@@ -103,6 +103,11 @@ contacts = [
       'provider' : None,
       'provider_id' : None,
       'viblio_id' : None },
+    { 'name' : 'Unidentified Person',
+      'email' : None,
+      'provider' : None,
+      'provider_id' : None,
+      'viblio_id' : None },
     ]
 
 faces = [
@@ -111,7 +116,7 @@ faces = [
       'size'        : 45722,
       'width'       : 500, 
       'height'      : 500,
-      'contact_idx' : None },
+      'contact_idx' : 9 },
     { 'filename'    : 'face-02.jpg',
       's3_key'      : 'test_data/faces/face-02.jpg',
       'size'        : 20152,
