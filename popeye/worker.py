@@ -513,13 +513,12 @@ class Worker(Background):
                 ofile = abs_basename+'.avi', 
                 key   = self.uuid + '/' + self.uuid + '.avi' )
 
-            # The 'intellivision' media file, by convention an AVI.
+            # Self log file.
             self.add_file( 
                 label = 'media_log',
                 ifile = None, 
                 ofile = abs_basename+'.log', 
                 key   = None )
-
 
         except Exception as e:
             self.__safe_log( self.log.error, 'Error while initializing files: ' + str( e ) )
