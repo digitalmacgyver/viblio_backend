@@ -26,17 +26,17 @@ class Background(object):
 
     def start( self ):
         try:
-            self.log.debug( "Creating a DB session for thread" )
+            self.log.info( "Creating a DB session for thread" )
             Session = scoped_session( self.SessionFactory )
             self.orm = Session()
 
             self.run()
-        except Exception, e:
-            self.log.debug( "Rolling back DB on exception: %s" % str(e)  )
+        except Exception as e:
+            self.log.error( "Rolling back DB on exception: %s" % str(e)  )
             self.orm.rollback()
             self.orm.close()
             raise
         finally:
-            self.log.debug( "Committing on background task done" )
+            self.log.error( "Committing on background task done" )
             self.orm.commit()
             self.orm.close()

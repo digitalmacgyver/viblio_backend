@@ -24,7 +24,7 @@ def transcode_main( ifile, ofile, log, data, files=None ):
 
     ffopts = ''
     if rotation == '0' and mimetype == 'video/mp4':
-        log.info( 'Video is non-rotated mp4, leaving it alone.' )
+        log.debug( 'Video is non-rotated mp4, leaving it alone.' )
     else:
         if rotation == '90':
             print( 'Video is rotated 90 degrees, rotating.' )
@@ -55,7 +55,7 @@ def move_atom( ifile, ofile, log, data, files=None ):
     '''Attempt to relocate the atom, if there is a problem do not
     terminate execution.'''
     cmd = '/usr/local/bin/qtfaststart %s' % ofile
-    print( cmd )
+    log.info( cmd )
     if os.system( cmd ) != 0:
         log.error( 'Failed to run qtfaststart on the output file' )
         
@@ -68,14 +68,14 @@ def generate_poster( ifile, ofile, log, data, files=None ):
         aspect_ratio = 4/float(3)
     else:
         aspect_ratio = width/float(height)
-    log.info( 'Poster aspect ratio is ' + aspect_ratio )
+    log.info( 'Poster aspect ratio is ' + str( aspect_ratio ) )
     
     cmd = ''
 
     if rotation == '90' or rotation == '270' or aspect_ratio < 16/float(9):
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:180,pad=320:180:ow/2-iw/2:0 %s' %( ifile, ofile )
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 0.5 -i %s -vframes 1 -vf scale=-1:180,pad=320:180:ow/2-iw/2:0 %s' %( ifile, ofile )
     elif rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=320:-1,pad=320:180:0:oh/2-ih/2 %s' %( ifile, ofile )
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 0.5 -i %s -vframes 1 -vf scale=320:-1,pad=320:180:0:oh/2-ih/2 %s' %( ifile, ofile )
 
     log.info( 'Executing poster generation command: '+ cmd )
 
@@ -90,9 +90,9 @@ def generate_thumbnail( ifile, ofile, log, data, files=None ):
     cmd = ''
 
     if rotation == '90' or rotation == '270':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %( ifile, ofile )
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 0.5 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %( ifile, ofile )
     elif rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 1 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %( ifile, ofile )
+        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 0.5 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %( ifile, ofile )
 
     log.info( 'Executing thumbnail generation command: ' + cmd )
 

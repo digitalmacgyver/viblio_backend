@@ -1,6 +1,9 @@
 import json
 import os
 
+import boto
+from boto.s3.key import Key
+
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
 
@@ -61,7 +64,6 @@ def rename_upload_with_extension( main_files, info, log, data = None ):
         if not src == tar:
             try:
                 os.rename( src, tar )
-                main_files['ifile'] = tar
                 return tar
             except Exception as e:
                 log.error( "Failed to rename %s to %s" % ( src, tar ) )
@@ -75,7 +77,7 @@ def __get_bucket( log ):
             s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
             __get_bucket.bucket = s3.get_bucket( config.bucket_name )
             bucket_contents = Key( __get_bucket.bucket )
-        log.info( 'Got s3 bucket.' )
+        log.debug( 'Got s3 bucket.' )
         return __get_bucket.bucket
     except Exception as e:
         log.error( 'Failed to obtain s3 bucket: %s' % str(e) )
@@ -85,10 +87,11 @@ def upload_file( file_data, log, data = None ):
     '''Upload a file to S3'''
     try:
         bucket = __get_bucket( log )
+        k = Key( bucket )
 
-        log.info( 'Uploading %s to s3: %s' % ( file_data['output'], file_data['key'] ) )
-        bucket_contents.key = file_data['key']
-        bucket_contents.set_contents_from_filename( file_data['output'] )
+        log.info( 'Uploading %s to s3: %s' % ( file_data['ofile'], file_data['key'] ) )
+        k.key = file_data['key']
+        k.set_contents_from_filename( file_data['ofile'] )
     except Exception as e:
         log.error( 'Failed to upload to s3: %s' % str( e ) )
         raise

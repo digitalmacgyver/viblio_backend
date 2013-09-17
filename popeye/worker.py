@@ -9,9 +9,7 @@ from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
 
 import sys
-import boto
 import requests
-from boto.s3.key import Key
 
 import helpers
 import video_processing
@@ -20,10 +18,9 @@ import mimetypes
 # Base class for Worker.
 from background import Background
 
-# Get filename into defined data structure.
-# Get seperate error log for each file along side it.
-# Functionize s3 calls
-# Put face detection back in with True
+# TODO:
+# Get seprate error log for each file along side it.
+# Put face detection back in with skip=false.
 
 class Worker(Background):
     '''The class which drives the video processing pipeline.
@@ -71,14 +68,14 @@ class Worker(Background):
         background.py, which sets up a database orm connection and
         then calls Worker's run method.'''
 
-        # Convienience variables.
+        # Convenience variables.
         files = self.files
         log   = self.log
         orm   = self.orm
 
         log.info( 'Worker.py, starting to process: ' + self.uuid )
 
-        # Verify the inintial inputs we expect are valid.
+        # Verify the initial inputs we expect are valid.
         for label in [ 'main', 'info', 'metadata' ]:
             if not self.__valid_file( files[label]['ifile'] ):
                 log.error( 'File %s does not exist for label %s' % ( files[label]['ifile'], label ) )
@@ -88,34 +85,36 @@ class Worker(Background):
                 log.info( '%s input file validated.' % label )
 
         log.info( 'Initializing info field from JSON file: ' + files['info']['ifile'] )
-        self.__initialize_info( self.data['info'], files['info']['ifile'] )
+        self.__initialize_info( files['info']['ifile'] )
         log.info( 'info field is: ' + json.dumps( self.data['info'] ) )
 
         log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
-        self.__initialize_metadata( self.data['metadata'], files['metadata']['ifile'] )
+        self.__initialize_metadata( files['metadata']['ifile'] )
         log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
 
         log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
         try:
             new_filename = helpers.rename_upload_with_extension( files['main'], self.data['info'], log )
             log.info( 'Renamed input file is: ' + new_filename )
+            files['main']['ifile'] = new_filename
         except Exception as e:
-            self.__safe_log( log.error, 'Could not rename input file, error was: ' + e )
+            self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
             self.handle_errors()
             raise
 
-        log.info( 'Gettin exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
+        log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
         try:
             self.data['exif'] = helpers.get_exif( files['exif']['ifile'], files['exif']['ofile'], log )
-            log.info( 'EXIF data extracted: ' + str( exif ) )
+            log.info( 'EXIF data extracted: ' + str( self.data['exif'] ) )
         except Exception as e:
-            self.__safe_log( log.error, 'Error during exif extraction: ' + e )
+            self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
             self.handle_errors()
+            raise
 
         log.info( 'Getting mime type of input video.' )
         try:
             self.data['mimetype'] = mimetypes.guess_type( files['main']['ifile'] )[0]
-            log.info( 'Mime type was' + self.data['mimetype'] )
+            log.info( 'Mime type was ' + self.data['mimetype'] )
         except Exception as e:
             self.__safe_log( log.error, 'Failed to get mime type, error was: ' + str( e ) )
             self.handle_errors()
@@ -128,22 +127,23 @@ class Worker(Background):
             log.info( 'Move atom for: ' + files['main']['ofile'] )
             video_processing.move_atom( files['main']['ifile'], files['main']['ofile'], log, self.data )
             
-            log.info( 'Transocde %s to %s' % ( files['avi']['ifile'], files['avi']['ofile'] ) )
-            video_processing.transcode_avi( files['avi']['ifile'], files['avi']['ofile'], log, self.data )
+            log.info( 'Transcode %s to %s' % ( files['intellivision']['ifile'], files['intellivision']['ofile'] ) )
+            video_processing.transcode_avi( files['intellivision']['ifile'], files['intellivision']['ofile'], log, self.data )
 
             log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
             video_processing.generate_poster( files['poster']['ifile'], files['poster']['ofile'], log, self.data )
             
             log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ifile'] ) )
-            video_processing.generate_thumbnail( files['thumbnail']['ifile'], files['thumbnail']['ofile'], log, data )
+            video_processing.generate_thumbnail( files['thumbnail']['ifile'], files['thumbnail']['ofile'], log, self.data )
 
-            log.info( 'Generate face from %s to %s' % ( files['faces']['ifile'], files['faces']['ofile'] ) )
+            log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            video_processing.generate_faces( files['faces']['ifile'], files['faces']['ofile'], log, data, skip = False )
+            video_processing.generate_face( files['face']['ifile'], files['face']['ofile'], log, self.data, skip = True )
 
         except Exception as e:
-            self.__safe_log( log.error, e )
-            self.handle_error()
+            self.__safe_log( log.error, str( e ) )
+            self.handle_errors()
+            raise
 
         ######################################################################
         # Upload files to S3.
@@ -153,7 +153,7 @@ class Worker(Background):
             for label in files:
                 if files[label]['key'] and files[label]['ofile'] and self.__valid_file( files[label]['ofile'] ):
                     log.info( 'Starting upload for %s to %s' % ( files[label]['ofile'], files[label]['key'] ) )
-                    helpers.upload_file( files[label] )
+                    helpers.upload_file( files[label], log )
         except Exception as e:
             self.__safe_log( log.error, 'Failed to upload to S3: ' + str( e ) )
             self.handle_errors()
@@ -162,16 +162,6 @@ class Worker(Background):
         #######################################################################
         # DATABASE
         #
-
-        # Add the mediafile to the database
-#        data = {
-#            'uuid': c['uuid'],
-#            'user_id': info['uid'],
-#            'filename': filename,
-#            'mimetype': mimetype,
-#            'uri': c['video_key'],
-#            'size': os.path.getsize( c['video']['ofile'] )
-#            }
 
         try:
             log.info( 'Generating row for media file' )
@@ -189,7 +179,7 @@ class Worker(Background):
             log.info( 'Generating row for main media_asset' )
             asset = MediaAssets( uuid        = str(uuid.uuid4()),
                                 asset_type   = 'main',
-                                mimetype     = data['mimetype'],
+                                mimetype     = self.data['mimetype'],
                                 metadata_uri = files['metadata']['key'],
                                 bytes        = os.path.getsize( files['main']['ofile'] ),
                                 uri          = files['main']['key'],
@@ -200,12 +190,12 @@ class Worker(Background):
             avi_asset = MediaAssets( uuid       = str(uuid.uuid4()),
                                      asset_type = 'intellivision',
                                      mimetype   = 'video/avi',
-                                     bytes      = os.path.getsize( files['avi']['ofile'] ),
-                                     uri        = files['avi']['key'],
+                                     bytes      = os.path.getsize( files['intellivision']['ofile'] ),
+                                     uri        = files['intellivision']['key'],
                                      location   = 'us' )
             media.assets.append( avi_asset )
 
-            log.info( 'Generating row for thumnail media_asset' )
+            log.info( 'Generating row for thumbnail media_asset' )
             asset = MediaAssets( uuid       = str(uuid.uuid4()),
                                  asset_type = 'thumbnail',
                                  mimetype   = 'image/jpg',
@@ -240,13 +230,13 @@ class Worker(Background):
                                           location   = 'us' )
                 media.assets.append( face_asset )
 
-                log.info( 'Generatig for for face media_asset_feature' )
+                log.info( 'Generating for for face media_asset_feature' )
                 face_feature = MediaAssetFeatures( feature_type = 'face',
                                           )
                 face_asset.media_asset_features.append( face_feature )
 
             log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
-            user = orm.query( Users ).filter_by( uuid = info['uid'] ).one()
+            user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
 
             user.media.append( media )
 
@@ -298,17 +288,18 @@ class Worker(Background):
             self.__safe_log( log.error, 'Some trouble removing temp files: %s' % str( e ) )
             self.handle_errors()
 
-        log.info( 'DONE WITH %s' % c['uuid'] )
+        log.info( 'DONE WITH %s' % self.uuid )
 
         return
 
     ######################################################################
     # Error handling
-    def handle_errors( self, filenames ):
+    def handle_errors( self ):
         '''Copy temporary files to error directory.'''
         try:
+            files = self.files
             log = self.log
-            log.info( 'Error occured, relocating temp files to error directory...' )
+            log.info( 'Error occurred, relocating temp files to error directory...' )
 
             for label in files:
                 for file_type in [ 'ifile', 'ofile' ]:
@@ -321,7 +312,7 @@ class Worker(Background):
                         except Exception as e_inner:
                             self.__safe_log( log.error, 'Failed to rename file: ' + full_name )
         except Exception as e:
-            self.__safe_log( log.error, 'Some trouble relocating temp files temp files: %s' % str( e_inner ) )
+            self.__safe_log( log.error, 'Some trouble relocating temp files temp files: %s' % str( e ) )
 
     ######################################################################
     # Utility function to add things to our files data structure
@@ -332,20 +323,20 @@ class Worker(Background):
         try:
             if label in self.files:
                 self.log.info( 'Overwriting existing file label: %s with new values.' % label )
-                self.log.info( 'Old %s label ifile is: %s' % 
+                self.log.debug( 'Old %s label ifile is: %s' % 
                                ( label, files[label].get( 'ifile', 'No ifile key' ) ) )
-                self.log.info( 'Old %s label ofile is: %s' % 
+                self.log.debug( 'Old %s label ofile is: %s' % 
                                ( label, files[label].get( 'ofile', 'No ofile key' ) ) )
-                self.log.info( 'Old %s label key is: %s' % 
+                self.log.debug( 'Old %s label key is: %s' % 
                                ( label, files[label].get( 'key', "No key called 'key'" ) ) )
             else:
                 self.log.info( 'Adding new file label: %s with new values.' % label )
 
             self.files[label] = { 'ifile' : ifile, 'ofile' : ofile, 'key' : key }
 
-            self.log.info( 'New %s label ifile is: %s' % ( label, ifile ) )
-            self.log.info( 'New %s label ofile is: %s' % ( label, ofile ) )
-            self.log.info( 'New %s label key is: %s' % ( label, key ) )
+            self.log.debug( 'New %s label ifile is: %s' % ( label, ifile ) )
+            self.log.debug( 'New %s label ofile is: %s' % ( label, ofile ) )
+            self.log.debug( 'New %s label key is: %s' % ( label, key ) )
 
             return
 
@@ -358,30 +349,30 @@ class Worker(Background):
     def __valid_file( self, input_filename ):
         '''Private method: Return true if input_filename exists and is
         readable, and false otherwise.'''
-        self.log.info( 'Checking whether file %s exists and is readable.' % input_filename )
+        self.log.debug( 'Checking whether file %s exists and is readable.' % input_filename )
         if os.path.isfile( input_filename ):
-            self.log.info( 'File %s exists.' % input_filename )
+            self.log.debug( 'File %s exists.' % input_filename )
 
             if os.access( input_filename, os.R_OK ):
-                self.log.info( 'File %s is readable.' % input_filename )
+                self.log.debug( 'File %s is readable.' % input_filename )
                 return True
             else:
-                self.log.error( 'File %s is not readable.' % input_filename )
+                self.log.warn( 'File %s exists but is not readable.' % input_filename )
                 return False
         else:
-            self.log.error( 'File %s does not exist.' % input_filename )
+            self.log.debug( 'File %s does not exist.' % input_filename )
             return False
 
     ######################################################################
     # Utility function to log and not throw exceptions if there is an
     # error while logging.
-    def __safe_log( logger, message ):
+    def __safe_log( self, logger, message ):
         '''Private method: Used for when we are trying to log in an
         exception block - in this case we want to be careful to not
         blow out our error handling code due to a problem with
         logging.'''
         try:
-            logger( message )
+            logger( str( message ) )
         except Exception as e:
             print "Exception thrown while logging error:" % str( e )
 
@@ -394,7 +385,7 @@ class Worker(Background):
         JSON'''
         try:
             f = open( ifile )
-            self.info = json.load( f )
+            self.data['info'] = json.load( f )
         except Exception as e:
             log.error( 'Failed to open and parse as JSON: %s error was: %s' % ( ifile, str( e ) ) )
             self.handle_errors()
@@ -414,7 +405,7 @@ class Worker(Background):
         metadata field from JSON'''
         try:
             f = open( ifile )
-            self.metadata = json.load( f )
+            self.data['metadata'] = json.load( f )
         except Exception as e:
             log.error( 'Failed to open and parse %s as JSON error was %s' % ( ifile, str( e ) ) )
             self.handle_errors()
@@ -429,27 +420,25 @@ class Worker(Background):
 
         * Each value is itself a dictionary, with the following keys
           as appropriate:
-          + ifile - the full filesystem path of the input to this
+          + ifile - the full file system path of the input to this
             stage of the pipeline
 
-          + ofile - the full filesystem path of the output of this
+          + ofile - the full file system path of the output of this
             stage of the pipeline
 
           + key - the key that the output resource will be associated
             with in persistent storage (currently S3)
           '''
         try:
-            self.log.info('HERE AT TOP')
-
             self.files = {}
-        
-            abs_basename = os.path.splitext( input_filename )
-            
+
+            abs_basename = os.path.splitext( input_filename )[0]
+
             # The 'main' media file, an mp4.
             self.add_file( 
                 label = 'main',
                 ifile = input_filename, 
-                ofile = abs_basename+'.mp4', 
+                ofile = abs_basename + '.mp4', 
                 key   = self.uuid + '/' + self.uuid + '.mp4' )
             
             # The 'thumbnail' media file, a jpg.
@@ -490,7 +479,7 @@ class Worker(Background):
             # The 'exif' media file, json
             self.add_file( 
                 label = 'exif',
-                ifile = input_filename, 
+                ifile = input_filename+'.mp4', 
                 ofile = abs_basename+'_exif.json', 
                 key   = self.uuid + '/' + self.uuid + '_exif.json' )
 
@@ -502,7 +491,7 @@ class Worker(Background):
                 key   = self.uuid + '/' + self.uuid + '.avi' )
 
         except Exception as e:
-            self.__safe_log( self.log.error, 'Error while initializing files: ' + e )
-            self.hanld_errors()
-            raise
+            self.__safe_log( self.log.error, 'Error while initializing files: ' + str( e ) )
+            self.handle_errors()
+            return 
 
