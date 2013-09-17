@@ -14,14 +14,14 @@ urls = (
 # document.  Can use to make sure the server is running and
 # is nominally functional.
 #
-class ping:
+class ping( object ):
     def GET(self):
         data = web.input()
         web.ctx.log.debug( "PING()" )
         web.header('Content-Type', 'application/json')
         return json.dumps(data)
 
-class users:
+class users( object ):
     def GET(self):
         print "Users in Database:"
         data = {}
@@ -34,7 +34,7 @@ class users:
 #
 # Test error handling and logging
 #
-class error:
+class error( object ):
     def GET(self, etype):
 
         # Grab query params

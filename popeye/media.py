@@ -30,7 +30,7 @@ then return only that mediafile if it is owned by the user
 indicated by the user uuid.
 
 """
-class get:
+class get( object ):
     def GET(self):
         # Get input params
         data = web.input()
@@ -69,7 +69,7 @@ class get:
         if not result: result = []
         return toJSON({ 'media': result })
 
-class delete:
+class delete( object ):
     def GET(self):
         # Get input params
         data = web.input()

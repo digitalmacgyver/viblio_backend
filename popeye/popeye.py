@@ -54,12 +54,12 @@ def load_sqla(handler):
     web.ctx.SessionFactory = SessionFactory
     try:
         return handler()
-    except web.HTTPError:
-        web.ctx.log.debug( "Committing on HTTPError" );
+    except web.HTTPError as e:
+        web.ctx.log.debug( "Committing on HTTPError:" + str( e ) )
         web.ctx.orm.commit()
         raise
-    except:
-        web.ctx.log.debug( "Rolling back on exception" );
+    except Exception as f:
+        web.ctx.log.debug( "Rolling back on exception:" + str( f ) )
         web.ctx.orm.rollback()
         raise
     finally:

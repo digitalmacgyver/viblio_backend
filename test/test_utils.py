@@ -1,4 +1,5 @@
 import datetime
+from datetime import timedelta
 import logging
 import os
 import random
@@ -111,6 +112,8 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
         media_assets = meta.tables['media_assets']
         media_asset_features = meta.tables['media_asset_features']
         
+        
+
         for video in videos:
             # Add the media row
             video['uuid'] = str( uuid.uuid4() )
@@ -123,10 +126,11 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                                      title          = 'VIBLIO_TEST_VIDEO',
                                      filename       = video['s3_key'],
                                      description    = 'VIBLIO_TEST_VIDEO',
-                                     recording_date = datetime.datetime.now(),
+                                     recording_date = datetime.datetime.now() - video['create_delta'],
                                      view_count     = 0,
                                      lat            = float( "%.8f" % random.uniform(37,38) ),
-                                     lng            = float( "%.8f" % random.uniform(-122,-123) ) )
+                                     lng            = float( "%.8f" % random.uniform(-122,-123) ),
+                                     created_date   = datetime.datetime.now() - video['create_delta'] + timedelta( hours=12 ) )
             video['id'] = v_result.inserted_primary_key[0]
             video['user_id'] = user_id
 
@@ -137,7 +141,8 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                                    asset_type='main', 
                                    mimetype='video/mp4',
                                    uri=video['uuid']+'/'+video['uuid']+'.mp4',
-                                   metadata_uri=video['uuid']+'/'+video['uuid']+'_metadata.json', bytes=video['bytes'] )
+                                   metadata_uri=video['uuid']+'/'+video['uuid']+'_metadata.json', bytes=video['bytes'],
+                                   created_date   = datetime.datetime.now() - video['create_delta'] + timedelta( hours=12 ) )
             video['main_id'] = result_id
 
             _s3_copy( test_video_bucket, video_base_uri + '.mp4', config.bucket_name, video['uuid']+'/'+video['uuid']+'.mp4' )
@@ -205,25 +210,35 @@ def create_test_comments( engine, user_id, videos ):
     try: 
         conn = _get_conn( engine )
         meta = _get_meta( engine )
+        users = meta.tables['users']
         media_comments = meta.tables['media_comments']
 
+        user_list = conn.execute( select( [users.c.id] ) ).fetchall()
+                                  
         for video in videos:
             video_id = video['id']
             log.info( "Inserting gibberish comments by user_id %s for video %s" % ( user_id, video_id ) )
             
             # Add between 0 and 100 comments.
-            for c in range( int( random.uniform( 0, 101 ) ) ):
+            comment_count = int( random.uniform( 0, 101 ) )
+            first_comment_date = datetime.datetime.now() - video['create_delta'] + timedelta( minutes=1 )
+            comment_time_step = video['create_delta'] // comment_count
+            comment_date = first_comment_date
+            for c in range( comment_count ):
                 # Each comment is between 0 and 10 UUIDs
                 sentence = ''
                 for s in range( int( random.uniform( 0, 11 ) ) ):
                     sentence += str( uuid.uuid4() ).replace( '-', ' ' ) + ' '
-                log.info( "Inserting comment number %s: %s" % ( c, sentence ) )
+                commenting_user_id = user_list[ int( random.uniform( 0, len( user_list ) ) ) ][0]
+                log.info( "Inserting comment number %s made by %s on %s: %s" % ( c, commenting_user_id, comment_date, sentence ) )
                 conn.execute( media_comments.insert(),
                               id = None,
                               media_id = video_id,
-                              user_id = user_id,
+                              user_id = commenting_user_id,
                               comment = sentence,
-                              comment_number = c )
+                              comment_number = c,
+                              created_date = comment_date )
+                comment_date += comment_time_step
 
     except Exception, e:
         log.critical( "Failed to insert comment. Error: %s" )
@@ -260,7 +275,7 @@ def add_feature( conn, media_asset_features, media_asset_id, media_id, user_id, 
         log.critical( "Failed to insert feature. Error: %s" % ( e ) ) 
         raise
 
-def add_asset( conn, media_assets, row, uuid, asset_type, mimetype, uri, metadata_uri, bytes=None ):
+def add_asset( conn, media_assets, row, uuid, asset_type, mimetype, uri, metadata_uri, bytes=None, created_date=None ):
     try:
         log.info( "Inserting asset for %s of type %s" % ( uri, asset_type ) )
         result = conn.execute( media_assets.insert(),
@@ -274,7 +289,8 @@ def add_asset( conn, media_assets, row, uuid, asset_type, mimetype, uri, metadat
                                location       = 'us',
                                metadata_uri   = metadata_uri,
                                view_count     = 0,
-                               bytes          = bytes
+                               bytes          = bytes,
+                               created_date   = created_date
                                )
         log.info( "Inserted asset has id %s" % ( result.inserted_primary_key[0] ) )
         return result.inserted_primary_key[0]
