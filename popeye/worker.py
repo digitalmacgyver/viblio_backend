@@ -8,6 +8,8 @@ import os
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
 
+import logging
+
 import sys
 import requests
 
@@ -17,9 +19,6 @@ import mimetypes
 
 # Base class for Worker.
 from background import Background
-
-# TODO:
-# Get seprate error log for each file along side it.
 
 class Worker(Background):
     '''The class which drives the video processing pipeline.
@@ -72,6 +71,9 @@ class Worker(Background):
         log   = self.log
         orm   = self.orm
 
+        # Also log to a particular logging file.
+        logging.basicConfig( filename = files['media_log']['ofile'], level = config.loglevel )
+
         log.info( 'Worker.py, starting to process: ' + self.uuid )
 
         # Verify the initial inputs we expect are valid.
@@ -96,7 +98,7 @@ class Worker(Background):
         # Give the input file an extension.
         log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
         try:
-            new_filename = helpers.rename_upload_with_extension( files['main'], self.data['info'], log )
+            new_filename = helpers.rename_upload_with_extension( files['main'], log, self.data )
             log.info( 'Renamed input file is: ' + new_filename )
             files['main']['ifile'] = new_filename
         except Exception as e:
@@ -107,7 +109,7 @@ class Worker(Background):
         # Generate _exif.json and load it into self.data['exif']
         log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
         try:
-            self.data['exif'] = helpers.get_exif( files['exif']['ifile'], files['exif']['ofile'], log )
+            self.data['exif'] = helpers.get_exif( files['exif'], log, self.data )
             log.info( 'EXIF data extracted: ' + str( self.data['exif'] ) )
         except Exception as e:
             self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
@@ -127,28 +129,28 @@ class Worker(Background):
         try: 
             # Transcode into mp4 and rotate as needed.
             log.info( 'Transcode %s to %s' % ( files['main']['ifile'], files['main']['ofile'] ) )
-            video_processing.transcode_main( files['main']['ifile'], files['main']['ofile'], log, self.data )
+            video_processing.transcode_main( files['main'], log, self.data )
 
             # Move the atom to the front of the file.
             log.info( 'Move atom for: ' + files['main']['ofile'] )
-            video_processing.move_atom( files['main']['ifile'], files['main']['ofile'], log, self.data )
+            video_processing.move_atom( files['main'], log, self.data )
             
             # Create an AVI for intellivision.
             log.info( 'Transcode %s to %s' % ( files['intellivision']['ifile'], files['intellivision']['ofile'] ) )
-            video_processing.transcode_avi( files['intellivision']['ifile'], files['intellivision']['ofile'], log, self.data )
+            video_processing.transcode_avi( files['intellivision'], log, self.data )
 
             # Create a poster.
             log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
-            video_processing.generate_poster( files['poster']['ifile'], files['poster']['ofile'], log, self.data )
+            video_processing.generate_poster( files['poster'], log, self.data )
             
             # Create a thumbnail.
             log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ifile'] ) )
-            video_processing.generate_thumbnail( files['thumbnail']['ifile'], files['thumbnail']['ofile'], log, self.data )
+            video_processing.generate_thumbnail( files['thumbnail'], log, self.data )
 
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            video_processing.generate_face( files['face']['ifile'], files['face']['ofile'], log, self.data, skip = False )
+            video_processing.generate_face( files['face'], log, self.data, skip=False )
 
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
@@ -164,7 +166,7 @@ class Worker(Background):
             for label in files:
                 if files[label]['key'] and files[label]['ofile'] and self.__valid_file( files[label]['ofile'] ):
                     log.info( 'Starting upload for %s to %s' % ( files[label]['ofile'], files[label]['key'] ) )
-                    helpers.upload_file( files[label], log )
+                    helpers.upload_file( files[label], log, self.data )
         except Exception as e:
             self.__safe_log( log.error, 'Failed to upload to S3: ' + str( e ) )
             self.handle_errors()
@@ -228,7 +230,7 @@ class Worker(Background):
                                         mimetype   = 'image/jpg',
                                         bytes      = os.path.getsize( files['poster']['ofile'] ),
                                         width      = 320,
-                                        height     = 240,
+                                        height     = 180,
                                         uri        = files['poster']['key'],
                                         location   = 'us' )
             media.assets.append( poster_asset )
@@ -510,6 +512,14 @@ class Worker(Background):
                 ifile = abs_basename+'.mp4', 
                 ofile = abs_basename+'.avi', 
                 key   = self.uuid + '/' + self.uuid + '.avi' )
+
+            # The 'intellivision' media file, by convention an AVI.
+            self.add_file( 
+                label = 'media_log',
+                ifile = None, 
+                ofile = abs_basename+'.log', 
+                key   = None )
+
 
         except Exception as e:
             self.__safe_log( self.log.error, 'Error while initializing files: ' + str( e ) )

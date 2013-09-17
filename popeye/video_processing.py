@@ -18,7 +18,9 @@ def get_faces(avi_video):
     iv.close_session(session_info)
     return (x)
 
-def transcode_main( ifile, ofile, log, data, files=None ):
+def transcode_main( file_data, log, data, files=None ):
+    ifile = file_data['ifile']
+    ofile = file_data['ofile']
     rotation = data['exif']['rotation']
     mimetype = data['mimetype']
 
@@ -43,7 +45,10 @@ def transcode_main( ifile, ofile, log, data, files=None ):
 
     data['mimetype'] = 'video/mp4'
 
-def transcode_avi( ifile, ofile, log, data, files=None ):
+def transcode_avi( file_data, log, data=None ):
+    ifile = file_data['ifile']
+    ofile = file_data['ofile']
+
     # Also generate AVI for IntelliVision (temporary)
     ffopts = ''
     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( ifile, ffopts, ofile )
@@ -51,15 +56,20 @@ def transcode_avi( ifile, ofile, log, data, files=None ):
     if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
         raise Exception( 'Failed to generate AVI file: %s' % cmd )
 
-def move_atom( ifile, ofile, log, data, files=None ):
+def move_atom( file_data, log, data=None ):
     '''Attempt to relocate the atom, if there is a problem do not
     terminate execution.'''
+    ifile = file_data['ifile']
+    ofile = file_data['ofile']
+
     cmd = '/usr/local/bin/qtfaststart %s' % ofile
     log.info( cmd )
     if os.system( cmd ) != 0:
         log.error( 'Failed to run qtfaststart on the output file' )
         
-def generate_poster( ifile, ofile, log, data, files=None ):
+def generate_poster( file_data, log, data=None ):
+    ifile = file_data['ifile']
+    ofile = file_data['ofile']    
     rotation = data['exif']['rotation']
     width    = data['exif']['width']
     height   = data['exif']['height']
@@ -82,7 +92,9 @@ def generate_poster( ifile, ofile, log, data, files=None ):
     if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
         raise Exception( 'Failed to generate poster with command: %s' % cmd )
         
-def generate_thumbnail( ifile, ofile, log, data, files=None ):
+def generate_thumbnail( file_data, log, data=None ):
+    ifile = file_data['ifile']
+    ofile = file_data['ofile']    
     rotation = data['exif']['rotation']
     width    = data['exif']['width']
     height   = data['exif']['height']    
@@ -99,7 +111,9 @@ def generate_thumbnail( ifile, ofile, log, data, files=None ):
     if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
         raise Exception( 'Failed to generate thumbnail with command: %s' % cmd )
 
-def generate_face( ifile, ofile, log, data, skip = False ):
+def generate_face( file_data, log, data=None, skip=False ):
+    ifile = file_data['ifile']
+    ofile = file_data['ofile']    
     data['found_faces'] = False
 
     if not skip:

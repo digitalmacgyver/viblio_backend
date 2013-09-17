@@ -7,9 +7,9 @@ from boto.s3.key import Key
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
 
-def get_exif( ifile, ofile, log, data = None ):
-    media_file = ifile
-    exif_file = ofile
+def get_exif( file_data, log, data = None ):
+    media_file = file_data['ifile']
+    exif_file = file_data['ofile']
    
     try:
         command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
@@ -50,15 +50,15 @@ def get_exif( ifile, ofile, log, data = None ):
               'height'      : image_height
               } )
 
-def rename_upload_with_extension( main_files, info, log, data = None ):
+def rename_upload_with_extension( file_data, log, data = None ):
     '''Brewtus writes the uploaded file as <fileid> without an
     extenstion, but the info struct has an extenstion.  See if its
     something other than '' and if so, move the file under its
     extension so transcoding works.'''
 
-    if 'fileExt' in info:
-        src = main_files['ifile']
-        tar = src + info['fileExt'].lower()
+    if 'fileExt' in data['info']:
+        src = file_data['ifile']
+        tar = src + data['info']['fileExt'].lower()
         if not src == tar:
             try:
                 os.rename( src, tar )
