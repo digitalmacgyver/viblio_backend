@@ -1,19 +1,22 @@
 import json
 import os
 
-def perror( log, msg ):
-    #log.error( msg )
-    return { 'error': True, 'message': msg }
+import boto
+from boto.s3.key import Key
 
-def exif( filenames ):
-    media_file = filenames['video']['input']
-    exif_file = filenames['exif']['output']
+from appconfig import AppConfig
+config = AppConfig( 'popeye' ).config()
+
+def get_exif( file_data, log, data = None ):
+    media_file = file_data['ifile']
+    exif_file = file_data['ofile']
    
     try:
         command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + media_file
+        log.info( 'Running exif extraction command: ' + command )
         os.system( command )
     except Exception as e:
-        print 'EXIF extraction failed, error was: %s' % str( e )
+        log.error( 'EXIF extraction failed, error was: ' + str( e ) )
         raise
 
     file_handle = open( exif_file )
@@ -34,6 +37,8 @@ def exif( filenames ):
     image_width  = exif_data.get( 'ImageWidth', None)
     image_height = exif_data.get( 'ImageHeight', None)
 
+    log.info( 'Returning from exif extraction.' )
+
     return( { 'file_ext'    : file_ext, 
               'mime_type'   : mime_type, 
               'lat'         : lat, 
@@ -45,9 +50,52 @@ def exif( filenames ):
               'height'      : image_height
               } )
 
+def rename_upload_with_extension( file_data, log, data = None ):
+    '''Brewtus writes the uploaded file as <fileid> without an
+    extenstion, but the info struct has an extenstion.  See if its
+    something other than '' and if so, move the file under its
+    extension so transcoding works.'''
+
+    if 'fileExt' in data['info']:
+        src = file_data['ifile']
+        tar = src + data['info']['fileExt'].lower()
+        if not src == tar:
+            try:
+                os.rename( src, tar )
+                return tar
+            except Exception as e:
+                log.error( "Failed to rename %s to %s" % ( src, tar ) )
+                raise
+
+def __get_bucket( log ):
+    try:
+        if not hasattr( __get_bucket, "bucket" ):
+            __get_bucket.bucket = None
+        if __get_bucket.bucket == None:
+            s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+            __get_bucket.bucket = s3.get_bucket( config.bucket_name )
+            bucket_contents = Key( __get_bucket.bucket )
+        log.debug( 'Got s3 bucket.' )
+        return __get_bucket.bucket
+    except Exception as e:
+        log.error( 'Failed to obtain s3 bucket: %s' % str(e) )
+        raise
+
+def upload_file( file_data, log, data = None ):
+    '''Upload a file to S3'''
+    try:
+        bucket = __get_bucket( log )
+        k = Key( bucket )
+
+        log.info( 'Uploading %s to s3: %s' % ( file_data['ofile'], file_data['key'] ) )
+        k.key = file_data['key']
+        k.set_contents_from_filename( file_data['ofile'] )
+    except Exception as e:
+        log.error( 'Failed to upload to s3: %s' % str( e ) )
+        raise
+
+'''
 def lc_extension( basename, ext ):
-    '''Lowercase the extension of our input file, and rename the file
-    to match.'''
 
     lc_ext = ext.lower()
     if lc_ext != ext:
@@ -82,15 +130,15 @@ def create_filenames (full_filename):
     face_key = media_uuid + '/' + os.path.basename( output_face )
     exif_key = media_uuid + '/' + os.path.basename( output_exif )
     filenames = {
-        'uuid': media_uuid,
-        'info': input_info,
-        'video_key': video_key,
-        'avi_key': avi_key,
-        'thumbnail_key': thumbnail_key,
-        'poster_key': poster_key,
-        'metadata_key': metadata_key,
-        'face_key': face_key,
-        'exif_key': exif_key,
+        'uuid': media_uuid, # Used to insert the row in the database, just the basename of the input file.
+        'info': input_info, # Brewtus metadata from the file, basename+.json
+        'video_key': video_key, # S3 key for main = uid / uid.mp4 filename
+        'avi_key': avi_key, # S3 key for avi = uid / uid.avi
+        'thumbnail_key': thumbnail_key, # S3 key for thumbnail = uid / uid_thumbnail.jpg
+        'poster_key': poster_key, # S3 key for poster = uid / uid_poster.jpg
+        'metadata_key': metadata_key, # S3 key for metadata created by uploader = uid / uid_metadata.json
+        'face_key': face_key, # S3 key for a single face found in the video, by convention.
+        'exif_key': exif_key, # S3 key for exif data = uid / uid_exif.json
         'avi' : {
             'input': output_video,
             'output': avi_video
@@ -120,4 +168,4 @@ def create_filenames (full_filename):
             }
         }
     return(filenames)
-
+'''

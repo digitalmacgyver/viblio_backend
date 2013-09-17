@@ -1,17 +1,27 @@
 # make LVL=<staging|prod|local>
 LVL ?= staging
-deploy:
+
+deploy: deploy_brewtus deploy_popeye
+
+deploy_brewtus:
 	mkdir -p /deploy/$(LVL)
 	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
 	-rm -rf /deploy/$(LVL)/brewtus.prev
-	-rm -rf /deploy/$(LVL)/popeye.prev
 	-mv /deploy/$(LVL)/brewtus /deploy/$(LVL)/brewtus.prev
-	-mv /deploy/$(LVL)/popeye /deploy/$(LVL)/popeye.prev
-	tar --exclude node_modules --exclude '*.pyc' -zcf - brewtus popeye | \
+	tar --exclude node_modules --exclude '*.pyc' -zcf - brewtus | \
 		(cd /deploy/$(LVL); tar zxf -)
 	( cd /deploy/$(LVL)/brewtus; npm install )
-	( cd /deploy/$(LVL); chown -R www-data:www-data brewtus; chown -R www-data:www-data popeye )
- 
+	( cd /deploy/$(LVL); chown -R www-data:www-data brewtus )
+
+deploy_popeye:
+	mkdir -p /deploy/$(LVL)
+	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
+	-rm -rf /deploy/$(LVL)/popeye.prev
+	-mv /deploy/$(LVL)/popeye /deploy/$(LVL)/popeye.prev
+	tar --exclude node_modules --exclude '*.pyc' -zcf - popeye | \
+		(cd /deploy/$(LVL); tar zxf -)
+	( cd /deploy/$(LVL); chown -R www-data:www-data popeye )
+
 # Execute this only once when you are building
 # a new development machine.  Execute it with sudo:
 #
