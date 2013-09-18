@@ -6,8 +6,6 @@ import datetime
 from models import *
 import os
 
-from wsgilog import WsgiLog
-
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
 
