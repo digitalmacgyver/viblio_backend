@@ -6,6 +6,8 @@ import datetime
 from models import *
 import os
 
+from wsgilog import WsgiLog
+
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
 
@@ -73,7 +75,10 @@ class Worker(Background):
         orm   = self.orm
 
         # Also log to a particular logging file.
-        logging.basicConfig( filename = files['media_log']['ofile'], level = config.loglevel )
+        fh = logging.FileHandler( files['media_log']['ofile'] )
+        fh.setFormatter( logging.Formatter( '%(name)s: %(asctime)s %(levelname)-4s %(message)s' ) )
+        fh.setLevel( config.loglevel )
+        log.addHandler( fh )
 
         log.info( 'Worker.py, starting to process: ' + self.uuid )
 
