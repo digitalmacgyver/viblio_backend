@@ -116,7 +116,7 @@ contacts = [
       'provider' : None,
       'provider_id' : None,
       'viblio_id' : None },
-    { 'name' : 'Unidentified Person',
+    { 'name' : None,
       'email' : None,
       'provider' : None,
       'provider_id' : None,

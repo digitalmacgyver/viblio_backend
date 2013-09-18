@@ -96,6 +96,16 @@ class Worker(Background):
         self.__initialize_metadata( files['metadata']['ifile'] )
         log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
 
+        # Generate _exif.json and load it into self.data['exif']
+        log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
+        try:
+            self.data['exif'] = helpers.get_exif( files['exif'], log, self.data )
+            log.info( 'EXIF data extracted: ' + str( self.data['exif'] ) )
+        except Exception as e:
+            self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
+            self.handle_errors()
+            raise
+
         # Give the input file an extension.
         log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
         try:
@@ -104,16 +114,6 @@ class Worker(Background):
             files['main']['ifile'] = new_filename
         except Exception as e:
             self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
-            self.handle_errors()
-            raise
-
-        # Generate _exif.json and load it into self.data['exif']
-        log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
-        try:
-            self.data['exif'] = helpers.get_exif( files['exif'], log, self.data )
-            log.info( 'EXIF data extracted: ' + str( self.data['exif'] ) )
-        except Exception as e:
-            self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
             self.handle_errors()
             raise
 
@@ -328,7 +328,7 @@ class Worker(Background):
         try:
             files = self.files
             log = self.log
-            log.info( 'Error occurred, relocating temp files to error directory...' )
+            self.__safe_log( log.info, 'Error occurred, relocating temp files to error directory...' )
 
             for label in files:
                 for file_type in [ 'ifile', 'ofile' ]:
@@ -508,7 +508,7 @@ class Worker(Background):
             # The 'exif' media file, json
             self.add_file( 
                 label = 'exif',
-                ifile = input_filename+'.mp4', 
+                ifile = input_filename, 
                 ofile = abs_basename+'_exif.json', 
                 key   = self.uuid + '/' + self.uuid + '_exif.json' )
 
