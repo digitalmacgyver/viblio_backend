@@ -24,7 +24,7 @@ def transcode_main( file_data, log, data, files=None ):
     rotation = data['exif']['rotation']
     mimetype = data['mimetype']
 
-    ffopts = ''
+    ffopts = ' -c:a libfdk_aac '
     if rotation == '0' and mimetype == 'video/mp4':
         log.debug( 'Video is non-rotated mp4, leaving it alone.' )
         data['mimetype'] = 'video/mp4'
