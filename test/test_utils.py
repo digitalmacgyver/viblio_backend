@@ -107,7 +107,7 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
         log.info( "Inserting test videos for user_id %s" % ( user_id ) )
         conn = _get_conn( engine )
         meta = _get_meta( engine )
-        contacts = meta.tables['contacts']
+        contact_table = meta.tables['contacts']
         media = meta.tables['media']
         media_assets = meta.tables['media_assets']
         media_asset_features = meta.tables['media_asset_features']
@@ -189,8 +189,8 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
                 contact_id = None
                 if face['contact_idx']:
                     contact_id = contacts[face['contact_idx']]['id']
-                    # DEBUG
-                    #conn.execute( contacts.update() )
+                    # DEBUG - Add a picture_uri for each contact.
+                    conn.execute( contact_table.update().where( contact_table.c.id == contact_id ).values( picture_uri = face_uri ) )
 
                 add_feature( conn=conn, media_asset_features=media_asset_features,
                              media_asset_id = face_id,
