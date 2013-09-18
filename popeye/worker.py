@@ -2,6 +2,7 @@ import web
 import json
 import uuid
 import hmac
+import datetime
 from models import *
 import os
 
@@ -183,9 +184,14 @@ class Worker(Background):
             if self.data['metadata'] and self.data['metadata']['file'] and self.data['metadata']['file']['Path']:
                 client_filename = self.data['metadata']['file']['Path']
 
+            recording_date = datetime.datetime.now()
+            if self.data['exif']['create_date'] and self.data['exif']['create_date'] != '' and self.data['exif']['create_date'] != '0000:00:00 00:00:00':
+                recording_date = self.data['exif']['create_date']
+            log.debug( 'Setting recording date to ' + str( recording_date ) )
+            log.debug( 'Exif data for create is ' + self.data['exif']['create_date'] )
             media = Media( uuid           = self.uuid,
                            media_type     = 'original',
-                           recording_date = self.data['exif']['create_date'],
+                           recording_date = recording_date,
                            lat            = self.data['exif']['lat'],
                            lng            = self.data['exif']['lng'],
                            filename       = client_filename )

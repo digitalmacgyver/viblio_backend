@@ -187,7 +187,7 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
 
                 # Add a feature row for each face
                 contact_id = None
-                if face['contact_idx']:
+                if contact_idx in face:
                     contact_id = contacts[face['contact_idx']]['id']
                     # DEBUG - Add a picture_uri for each contact.
                     conn.execute( contact_table.update().where( contact_table.c.id == contact_id ).values( picture_uri = face_uri ) )

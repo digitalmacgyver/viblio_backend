@@ -27,6 +27,8 @@ def transcode_main( file_data, log, data, files=None ):
     ffopts = ''
     if rotation == '0' and mimetype == 'video/mp4':
         log.debug( 'Video is non-rotated mp4, leaving it alone.' )
+        data['mimetype'] = 'video/mp4'
+        return
     else:
         if rotation == '90':
             print( 'Video is rotated 90 degrees, rotating.' )
