@@ -221,9 +221,11 @@ def create_test_comments( engine, user_id, videos ):
             
             # Add between 0 and 100 comments.
             comment_count = int( random.uniform( 0, 101 ) )
-            first_comment_date = datetime.datetime.now() - video['create_delta'] + timedelta( minutes=1 )
-            comment_time_step = video['create_delta'] // comment_count
-            comment_date = first_comment_date
+            if comment_count > 0:
+                first_comment_date = datetime.datetime.now() - video['create_delta'] + timedelta( minutes=1 )
+                comment_time_step = video['create_delta'] // comment_count
+                comment_date = first_comment_date
+
             for c in range( comment_count ):
                 # Each comment is between 0 and 10 UUIDs
                 sentence = ''
