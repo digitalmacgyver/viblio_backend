@@ -390,7 +390,6 @@ class Worker(Background):
             self.__safe_log( log.error, 'Failed to release lock, error: ' + str( e ) )
             raise
         finally:
-            self.__safe_log( log.info, 'Attempting to delete lock file' )
             try:
                 os.remove( self.lockfile_name )
             except:
