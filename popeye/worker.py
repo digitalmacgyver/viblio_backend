@@ -5,6 +5,7 @@ import hmac
 import datetime
 from models import *
 import os
+import fcntl
 
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
@@ -80,6 +81,9 @@ class Worker(Background):
 
         log.info( 'Worker.py, starting to process: ' + self.uuid )
 
+        # Acquire lock.
+        self.__acquire_lock()
+
         # Verify the initial inputs we expect are valid.
         for label in [ 'main', 'info', 'metadata' ]:
             if not self.__valid_file( files[label]['ifile'] ):
@@ -107,6 +111,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         # Give the input file an extension.
@@ -118,6 +123,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         # Extract the mimetype and store it in self.data['mimetype']
@@ -128,6 +134,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to get mime type, error was: ' + str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         try: 
@@ -159,6 +166,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         ######################################################################
@@ -174,6 +182,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to upload to S3: ' + str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         #######################################################################
@@ -273,6 +282,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to add mediafile to database!: %s' % str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         # Commit to database.
@@ -281,6 +291,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to commit the database: %s' % str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         #######################################################################
@@ -303,6 +314,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to notify Cat: %s' % str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         ######################################################################
@@ -319,6 +331,8 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Some trouble removing temp files: %s' % str( e ) )
             self.handle_errors()
+
+        self.__release_lock()
 
         log.info( 'DONE WITH %s' % self.uuid )
 
@@ -345,6 +359,44 @@ class Worker(Background):
                             self.__safe_log( log.error, 'Failed to rename file: ' + full_name )
         except Exception as e:
             self.__safe_log( log.error, 'Some trouble relocating temp files temp files: %s' % str( e ) )
+
+    def __acquire_lock( self ):
+        try:
+            # Create the file if it doesn't exist, open it if it does.
+            log = self.log
+            self.lockfile_name = self.data['full_filename'] + '.lock'
+            log.info( 'Attempting to create lock file: ' + self.lockfile_name )
+            self.lockfile = open( self.lockfile_name, 'a' )
+            log.info( 'Attempting to acquire lock: ' + self.lockfile_name )
+            self.lock_data = fcntl.flock( self.lockfile, fcntl.LOCK_EX|fcntl.LOCK_NB )
+            self.lock_acquired = True
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to acquire lock, error: ' + str( e ) )
+            raise
+
+    def __release_lock( self ):
+        try:
+            # Create the file if it doesn't exist, open it if it does.
+            log = self.log
+            if getattr( self, 'lock_acquired' ):
+                log.info( 'Attempting to release lock file: ' + self.lockfile_name )
+                fcntl.flock( self.lockfile, fcntl.LOCK_UN )
+                self.lock_acquired = False
+                log.info( 'Attempting to remove lock file: ' + self.lockfile_name )
+                os.remove( self.lockfile_name )
+            else:
+                log.warn( '__release_lock called but no lock held: ' + self.lockfile_name )
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to release lock, error: ' + str( e ) )
+            raise
+        finally:
+            self.__safe_log( log.info, 'Attempting to delete lock file' )
+            try:
+                os.remove( self.lockfile_name )
+            except:
+                pass
+            if getattr( self, 'lock_acquired' ):
+                self.lock_acquired = False
 
     ######################################################################
     # Utility function to add things to our files data structure
@@ -381,12 +433,12 @@ class Worker(Background):
     def __valid_file( self, input_filename ):
         '''Private method: Return true if input_filename exists and is
         readable, and false otherwise.'''
-        self.log.debug( 'Checking whether file %s exists and is readable.' % input_filename )
+        #self.log.debug( 'Checking whether file %s exists and is readable.' % input_filename )
         if os.path.isfile( input_filename ):
-            self.log.debug( 'File %s exists.' % input_filename )
+            #self.log.debug( 'File %s exists.' % input_filename )
 
             if os.access( input_filename, os.R_OK ):
-                self.log.debug( 'File %s is readable.' % input_filename )
+                self.log.debug( 'File %s exists and is readable.' % input_filename )
                 return True
             else:
                 self.log.warn( 'File %s exists but is not readable.' % input_filename )
