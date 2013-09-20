@@ -141,6 +141,7 @@ class Worker(Background):
             # Transcode into mp4 and rotate as needed.
             log.info( 'Transcode %s to %s' % ( files['main']['ifile'], files['main']['ofile'] ) )
             video_processing.transcode_main( files['main'], log, self.data )
+            log.info( 'Transcoded mime type is ' + self.data['mimetype'] )
 
             # Move the atom to the front of the file.
             log.info( 'Move atom for: ' + files['main']['ofile'] )
