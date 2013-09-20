@@ -129,7 +129,7 @@ class Worker(Background):
         # Extract the mimetype and store it in self.data['mimetype']
         log.info( 'Getting mime type of input video.' )
         try:
-            self.data['mimetype'] = mimetypes.guess_type( files['main']['ifile'] )[0]
+            self.data['mimetype'] = str( mimetypes.guess_type( files['main']['ifile'] )[0] )
             log.info( 'Mime type was ' + self.data['mimetype'] )
         except Exception as e:
             self.__safe_log( log.error, 'Failed to get mime type, error was: ' + str( e ) )
