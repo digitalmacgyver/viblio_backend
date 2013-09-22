@@ -315,9 +315,6 @@ def delete_all_data_for_user( engine, user_id ):
         log.info( 'Deleting contacts for user: ' + str( user_id ) )
         conn.execute( contacts.delete().where( contacts.c.user_id == user_id ) )
 
-        log.info( 'Deleting comments for user: ' + str( user_id ) )
-        conn.execute( comments.delete().where( comments.c.user_id == user_id ) )
-
         log.info( 'Deleting media for user: ' + str( user_id ) )
         conn.execute( media.delete().where( media.c.user_id == user_id ) )
     except Exception as e:
