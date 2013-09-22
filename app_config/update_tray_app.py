@@ -17,6 +17,10 @@ from app_utils import show_configuration, upload_app_file
 
 logging.basicConfig( filename = config['logfile'], level = config.loglevel )
 log = logging.getLogger( "app_config" )
+screen_output = logging.StreamHandler( sys.stdout )
+screen_output.setLevel( logging.INFO )
+log.addHandler( screen_output )
+
 
 verbose = False
 
@@ -58,6 +62,9 @@ if __name__ == '__main__':
             else:
                 log.info( 'Uploading new version: %s of %s from file %s' % ( options.version_string, options.app, options.input_file ) )
                 upload_app_file( engine, options.app, options.version_string, options.input_file )
+                log.info( 'File upload complete.' )
+                log.info( 'Current configuration data for all apps is:' )
+                show_configuration( engine )
         except Exception as e:
             print 'Error occured: ' + str( e )
             log.error( 'Error occured: ' + str( e ) )

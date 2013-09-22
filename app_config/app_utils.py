@@ -1,5 +1,6 @@
 import datetime
 from datetime import timedelta
+import json
 import logging
 import os
 import random
@@ -17,8 +18,10 @@ from appconfig import AppConfig
 config = AppConfig( 'app_config' ).config()
 
 logging.basicConfig( filename = config['logfile'], level = config.loglevel )
-
 log = logging.getLogger( __name__ )
+screen_output = logging.StreamHandler( sys.stdout )
+screen_output.setLevel( logging.INFO )
+log.addHandler( screen_output )
 
 def _get_conn( engine ):
     try:
@@ -92,6 +95,8 @@ def upload_app_file( engine, app, version_string, input_file ):
         s3_key = version_string + "/" + os.path.basename( input_file )
         upload_file_to_s3( input_file, s3_key )
 
+        uri = json.dumps( { 'uri' : config.bucket_name + '/' + s3_key } )
+
         try:
             log.info( "Updating database" )
             conn = _get_conn( engine ) 
@@ -109,7 +114,8 @@ def upload_app_file( engine, app, version_string, input_file ):
                                    id = None,
                                    app = app,
                                    version_string = version_string,
-                                   current = True )
+                                   current = True,
+                                   config = uri )
             log.info( "Inserted primary key ID was " + str( result.inserted_primary_key[0] ) )
                           
             trans.commit()
