@@ -13,7 +13,7 @@ from sqlalchemy import *
 
 sys.path.append("../popeye")
 from appconfig import AppConfig
-config = AppConfig( 'create_test_data' ).config()
+config = AppConfig( 'test_data' ).config()
 
 logging.basicConfig( filename = config['logfile'], level = config.loglevel )
 
@@ -88,6 +88,7 @@ def create_test_contacts( engine, user_id, contact_list ):
             result = conn.execute( contacts.insert(),
                                    id                = None,
                                    user_id           = user_id,
+                                   uuid              = str( uuid.uuid4() ),
                                    contact_name      = contact['name'],
                                    contact_email     = contact['email'],
                                    contact_viblio_id = contact['viblio_id'],
@@ -235,6 +236,7 @@ def create_test_comments( engine, user_id, videos ):
                 log.info( "Inserting comment number %s made by %s on %s: %s" % ( c, commenting_user_id, comment_date, sentence ) )
                 conn.execute( media_comments.insert(),
                               id = None,
+                              uuid = str( uuid.uuid4() ),
                               media_id = video_id,
                               user_id = commenting_user_id,
                               comment = sentence,
@@ -299,6 +301,29 @@ def add_asset( conn, media_assets, row, uuid, asset_type, mimetype, uri, metadat
     except Exception, e:
         log.critical( "Failed to insert asset. Error: %s" % ( e ) )
         raise
+
+def delete_all_data_for_user( engine, user_id ):
+    '''Delete all data for the user, but not the user itself.'''
+    
+    try:
+        conn = _get_conn( engine )
+        meta = _get_meta( engine )
+        contacts = meta.tables['contacts']
+        comments = meta.tables['media_comments']
+        media = meta.tables['media']
+        
+        log.info( 'Deleting contacts for user: ' + str( user_id ) )
+        conn.execute( contacts.delete().where( contacts.c.user_id == user_id ) )
+
+        log.info( 'Deleting comments for user: ' + str( user_id ) )
+        conn.execute( comments.delete().where( comments.c.user_id == user_id ) )
+
+        log.info( 'Deleting media for user: ' + str( user_id ) )
+        conn.execute( media.delete().where( media.c.user_id == user_id ) )
+    except Exception as e:
+        log.error( 'Error while deleting user data: ' + str( e ) )
+        raise
+        
 
 def _get_bucket():
     try:
