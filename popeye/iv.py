@@ -24,7 +24,7 @@ def open_session():
         try:
             session_key = soup.result.sessionkey.string
             session_secret = soup.result.sessionsecret.string
-            print ('session Key: ' + session_key + 'and Secret: '+ session_secret)
+            session_info = {'key': session_key, 'secret': session_secret}
             return(session_info)
         except:
             print('Failed to extract session info')
@@ -206,7 +206,10 @@ def add_person(session_info, user_id):
         else:
             print 'ERROR'
             return(soup)
-# <html><body><person><status>Success</status><id>3</id></person></body></html>
+# <html><body><person><status>Success</status><id>3</id></person></bodsession_info = iv.open_session()
+user_id = iv.login(session_info, uid)
+response = iv.analyze(session_info, user_id, media_url)
+y></html>
 
 def delete_person(session_info, user_id, person_id):
     url = iv_config.iv_host + 'user/' + user_id + '/deletePerson/' + person_id
