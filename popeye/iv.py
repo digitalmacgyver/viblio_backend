@@ -182,11 +182,12 @@ def retrieve(session_info, user_id, file_id, uuid):
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         print str(soup)
-        if str(soup.result.status.string) == 'Success':
+        if (soup.result.status.string == 'Success') & (soup.result.description.string != 'No Results'):
             tracks = soup.result.tracks
             return(tracks)
         else: return(soup)
     else: return(r.content)
+# <Result><Status>Success</Status><ExpectedWaitSeconds>0</ExpectedWaitSeconds><Description>No Results</Description></Result>
 
 ## Add Person API
 def add_person(session_info, user_id):
