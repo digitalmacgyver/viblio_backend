@@ -4,6 +4,7 @@ import requests
 import hashlib
 import iv_config
 import uuid
+import time
 from bs4 import BeautifulSoup
 
 def perror( log, msg ):
@@ -18,13 +19,12 @@ def open_session():
     headers = {'Content-Type':'text/xml', 'Date':formatted_date}
     r = requests.post(url, data=session_xml, headers=headers)
     if r.status_code == requests.codes.ok:
-        print r.content
         soup = BeautifulSoup(r.content, 'lxml')
+        print str(soup)
         try:
-            session_key = str(soup.find('sessionkey').text)
-            session_secret = str(soup.find('sessionsecret').text)
-            print ('Received Key: ' + session_key + 'and Secret: '+ session_secret)
-            session_info = {'key': session_key, 'secret': session_secret}
+            session_key = soup.result.sessionkey.string
+            session_secret = soup.result.sessionsecret.string
+            print ('session Key: ' + session_key + 'and Secret: '+ session_secret)
             return(session_info)
         except:
             print('Failed to extract session info')
@@ -137,24 +137,26 @@ def analyze(session_info, user_id, media_url):
     print r, r.content
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
+        print str(soup)
     if (soup.result.status):
-        status = str(soup.result.status.text)
+        status = soup.result.status.string
     if status == 'Success':
         if(soup.result.description):
-            if str(soup.result.description.text) == 'File downloading started':
+            if soup.result.description.string == 'File downloading started':
+                time.sleep(60)
                 r = requests.post(url, data=analyze_xml, headers=headers)
-                print r, r.content
                 if r.status_code == requests.codes.ok:
                     soup = BeautifulSoup(r.content, 'lxml')
+                    print str(soup)
         if (soup.result.fileid):
-            file_id = str(soup.result.fileid.text)
+            file_id = soup.result.fileid.string
         if(soup.result.expectedwaitseconds):
             wait_time = int(soup.result.expectedwaitseconds.text)
             return ({'file_id': file_id, 'wait_time': wait_time})
     elif status == 'Failure':
         print 'Got Failure'
         if(soup.result.description):
-            description = str(soup.result.description.text)
+            description = soup.result.description.string
             print 'description is: ' + description
         if description == 'FR could not process specified file':
             print 'TRYING AGAIN'
@@ -177,9 +179,9 @@ def retrieve(session_info, user_id, file_id, uuid):
     url = iv_config.iv_host + 'user/' + user_id + '/retrieveFaces?fileID=' + file_id
     headers = generate_headers(session_info)
     r = requests.get(url, headers=headers)
-    print r, r.content
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
+        print str(soup)
         if str(soup.result.status.string) == 'Success':
             tracks = soup.result.tracks
             return(tracks)
@@ -196,6 +198,7 @@ def add_person(session_info, user_id):
     r = requests.post(url, data=add_person_xml, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
+        print str(soup)
         if str(soup.body.person.status.string) == 'Success':
             person_id = soup.body.person.id.string
             return(person_id)
@@ -211,7 +214,7 @@ def delete_person(session_info, user_id, person_id):
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         print str(soup)
-        if str(soup.html.body.result.status.string) == 'Success':
+        if str(soup.body.result.status.string) == 'Success':
             print 'Success'
         else:
             print "Error"
