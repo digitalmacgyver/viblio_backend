@@ -1,15 +1,19 @@
-import json
 import os
+import json
+import requests
+import xmltodict
+import time
 import iv_config
 import iv
 import boto
 from boto.s3.key import Key
 
 def get_faces(file_data, log, data):
-    ifile = file_data['ifile']
-    ofile = file_data['ofile']
-    s3_key = file_data['key']
-    uid = data['info']['uid']
+    ifile   = file_data['ifile']
+    ofile   = file_data['ofile']
+    s3_key  = file_data['key']
+    uid     = data['info']['uid']
+    uuid    = data['info']['uuid']
 
     ## Transcode to AVI for Intellivision
     ffopts = ''
@@ -32,12 +36,30 @@ def get_faces(file_data, log, data):
     print media_url
     session_info = iv.open_session()
     user_id = iv.login(session_info, uid)
-    file_id = iv.analyze(session_info, user_id, media_url)
-    print file_id
-    x = iv.retrieve(session_info, user_id, file_id, data['info']['uuid'])
+    response = iv.analyze(session_info, user_id, media_url)
+    file_id = response['file_id']
+    wait_time = response['wait_time']
+    time.sleep(wait_time)
+    tracks = iv.retrieve(session_info, user_id, file_id, uuid)
+    for i,track in enumerate(tracks.findAll('track')):
+        track_id = i
+        person_id = int(track.personid.string)
+        detection_score = int(track.detectionscore.string)
+        if ((detection_score > iv_config.minimum_detection_score) & (person_id < 0)):
+            person_id = iv.add_person(session_info, uid)
+            iv.train_person(session_info, user_id, person_id, track_id, file_id, media_url)
+            track.personid.string = str(person_id)
+    print 'Track number = ' + str(track_id)
+    print 'person_id = ' + str(person_id)
+    print 'detectionscore = ' + track.detectionscore.text
+    print 'Recognition confidence = ' + track.recognitionconfidence.text
+    print track.bestfaceframe.text
+    tracks_string = str(tracks)
+    tracks_dict = xmltodict.parse(tracks_string)
+    tracks_json = json.dumps(tracks_dict)
+    return(tracks_json)
     iv.logout(session_info, user_id)
     iv.close_session(session_info)
-    return (x)
     faces_data = {'file_id': file_id}
     return (faces_data)
 
