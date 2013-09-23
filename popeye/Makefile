@@ -20,3 +20,5 @@ install_deps:
 	apt-get -y install apache2
 	apt-get -y install libapache2-mod-wsgi
 	apt-get -y install python-bs4
+	pip install xmltodict
+
