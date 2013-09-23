@@ -13,7 +13,7 @@ from sqlalchemy import *
 
 sys.path.append("../popeye")
 from appconfig import AppConfig
-config = AppConfig( 'create_test_data' ).config()
+config = AppConfig( 'test_data' ).config()
 
 logging.basicConfig( filename = config['logfile'], level = config.loglevel )
 
@@ -88,6 +88,7 @@ def create_test_contacts( engine, user_id, contact_list ):
             result = conn.execute( contacts.insert(),
                                    id                = None,
                                    user_id           = user_id,
+                                   uuid              = str( uuid.uuid4() ),
                                    contact_name      = contact['name'],
                                    contact_email     = contact['email'],
                                    contact_viblio_id = contact['viblio_id'],
@@ -107,7 +108,7 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
         log.info( "Inserting test videos for user_id %s" % ( user_id ) )
         conn = _get_conn( engine )
         meta = _get_meta( engine )
-        contacts = meta.tables['contacts']
+        contact_table = meta.tables['contacts']
         media = meta.tables['media']
         media_assets = meta.tables['media_assets']
         media_asset_features = meta.tables['media_asset_features']
@@ -187,10 +188,10 @@ def create_test_videos( engine, user_id, videos, faces, contacts ):
 
                 # Add a feature row for each face
                 contact_id = None
-                if face['contact_idx']:
+                if 'contact_idx' in face:
                     contact_id = contacts[face['contact_idx']]['id']
-                    # DEBUG
-                    #conn.execute( contacts.update() )
+                    # DEBUG - Add a picture_uri for each contact.
+                    conn.execute( contact_table.update().where( contact_table.c.id == contact_id ).values( picture_uri = face_uri ) )
 
                 add_feature( conn=conn, media_asset_features=media_asset_features,
                              media_asset_id = face_id,
@@ -221,9 +222,11 @@ def create_test_comments( engine, user_id, videos ):
             
             # Add between 0 and 100 comments.
             comment_count = int( random.uniform( 0, 101 ) )
-            first_comment_date = datetime.datetime.now() - video['create_delta'] + timedelta( minutes=1 )
-            comment_time_step = video['create_delta'] // comment_count
-            comment_date = first_comment_date
+            if comment_count > 0:
+                first_comment_date = datetime.datetime.now() - video['create_delta'] + timedelta( minutes=1 )
+                comment_time_step = video['create_delta'] // comment_count
+                comment_date = first_comment_date
+
             for c in range( comment_count ):
                 # Each comment is between 0 and 10 UUIDs
                 sentence = ''
@@ -233,6 +236,7 @@ def create_test_comments( engine, user_id, videos ):
                 log.info( "Inserting comment number %s made by %s on %s: %s" % ( c, commenting_user_id, comment_date, sentence ) )
                 conn.execute( media_comments.insert(),
                               id = None,
+                              uuid = str( uuid.uuid4() ),
                               media_id = video_id,
                               user_id = commenting_user_id,
                               comment = sentence,
@@ -297,6 +301,26 @@ def add_asset( conn, media_assets, row, uuid, asset_type, mimetype, uri, metadat
     except Exception, e:
         log.critical( "Failed to insert asset. Error: %s" % ( e ) )
         raise
+
+def delete_all_data_for_user( engine, user_id ):
+    '''Delete all data for the user, but not the user itself.'''
+    
+    try:
+        conn = _get_conn( engine )
+        meta = _get_meta( engine )
+        contacts = meta.tables['contacts']
+        comments = meta.tables['media_comments']
+        media = meta.tables['media']
+        
+        log.info( 'Deleting contacts for user: ' + str( user_id ) )
+        conn.execute( contacts.delete().where( contacts.c.user_id == user_id ) )
+
+        log.info( 'Deleting media for user: ' + str( user_id ) )
+        conn.execute( media.delete().where( media.c.user_id == user_id ) )
+    except Exception as e:
+        log.error( 'Error while deleting user data: ' + str( e ) )
+        raise
+        
 
 def _get_bucket():
     try:

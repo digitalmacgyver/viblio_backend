@@ -67,6 +67,23 @@ def rename_upload_with_extension( file_data, log, data = None ):
                 log.error( "Failed to rename %s to %s" % ( src, tar ) )
                 raise
 
+def process_iv_json( file_data, log, data, worker, track_json ):
+    try:
+        tracks = json.loads( track_json )
+        log.info( tracks['tracks']['numberoftracks'] + ' tracks detected.' )
+
+        for track in tracks['tracks']['track']:
+            # Get width and height
+            # Get bytes
+            # Store width, height, bytes, look up what else we need for an asset
+            # Store a face MAF with the track_json
+            # Store a contact for that person_id
+            pass
+    except Exception as e:
+        log.error( 'Failed to process Intellivision JSON, error was: ' + str( e ) )
+        raise
+        
+
 def __get_bucket( log ):
     try:
         if not hasattr( __get_bucket, "bucket" ):
@@ -93,79 +110,3 @@ def upload_file( file_data, log, data = None ):
     except Exception as e:
         log.error( 'Failed to upload to s3: %s' % str( e ) )
         raise
-
-'''
-def lc_extension( basename, ext ):
-
-    lc_ext = ext.lower()
-    if lc_ext != ext:
-        os.rename( basename + ext, basename + lc_ext )
-
-    return basename, lc_ext
-
-def create_filenames (full_filename):
-    # Basename includes the absolute path and everything up to the extension.
-    basename, ext = os.path.splitext( full_filename )
-    # Rename the file so its extension is in lower case.
-    basename, ext = lc_extension( basename, ext )
-    # By convention the filename is the media_uuid.
-    media_uuid = os.path.split( basename )[1]
-    input_video = full_filename
-    input_info = basename + '.json'
-    input_metadata = basename + '_metadata.json'
-    # Output file names
-    output_video = basename + '.mp4'
-    avi_video = basename + '.avi'
-    output_thumbnail = basename + '_thumbnail.jpg'
-    output_poster = basename + '_poster.jpg'
-    output_metadata = input_metadata
-    output_face = basename + '_face0.jpg'
-    output_exif = basename + '_exif.json'
-    
-    video_key = media_uuid + '/' + os.path.basename( output_video )
-    avi_key = media_uuid + '/' + os.path.basename( avi_video )
-    thumbnail_key = media_uuid + '/' + os.path.basename( output_thumbnail )
-    poster_key = media_uuid + '/' + os.path.basename( output_poster )
-    metadata_key = media_uuid + '/' + os.path.basename( output_metadata )
-    face_key = media_uuid + '/' + os.path.basename( output_face )
-    exif_key = media_uuid + '/' + os.path.basename( output_exif )
-    filenames = {
-        'uuid': media_uuid, # Used to insert the row in the database, just the basename of the input file.
-        'info': input_info, # Brewtus metadata from the file, basename+.json
-        'video_key': video_key, # S3 key for main = uid / uid.mp4 filename
-        'avi_key': avi_key, # S3 key for avi = uid / uid.avi
-        'thumbnail_key': thumbnail_key, # S3 key for thumbnail = uid / uid_thumbnail.jpg
-        'poster_key': poster_key, # S3 key for poster = uid / uid_poster.jpg
-        'metadata_key': metadata_key, # S3 key for metadata created by uploader = uid / uid_metadata.json
-        'face_key': face_key, # S3 key for a single face found in the video, by convention.
-        'exif_key': exif_key, # S3 key for exif data = uid / uid_exif.json
-        'avi' : {
-            'input': output_video,
-            'output': avi_video
-            },
-        'video': {
-            'input': input_video,
-            'output': output_video
-            },
-        'thumbnail': {
-            'input': output_video,
-            'output': output_thumbnail
-            },
-        'poster': {
-            'input': output_video,
-            'output': output_poster
-            },
-        'metadata': {
-            'input': input_metadata,
-            'output': output_metadata
-            },
-        'face': {
-            'input': output_video,
-            'output': output_face
-            },
-        'exif': {
-            'output': output_exif
-            }
-        }
-    return(filenames)
-'''

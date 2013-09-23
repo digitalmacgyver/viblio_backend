@@ -11,7 +11,7 @@ from sqlalchemy import *
 
 sys.path.append("../popeye")
 from appconfig import AppConfig
-config = AppConfig( 'create_test_data' ).config()
+config = AppConfig( 'test_data' ).config()
 
 from test_utils import get_user_id_for_uuid, create_test_contacts, create_test_videos, upload_file_to_s3, download_file_from_s3, create_test_comments
 

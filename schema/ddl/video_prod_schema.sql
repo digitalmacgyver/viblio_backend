@@ -488,6 +488,20 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`links` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
+CREATE  TABLE IF NOT EXISTS `video_dev`.`app_configs` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `app` VARCHAR(64) NOT NULL ,
+  `version_string` VARCHAR(64) NOT NULL DEFAULT '' ,
+  `feature` VARCHAR(64) NULL DEFAULT NULL ,
+  `enabled` TINYINT(1) NOT NULL DEFAULT false ,
+  `current` TINYINT(1) NOT NULL DEFAULT false ,
+  `config` TEXT NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL ,
+  `updated_date` DATETIME NULL ,
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `app_UNIQUE` (`app` ASC, `version_string` ASC, `feature` ASC) )
+ENGINE = InnoDB;
+
 USE `video_dev`;
 
 DELIMITER $$
@@ -969,6 +983,29 @@ $$
 
 
 DELIMITER ;
+
+
+DELIMITER $$
+
+USE `video_dev`$$
+
+CREATE
+	TRIGGER app_config_created BEFORE INSERT ON app_configs FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER app_config_updated BEFORE UPDATE ON app_configs FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
+
 
 CREATE USER `video_dev` IDENTIFIED BY 'video_dev';
 

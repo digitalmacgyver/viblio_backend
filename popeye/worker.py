@@ -2,8 +2,10 @@ import web
 import json
 import uuid
 import hmac
+import datetime
 from models import *
 import os
+import fcntl
 
 from appconfig import AppConfig
 config = AppConfig( 'popeye' ).config()
@@ -72,9 +74,15 @@ class Worker(Background):
         orm   = self.orm
 
         # Also log to a particular logging file.
-        logging.basicConfig( filename = files['media_log']['ofile'], level = config.loglevel )
+        fh = logging.FileHandler( files['media_log']['ofile'] )
+        fh.setFormatter( logging.Formatter( '%(name)s: %(asctime)s %(levelname)-4s %(message)s' ) )
+        fh.setLevel( config.loglevel )
+        log.addHandler( fh )
 
         log.info( 'Worker.py, starting to process: ' + self.uuid )
+
+        # Acquire lock.
+        self.__acquire_lock()
 
         # Verify the initial inputs we expect are valid.
         for label in [ 'main', 'info', 'metadata' ]:
@@ -95,6 +103,17 @@ class Worker(Background):
         self.__initialize_metadata( files['metadata']['ifile'] )
         log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
 
+        # Generate _exif.json and load it into self.data['exif']
+        log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
+        try:
+            self.data['exif'] = helpers.get_exif( files['exif'], log, self.data )
+            log.info( 'EXIF data extracted: ' + str( self.data['exif'] ) )
+        except Exception as e:
+            self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
+            self.handle_errors()
+            self.__release_lock()
+            raise
+
         # Give the input file an extension.
         log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
         try:
@@ -104,32 +123,25 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
             self.handle_errors()
-            raise
-
-        # Generate _exif.json and load it into self.data['exif']
-        log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
-        try:
-            self.data['exif'] = helpers.get_exif( files['exif'], log, self.data )
-            log.info( 'EXIF data extracted: ' + str( self.data['exif'] ) )
-        except Exception as e:
-            self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
-            self.handle_errors()
+            self.__release_lock()
             raise
 
         # Extract the mimetype and store it in self.data['mimetype']
         log.info( 'Getting mime type of input video.' )
         try:
-            self.data['mimetype'] = mimetypes.guess_type( files['main']['ifile'] )[0]
+            self.data['mimetype'] = str( mimetypes.guess_type( files['main']['ifile'] )[0] )
             log.info( 'Mime type was ' + self.data['mimetype'] )
         except Exception as e:
             self.__safe_log( log.error, 'Failed to get mime type, error was: ' + str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         try: 
             # Transcode into mp4 and rotate as needed.
             log.info( 'Transcode %s to %s' % ( files['main']['ifile'], files['main']['ofile'] ) )
             video_processing.transcode_main( files['main'], log, self.data )
+            log.info( 'Transcoded mime type is ' + self.data['mimetype'] )
 
             # Move the atom to the front of the file.
             log.info( 'Move atom for: ' + files['main']['ofile'] )
@@ -155,6 +167,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         ######################################################################
@@ -170,6 +183,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to upload to S3: ' + str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         #######################################################################
@@ -183,9 +197,14 @@ class Worker(Background):
             if self.data['metadata'] and self.data['metadata']['file'] and self.data['metadata']['file']['Path']:
                 client_filename = self.data['metadata']['file']['Path']
 
+            recording_date = datetime.datetime.now()
+            if self.data['exif']['create_date'] and self.data['exif']['create_date'] != '' and self.data['exif']['create_date'] != '0000:00:00 00:00:00':
+                recording_date = self.data['exif']['create_date']
+            log.debug( 'Setting recording date to ' + str( recording_date ) )
+            log.debug( 'Exif data for create is ' + self.data['exif']['create_date'] )
             media = Media( uuid           = self.uuid,
                            media_type     = 'original',
-                           recording_date = self.data['exif']['create_date'],
+                           recording_date = recording_date,
                            lat            = self.data['exif']['lat'],
                            lng            = self.data['exif']['lng'],
                            filename       = client_filename )
@@ -264,6 +283,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to add mediafile to database!: %s' % str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         # Commit to database.
@@ -272,6 +292,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to commit the database: %s' % str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         #######################################################################
@@ -294,6 +315,7 @@ class Worker(Background):
         except Exception as e:
             self.__safe_log( log.error, 'Failed to notify Cat: %s' % str( e ) )
             self.handle_errors()
+            self.__release_lock()
             raise
 
         ######################################################################
@@ -311,6 +333,8 @@ class Worker(Background):
             self.__safe_log( log.error, 'Some trouble removing temp files: %s' % str( e ) )
             self.handle_errors()
 
+        self.__release_lock()
+
         log.info( 'DONE WITH %s' % self.uuid )
 
         return
@@ -322,7 +346,7 @@ class Worker(Background):
         try:
             files = self.files
             log = self.log
-            log.info( 'Error occurred, relocating temp files to error directory...' )
+            self.__safe_log( log.info, 'Error occurred, relocating temp files to error directory...' )
 
             for label in files:
                 for file_type in [ 'ifile', 'ofile' ]:
@@ -336,6 +360,43 @@ class Worker(Background):
                             self.__safe_log( log.error, 'Failed to rename file: ' + full_name )
         except Exception as e:
             self.__safe_log( log.error, 'Some trouble relocating temp files temp files: %s' % str( e ) )
+
+    def __acquire_lock( self ):
+        try:
+            # Create the file if it doesn't exist, open it if it does.
+            log = self.log
+            self.lockfile_name = self.data['full_filename'] + '.lock'
+            log.info( 'Attempting to create lock file: ' + self.lockfile_name )
+            self.lockfile = open( self.lockfile_name, 'a' )
+            log.info( 'Attempting to acquire lock: ' + self.lockfile_name )
+            self.lock_data = fcntl.flock( self.lockfile, fcntl.LOCK_EX|fcntl.LOCK_NB )
+            self.lock_acquired = True
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to acquire lock, error: ' + str( e ) )
+            raise
+
+    def __release_lock( self ):
+        try:
+            # Create the file if it doesn't exist, open it if it does.
+            log = self.log
+            if getattr( self, 'lock_acquired' ):
+                log.info( 'Attempting to release lock file: ' + self.lockfile_name )
+                fcntl.flock( self.lockfile, fcntl.LOCK_UN )
+                self.lock_acquired = False
+                log.info( 'Attempting to remove lock file: ' + self.lockfile_name )
+                os.remove( self.lockfile_name )
+            else:
+                log.warn( '__release_lock called but no lock held: ' + self.lockfile_name )
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to release lock, error: ' + str( e ) )
+            raise
+        finally:
+            try:
+                os.remove( self.lockfile_name )
+            except:
+                pass
+            if getattr( self, 'lock_acquired' ):
+                self.lock_acquired = False
 
     ######################################################################
     # Utility function to add things to our files data structure
@@ -372,12 +433,12 @@ class Worker(Background):
     def __valid_file( self, input_filename ):
         '''Private method: Return true if input_filename exists and is
         readable, and false otherwise.'''
-        self.log.debug( 'Checking whether file %s exists and is readable.' % input_filename )
+        #self.log.debug( 'Checking whether file %s exists and is readable.' % input_filename )
         if os.path.isfile( input_filename ):
-            self.log.debug( 'File %s exists.' % input_filename )
+            #self.log.debug( 'File %s exists.' % input_filename )
 
             if os.access( input_filename, os.R_OK ):
-                self.log.debug( 'File %s is readable.' % input_filename )
+                self.log.debug( 'File %s exists and is readable.' % input_filename )
                 return True
             else:
                 self.log.warn( 'File %s exists but is not readable.' % input_filename )
@@ -502,7 +563,7 @@ class Worker(Background):
             # The 'exif' media file, json
             self.add_file( 
                 label = 'exif',
-                ifile = input_filename+'.mp4', 
+                ifile = input_filename, 
                 ofile = abs_basename+'_exif.json', 
                 key   = self.uuid + '/' + self.uuid + '_exif.json' )
 

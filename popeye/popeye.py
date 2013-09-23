@@ -63,7 +63,7 @@ def load_sqla(handler):
         web.ctx.orm.rollback()
         raise
     finally:
-        web.ctx.log.debug( "Committing on request done" );
+        web.ctx.log.debug( "Committing on request done" )
         web.ctx.orm.commit()
         web.ctx.orm.close()
         # If the above alone doesn't work, uncomment 
