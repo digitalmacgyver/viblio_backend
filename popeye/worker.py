@@ -164,6 +164,9 @@ class Worker(Background):
             # If skip = True we simply skip face generation.
             video_processing.generate_face( files['face'], log, self.data, skip=False )
 
+            # DEBUG - placeholder code for Intellivision integration.
+            # self.data['track_json'] = get_iv_tracks( files['avi'], log, data )
+
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
             self.handle_errors()
@@ -208,6 +211,11 @@ class Worker(Background):
                            lat            = self.data['exif']['lat'],
                            lng            = self.data['exif']['lng'],
                            filename       = client_filename )
+            
+            # DEBUG - Pending dependent work elsewhere.
+            # Handle intellivision faces, which relate to the media row.
+            # log.info( 'Storing contacts and faces from Intellivision.' )
+            # self.store_faces( media )
 
             # Main media_asset
             log.info( 'Generating row for main media_asset' )
@@ -397,6 +405,80 @@ class Worker(Background):
                 pass
             if getattr( self, 'lock_acquired' ):
                 self.lock_acquired = False
+
+    ######################################################################
+    # Helper function to process Intellivision faces and store them
+    def store_faces( media_row ):
+        try:
+            log = self.log
+            tracks = json.loads( self.data['track_json'] )
+            log.info( tracks['tracks']['numberoftracks'] + ' tracks detected.' )
+
+            # Build up a dictionary of each person with an array of tracks.
+            face_tracks = {}
+            for track in tracks['tracks']['track']:
+                if track['personid'] in face_tracks:
+                    face_tracks[track['personid']].append( track )
+                else:
+                    face_tracks[track['personid']] = [ track ]
+
+            # Sort tracks in order of decreasing goodness.
+            for face in face_tracks:
+                face_tracks[face].sort( key=lambda f: f['recognitionconfidence']*1000+f['detectionscore'] )
+
+            # Build up a dictionary of each person in our database.
+            database_contacts = {}
+            orm = self.orm
+            log.info( 'Getting contacts for user: ' + data['info']['uid'] )
+            user_contacts = orm.query( Users, Contacts ).filter( and_( Users.id == Contacts.user_id, Users.uuid == data['info']['uid']) )
+            for user, contact in user_contacts:
+                database_contacts[ contact.intellivision_id ] = {
+                    'user_id'    : str( user['id'] ),
+                    'contact_id' : str( contact['id'] ),
+                    'user'       : user,
+                    'contact'    : contact
+                    }
+
+            # Iterate through our detected faces.
+            for intellivision_id, person_tracks in face_tracks.items():
+                contact = None
+                if not intellivision_id in database_contacts:
+                    log.info( 'Creating new contact for intellivision_id: ' + str( intellivision_id ) )
+                    contact = Contact( uuid             = str( uuid.uuid4() ),
+                                       user_id          = user_id,
+                                       intellivision_id = intellivision_id )
+                else:
+                    log.info( 'Detecting existing contact with id: %s for intellivision_id: %s' % ( str( database_contacts[intellivision_id]['contact']['id'] ), str( intellivision_id ) ) )
+                    contact = database_contacts[intellivision_id]['contact']
+
+                contact.picture_uri = person_tracks[0]['bestfaceframe']
+            
+                for track in person_tracks:
+                    track_asset = MediaAssets( uuid       = str( uuid.uuid4() ),
+                                               asset_type = 'face',
+                                               mimetype   = 'image/jpg',
+                                               bytes      = track['bytes'],
+                                               width      = 500,
+                                               height     = 500,
+                                               uri        = track['bestfaceframe'],
+                                               location   = 'us' )
+            
+                    log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
+                    media.assets.apend( track_asset )
+
+                    track_feature = MediaAssetFeatures( feature_type           = 'face',
+                                                        contact_id             = contact.id,
+                                                        coordinates            = json.dumps( track ),
+                                                        detection_confidence   = track['detectionscore'],
+                                                        recognition_confidence = track['recognitionconfidence'] )
+                 
+                    log.info( 'Adding face feature id %s for contact id: %s' % ( track_feature.id, track_feature.contact_id ) )   
+                    track_asset.media_asset_features.append( track_feature )
+
+        except Exception as e:
+            log.error( 'Failed to update faces, error was: ' + str( e ) )
+            raise               
+
 
     ######################################################################
     # Utility function to add things to our files data structure

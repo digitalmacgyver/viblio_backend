@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 
 import boto
 from boto.s3.key import Key
@@ -66,23 +67,6 @@ def rename_upload_with_extension( file_data, log, data = None ):
             except Exception as e:
                 log.error( "Failed to rename %s to %s" % ( src, tar ) )
                 raise
-
-def process_iv_json( file_data, log, data, worker, track_json ):
-    try:
-        tracks = json.loads( track_json )
-        log.info( tracks['tracks']['numberoftracks'] + ' tracks detected.' )
-
-        for track in tracks['tracks']['track']:
-            # Get width and height
-            # Get bytes
-            # Store width, height, bytes, look up what else we need for an asset
-            # Store a face MAF with the track_json
-            # Store a contact for that person_id
-            pass
-    except Exception as e:
-        log.error( 'Failed to process Intellivision JSON, error was: ' + str( e ) )
-        raise
-        
 
 def __get_bucket( log ):
     try:
