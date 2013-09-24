@@ -426,7 +426,7 @@ class Worker(Background):
 
             # Sort tracks in order of decreasing goodness.
             for face in face_tracks:
-                face_tracks[face].sort( key=lambda f: f['recognitionconfidence']*1000+f['detectionscore'] )
+                face_tracks[face].sort( key=lambda f: f['recognitionconfidence']*10000+f['detectionscore'] )
 
             # Build up a dictionary of each person in our database.
             database_contacts = {}
