@@ -163,11 +163,10 @@ class Worker(Background):
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            # DEBUG - Change skip back to false
-            video_processing.generate_face( files['face'], log, self.data, skip=True )
+            video_processing.generate_face( files['face'], log, self.data, skip=False )
 
             # DEBUG - placeholder code for Intellivision integration.
-            self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
+            # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
@@ -207,17 +206,24 @@ class Worker(Background):
                 recording_date = self.data['exif']['create_date']
             log.debug( 'Setting recording date to ' + str( recording_date ) )
             log.debug( 'Exif data for create was ' + self.data['exif']['create_date'] )
+
+            log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
+            user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
+
             media = Media( uuid           = self.uuid,
                            media_type     = 'original',
                            recording_date = recording_date,
                            lat            = self.data['exif']['lat'],
                            lng            = self.data['exif']['lng'],
                            filename       = client_filename )
+
+            # Associate media with user.
+            user.media.append( media )
             
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
-            log.info( 'Storing contacts and faces from Intellivision.' )
-            self.store_faces( media )
+            # log.info( 'Storing contacts and faces from Intellivision.' )
+            # self.store_faces( media )
 
             # Main media_asset
             log.info( 'Generating row for main media_asset' )
@@ -283,12 +289,6 @@ class Worker(Background):
                                                    )
                 # Face media_asset_feature.
                 face_asset.media_asset_features.append( face_feature )
-
-            log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
-            user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
-
-            # Associate media with user.
-            user.media.append( media )
 
         except Exception as e:
             self.__safe_log( log.error, 'Failed to add mediafile to database!: %s' % str( e ) )
@@ -450,16 +450,13 @@ class Worker(Background):
                     contact = Contacts( uuid             = str( uuid.uuid4() ),
                                         user_id          = user_id,
                                         intellivision_id = intellivision_id )
-                    log.debug( 'Created contact' )
                 else:
-                    log.info( 'Detecting existing contact with id: %s for intellivision_id: %s' % ( str( database_contacts[intellivision_id]['contact']['id'] ), str( intellivision_id ) ) )
+                    log.info( 'Detecting existing contact with id: %s for intellivision_id: %s' % ( str( database_contacts[intellivision_id]['contact'].id ), str( intellivision_id ) ) )
                     contact = database_contacts[intellivision_id]['contact']
 
-                log.debug( 'Setting picture URI' )
                 contact.picture_uri = person_tracks[0]['bestfaceframe']
             
                 for track in person_tracks:
-                    log.debug( 'Working on track' + json.dumps( track ) )
                     track_asset = MediaAssets( uuid       = str( uuid.uuid4() ),
                                                asset_type = 'face',
                                                mimetype   = 'image/jpg',
@@ -478,9 +475,9 @@ class Worker(Background):
                                                         detection_confidence   = track['detectionscore'],
                                                         recognition_confidence = track['recognitionconfidence'] )
                  
-                    log.info( 'Adding face feature id %s for contact uuid: %s and asset uuid: %s ' % ( track_feature.id, contact.uuid, track_asset.uuid ) )   
-                    contact.media_asset_features.append( track_feature )
+                    log.info( 'Adding face feature uuid for contact uuid: %s and asset uuid: %s ' % ( contact.uuid, track_asset.uuid ) )   
                     track_asset.media_asset_features.append( track_feature )
+                    contact.media_asset_features.append( track_feature )
 
         except Exception as e:
             log.error( 'Failed to update faces, error was: ' + str( e ) )
