@@ -165,9 +165,6 @@ class Worker(Background):
             # If skip = True we simply skip face generation.
             video_processing.generate_face( files['face'], log, self.data, skip=False )
 
-            # DEBUG - placeholder code for Intellivision integration.
-            # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
-
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
             self.handle_errors()
@@ -222,8 +219,9 @@ class Worker(Background):
             
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
+            # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
             # log.info( 'Storing contacts and faces from Intellivision.' )
-            # self.store_faces( media )
+            # self.store_faces( media, user )
 
             # Main media_asset
             log.info( 'Generating row for main media_asset' )
@@ -410,7 +408,7 @@ class Worker(Background):
 
     ######################################################################
     # Helper function to process Intellivision faces and store them
-    def store_faces( self, media_row ):
+    def store_faces( self, media_row, owning_user ):
         if 'track_json' not in self.data or not self.data['track_json']:
             log.warning( 'No tracks / faces detected.' )
             return
@@ -436,7 +434,7 @@ class Worker(Background):
             database_contacts = {}
             orm = self.orm
             log.info( 'Getting user id' )
-            user_id = orm.query( Users ).filter( Users.uuid == self.data['info']['uid'] ).one().id
+            user_id = owning_user.id
             log.info( 'Getting contacts for user: ' + self.data['info']['uid'] )
             user_contacts = orm.query( Users, Contacts ).filter( and_( Users.id == Contacts.user_id, Users.id == user_id) )
             for user, contact in user_contacts:
