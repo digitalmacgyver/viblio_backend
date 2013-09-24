@@ -13,7 +13,7 @@ def get_faces(file_data, log, data):
     ofile   = file_data['ofile']
     s3_key  = file_data['key']
     uid     = data['info']['uid']
-    uuid    = data['info']['uuid']
+    uuid    = data['info']['fileId']
 
 #     ## Transcode to AVI for Intellivision
 #     ffopts = ''
@@ -61,6 +61,7 @@ def get_faces(file_data, log, data):
     iv.logout(session_info, user_id)
     iv.close_session(session_info)
     faces_data = {'file_id': file_id}
+    log.debug( str( faces_data ) )
     return (faces_data)
 
 def transcode_main( file_data, log, data, files=None ):

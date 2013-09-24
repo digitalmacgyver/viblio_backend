@@ -163,7 +163,8 @@ class Worker(Background):
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            video_processing.generate_face( files['face'], log, self.data, skip=False )
+            # DEBUG set skip back to false
+            video_processing.generate_face( files['face'], log, self.data, skip=True )
 
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
@@ -217,12 +218,6 @@ class Worker(Background):
             # Associate media with user.
             user.media.append( media )
             
-            # DEBUG - Pending dependent work elsewhere.
-            # Handle intellivision faces, which relate to the media row.
-            # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
-            # log.info( 'Storing contacts and faces from Intellivision.' )
-            # self.store_faces( media, user )
-
             # Main media_asset
             log.info( 'Generating row for main media_asset' )
             asset = MediaAssets( uuid        = str(uuid.uuid4()),
@@ -289,7 +284,7 @@ class Worker(Background):
                 face_asset.media_asset_features.append( face_feature )
 
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to add mediafile to database!: %s' % str( e ) )
+            self.__safe_log( log.error, 'Failed to add mediafile to database: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
             raise
@@ -302,6 +297,21 @@ class Worker(Background):
             self.handle_errors()
             self.__release_lock()
             raise
+
+        # Serialize any operations by user and detect faces.
+        try:
+            # DEBUG - Today we just run everything in parallel, in the future we'll serialize.
+            # user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
+            # DEBUG - Pending dependent work elsewhere.
+            # Handle intellivision faces, which relate to the media row.
+            # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
+            # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
+            # log.info( 'Storing contacts and faces from Intellivision.' )
+            # self.store_faces( media, user )
+            pass
+        except Exception as e:
+            # Unlock the serialization
+            pass
 
         #######################################################################
         # Send notification to CAT server.
