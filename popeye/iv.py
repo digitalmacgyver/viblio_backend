@@ -182,12 +182,20 @@ def retrieve(session_info, user_id, file_id, uuid):
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         print str(soup)
-        if (soup.result.status.string == 'Success') & (soup.result.description.string != 'No Results'):
-            tracks = soup.result.tracks
-            return(tracks)
+        if (soup.result.status.string == 'Success'):
+            print 'success'
+            if(soup.find('description')):
+                print ' found description'
+                if (soup.description.string == 'No Results'):
+                    print 'No Tracks Found'
+                    return ('No Tracks')
+            else:
+                tracks = soup.result.tracks
+                return(tracks)
         else: return(soup)
     else: return(r.content)
 # <Result><Status>Success</Status><ExpectedWaitSeconds>0</ExpectedWaitSeconds><Description>No Results</Description></Result>
+# <html><body><result><status>Success</status><expectedwaitseconds>0</expectedwaitseconds><tracks><numberoftracks>5</numberoftracks><track><trackid>0</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-10-34-497_0.jpg</bestfaceframe><starttime>2013-09-24 06:10:34</starttime><endtime>2013-09-24 06:10:35</endtime><width>110</width><height>110</height><facecenterx>910</facecenterx><facecentery>958</facecentery><detectionscore>12</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>1</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-22-217_1.jpg</bestfaceframe><starttime>2013-09-24 06:11:22</starttime><endtime>2013-09-24 06:11:22</endtime><width>254</width><height>254</height><facecenterx>969</facecenterx><facecentery>249</facecentery><detectionscore>4</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>2</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-46-188_2.jpg</bestfaceframe><starttime>2013-09-24 06:11:46</starttime><endtime>2013-09-24 06:11:46</endtime><width>102</width><height>102</height><facecenterx>252</facecenterx><facecentery>614</facecentery><detectionscore>5</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>3</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-51-220_3.jpg</bestfaceframe><starttime>2013-09-24 06:11:51</starttime><endtime>2013-09-24 06:11:51</endtime><width>110</width><height>110</height><facecenterx>257</facecenterx><facecentery>608</facecentery><detectionscore>4</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>4</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-51-220_4.jpg</bestfaceframe><starttime>2013-09-24 06:11:51</starttime><endtime>2013-09-24 06:11:51</endtime><width>257</width><height>257</height><facecenterx>1394</facecenterx><facecentery>192</facecentery><detectionscore>29</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track></tracks></result></body></html>
 
 ## Add Person API
 def add_person(session_info, user_id):
@@ -206,10 +214,7 @@ def add_person(session_info, user_id):
         else:
             print 'ERROR'
             return(soup)
-# <html><body><person><status>Success</status><id>3</id></person></bodsession_info = iv.open_session()
-user_id = iv.login(session_info, uid)
-response = iv.analyze(session_info, user_id, media_url)
-y></html>
+# <html><body><person><status>Success</status><id>3</id></person></bodsession_info = iv.open_session()y></html>
 
 def delete_person(session_info, user_id, person_id):
     url = iv_config.iv_host + 'user/' + user_id + '/deletePerson/' + person_id
