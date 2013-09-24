@@ -163,8 +163,7 @@ class Worker(Background):
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            # DEBUG set skip back to false
-            video_processing.generate_face( files['face'], log, self.data, skip=True )
+            video_processing.generate_face( files['face'], log, self.data, skip=False )
 
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
