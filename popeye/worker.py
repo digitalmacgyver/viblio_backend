@@ -411,6 +411,10 @@ class Worker(Background):
     ######################################################################
     # Helper function to process Intellivision faces and store them
     def store_faces( self, media_row ):
+        if 'track_json' not in self.data or not self.data['track_json']:
+            log.warning( 'No tracks / faces detected.' )
+            return
+
         try:
             log = self.log
             tracks = json.loads( self.data['track_json'] )
