@@ -1,27 +1,28 @@
-import web
-import json
-import uuid
-import hmac
+# Python libraries
 import datetime
-from models import *
-import os
 import fcntl
+import hmac
+import json
+import logging
+import mimetypes
+import os
+import requests
+from sqlalchemy import and_
+import sys
+import uuid
+import web
 
+# Viblio libraries
 from appconfig import AppConfig
+from background import Background
+import helpers
+from models import *
+import video_processing
+
+# Popeye configuration object.
 config = AppConfig( 'popeye' ).config()
 
-import logging
-
-import sys
-import requests
-
-import helpers
-import video_processing
-import mimetypes
-
 # Base class for Worker.
-from background import Background
-
 class Worker(Background):
     '''The class which drives the video processing pipeline.
 
@@ -162,10 +163,11 @@ class Worker(Background):
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            video_processing.generate_face( files['face'], log, self.data, skip=False )
+            # DEBUG - Change skip back to false
+            video_processing.generate_face( files['face'], log, self.data, skip=True )
 
             # DEBUG - placeholder code for Intellivision integration.
-            # self.data['track_json'] = get_iv_tracks( files['avi'], log, data )
+            self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
@@ -204,7 +206,7 @@ class Worker(Background):
             if self.data['exif']['create_date'] and self.data['exif']['create_date'] != '' and self.data['exif']['create_date'] != '0000:00:00 00:00:00':
                 recording_date = self.data['exif']['create_date']
             log.debug( 'Setting recording date to ' + str( recording_date ) )
-            log.debug( 'Exif data for create is ' + self.data['exif']['create_date'] )
+            log.debug( 'Exif data for create was ' + self.data['exif']['create_date'] )
             media = Media( uuid           = self.uuid,
                            media_type     = 'original',
                            recording_date = recording_date,
@@ -214,8 +216,8 @@ class Worker(Background):
             
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
-            # log.info( 'Storing contacts and faces from Intellivision.' )
-            # self.store_faces( media )
+            log.info( 'Storing contacts and faces from Intellivision.' )
+            self.store_faces( media )
 
             # Main media_asset
             log.info( 'Generating row for main media_asset' )
@@ -408,7 +410,7 @@ class Worker(Background):
 
     ######################################################################
     # Helper function to process Intellivision faces and store them
-    def store_faces( media_row ):
+    def store_faces( self, media_row ):
         try:
             log = self.log
             tracks = json.loads( self.data['track_json'] )
@@ -429,12 +431,13 @@ class Worker(Background):
             # Build up a dictionary of each person in our database.
             database_contacts = {}
             orm = self.orm
-            log.info( 'Getting contacts for user: ' + data['info']['uid'] )
-            user_contacts = orm.query( Users, Contacts ).filter( and_( Users.id == Contacts.user_id, Users.uuid == data['info']['uid']) )
+            log.info( 'Getting user id' )
+            user_id = orm.query( Users ).filter( Users.uuid == self.data['info']['uid'] ).one().id
+            log.info( 'Getting contacts for user: ' + self.data['info']['uid'] )
+            user_contacts = orm.query( Users, Contacts ).filter( and_( Users.id == Contacts.user_id, Users.id == user_id) )
             for user, contact in user_contacts:
-                database_contacts[ contact.intellivision_id ] = {
-                    'user_id'    : str( user['id'] ),
-                    'contact_id' : str( contact['id'] ),
+                database_contacts[ str( contact.intellivision_id ) ] = {
+                    'contact_id' : str( contact.id ),
                     'user'       : user,
                     'contact'    : contact
                     }
@@ -444,35 +447,39 @@ class Worker(Background):
                 contact = None
                 if not intellivision_id in database_contacts:
                     log.info( 'Creating new contact for intellivision_id: ' + str( intellivision_id ) )
-                    contact = Contact( uuid             = str( uuid.uuid4() ),
-                                       user_id          = user_id,
-                                       intellivision_id = intellivision_id )
+                    contact = Contacts( uuid             = str( uuid.uuid4() ),
+                                        user_id          = user_id,
+                                        intellivision_id = intellivision_id )
+                    log.debug( 'Created contact' )
                 else:
                     log.info( 'Detecting existing contact with id: %s for intellivision_id: %s' % ( str( database_contacts[intellivision_id]['contact']['id'] ), str( intellivision_id ) ) )
                     contact = database_contacts[intellivision_id]['contact']
 
+                log.debug( 'Setting picture URI' )
                 contact.picture_uri = person_tracks[0]['bestfaceframe']
             
                 for track in person_tracks:
+                    log.debug( 'Working on track' + json.dumps( track ) )
                     track_asset = MediaAssets( uuid       = str( uuid.uuid4() ),
                                                asset_type = 'face',
                                                mimetype   = 'image/jpg',
-                                               bytes      = track['bytes'],
+                                               # DEBUG - reinstate when we get this field populates
+                                               # bytes      = track['bytes'],
                                                width      = 500,
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
                                                location   = 'us' )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
-                    media.assets.apend( track_asset )
+                    media_row.assets.append( track_asset )
 
                     track_feature = MediaAssetFeatures( feature_type           = 'face',
-                                                        contact_id             = contact.id,
                                                         coordinates            = json.dumps( track ),
                                                         detection_confidence   = track['detectionscore'],
                                                         recognition_confidence = track['recognitionconfidence'] )
                  
-                    log.info( 'Adding face feature id %s for contact id: %s' % ( track_feature.id, track_feature.contact_id ) )   
+                    log.info( 'Adding face feature id %s for contact uuid: %s and asset uuid: %s ' % ( track_feature.id, contact.uuid, track_asset.uuid ) )   
+                    contact.media_asset_features.append( track_feature )
                     track_asset.media_asset_features.append( track_feature )
 
         except Exception as e:
