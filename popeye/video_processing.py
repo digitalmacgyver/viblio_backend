@@ -15,12 +15,12 @@ def get_faces(file_data, log, data):
     uid     = data['info']['uid']
     uuid    = data['info']['uuid']
 
-    ## Transcode to AVI for Intellivision
-    ffopts = ''
-    cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( ifile, ffopts, ofile )
-    print( cmd )
-    if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
-        raise Exception( 'Failed to generate AVI file: %s' % cmd )
+#     ## Transcode to AVI for Intellivision
+#     ffopts = ''
+#     cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( ifile, ffopts, ofile )
+#     print( cmd )
+#     if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
+#         raise Exception( 'Failed to generate AVI file: %s' % cmd )
     ## Copy AVI to S3 and make the URL public
     try:
         s3 = boto.connect_s3(iv_config.awsAccess, iv_config.awsSecret)
@@ -30,8 +30,7 @@ def get_faces(file_data, log, data):
         bucket_contents.set_contents_from_filename( ofile )
         bucket_contents.make_public()
     except:
-        print 'error copying to S3'
-    
+        print 'error copying to S3'   
     media_url = 'http://s3-us-west-2.amazonaws.com/' + iv_config.iv_bucket_name + '/' + s3_key
     print media_url
     session_info = iv.open_session()
@@ -48,7 +47,7 @@ def get_faces(file_data, log, data):
         if ((detection_score > iv_config.minimum_detection_score) & (person_id < 0)):
             person_id = iv.add_person(session_info, uid)
             iv.train_person(session_info, user_id, person_id, track_id, file_id, media_url)
-            track.personid.string = str(person_id)
+            track.personid.string = person_id
     print 'Track number = ' + str(track_id)
     print 'person_id = ' + str(person_id)
     print 'detectionscore = ' + track.detectionscore.text
@@ -57,7 +56,8 @@ def get_faces(file_data, log, data):
     tracks_string = str(tracks)
     tracks_dict = xmltodict.parse(tracks_string)
     tracks_json = json.dumps(tracks_dict)
-    return(tracks_json)
+    fileid_json = "{'file_id': " + file_id + "}"
+    return(fileid_json, tracks_json)
     iv.logout(session_info, user_id)
     iv.close_session(session_info)
     faces_data = {'file_id': file_id}

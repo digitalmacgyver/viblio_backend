@@ -4,6 +4,7 @@ import requests
 import hashlib
 import iv_config
 import uuid
+import time
 from bs4 import BeautifulSoup
 
 def perror( log, msg ):
@@ -18,12 +19,11 @@ def open_session():
     headers = {'Content-Type':'text/xml', 'Date':formatted_date}
     r = requests.post(url, data=session_xml, headers=headers)
     if r.status_code == requests.codes.ok:
-        print r.content
         soup = BeautifulSoup(r.content, 'lxml')
+        print str(soup)
         try:
-            session_key = str(soup.find('sessionkey').text)
-            session_secret = str(soup.find('sessionsecret').text)
-            print ('Received Key: ' + session_key + 'and Secret: '+ session_secret)
+            session_key = soup.result.sessionkey.string
+            session_secret = soup.result.sessionsecret.string
             session_info = {'key': session_key, 'secret': session_secret}
             return(session_info)
         except:
@@ -137,24 +137,26 @@ def analyze(session_info, user_id, media_url):
     print r, r.content
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
+        print str(soup)
     if (soup.result.status):
-        status = str(soup.result.status.text)
+        status = soup.result.status.string
     if status == 'Success':
         if(soup.result.description):
-            if str(soup.result.description.text) == 'File downloading started':
+            if soup.result.description.string == 'File downloading started':
+                time.sleep(60)
                 r = requests.post(url, data=analyze_xml, headers=headers)
-                print r, r.content
                 if r.status_code == requests.codes.ok:
                     soup = BeautifulSoup(r.content, 'lxml')
+                    print str(soup)
         if (soup.result.fileid):
-            file_id = str(soup.result.fileid.text)
+            file_id = soup.result.fileid.string
         if(soup.result.expectedwaitseconds):
             wait_time = int(soup.result.expectedwaitseconds.text)
             return ({'file_id': file_id, 'wait_time': wait_time})
     elif status == 'Failure':
         print 'Got Failure'
         if(soup.result.description):
-            description = str(soup.result.description.text)
+            description = soup.result.description.string
             print 'description is: ' + description
         if description == 'FR could not process specified file':
             print 'TRYING AGAIN'
@@ -177,14 +179,23 @@ def retrieve(session_info, user_id, file_id, uuid):
     url = iv_config.iv_host + 'user/' + user_id + '/retrieveFaces?fileID=' + file_id
     headers = generate_headers(session_info)
     r = requests.get(url, headers=headers)
-    print r, r.content
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
-        if str(soup.result.status.string) == 'Success':
-            tracks = soup.result.tracks
-            return(tracks)
+        print str(soup)
+        if (soup.result.status.string == 'Success'):
+            print 'success'
+            if(soup.find('description')):
+                print ' found description'
+                if (soup.description.string == 'No Results'):
+                    print 'No Tracks Found'
+                    return ('No Tracks')
+            else:
+                tracks = soup.result.tracks
+                return(tracks)
         else: return(soup)
     else: return(r.content)
+# <Result><Status>Success</Status><ExpectedWaitSeconds>0</ExpectedWaitSeconds><Description>No Results</Description></Result>
+# <html><body><result><status>Success</status><expectedwaitseconds>0</expectedwaitseconds><tracks><numberoftracks>5</numberoftracks><track><trackid>0</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-10-34-497_0.jpg</bestfaceframe><starttime>2013-09-24 06:10:34</starttime><endtime>2013-09-24 06:10:35</endtime><width>110</width><height>110</height><facecenterx>910</facecenterx><facecentery>958</facecentery><detectionscore>12</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>1</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-22-217_1.jpg</bestfaceframe><starttime>2013-09-24 06:11:22</starttime><endtime>2013-09-24 06:11:22</endtime><width>254</width><height>254</height><facecenterx>969</facecenterx><facecentery>249</facecentery><detectionscore>4</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>2</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-46-188_2.jpg</bestfaceframe><starttime>2013-09-24 06:11:46</starttime><endtime>2013-09-24 06:11:46</endtime><width>102</width><height>102</height><facecenterx>252</facecenterx><facecentery>614</facecentery><detectionscore>5</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>3</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-51-220_3.jpg</bestfaceframe><starttime>2013-09-24 06:11:51</starttime><endtime>2013-09-24 06:11:51</endtime><width>110</width><height>110</height><facecenterx>257</facecenterx><facecentery>608</facecentery><detectionscore>4</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>4</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-51-220_4.jpg</bestfaceframe><starttime>2013-09-24 06:11:51</starttime><endtime>2013-09-24 06:11:51</endtime><width>257</width><height>257</height><facecenterx>1394</facecenterx><facecentery>192</facecentery><detectionscore>29</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track></tracks></result></body></html>
 
 ## Add Person API
 def add_person(session_info, user_id):
@@ -196,13 +207,14 @@ def add_person(session_info, user_id):
     r = requests.post(url, data=add_person_xml, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
+        print str(soup)
         if str(soup.body.person.status.string) == 'Success':
             person_id = soup.body.person.id.string
             return(person_id)
         else:
             print 'ERROR'
             return(soup)
-# <html><body><person><status>Success</status><id>3</id></person></body></html>
+# <html><body><person><status>Success</status><id>3</id></person></bodsession_info = iv.open_session()y></html>
 
 def delete_person(session_info, user_id, person_id):
     url = iv_config.iv_host + 'user/' + user_id + '/deletePerson/' + person_id
@@ -211,7 +223,7 @@ def delete_person(session_info, user_id, person_id):
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         print str(soup)
-        if str(soup.html.body.result.status.string) == 'Success':
+        if str(soup.body.result.status.string) == 'Success':
             print 'Success'
         else:
             print "Error"
