@@ -8,6 +8,7 @@ import iv
 import boto
 import sys
 from boto.s3.key import Key
+from bs4 import BeautifulSoup, Tag
 
 # Our application config
 from appconfig import AppConfig
@@ -18,10 +19,11 @@ except Exception, e:
     sys.exit(1)
 
 def get_faces(file_data, log, data):
+    #s3_key  = '360db1d0-19e1-11e3-93b4-f5d6bf8684b8/360db1d0-19e1-11e3-93b4-f5d6bf8684b8.avi'
+    #uid = iv_config.uid
     s3_key  = file_data['key']
-    media_uuid = os.path.split(s3_key)[0]
-    # uid = iv_config.uid
     uid     = data['info']['uid']
+    media_uuid = os.path.split(s3_key)[0]
     minimum_detection_score = iv_config.minimum_detection_score
     minimum_recognition_score = iv_config.minimum_recognition_score
     ## Make S3 URL public for IntelliVision
@@ -44,6 +46,9 @@ def get_faces(file_data, log, data):
     time.sleep(wait_time)
     tracks = iv.retrieve(session_info, user_id, file_id, media_uuid)
     number_of_tracks = int(tracks.numberoftracks.string)
+    tag = Tag (name="file_id")
+    tag.string = file_id
+    tracks.track.insert(0, tag)
     for i,track in enumerate(tracks.findAll('track')):
         track_id = track.trackid.string
         formatted_track_id = '%02d' %int(track_id)
@@ -78,7 +83,6 @@ def get_faces(file_data, log, data):
                 track.bestfaceframe.string = face_key
             else:
                 print 'TO DO: delete track from the tracks structure and adjust number of tracks'
-                print 'TO DO: Add file_id to each track'
                 number_of_tracks -= 1
         else:
             recognition_score = float(track.recognitionconfidence.string)
@@ -88,7 +92,7 @@ def get_faces(file_data, log, data):
                     print 'training: ' + str(new_person_id)
                 except:
                     print 'Failed to train known person'
-    tracks.numberoftracks.string = number_of_tracks
+    tracks.numberoftracks.string = str(number_of_tracks)
     tracks_string = str(tracks)
     tracks_dict = xmltodict.parse(tracks_string)
     tracks_json = json.dumps(tracks_dict)
