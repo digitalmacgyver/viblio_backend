@@ -97,6 +97,8 @@ def map(engine):
             "media_asset_features": relationship( models.MediaAssetFeatures,
             backref="media_assets",
             cascade="all, delete-orphan" ) } )
+    mappers["contacts"].add_properties( {
+            "media_asset_features" : relationship( models.MediaAssetFeatures, backref="contacts" ) } )
     # return (mappers, tables, Session)
     return SessionFactory
 

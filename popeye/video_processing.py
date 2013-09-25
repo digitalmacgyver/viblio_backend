@@ -19,7 +19,8 @@ except Exception, e:
 def get_faces(file_data, log, data):
     s3_key  = file_data['key']
     media_uuid = os.path.split(s3_key)[0]
-    uid = iv_config.uid
+    # uid = iv_config.uid
+    uid     = data['info']['uid']
     minimum_detection_score = iv_config.minimum_detection_score
     minimum_recognition_score = iv_config.minimum_recognition_score
     ## Make S3 URL public for IntelliVision
@@ -76,6 +77,7 @@ def get_faces(file_data, log, data):
                 track.bestfaceframe.string = face_key
             else:
                 print 'TO DO: delete track from the tracks structure and adjust number of tracks'
+                print 'TO DO: Add file_id to each track'
                 number_of_tracks -= 1
         else:
             recognition_score = float(track.recognitionconfidence.string)
@@ -89,12 +91,12 @@ def get_faces(file_data, log, data):
     tracks_string = str(tracks)
     tracks_dict = xmltodict.parse(tracks_string)
     tracks_json = json.dumps(tracks_dict)
-    fileid_json = "{'file_id': " + file_id + "}"
     # Cleanup permissions, logout & close session
     bucket_contents.set_acl(original_acl)
     iv.logout(session_info, user_id)
     iv.close_session(session_info)
-    return(fileid_json, tracks_json)
+    log.debug( str( tracks_json ) )
+    return(tracks_json)
 
 def transcode_main( file_data, log, data, files=None ):
     ifile = file_data['ifile']

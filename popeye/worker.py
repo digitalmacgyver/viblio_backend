@@ -1,27 +1,28 @@
-import web
-import json
-import uuid
-import hmac
+# Python libraries
 import datetime
-from models import *
-import os
 import fcntl
+import hmac
+import json
+import logging
+import mimetypes
+import os
+import requests
+from sqlalchemy import and_
+import sys
+import uuid
+import web
 
+# Viblio libraries
 from appconfig import AppConfig
+from background import Background
+import helpers
+from models import *
+import video_processing
+
+# Popeye configuration object.
 config = AppConfig( 'popeye' ).config()
 
-import logging
-
-import sys
-import requests
-
-import helpers
-import video_processing
-import mimetypes
-
 # Base class for Worker.
-from background import Background
-
 class Worker(Background):
     '''The class which drives the video processing pipeline.
 
@@ -164,9 +165,6 @@ class Worker(Background):
             # If skip = True we simply skip face generation.
             video_processing.generate_face( files['face'], log, self.data, skip=False )
 
-            # DEBUG - placeholder code for Intellivision integration.
-            # self.data['track_json'] = get_iv_tracks( files['avi'], log, data )
-
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
             self.handle_errors()
@@ -204,19 +202,21 @@ class Worker(Background):
             if self.data['exif']['create_date'] and self.data['exif']['create_date'] != '' and self.data['exif']['create_date'] != '0000:00:00 00:00:00':
                 recording_date = self.data['exif']['create_date']
             log.debug( 'Setting recording date to ' + str( recording_date ) )
-            log.debug( 'Exif data for create is ' + self.data['exif']['create_date'] )
+            log.debug( 'Exif data for create was ' + self.data['exif']['create_date'] )
+
+            log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
+            user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
+
             media = Media( uuid           = self.uuid,
                            media_type     = 'original',
                            recording_date = recording_date,
                            lat            = self.data['exif']['lat'],
                            lng            = self.data['exif']['lng'],
                            filename       = client_filename )
-            
-            # DEBUG - Pending dependent work elsewhere.
-            # Handle intellivision faces, which relate to the media row.
-            # log.info( 'Storing contacts and faces from Intellivision.' )
-            # self.store_faces( media )
 
+            # Associate media with user.
+            user.media.append( media )
+            
             # Main media_asset
             log.info( 'Generating row for main media_asset' )
             asset = MediaAssets( uuid        = str(uuid.uuid4()),
@@ -282,14 +282,8 @@ class Worker(Background):
                 # Face media_asset_feature.
                 face_asset.media_asset_features.append( face_feature )
 
-            log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
-            user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
-
-            # Associate media with user.
-            user.media.append( media )
-
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to add mediafile to database!: %s' % str( e ) )
+            self.__safe_log( log.error, 'Failed to add mediafile to database: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
             raise
@@ -302,6 +296,21 @@ class Worker(Background):
             self.handle_errors()
             self.__release_lock()
             raise
+
+        # Serialize any operations by user and detect faces.
+        try:
+            # DEBUG - Today we just run everything in parallel, in the future we'll serialize.
+            # user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
+            # DEBUG - Pending dependent work elsewhere.
+            # Handle intellivision faces, which relate to the media row.
+            # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
+            # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
+            # log.info( 'Storing contacts and faces from Intellivision.' )
+            # self.store_faces( media, user )
+            pass
+        except Exception as e:
+            # Unlock the serialization
+            pass
 
         #######################################################################
         # Send notification to CAT server.
@@ -408,7 +417,11 @@ class Worker(Background):
 
     ######################################################################
     # Helper function to process Intellivision faces and store them
-    def store_faces( media_row ):
+    def store_faces( self, media_row, owning_user ):
+        if 'track_json' not in self.data or not self.data['track_json']:
+            log.warning( 'No tracks / faces detected.' )
+            return
+
         try:
             log = self.log
             tracks = json.loads( self.data['track_json'] )
@@ -424,17 +437,18 @@ class Worker(Background):
 
             # Sort tracks in order of decreasing goodness.
             for face in face_tracks:
-                face_tracks[face].sort( key=lambda f: f['recognitionconfidence']*1000+f['detectionscore'] )
+                face_tracks[face].sort( key=lambda f: f['recognitionconfidence']*10000+f['detectionscore'] )
 
             # Build up a dictionary of each person in our database.
             database_contacts = {}
             orm = self.orm
-            log.info( 'Getting contacts for user: ' + data['info']['uid'] )
-            user_contacts = orm.query( Users, Contacts ).filter( and_( Users.id == Contacts.user_id, Users.uuid == data['info']['uid']) )
+            log.info( 'Getting user id' )
+            user_id = owning_user.id
+            log.info( 'Getting contacts for user: ' + self.data['info']['uid'] )
+            user_contacts = orm.query( Users, Contacts ).filter( and_( Users.id == Contacts.user_id, Users.id == user_id) )
             for user, contact in user_contacts:
-                database_contacts[ contact.intellivision_id ] = {
-                    'user_id'    : str( user['id'] ),
-                    'contact_id' : str( contact['id'] ),
+                database_contacts[ str( contact.intellivision_id ) ] = {
+                    'contact_id' : str( contact.id ),
                     'user'       : user,
                     'contact'    : contact
                     }
@@ -444,11 +458,11 @@ class Worker(Background):
                 contact = None
                 if not intellivision_id in database_contacts:
                     log.info( 'Creating new contact for intellivision_id: ' + str( intellivision_id ) )
-                    contact = Contact( uuid             = str( uuid.uuid4() ),
-                                       user_id          = user_id,
-                                       intellivision_id = intellivision_id )
+                    contact = Contacts( uuid             = str( uuid.uuid4() ),
+                                        user_id          = user_id,
+                                        intellivision_id = intellivision_id )
                 else:
-                    log.info( 'Detecting existing contact with id: %s for intellivision_id: %s' % ( str( database_contacts[intellivision_id]['contact']['id'] ), str( intellivision_id ) ) )
+                    log.info( 'Detecting existing contact with id: %s for intellivision_id: %s' % ( str( database_contacts[intellivision_id]['contact'].id ), str( intellivision_id ) ) )
                     contact = database_contacts[intellivision_id]['contact']
 
                 contact.picture_uri = person_tracks[0]['bestfaceframe']
@@ -457,23 +471,24 @@ class Worker(Background):
                     track_asset = MediaAssets( uuid       = str( uuid.uuid4() ),
                                                asset_type = 'face',
                                                mimetype   = 'image/jpg',
-                                               bytes      = track['bytes'],
+                                               # DEBUG - reinstate when we get this field populates
+                                               # bytes      = track['bytes'],
                                                width      = 500,
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
                                                location   = 'us' )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
-                    media.assets.apend( track_asset )
+                    media_row.assets.append( track_asset )
 
                     track_feature = MediaAssetFeatures( feature_type           = 'face',
-                                                        contact_id             = contact.id,
                                                         coordinates            = json.dumps( track ),
                                                         detection_confidence   = track['detectionscore'],
                                                         recognition_confidence = track['recognitionconfidence'] )
                  
-                    log.info( 'Adding face feature id %s for contact id: %s' % ( track_feature.id, track_feature.contact_id ) )   
+                    log.info( 'Adding face feature uuid for contact uuid: %s and asset uuid: %s ' % ( contact.uuid, track_asset.uuid ) )   
                     track_asset.media_asset_features.append( track_feature )
+                    contact.media_asset_features.append( track_feature )
 
         except Exception as e:
             log.error( 'Failed to update faces, error was: ' + str( e ) )
