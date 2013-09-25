@@ -18,6 +18,7 @@ except Exception, e:
     print( str(e) )
     sys.exit(1)
 
+def get_faces(file_data, log, data):
     # s3_key  = '360db1d0-19e1-11e3-93b4-f5d6bf8684b8/360db1d0-19e1-11e3-93b4-f5d6bf8684b8.avi'
     # uid = iv_config.uid
     s3_key  = file_data['key']
@@ -37,8 +38,10 @@ except Exception, e:
         print 'Error making S3 URL public'   
     media_url = 'http://s3-us-wes(detection_score > minimum_detection_score)t-2.amazonaws.com/' + config.bucket_name + '/' + s3_key
     print media_url
+    # Open session and login user for IntelliVision
     session_info = iv.open_session()
     user_id = iv.login(session_info, uid)
+    # Send the video for processing by IntelliVision
     response = iv.analyze(session_info, user_id, media_url)
     file_id = response['file_id']
     wait_time = response['wait_time']
@@ -83,7 +86,8 @@ except Exception, e:
                 track.personid.string = new_person_id
                 track.bestfaceframe.string = face_key
             else:
-                print 'TO DO: delete track from the tracks structure and adjust number of tracks'
+                track.personid.string = ''
+                track.bestfaceframe.string = ''    
                 number_of_tracks -= 1
         else:
             recognition_score = float(track.recognitionconfidence.string)
