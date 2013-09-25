@@ -303,6 +303,7 @@ class Worker(Background):
             # user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
+            # self.serialize( self.uuid
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
             # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
             # log.info( 'Storing contacts and faces from Intellivision.' )
@@ -476,7 +477,9 @@ class Worker(Background):
                                                width      = 500,
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
-                                               location   = 'us' )
+                                               location   = 'us'
+                                               # , intellivision_file_id = tracks['fileid'] 
+                                               )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
                     media_row.assets.append( track_asset )
