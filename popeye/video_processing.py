@@ -6,6 +6,7 @@ import time
 import iv_config
 import iv
 import boto
+import sys
 from boto.s3.key import Key
 
 # Our application config
