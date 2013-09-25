@@ -18,9 +18,8 @@ except Exception, e:
     print( str(e) )
     sys.exit(1)
 
-def get_faces(file_data, log, data):
-    #s3_key  = '360db1d0-19e1-11e3-93b4-f5d6bf8684b8/360db1d0-19e1-11e3-93b4-f5d6bf8684b8.avi'
-    #uid = iv_config.uid
+    # s3_key  = '360db1d0-19e1-11e3-93b4-f5d6bf8684b8/360db1d0-19e1-11e3-93b4-f5d6bf8684b8.avi'
+    # uid = iv_config.uid
     s3_key  = file_data['key']
     uid     = data['info']['uid']
     media_uuid = os.path.split(s3_key)[0]
@@ -44,15 +43,17 @@ def get_faces(file_data, log, data):
     file_id = response['file_id']
     wait_time = response['wait_time']
     time.sleep(wait_time)
+    # Get Face Recognition results from IntelliVision
     tracks = iv.retrieve(session_info, user_id, file_id, media_uuid)
-    number_of_tracks = int(tracks.numberoftracks.string)
+    # Add FileId to the Tracks data structure
     tag = Tag (name="file_id")
     tag.string = file_id
-    tracks.track.insert(0, tag)
+    tracks.insert(0,tag)
+    number_of_tracks = int(tracks.numberoftracks.string)
+    # Process each track, one at a time
     for i,track in enumerate(tracks.findAll('track')):
         track_id = track.trackid.string
         formatted_track_id = '%02d' %int(track_id)
-        print formatted_track_id
         person_id = int(track.personid.string)
         detection_score = float(track.detectionscore.string)
         if ( person_id < 0 ):
