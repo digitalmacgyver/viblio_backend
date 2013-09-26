@@ -1,7 +1,7 @@
 # make LVL=<staging|prod|local>
 LVL ?= staging
 
-deploy: deploy_brewtus deploy_popeye
+deploy: deploy_brewtus deploy_popeye deploy_utils
 
 deploy_brewtus:
 	mkdir -p /deploy/$(LVL)
@@ -21,6 +21,14 @@ deploy_popeye:
 	tar --exclude node_modules --exclude '*.pyc' -zcf - popeye | \
 		(cd /deploy/$(LVL); tar zxf -)
 	( cd /deploy/$(LVL); chown -R www-data:www-data popeye )
+
+deploy_utils:
+	mkdir -p /deploy/$(LVL)
+	-rm -rf /deploy/$(LVL)/utils.prev
+	-mv /deploy/$(LVL)/utils /deploy/$(LVL)/utils.prev
+	tar --exclude node_modules --exclude '*.pyc' -zcf - utils | \
+		(cd /deploy/$(LVL); tar zxf -)
+	( cd /deploy/$(LVL); chown -R www-data:www-data utils )
 
 # Execute this only once when you are building
 # a new development machine.  Execute it with sudo:

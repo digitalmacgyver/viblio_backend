@@ -10,6 +10,7 @@ import platform
 import requests
 from sqlalchemy import and_
 import sys
+import time
 import uuid
 import web
 
@@ -307,13 +308,19 @@ class Worker(Background):
             # user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
-            self.faces_lock = Serialize( app         = 'popeye',
-                              object_name = data['info']['uid'], 
-                              owner_id    = self.uuid,
-                              server      = platform.node(),
-                              heartbeat   = 30,
-                              timeout     = 95 )
+
+            # DEBUG - Try to put a lock row in the database manually,
+            # and then re-run this to see what happens - I want to see
+            # a heartbeat.
+            self.faces_lock = Serialize.Serialize( app         = 'popeye',
+                                                   object_name = self.data['info']['uid'], 
+                                                   owner_id    = self.uuid,
+                                                   app_config  = config,
+                                                   heartbeat   = 30,
+                                                   timeout     = 95 )
             self.faces_lock.acquire()
+            # DEBUG - Delete this line.
+            # time.sleep( 240 )
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
             # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
             # log.info( 'Storing contacts and faces from Intellivision.' )
@@ -322,6 +329,8 @@ class Worker(Background):
         except Exception as e:
             if hasattr( self, 'faces_lock' ) and self.faces_lock:
                 self.faces_lock.release()
+            log.error( "Failed to process faces, errors: " + str( e ) )
+            raise
 
         #######################################################################
         # Send notification to CAT server.

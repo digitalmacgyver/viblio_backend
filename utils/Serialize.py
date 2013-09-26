@@ -114,11 +114,12 @@ class Serialize( object ):
             # Check if the object is locked by anyone.
             self.log.info( "Checking the current lock status for %s, %s." 
                            % ( self.app, self.object_name ) )
+            
             result = conn.execute( select( [serialize] )
                                    .where( serialize.c.app == self.app 
                                            and serialize.c.object_name == self.object_name ).execution_options( autocommit=True ) )
+
             lock = result.fetchone()
-            self.log.debug( "Lock last updated is %s" % lock['updated_date'] )
             result.close()
 
             if lock == None:
@@ -234,11 +235,11 @@ class Serialize( object ):
             result.close()
 
             if lock == None:
-                self.log.info( "Lock %s, %s does not exist."
+                self.log.info( "No need to release lock - lock %s, %s does not exist."
                                % ( self.app, self.object_name ) )
                 return False
             elif lock['owner_id'] != self.owner_id:
-                self.log.info( "%s can not release lock %s, %s, it is owned by %s."
+                self.log.info( "We don't own the lock so can not release lock %s, %s, it is owned by %s."
                                % ( self.owner_id, self.app, self.object_name, str( lock['owner_id'] ) ) )
                 return False
             else:
@@ -271,15 +272,18 @@ class Serialize( object ):
         a new process.'''
         self.queue = multiprocessing.Queue()
         p = multiprocessing.Process( target=_do_heartbeat, args=( self.queue, self.config, self.app, self.object_name, self.owner_id, heartbeat ) )
-        
-        self.log.info( "Starting heartbeat for %s, %s, %s" % ( self.app, self.object_name, self.owner_id ) )
-        p.start()
+        try:
+            p.start()
+        except Exception as e:
+            self.log.info( "Error starting heartbeat: " + str( e ) )
+            # Explicitly don't throw here - we're working around some
+            # wsgi logging stupidity.
+
         self.heartbeat_running = True
 
     def _stop_heartbeat( self ):
         '''Helper function, stop heartbeating the object.'''
         if self.heartbeat_running:
-            self.log.info( "Stopping heartbeat for %s, %s, %s" % ( self.app, self.object_name, self.owner_id ) )
             self.queue.put_nowait( True )
             self.heartbeat_running = False
         else:
