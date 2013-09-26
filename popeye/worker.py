@@ -450,10 +450,11 @@ class Worker(Background):
             # Build up a dictionary of each person with an array of tracks.
             face_tracks = {}
             for track in tracks['tracks']['track']:
-                if track['personid'] in face_tracks:
-                    face_tracks[track['personid']].append( track )
-                else:
-                    face_tracks[track['personid']] = [ track ]
+                if track['personid'] != None:
+                    if track['personid'] in face_tracks:
+                        face_tracks[track['personid']].append( track )
+                    else:
+                        face_tracks[track['personid']] = [ track ]
 
             # Sort tracks in order of decreasing goodness.
             for face in face_tracks:
