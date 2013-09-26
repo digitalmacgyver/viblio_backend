@@ -6,9 +6,11 @@ import json
 import logging
 import mimetypes
 import os
+import platform
 import requests
 from sqlalchemy import and_
 import sys
+import time
 import uuid
 import web
 
@@ -17,7 +19,10 @@ from appconfig import AppConfig
 from background import Background
 import helpers
 from models import *
+sys.path.append("../utils")
+import Serialize
 import video_processing
+
 
 # Popeye configuration object.
 config = AppConfig( 'popeye' ).config()
@@ -303,14 +308,29 @@ class Worker(Background):
             # user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
+
+            # DEBUG - Try to put a lock row in the database manually,
+            # and then re-run this to see what happens - I want to see
+            # a heartbeat.
+            self.faces_lock = Serialize.Serialize( app         = 'popeye',
+                                                   object_name = self.data['info']['uid'], 
+                                                   owner_id    = self.uuid,
+                                                   app_config  = config,
+                                                   heartbeat   = 30,
+                                                   timeout     = 95 )
+            self.faces_lock.acquire()
+            # DEBUG - Delete this line.
+            # time.sleep( 240 )
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
             # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
             # log.info( 'Storing contacts and faces from Intellivision.' )
             # self.store_faces( media, user )
-            pass
+            self.faces_lock.release()
         except Exception as e:
-            # Unlock the serialization
-            pass
+            if hasattr( self, 'faces_lock' ) and self.faces_lock:
+                self.faces_lock.release()
+            log.error( "Failed to process faces, errors: " + str( e ) )
+            raise
 
         #######################################################################
         # Send notification to CAT server.
@@ -476,7 +496,9 @@ class Worker(Background):
                                                width      = 500,
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
-                                               location   = 'us' )
+                                               location   = 'us'
+                                               # , intellivision_file_id = tracks['fileid'] 
+                                               )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
                     media_row.assets.append( track_asset )
