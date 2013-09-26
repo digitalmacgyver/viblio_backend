@@ -79,6 +79,7 @@ class Worker(Background):
         log   = self.log
         orm   = self.orm
 
+
         # Also log to a particular logging file.
         fh = logging.FileHandler( files['media_log']['ofile'] )
         fh.setFormatter( logging.Formatter( '%(name)s: %(asctime)s %(levelname)-4s %(message)s' ) )
@@ -316,11 +317,10 @@ class Worker(Background):
                                                    object_name = self.data['info']['uid'], 
                                                    owner_id    = self.uuid,
                                                    app_config  = config,
-                                                   heartbeat   = 30,
-                                                   timeout     = 95 )
+                                                   heartbeat   = 30 )
             self.faces_lock.acquire()
             # DEBUG - Delete this line.
-            # time.sleep( 240 )
+            # time.sleep( 90 )
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
             # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
             # log.info( 'Storing contacts and faces from Intellivision.' )
