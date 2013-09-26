@@ -71,8 +71,6 @@ class Serialize( object ):
         try:
             logging.basicConfig( filename = app_config['logfile'], level = app_config.loglevel )
             self.log      = logging.getLogger( __name__ )
-            screen_output = logging.StreamHandler( sys.stdout )
-            self.log.addHandler( screen_output )
         except Exception as e:
             raise Exception( "Failed to set up logging, error was: " + str( e ) )
 
@@ -116,7 +114,6 @@ class Serialize( object ):
             # Check if the object is locked by anyone.
             self.log.info( "Checking the current lock status for %s, %s." 
                            % ( self.app, self.object_name ) )
-#            conn.execute( "COMMIT" )
             result = conn.execute( select( [serialize] )
                                    .where( serialize.c.app == self.app 
                                            and serialize.c.object_name == self.object_name ).execution_options( autocommit=True ) )
@@ -319,6 +316,8 @@ def _do_heartbeat( queue, config, app, object_name, owner_id, heartbeat ):
 
     serialize = meta.tables['serialize']
 
+    log = logging.getLogger( __name__ )
+
     while not stop:
         try:
             stop = queue.get_nowait()
@@ -326,10 +325,10 @@ def _do_heartbeat( queue, config, app, object_name, owner_id, heartbeat ):
             pass
         
         if stop:
-            print "Stopping heartbeat."
+            log.info( "Stopping heartbeat on %s, %s, %s" % ( app, object_name, owner_id ) )
             return True
         else:
-            print "Heartbeating %s, %s" % ( object_name, owner_id )
+            log.info( "Heartbeating %s, %s, %s" % ( app, object_name, owner_id ) )
             conn.execute( serialize.update().where( serialize.c.app == app and serialize.c.object_name == object_name and serialize.c.owner_id == owner_id ).values( acquired_date = datetime.datetime.now(), server = platform.node() ) )
             time.sleep( heartbeat )
 

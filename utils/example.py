@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import logging
 import sys
 import time
 
@@ -8,6 +9,10 @@ import Serialize
 sys.path.append("../popeye")
 from appconfig import AppConfig
 config = AppConfig( '../popeye/popeye' ).config()
+
+log = logging.getLogger( __name__ )
+screen_output = logging.StreamHandler( sys.stdout )
+log.addHandler( screen_output )
 
 # Create a serialization object.
 # We create a locking object for the example app
@@ -26,9 +31,12 @@ s1 = Serialize.Serialize( app         = 'example',
                          heartbeat   = 5, 
                          timeout     = 30 )
 
+print "To see informative messages, run in another window:"
+print "tail -f ", config.logfile
+
 # Acquire a lock.
 print "Acquiring the lock with s1."
-s1.acquire( blocking=True )
+print "Call to acquire returned:", s1.acquire( blocking=True )
 
 print "Sleeping for 10 seconds so we can see heartbeating working."
 time.sleep( 10 )
@@ -44,7 +52,7 @@ s2 = Serialize.Serialize( app         = 'example',
 
 # Acquire a lock.
 print "Attempting to re-acquire the lock with s2, this will fail."
-s2.acquire( blocking=False )
+print "Call to acquire returned:", s2.acquire( blocking=False )
 
 print "Releasing the lock with s1."
 s1.release()
@@ -52,7 +60,7 @@ s1.release()
 time.sleep( 5 )
 
 print "Now s2 can acquire the lock."
-s2.acquire( blocking=False )
+print "Call to acquire returned:", s2.acquire( blocking=False )
 
 s2.release()
 
