@@ -116,9 +116,13 @@ class Serialize( object ):
             # Check if the object is locked by anyone.
             self.log.info( "Checking the current lock status for %s, %s." 
                            % ( self.app, self.object_name ) )
-            lock = conn.execute( select( [serialize] )
-                                 .where( serialize.c.app == self.app 
-                                         and serialize.c.object_name == self.object_name ) ).fetchone()
+#            conn.execute( "COMMIT" )
+            result = conn.execute( select( [serialize] )
+                                   .where( serialize.c.app == self.app 
+                                           and serialize.c.object_name == self.object_name ).execution_options( autocommit=True ) )
+            lock = result.fetchone()
+            self.log.debug( "Lock last updated is %s" % lock['updated_date'] )
+            result.close()
 
             if lock == None:
                 # It appears this object has never been locked, try to
@@ -151,10 +155,14 @@ class Serialize( object ):
             while not acquired:
                 self.log.info( "Checking who owns the lock for %s, %s." 
                                % ( self.app, self.object_name ) )
-                lock = conn.execute( select( [serialize] )
-                                     .where( serialize.c.app == self.app 
-                                             and serialize.c.object_name == self.object_name 
-                                             and serialize.c.owner_id == self.owner_id ) ).fetchone()
+                result = conn.execute( select( [serialize] )
+                                       .where( serialize.c.app == self.app 
+                                               and serialize.c.object_name == self.object_name 
+                                               and serialize.c.owner_id == self.owner_id ).execution_options( autocommit=True ) )
+                lock = result.fetchone()
+                result.close()
+                self.log.info( "Lock %s, %s owned by %s." 
+                               % ( self.app, self.object_name, lock['owner_id'] ) )
 
                 if lock['owner_id'] == self.owner_id:
                     acquired = True
@@ -172,8 +180,6 @@ class Serialize( object ):
                         self._start_heartbeat( heartbeat )
                     return True
                 else:
-                    self.log.info( "Lock %s, %s owned by %s." 
-                                   % ( self.app, self.object_name, lock['owner_id'] ) )
                     if timeout != None:
                         timeout_delta = timedelta( seconds=timeout )
                         if lock['acquired_date'] + timeout_delta < datetime.datetime.now():
@@ -222,10 +228,14 @@ class Serialize( object ):
 
             self.log.info( "Trying to release lock %s, %s on behalf of %s." 
                       % ( self.app, self.object_name, self.owner_id ) )
-            lock = self.conn.execute( select( [serialize] )
-                                 .where( serialize.c.app == self.app 
-                                         and serialize.c.object_name == self.object_name 
-                                         and serialize.c.owner_id == self.owner_id ) ).fetchone()
+            result = self.conn.execute( select( [serialize] )
+                                        .where( serialize.c.app == self.app 
+                                                and serialize.c.object_name == self.object_name 
+                                                and serialize.c.owner_id == self.owner_id ).execution_options( autocommit=True ) )
+            
+            lock = result.fetchone()
+            result.close()
+
             if lock == None:
                 self.log.info( "Lock %s, %s does not exist."
                                % ( self.app, self.object_name ) )
