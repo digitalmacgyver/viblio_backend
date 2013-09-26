@@ -36,7 +36,7 @@ def get_faces(file_data, log, data):
         bucket_contents.make_public()
     except:
         print 'Error making S3 URL public'   
-    media_url = 'http://s3-us-wes(detection_score > minimum_detection_score)t-2.amazonaws.com/' + config.bucket_name + '/' + s3_key
+    media_url = 'http://s3-us-west-2.amazonaws.com/' + config.bucket_name + '/' + s3_key
     print media_url
     # Open session and login user for IntelliVision
     session_info = iv.open_session()
