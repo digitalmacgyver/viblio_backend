@@ -6,6 +6,7 @@ import json
 import logging
 import mimetypes
 import os
+import platform
 import requests
 from sqlalchemy import and_
 import sys
@@ -17,7 +18,10 @@ from appconfig import AppConfig
 from background import Background
 import helpers
 from models import *
+sys.path.append("../utils")
+import Serialize
 import video_processing
+
 
 # Popeye configuration object.
 config = AppConfig( 'popeye' ).config()
@@ -303,15 +307,21 @@ class Worker(Background):
             # user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
-            # self.serialize( self.uuid
+            self.faces_lock = Serialize( app         = 'popeye',
+                              object_name = data['info']['uid'], 
+                              owner_id    = self.uuid,
+                              server      = platform.node(),
+                              heartbeat   = 30,
+                              timeout     = 95 )
+            self.faces_lock.acquire()
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
             # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
             # log.info( 'Storing contacts and faces from Intellivision.' )
             # self.store_faces( media, user )
-            pass
+            self.faces_lock.release()
         except Exception as e:
-            # Unlock the serialization
-            pass
+            if hasattr( self, 'faces_lock' ) and self.faces_lock:
+                self.faces_lock.release()
 
         #######################################################################
         # Send notification to CAT server.
