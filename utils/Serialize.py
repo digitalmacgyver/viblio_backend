@@ -97,8 +97,7 @@ class Serialize( object ):
 
         # Set up logging
         try:
-            logging.basicConfig( filename = app_config['logfile'], level = app_config.loglevel )
-            self.log      = logging.getLogger( __name__ )
+            self.log      = logging.getLogger( app_config['app_name'] + '.Serialize' )
         except Exception as e:
             raise Exception( "Failed to set up logging, error was: " + str( e ) )
 

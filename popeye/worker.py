@@ -49,6 +49,8 @@ class Worker(Background):
 
         super( Worker, self ).__init__( SessionFactory, log, data )
 
+        self.logging_handler = None
+
         if 'full_filename' in data:
             self.log.info( "Initializing uuid." )
             self.__initialize_uuid( data['full_filename'] )
@@ -57,6 +59,17 @@ class Worker(Background):
         else:
             self.log.error( 'No full_filename field found in input data structure.' )
             raise Exception( "Third argument to Worker constructor must have full_filename field" )
+
+    def __del__( self ):
+        '''Destructor.'''
+        try:
+            self.log.info( "Cleaning up Popeye in destructor." )
+            if self.logging_handler:
+                self.log.removeHandler( self.logging_handler )
+        except Exception as e:
+            print "ERROR: Exception thrown in Popeye destructor: " + str( e ) 
+            raise
+    
 
     ######################################################################
     # Main logic
@@ -79,11 +92,11 @@ class Worker(Background):
         log   = self.log
         orm   = self.orm
 
-
         # Also log to a particular logging file.
         fh = logging.FileHandler( files['media_log']['ofile'] )
         fh.setFormatter( logging.Formatter( '%(name)s: %(asctime)s %(levelname)-4s %(message)s' ) )
         fh.setLevel( config.loglevel )
+        self.logging_handler = fh
         log.addHandler( fh )
 
         log.info( 'Worker.py, starting to process: ' + self.uuid )
