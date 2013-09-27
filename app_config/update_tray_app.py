@@ -16,7 +16,7 @@ config = AppConfig( 'app_config' ).config()
 from app_utils import show_configuration, upload_app_file
 
 logging.basicConfig( filename = config['logfile'], level = config.loglevel )
-log = logging.getLogger( "app_config" )
+log = logging.getLogger( config['app_name'] )
 screen_output = logging.StreamHandler( sys.stdout )
 screen_output.setLevel( logging.INFO )
 log.addHandler( screen_output )
