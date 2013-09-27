@@ -332,11 +332,13 @@ class Worker(Background):
                                                    app_config  = config,
                                                    heartbeat   = 30 )
             self.faces_lock.acquire()
-            # DEBUG - Delete this line.
-            # time.sleep( 90 )
+
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
+
+            # DEBUG - Uncomment this to enable Intellivision
             # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
             # log.info( 'Storing contacts and faces from Intellivision.' )
+            # log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
             # self.store_faces( media, user )
             self.faces_lock.release()
         except Exception as e:
