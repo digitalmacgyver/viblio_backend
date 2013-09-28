@@ -488,6 +488,10 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`links` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
+
+-- -----------------------------------------------------
+-- Table `video_dev`.`app_configs`
+-- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev`.`app_configs` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `app` VARCHAR(64) NOT NULL ,
@@ -500,6 +504,21 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`app_configs` (
   `updated_date` DATETIME NULL ,
   PRIMARY KEY (`id`) ,
   UNIQUE INDEX `app_UNIQUE` (`app` ASC, `version_string` ASC, `feature` ASC) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev`.`serialize`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev`.`serialize` (
+  `app` VARCHAR(64) NOT NULL ,
+  `object_name` VARCHAR(64) NOT NULL ,
+  `owner_id` VARCHAR(64) NULL ,
+  `expirey_date` DATETIME NOT NULL ,
+  `server` VARCHAR(64) NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL COMMENT '	' ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`app`, `object_name`) )
 ENGINE = InnoDB;
 
 USE `video_dev`;
@@ -984,17 +1003,9 @@ $$
 
 DELIMITER ;
 
-
 DELIMITER $$
-
 USE `video_dev`$$
 
-CREATE
-	TRIGGER app_config_created BEFORE INSERT ON app_configs FOR EACH ROW
-BEGIN
-	set NEW.created_date = NOW();
-END;
-$$
 
 CREATE
 	TRIGGER app_config_updated BEFORE UPDATE ON app_configs FOR EACH ROW
@@ -1003,9 +1014,42 @@ BEGIN
 END;
 $$
 
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER app_config_created BEFORE INSERT ON app_configs FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+
 DELIMITER ;
 
+DELIMITER $$
+USE `video_dev`$$
 
+
+CREATE
+	TRIGGER serialize_created BEFORE INSERT ON serialize FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER serialize_updated BEFORE UPDATE ON serialize FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
 
 CREATE USER `video_dev` IDENTIFIED BY 'video_dev';
 

@@ -49,6 +49,8 @@ class Worker(Background):
 
         super( Worker, self ).__init__( SessionFactory, log, data )
 
+        self.logging_handler = None
+
         if 'full_filename' in data:
             self.log.info( "Initializing uuid." )
             self.__initialize_uuid( data['full_filename'] )
@@ -57,6 +59,17 @@ class Worker(Background):
         else:
             self.log.error( 'No full_filename field found in input data structure.' )
             raise Exception( "Third argument to Worker constructor must have full_filename field" )
+
+    def __del__( self ):
+        '''Destructor.'''
+        try:
+            self.log.info( "Cleaning up Popeye in destructor." )
+            if self.logging_handler:
+                self.log.removeHandler( self.logging_handler )
+        except Exception as e:
+            print "ERROR: Exception thrown in Popeye destructor: " + str( e ) 
+            raise
+    
 
     ######################################################################
     # Main logic
@@ -83,6 +96,7 @@ class Worker(Background):
         fh = logging.FileHandler( files['media_log']['ofile'] )
         fh.setFormatter( logging.Formatter( '%(name)s: %(asctime)s %(levelname)-4s %(message)s' ) )
         fh.setLevel( config.loglevel )
+        self.logging_handler = fh
         log.addHandler( fh )
 
         log.info( 'Worker.py, starting to process: ' + self.uuid )
@@ -316,14 +330,15 @@ class Worker(Background):
                                                    object_name = self.data['info']['uid'], 
                                                    owner_id    = self.uuid,
                                                    app_config  = config,
-                                                   heartbeat   = 30,
-                                                   timeout     = 95 )
+                                                   heartbeat   = 30 )
             self.faces_lock.acquire()
-            # DEBUG - Delete this line.
-            # time.sleep( 240 )
+
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
+
+            # DEBUG - Uncomment this to enable Intellivision
             # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
             # log.info( 'Storing contacts and faces from Intellivision.' )
+            # log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
             # self.store_faces( media, user )
             self.faces_lock.release()
         except Exception as e:
@@ -450,10 +465,11 @@ class Worker(Background):
             # Build up a dictionary of each person with an array of tracks.
             face_tracks = {}
             for track in tracks['tracks']['track']:
-                if track['personid'] in face_tracks:
-                    face_tracks[track['personid']].append( track )
-                else:
-                    face_tracks[track['personid']] = [ track ]
+                if track['personid'] != None:
+                    if track['personid'] in face_tracks:
+                        face_tracks[track['personid']].append( track )
+                    else:
+                        face_tracks[track['personid']] = [ track ]
 
             # Sort tracks in order of decreasing goodness.
             for face in face_tracks:

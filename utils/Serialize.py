@@ -1,7 +1,7 @@
 import datetime
 from datetime import timedelta
 import logging
-import multiprocessing
+import threading
 import platform
 import Queue
 from sqlalchemy import *
@@ -10,10 +10,10 @@ import time
 
 class Serialize( object ):
     '''Utility class to acquire and release locks in a shared
-    database, with heartbeat / timeout functionality.'''
+    database, with heartbeat / expirey functionality.'''
 
-    def __init__( self, app, object_name, owner_id, app_config, heartbeat=None, timeout=None ):
-        '''Constructor( app, object_name, owner_id, app_config, heartbeat=None, timeout=None
+    def __init__( self, app, object_name, owner_id, app_config, expirey=None, heartbeat=None, timeout=None ):
+        '''Constructor( app, object_name, owner_id, app_config, expirey=None, heartbeat=None, timeout=None
         app - A 64 character or less string that denotes the domain of the lock
         object_name - A 64 character or less string identifying the object that is locked
         owner_id - A unique caller string identifying the process owning this lock
@@ -21,14 +21,26 @@ class Serialize( object ):
         app_config - A Viblio AppConfig object with database
         connectivity and log file information
 
-        heartbeat - Optional, if set establishes a default for this
-        parameter to the acquire method (invocations of acquire can
-        still override this default)
+        expirey - Optional, the seconds that a lock is valid for.  If
+        not set the lock expires in roughly 18 months. Setting this in
+        the constructor establishes a default for future calls to
+        acquire that may be overridden on a per call basis.
 
-        timeout - Optional, if set establishes a default for this
-        parameter to the acquire method (invocations of acquire can
-        still override this default)
+        heartbeat - Optional, if set overrides the expirey setting.
+        The seconds between heartbeat updates of acquired locks.  Each
+        heartbeat advances the expirey date to be 3 * heartbeat
+        interval in the future.  If not set, no heartbeat
+        occurs. Setting this in the constructor establishes a default
+        for future calls to acquire that may be overridden on a per
+        call basis.
+
+        timeout - Optional, the seconds that a blocking acquire call
+        should wait attempting to acquire the lock. Setting this in
+        the constructor establishes a default for future calls to
+        acquire that may be overridden on a per call basis.
         '''
+
+        self.has_lock = False
 
         # Mundane variables
         if not app or len( app ) > 64:
@@ -44,20 +56,36 @@ class Serialize( object ):
         self.owner_id    = owner_id
 
         if heartbeat != None and heartbeat <= 0:
-            raise Exception( "If heartbeat is provided it most be a positive number." )
+            raise Exception( "If heartbeat is provided it must be a positive number." )
         self.heartbeat   = heartbeat
         self.heartbeat_running = False
 
+        if expirey != None and expirey <= 0:
+            raise Exception( "If expirey is provided it must be a positive number." )
+        if expirey == None and heartbeat:
+            self.expirey = heartbeat * 3
+        elif expirey != None:
+            self.expirey = expirey
+        else:
+            # Set the expiration to "forever" - or 18 months from now.
+            self.expirey = int( 18*30.5*24*60*60 )
+
         if timeout != None and timeout <= 0:
-            raise Exception( "If timeout is provided it most be a positive number." )
-        self.timeout     = timeout
+            raise Exception( "If timeout is provided it must be a positive number." )
+        self.timeout = timeout
+
+        # How frequently we will check for a lock while blocking.
+        t_time = 600
+        e_time = 180
+        if timeout: t_time = timeout
+        if expirey: e_time = expirey
+        # Check the minimum of 60 seconds, the largest of 2 and
+        # timeout/10, and the largest of 2 and expirey / 3
+        self.polling_interval = int( min( 60, max( 2, ( t_time + 0.0 ) / 10 ), max( 2, ( e_time + 0.0 ) / 3 ) ) )
 
         if ( 'db_user' not in app_config ) or ( 'db_pass' not in app_config ) or ( 'db_conn' not in app_config ) or ( 'db_name' not in app_config ) or ( 'logfile' not in app_config ) or ( 'loglevel' not in app_config ):
             raise Exception( "app_config must have the following members: db_conn, db_name, db_pass, db_user, logfile, loglevel" ) 
         self.config      = app_config
-
-        # How frequently we will check for a lock while blocking.
-        self.polling_interval = 60
 
         # Get database connection
         try:
@@ -69,8 +97,7 @@ class Serialize( object ):
 
         # Set up logging
         try:
-            logging.basicConfig( filename = app_config['logfile'], level = app_config.loglevel )
-            self.log      = logging.getLogger( __name__ )
+            self.log      = logging.getLogger( app_config['app_name'] + '.Serialize' )
         except Exception as e:
             raise Exception( "Failed to set up logging, error was: " + str( e ) )
 
@@ -79,15 +106,31 @@ class Serialize( object ):
         Stop heartbeating if it is happening.
         Release the lock if any.
         Close the database connection if it exists.'''
+        message = ""
         try:
             self.log.info( "Ensuring lock released in destructor." )
-            self.release()
+            if self.has_lock:
+                self.release()
+                self.has_lock = False
         except Exception as e:
             m = "Error occurred in destructor for Serialize while releasing lock for %s, %s, %s: %s" % ( self.app, self.object_name, self.owner_id, str( e ) )
             self.log.error( m )
-            raise Exception( m )
+            message += m
 
-    def acquire( self, blocking=True, heartbeat=None, timeout=None ):
+        try:
+            self.log.info( "Closing database connection and disposing of engine." )
+            self.conn.close()
+            self.engine.dispose()
+            if self.heartbeat_running:
+                self.log.info( "Stopping heartbeat for %s, %s, %s in release." 
+                                % ( self.app, self.object_name, self.owner_id ) )
+                self._stop_heartbeat()
+        except Exception as e:
+            m = "Error occurred while stopping heartbeat for %s, %s, %s: %s" % ( self.app, self.object_name, self.owner_id, str( e ) )
+            self.log.error( m )
+            raise Exception( message + m )
+
+    def acquire( self, blocking=True, expirey=None, heartbeat=None, timeout=None ):
         '''Acquire the lock for self.object_name, self.owner_id.  
         
         If blocking is set to true this method will wait until it
@@ -95,15 +138,27 @@ class Serialize( object ):
         to false and the lock is not available, this method will
         return false immediately.
 
+        Optionally establish an expiry time for the lock.
+
         Optionally establish a heartbeat to update the lock each
-        heartbeat seconds.
+        heartbeat seconds.  If this is set the expiry is automatically
+        rolled forward on each heartbeat.
         
-        Optionally steal the lock for object if it is more than
-        timeout seconds old.'''
+        Optionally establish a timeout for blocking attempts to
+        acquire the lock.
+        '''
 
         try:
+            begin_time = datetime.datetime.now()
+
             if heartbeat == None:
                 heartbeat = self.heartbeat
+
+            if expirey == None and heartbeat:
+                expirey = heartbeat * 3
+            elif expirey == None:
+                expirey = self.expirey
+
             if timeout == None:
                 timeout = self.timeout
 
@@ -111,100 +166,131 @@ class Serialize( object ):
             meta = self.meta
             serialize = meta.tables['serialize']
 
-            # Check if the object is locked by anyone.
-            self.log.info( "Checking the current lock status for %s, %s." 
-                           % ( self.app, self.object_name ) )
-            
-            result = conn.execute( select( [serialize] )
-                                   .where( serialize.c.app == self.app 
-                                           and serialize.c.object_name == self.object_name ).execution_options( autocommit=True ) )
-
-            lock = result.fetchone()
-            result.close()
-
-            if lock == None:
-                # It appears this object has never been locked, try to
-                # set up a lock.
-                self.log.info( "Attempting to create lock for %s, %s." 
-                               % ( self.app, self.object_name ) )
-                conn.execute( serialize.insert(),
-                              app = self.app,
-                              object_name = self.object_name,
-                              owner_id = self.owner_id,
-                              server = platform.node(),
-                              acquired_date = datetime.datetime.now() )
-            elif lock['owner_id'] == None:
-                # It appears no one has the row, try to acquire it.
-                self.log.info( "Attempting to lock entry for %s, %s." 
-                               % ( self.app, self.object_name ) )
-                conn.execute( serialize
-                              .update()
-                              .where( serialize.c.app == self.app 
-                                      and serialize.c.object_name == self.object_name 
-                                      and serialize.c.owner_id == None )
-                              .values( owner_id = self.owner_id, 
-                                       acquired_date = datetime.datetime.now(), 
-                                       server = platform.node() ) )
 
             # Check if we successfully created / acquired the lock, or
             # lost a race:
             acquired = False
 
             while not acquired:
-                self.log.info( "Checking who owns the lock for %s, %s." 
+                # Check if the object is locked by anyone.
+                self.log.info( "Checking the current lock status: %s, %s." 
                                % ( self.app, self.object_name ) )
+            
                 result = conn.execute( select( [serialize] )
                                        .where( serialize.c.app == self.app 
-                                               and serialize.c.object_name == self.object_name 
-                                               and serialize.c.owner_id == self.owner_id ).execution_options( autocommit=True ) )
+                                               and serialize.c.object_name == self.object_name ).execution_options( autocommit=True ) )
+
                 lock = result.fetchone()
                 result.close()
-                self.log.info( "Lock %s, %s owned by %s." 
-                               % ( self.app, self.object_name, lock['owner_id'] ) )
 
-                if lock['owner_id'] == self.owner_id:
-                    acquired = True
-                    self.log.info( "Lock acquired for %s, %s, %s" 
-                                   % ( self.app, self.object_name, self.owner_id ) )
+                if lock == None:
+                    # It appears this object has never been locked, try to
+                    # set up a lock.
+                    self.log.info( "Attempting to create new lock: %s, %s." 
+                                   % ( self.app, self.object_name ) )
+                    conn.execute( serialize.insert(),
+                                  app = self.app,
+                                  object_name = self.object_name,
+                                  owner_id = self.owner_id,
+                                  server = platform.node(),
+                                  expirey_date = datetime.datetime.now()+timedelta( seconds=expirey ) )
+                    continue
 
-                    if self.heartbeat_running:
-                        self.log.info( "Stopping old heartbeat for %s, %s, %s." 
-                                       % ( self.app, self.object_name, self.owner_id ) )
-                        self._stop_heartbeat()
+                elif lock['owner_id'] == None:
+                    # It appears no one has the row, try to acquire it.
+                    self.log.info( "Attempting to lock: %s, %s." 
+                                   % ( self.app, self.object_name ) )
+                    update_result = conn.execute( serialize
+                                                  .update()
+                                                  .where( serialize.c.app == self.app 
+                                                          and serialize.c.object_name == self.object_name 
+                                                          and serialize.c.owner_id == None )
+                                                  .values( owner_id = self.owner_id, 
+                                                           expirey_date = datetime.datetime.now() + timedelta( seconds=expirey ), 
+                                                           server = platform.node() ) )
+                    if update_result.rowcount != 1:
+                        self.log.warning( "Attempt to claim lock unsuccessful, retrying." )
 
-                    if heartbeat:
-                        self.log.info( "Starting new heartbeat for %s, %s, %s." 
-                                       % ( self.app, self.object_name, self.owner_id ) )
-                        self._start_heartbeat( heartbeat )
-                    return True
-                else:
-                    if timeout != None:
-                        timeout_delta = timedelta( seconds=timeout )
-                        if lock['acquired_date'] + timeout_delta < datetime.datetime.now():
-                            self.log.warning( "Timeout of %s seconds exceeded, attempting to steal lock %s, %s from %s on server %s" 
-                                              % ( timeout, self.app, self.object_name, lock['owner_id'], str( lock['server'] ) ) )
+                    update_result.close()
+                    continue
+
+                elif lock['owner_id'] == self.owner_id:
+                    self.log.info( "We appear to own the lock, validating ownership of lock." )
+                    update_result = conn.execute( serialize
+                                                  .update()
+                                                  .where( serialize.c.app == self.app 
+                                                          and serialize.c.object_name == self.object_name 
+                                                          and serialize.c.owner_id == self.owner_id )
+                                                  .values( owner_id = self.owner_id, 
+                                                           expirey_date = datetime.datetime.now() + timedelta( seconds=expirey ), 
+                                                           server = platform.node() ) )
+                    if update_result.rowcount != 1:
+                        update_result.close()
+                        self.log.warning( "Lock ownership could not be validatied, retrying." )
+                        continue
+                    else:
+                        update_result.close()
+
+                        self.log.info( "%s acquired lock: %s, %s" 
+                                       % ( self.owner_id, self.app, self.object_name ) )
+
+                        if self.heartbeat_running:
+                            self.log.info( "Stopping %s's heartbeat for lock: %s, %s" 
+                                           % ( self.owner_id, self.app, self.object_name ) )
+                            self._stop_heartbeat()
+
+                        if heartbeat:
+                            self.log.info( "Starting new heartbeat for %s for lock: %s, %s" 
+                                           % ( self.owner_id, self.app, self.object_name ) )
+                            self._start_heartbeat( heartbeat )
+
+                        self.has_lock = True
+                        return True
+
+                elif lock['owner_id'] != self.owner_id:
+                    if expirey != None:
+                        if lock['expirey_date'] < datetime.datetime.now():
+                            self.log.warning( "%s's lock expired at %s, attempting to steal their lock %s, %s on server %s" 
+                                              % ( lock['owner_id'], lock['expirey_date'], self.app, self.object_name, str( lock['server'] ) ) )
                             conn.execute( serialize
                                           .update()
                                           .where( serialize.c.app == self.app 
                                                   and serialize.c.object_name == self.object_name 
                                                   and serialize.c.owner_id == lock['owner_id']
-                                                  and serialize.d.acquired_date == lock['acquired_date'] )
+                                                  and serialize.d.expirey_date == lock['expirey_date'] )
                                           .values( owner_id = self.owner_id, 
-                                                   acquired_date = datetime.datetime.now(), 
+                                                   expirey_date = datetime.datetime.now() + timedelta( seconds=expirey ), 
                                                    server = platform.node() ) )
                             continue
                     if blocking:
-                        self.log.info( "Waiting %s seconds for lock in blocking call for %s, %s, %s" 
-                                       % ( self.polling_interval, self.app, self.object_name, self.owner_id ) )
-                        time.sleep( self.polling_interval )
-                        continue
+                        if timeout:
+                            if begin_time + timedelta( seconds=timeout ) <= datetime.datetime.now():
+                                self.log.info( "%s exceeded timeout waiting for lock: %s, %s" % ( self.owner_id, self.app, self.object_name ) )
+                                self.has_lock = False
+                                return False
+                            else:
+                                wait_time = min( self.polling_interval, max( 1, int( ( begin_time + timedelta( seconds=timeout ) - datetime.datetime.now() ).total_seconds() ) ) ) 
+                                self.log.info( "%s waiting %s seconds for lock: %s, %s" 
+                                               % ( self.owner_id, wait_time, self.app, self.object_name ) )
+                                time.sleep( wait_time )
+                                continue
+                        else:
+                            self.log.info( "%s waiting %s seconds for lock: %s, %s" 
+                                           % ( self.owner_id, self.polling_interval, self.app, self.object_name ) )
+                            time.sleep( self.polling_interval )
+                            continue
+                            
                     else:
-                        self.log.info( "Failed to acquire lock in non-blocking call for %s, %s, %s" 
-                                       % ( self.app, self.object_name, self.owner_id ) )
+                        self.log.info( "%s failed to acquire lock: %s, %s" 
+                                       % ( self.owner_id, self.app, self.object_name ) )
+                        self.has_lock = False
                         return False
+                else:
+                    raise Exception( "Unexpected lock state." )
                         
         except Exception as e:
-            self.log.error( "Failed to acquire lock, error was: " + str( e ) )
+            self.log.error( "Exception while attempting to acquire lock: " + str( e ) )
+            raise
             
     def release( self ):
         '''If the owner_id is held for object_name it is released and
@@ -237,10 +323,12 @@ class Serialize( object ):
             if lock == None:
                 self.log.info( "No need to release lock - lock %s, %s does not exist."
                                % ( self.app, self.object_name ) )
+                self.has_lock = False
                 return False
             elif lock['owner_id'] != self.owner_id:
                 self.log.info( "We don't own the lock so can not release lock %s, %s, it is owned by %s."
-                               % ( self.owner_id, self.app, self.object_name, str( lock['owner_id'] ) ) )
+                               % ( self.app, self.object_name, str( lock['owner_id'] ) ) )
+                self.has_lock = False
                 return False
             else:
                 self.conn.execute( serialize
@@ -251,6 +339,7 @@ class Serialize( object ):
                                    .values( owner_id = None ) ) 
                 self.log.info( "Lock %s, %s released by %s."
                                % ( self.app, self.object_name, self.owner_id ) )
+                self.has_lock = False
 
         except Exception as e:
             self.log.error( "Failed to release lock %s, %s for %s. Error was: %s" 
@@ -270,14 +359,13 @@ class Serialize( object ):
     def _start_heartbeat( self, heartbeat ):
         '''Helper function, begin heartbeating the held lock object in
         a new process.'''
-        self.queue = multiprocessing.Queue()
-        p = multiprocessing.Process( target=_do_heartbeat, args=( self.queue, self.config, self.app, self.object_name, self.owner_id, heartbeat ) )
+        self.queue = Queue.Queue()
+        t = threading.Thread( target=_do_heartbeat, args=( self.queue, self.config, self.app, self.object_name, self.owner_id, heartbeat ) )
         try:
-            p.start()
+            t.start()
         except Exception as e:
             self.log.info( "Error starting heartbeat: " + str( e ) )
-            # Explicitly don't throw here - we're working around some
-            # wsgi logging stupidity.
+            raise
 
         self.heartbeat_running = True
 
@@ -330,10 +418,13 @@ def _do_heartbeat( queue, config, app, object_name, owner_id, heartbeat ):
         
         if stop:
             log.info( "Stopping heartbeat on %s, %s, %s" % ( app, object_name, owner_id ) )
+            log.info( "Closing database connection and disposing of engine." )
+            conn.close()
+            db_engine.dispose()
             return True
         else:
             log.info( "Heartbeating %s, %s, %s" % ( app, object_name, owner_id ) )
-            conn.execute( serialize.update().where( serialize.c.app == app and serialize.c.object_name == object_name and serialize.c.owner_id == owner_id ).values( acquired_date = datetime.datetime.now(), server = platform.node() ) )
+            conn.execute( serialize.update().where( serialize.c.app == app and serialize.c.object_name == object_name and serialize.c.owner_id == owner_id ).values( expirey_date = datetime.datetime.now() + timedelta( seconds=heartbeat*3 ), server = platform.node() ) )
             time.sleep( heartbeat )
 
 
