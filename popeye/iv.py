@@ -133,46 +133,55 @@ def analyze(session_info, user_id, media_url):
     url = iv_config.iv_host + 'user/' + user_id + '/analyzeFaces'
     analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
     headers = generate_headers(session_info)
-    r = requests.post(url, data=analyze_xml, headers=headers)
-    print r, r.content
-    if r.status_code == requests.codes.ok:
-        soup = BeautifulSoup(r.content, 'lxml')
-        print str(soup)
-    if (soup.result.status):
-        status = soup.result.status.string
-    if status == 'Success':
-        if(soup.result.description):
-            if soup.result.description.string == 'File downloading started':
-                time.sleep(60)
-                r = requests.post(url, data=analyze_xml, headers=headers)
-                if r.status_code == requests.codes.ok:
-                    soup = BeautifulSoup(r.content, 'lxml')
-                    print str(soup)
-        if (soup.result.fileid):
-            file_id = soup.result.fileid.string
-        if(soup.result.expectedwaitseconds):
-            wait_time = int(soup.result.expectedwaitseconds.text)
-            return ({'file_id': file_id, 'wait_time': wait_time})
-    elif status == 'Failure':
-        print 'Got Failure'
-        if(soup.result.description):
-            description = soup.result.description.string
-            print 'description is: ' + description
-        if description == 'FR could not process specified file':
-            print 'TRYING AGAIN'
-            analyze(session_info, user_id, media_url)
-        elif description == 'Request failed':
-            print 'START OVER'
-        elif description == 'Previous file is in process':
-            print 'TRYING AGAIN'
-            analyze(session_info, user_id, media_url)
-        elif description == 'Downloading failed':
-            print 'CANNOT DOWNLOAD, EXIT'
-        return(soup)
-    else: 
-        print 'Failed: ' + str(soup)
-        return(soup)
-## <html><body><result><status>Success</status><fileid>4</fileid><expectedwaitseconds>69</expectedwaitseconds></result></body></html>
+    for trial in range (1, 10):
+        print "Trial number: " + str(trial)
+        r = requests.post(url, data=analyze_xml, headers=headers)
+        if r.status_code == requests.codes.ok:
+            soup = BeautifulSoup(r.content, 'lxml')
+            print str(soup)
+            if (soup.result.status):
+                status = soup.result.status.string
+                if status == 'Success':
+                    if (soup.result.fileid):
+                        file_id = soup.result.fileid.string
+                        if(soup.result.expectedwaitseconds):
+                            wait_time = int(soup.result.expectedwaitseconds.text)
+                            return ({'file_id': file_id, 'wait_time': wait_time})
+                        return ({'file_id': file_id})
+                    elif(soup.result.description):
+                        if soup.result.description.string == 'File downloading started':
+                            time.sleep(60)
+                            r = requests.post(url, data=analyze_xml, headers=headers)
+                            if r.status_code == requests.codes.ok:
+                                soup = BeautifulSoup(r.content, 'lxml')
+                                print str(soup)
+                    else:
+                        print ' ERROR! gk gk gk step 4.8'
+                elif status == 'Failure':
+    #               print 'Got Failure line 175'
+                    if(soup.result.description):
+                        description = soup.result.description.string
+    #                   print 'description is: ' + description
+                        if description == 'FR could not process specified file':
+                            print 'TRYING AGAIN due to FR'
+                        elif description == 'Request failed':
+                            print 'START OVER close the session and restart'
+                            return ('__ANALYSIS__FAILED__')
+                        elif description == 'Previous file is in process':
+                            print 'TRYING AGAIN as previous file is in progress'
+                        elif description == 'Downloading failed':
+                            print 'CANNOT DOWNLOAD, EXIT'
+                            return ('__ANALYSIS__FAILED__')
+                    else:
+                        print 'Encountered an error in getting the description'
+                        return ('__ANALYSIS__FAILED__')
+                else :
+                    print ' gk gk gk step 4.1.1 ELSE'
+                    print ' soup was '
+                    print soup
+                    return ('__ANALYSIS__FAILED__')
+            else:
+                print ' gk gk gk step 4.1  --> else'
 
 ## Retrieve Faces API
 def retrieve(session_info, user_id, file_id, uuid):
