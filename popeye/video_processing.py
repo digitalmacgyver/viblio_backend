@@ -1,3 +1,4 @@
+import commands
 import os
 import json
 import requests
@@ -130,10 +131,14 @@ def transcode_main( file_data, log, data, files=None ):
             print( 'Video is rotated 270 degrees, rotating.' )
             ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
 
-    cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( ifile, ffopts, ofile )
+    cmd = '/usr/local/bin/ffmpeg -y -i %s %s %s' % ( ifile, ffopts, ofile )
     log.info( cmd )
-    if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
+    ( status, output ) = commands.getstatusoutput( cmd )
+    log.debug( 'Command output was: ' + output )
+    if status != 0 or not os.path.isfile( ofile ):
         raise Exception( 'Failed to generate transcoded video with: %s' % cmd )
+    else:
+        log.debug( 'ffmpeg command returned successful completion status.' )
 
     data['mimetype'] = 'video/mp4'
 
@@ -143,11 +148,15 @@ def transcode_avi( file_data, log, data=None ):
 
     # Also generate AVI for IntelliVision (temporary)
     ffopts = ''
-    cmd = '/usr/local/bin/ffmpeg -v 0 -y -i %s %s %s' % ( ifile, ffopts, ofile )
+    cmd = '/usr/local/bin/ffmpeg -y -i %s %s %s' % ( ifile, ffopts, ofile )
 
     print( cmd )
-    if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
+    ( status, output ) = commands.getstatusoutput( cmd )
+    log.debug( 'Command output was: ' + output )
+    if status != 0 or not os.path.isfile( ofile ):
         raise Exception( 'Failed to generate AVI file: %s' % cmd )
+    else:
+        log.debug( 'ffmpeg command returned successful completion status.' )
 
 def move_atom( file_data, log, data=None ):
     '''Attempt to relocate the atom, if there is a problem do not
@@ -157,9 +166,13 @@ def move_atom( file_data, log, data=None ):
 
     cmd = '/usr/local/bin/qtfaststart %s' % ofile
     log.info( cmd )
-    if os.system( cmd ) != 0:
+    ( status, output ) = commands.getstatusoutput( cmd )
+    log.debug( 'Command output was: ' + output )
+    if status != 0 or not os.path.isfile( ofile ):
         log.error( 'Failed to run qtfaststart on the output file' )
-        
+    else:
+        log.debug( 'qtfaststart command returned successful completion status.' )        
+
 def generate_poster( file_data, log, data=None ):
     ifile = file_data['ifile']
     ofile = file_data['ofile']    
@@ -176,14 +189,17 @@ def generate_poster( file_data, log, data=None ):
     cmd = ''
 
     if rotation == '90' or rotation == '270' or aspect_ratio < 16/float(9):
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 0.5 -i %s -vframes 1 -vf scale=-1:180,pad=320:180:ow/2-iw/2:0 %s' %( ifile, ofile )
+        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=-1:180,pad=320:180:ow/2-iw/2:0 %s' %( ifile, ofile )
     elif rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 0.5 -i %s -vframes 1 -vf scale=320:-1,pad=320:180:0:oh/2-ih/2 %s' %( ifile, ofile )
+        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=320:-1,pad=320:180:0:oh/2-ih/2 %s' %( ifile, ofile )
 
     log.info( 'Executing poster generation command: '+ cmd )
-
-    if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
+    ( status, output ) = commands.getstatusoutput( cmd )
+    log.debug( 'Command output was: ' + output )
+    if status != 0 or not os.path.isfile( ofile ):
         raise Exception( 'Failed to generate poster with command: %s' % cmd )
+    else:
+        log.debug( 'ffmpeg command returned successful completion status.' )        
         
 def generate_thumbnail( file_data, log, data=None ):
     ifile = file_data['ifile']
@@ -195,14 +211,17 @@ def generate_thumbnail( file_data, log, data=None ):
     cmd = ''
 
     if rotation == '90' or rotation == '270':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 0.5 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %( ifile, ofile )
+        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %( ifile, ofile )
     elif rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -v 0 -y -ss 0.5 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %( ifile, ofile )
+        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %( ifile, ofile )
 
     log.info( 'Executing thumbnail generation command: ' + cmd )
-
-    if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
+    ( status, output ) = commands.getstatusoutput( cmd )
+    log.debug( 'Command output was: ' + output )
+    if status != 0 or not os.path.isfile( ofile ):
         raise Exception( 'Failed to generate thumbnail with command: %s' % cmd )
+    else:
+        log.debug( 'ffmpeg command returned successful completion status.' )
 
 def generate_face( file_data, log, data=None, skip=False ):
     ifile = file_data['ifile']
@@ -212,7 +231,10 @@ def generate_face( file_data, log, data=None, skip=False ):
     if not skip:
         cmd = 'python /viblio/bin/extract_face.py %s %s' % ( ifile, ofile )
         log.info( 'Executing face generation command: ' + cmd )
-        if os.system( cmd ) != 0 or not os.path.isfile( ofile ):
+        ( status, output ) = commands.getstatusoutput( cmd )
+        log.debug( 'Command output was: ' + output )
+        if status != 0 or not os.path.isfile( ofile ):
             log.warning( 'Failed to find any faces in video %s for command: %s' % ( ifile, cmd ) )
         else:
+            log.debug( 'extract_face command returned successful completion status.' )
             data['found_faces'] = True
