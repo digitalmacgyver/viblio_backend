@@ -156,10 +156,11 @@ def analyze(session_info, user_id, media_url):
                                 soup = BeautifulSoup(r.content, 'lxml')
                                 print str(soup)
                     else:
-                        print ' ERROR! gk gk gk step 4.8'
+                        print 'Unknown success case'
+                        print str(soup)
                 elif status == 'Failure':
     #               print 'Got Failure line 175'
-                    if(soup.result.description):
+                    if(soup.result.description):success
                         description = soup.result.description.string
     #                   print 'description is: ' + description
                         if description == 'FR could not process specified file':
@@ -172,8 +173,12 @@ def analyze(session_info, user_id, media_url):
                         elif description == 'Downloading failed':
                             print 'CANNOT DOWNLOAD, EXIT'
                             return ('__ANALYSIS__FAILED__')
+                        else:
+                            print 'Unknown failure case'
+                            print str(soup)
                     else:
                         print 'Encountered an error in getting the description'
+                        print str(soup)
                         return ('__ANALYSIS__FAILED__')
                 else :
                     print ' gk gk gk step 4.1.1 ELSE'
