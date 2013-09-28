@@ -160,7 +160,7 @@ def analyze(session_info, user_id, media_url):
                         print str(soup)
                 elif status == 'Failure':
     #               print 'Got Failure line 175'
-                    if(soup.result.description):success
+                    if(soup.result.description):
                         description = soup.result.description.string
     #                   print 'description is: ' + description
                         if description == 'FR could not process specified file':
@@ -248,6 +248,7 @@ def train_person(session_info, user_id, person_id, track_id, file_id, media_url)
     analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=analyze_xml, headers=headers)
+    print r.content
     if r.status_code == requests.codes.OK:
         soup = BeautifulSoup(r.content, 'lxml')
         print soup
