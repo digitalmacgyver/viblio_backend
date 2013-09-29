@@ -48,9 +48,11 @@ def get_faces(file_data, log, data):
                     'secret': response['secret']}
     user_id = response['user_id']
     file_id = response['file_id']
-    wait_time = response['wait_time']
-    if (wait_time):
+    if (response['wait_time']):
+        wait_time = response['wait_time']
         time.sleep(wait_time)
+    else:
+        time.sleep(120)
     # Get Face Recognition results from IntelliVision
     tracks = iv.retrieve(session_info, user_id, file_id, media_uuid)
     # Add FileId to the Tracks data structure
