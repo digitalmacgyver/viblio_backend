@@ -20,8 +20,6 @@ except Exception, e:
     sys.exit(1)
 
 def get_faces(file_data, log, data):
-    # s3_key  = '360db1d0-19e1-11e3-93b4-f5d6bf8684b8/360db1d0-19e1-11e3-93b4-f5d6bf8684b8.avi'
-    # uid = iv_config.uid
     s3_key  = file_data['key']
     uid     = data['info']['uid']
     media_uuid = os.path.split(s3_key)[0]
@@ -49,6 +47,7 @@ def get_faces(file_data, log, data):
                     'secret': response['secret']}
     user_id = response['user_id']
     file_id = response['file_id']
+    # in case wait_time is absent, wait for fixed time
     if response.get( 'wait_time' ):
         wait_time = response['wait_time']
         time.sleep(wait_time)
@@ -70,8 +69,11 @@ def get_faces(file_data, log, data):
         person_id = track.personid.string
         detection_score = float(track.detectionscore.string)
         if ( person_id == '-1' ):
+            # unknown person
             if ( detection_score > minimum_detection_score ):
+                # Train unknown person if detection score is high enough
                 new_person_id = iv.add_person(session_info, user_id)
+                track.personid.string = new_person_id
                 formatted_new_person_id = '%02d' %int(new_person_id)
                 log.info( 'Added a new person: ' + new_person_id )
                 log.info( "downloading with best face frame" )
@@ -97,11 +99,13 @@ def get_faces(file_data, log, data):
                 formatted_person_id = '%02d' %int(person_id)            
                 url = track.bestfaceframe.string
                 r = requests.get(url)
-                filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
+                filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
                 with open(filename, "wb") as f:
                     f.write(r.content)
-                face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
+
+                face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
                 log.info( "Uploading face %s to S3" % ( face_key ) )
+
                 try:
                     bucket_contents.key = face_key
                     bucket_contents.set_contents_from_filename(filename)
@@ -110,7 +114,6 @@ def get_faces(file_data, log, data):
                     raise Exception( 'Upload to S3 of %s failed' % ( filename ) )
                 # update bestfaceframe
                 track.bestfaceframe.string = face_key
-                track.personid.string = new_person_id
             else:
                 # Unknown person with low detection score
                 track.personid.string = ''
