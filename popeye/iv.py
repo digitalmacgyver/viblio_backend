@@ -195,7 +195,7 @@ def analyze(session_info, user_id, uid, media_url):
                     return ('__ANALYSIS__FAILED__')
             else:
                 print ' gk gk gk step 4.1  --> else'
-        time.sleep(15)
+        time.sleep(5)
 ## Retrieve Faces API
 def retrieve(session_info, user_id, file_id, uuid):
     url = iv_config.iv_host + 'user/' + user_id + '/retrieveFaces?fileID=' + file_id
