@@ -36,9 +36,10 @@ def get_faces(file_data, log, data):
         original_acl = bucket_contents.get_acl()
         bucket_contents.make_public()
     except:
-        print 'Error making S3 URL public'   
+        log.error(  'Error making S3 URL public' ) 
+        raise Exception( "Error making S3 URL public" )
     media_url = 'http://s3-us-west-2.amazonaws.com/' + config.bucket_name + '/' + s3_key
-    print media_url
+    log.info( media_url )
     # Open session and login user for IntelliVision
     session_info = iv.open_session()
     user_id = iv.login(session_info, uid)
@@ -72,26 +73,27 @@ def get_faces(file_data, log, data):
             if ( detection_score > minimum_detection_score ):
                 new_person_id = iv.add_person(session_info, user_id)
                 formatted_new_person_id = '%02d' %int(new_person_id)
-                print 'Added a new person: ' + new_person_id
-                print "downloading with best face frame"            
+                log.info( 'Added a new person: ' + new_person_id )
+                log.info( "downloading with best face frame" )
                 url = track.bestfaceframe.string
                 r = requests.get(url)
                 filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
                 with open(filename, "wb") as f:
                     f.write(r.content)
                 face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
-                print "Uploading face to S3"
+                log.info( "Uploading face to S3" )
                 try:
                     bucket_contents.key = face_key
                     bucket_contents.set_contents_from_filename(filename)
                 except:
-                    print 'Upload to S3 failed'
+                    log.error( 'Upload to S3 failed' )
+                    raise( 'Upload to S3 of %s failed' % ( face_key ) )
                 try:
                     iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
-                    print 'training: ' + new_person_id
+                    log.info( 'training: ' + new_person_id )
                 except:
-                    print 'Failed to train unknown person'
-                print "downloading with best face frame"
+                    log.warning( 'Failed to train unknown person' )
+                log.info( "downloading with best face frame" )
                 formatted_person_id = '%02d' %int(person_id)            
                 url = track.bestfaceframe.string
                 r = requests.get(url)
@@ -99,12 +101,13 @@ def get_faces(file_data, log, data):
                 with open(filename, "wb") as f:
                     f.write(r.content)
                 face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
-                print "Uploading face to S3"
+                log.info( "Uploading face %s to S3" % ( face_key ) )
                 try:
                     bucket_contents.key = face_key
                     bucket_contents.set_contents_from_filename(filename)
                 except:
-                    print 'Upload to S3 failed'
+                    log.info( 'Upload to S3 of %s failed' % ( filename ) )
+                    raise Exception( 'Upload to S3 of %s failed' % ( filename ) )
                 # update bestfaceframe
                 track.bestfaceframe.string = face_key
                 track.personid.string = new_person_id
@@ -119,10 +122,10 @@ def get_faces(file_data, log, data):
             if ( recognition_score > minimum_recognition_score ):
                 # Train known person only if recognition score was high enough
                 try:
-                    print 'training: ' + person_id
+                    log.info( 'training: ' + person_id )
                     iv.train_person(session_info, user_id, str(person_id), track_id, file_id, media_url)
                 except:
-                    print 'Failed to train known person'
+                    log.info( 'Failed to train known person' )
             formatted_person_id = '%02d' %int(person_id)            
             url = track.bestfaceframe.string
             r = requests.get(url)
@@ -130,12 +133,13 @@ def get_faces(file_data, log, data):
             with open(filename, "wb") as f:
                 f.write(r.content)
             face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
-            print "Uploading face to S3"
+            log.info( "Uploading face to S3" )
             try:
                 bucket_contents.key = face_key
                 bucket_contents.set_contents_from_filename(filename)
             except:
-                print 'Upload to S3 failed'
+                log.info( 'Upload to S3 of %s failed' % ( filename ) )
+                raise Exception( 'Upload to S3 of %s failed' % ( filename ) )
             # update bestfaceframe
             track.bestfaceframe.string = face_key
     tracks.numberoftracks.string = str(number_of_tracks)
@@ -146,8 +150,7 @@ def get_faces(file_data, log, data):
     bucket_contents.set_acl(original_acl)
     iv.logout(session_info, user_id)
     iv.close_session(session_info)
-    print( str( tracks_json ) )
-    return(tracks_json)
+    return tracks_json
 
 def transcode_main( file_data, log, data, files=None ):
     ifile = file_data['ifile']
@@ -162,13 +165,13 @@ def transcode_main( file_data, log, data, files=None ):
         return
     else:
         if rotation == '90':
-            print( 'Video is rotated 90 degrees, rotating.' )
+            log.info( 'Video is rotated 90 degrees, rotating.' )
             ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
         elif rotation == '180':
-            print( 'Video is rotated 180 degrees, rotating.' )
+            log.info( 'Video is rotated 180 degrees, rotating.' )
             ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
         elif rotation == '270':
-            print( 'Video is rotated 270 degrees, rotating.' )
+            log.info( 'Video is rotated 270 degrees, rotating.' )
             ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
 
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s %s' % ( ifile, ffopts, ofile )
@@ -190,7 +193,7 @@ def transcode_avi( file_data, log, data=None ):
     ffopts = ''
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s %s' % ( ifile, ffopts, ofile )
 
-    print( cmd )
+    log.info( cmd )
     ( status, output ) = commands.getstatusoutput( cmd )
     log.debug( 'Command output was: ' + output )
     if status != 0 or not os.path.isfile( ofile ):

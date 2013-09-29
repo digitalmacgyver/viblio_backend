@@ -10,6 +10,7 @@ import platform
 import requests
 from sqlalchemy import and_
 import sys
+import threading
 import time
 import uuid
 import web
@@ -49,23 +50,38 @@ class Worker(Background):
 
         super( Worker, self ).__init__( SessionFactory, log, data )
 
-        self.logging_handler = None
+        self.popeye_log = self.log
 
         if 'full_filename' in data:
-            self.log.info( "Initializing uuid." )
+            self.popeye_log.info( "Initializing uuid." )
             self.__initialize_uuid( data['full_filename'] )
-            self.log.info( "Initializing files data structure." )
+            self.popeye_log.info( "Initializing files data structure." )
             self.__initialize_files( data['full_filename'] )
         else:
-            self.log.error( 'No full_filename field found in input data structure.' )
+            self.popeye_log.error( 'No full_filename field found in input data structure.' )
             raise Exception( "Third argument to Worker constructor must have full_filename field" )
+
+        # Also log to a particular logging file.
+        try:
+            self.popeye_log = None
+            file_log = logging.getLogger( 'popeye.' + str( threading.current_thread().ident ) )
+            fh = logging.FileHandler( self.files['media_log']['ofile'] )
+            fh.setFormatter( logging.Formatter( '%(name)s: %(asctime)s %(levelname)-4s %(message)s' ) )
+            fh.setLevel( config.loglevel )
+            self.popeye_logging_handler = fh
+            file_log.addHandler( fh )
+
+            self.popeye_log = file_log
+        except Exception as e:
+            print "ERROR: " + str( e )
+            raise
 
     def __del__( self ):
         '''Destructor.'''
         try:
-            self.log.info( "Cleaning up Popeye in destructor." )
-            if self.logging_handler:
-                self.log.removeHandler( self.logging_handler )
+            self.popeye_log.info( "Cleaning up Popeye in destructor." )
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
         except Exception as e:
             print "ERROR: Exception thrown in Popeye destructor: " + str( e ) 
             raise
@@ -89,15 +105,8 @@ class Worker(Background):
 
         # Convenience variables.
         files = self.files
-        log   = self.log
+        log   = self.popeye_log
         orm   = self.orm
-
-        # Also log to a particular logging file.
-        fh = logging.FileHandler( files['media_log']['ofile'] )
-        fh.setFormatter( logging.Formatter( '%(name)s: %(asctime)s %(levelname)-4s %(message)s' ) )
-        fh.setLevel( config.loglevel )
-        self.logging_handler = fh
-        log.addHandler( fh )
 
         log.info( 'Worker.py, starting to process: ' + self.uuid )
 
@@ -336,10 +345,14 @@ class Worker(Background):
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
             # DEBUG - Uncomment this to enable Intellivision
-            # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
-            # log.info( 'Storing contacts and faces from Intellivision.' )
-            # log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
-            # self.store_faces( media, user )
+            self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
+            if self.data['track_json'] != None:
+                log.info( 'Storing contacts and faces from Intellivision.' )
+                log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
+                self.store_faces( media, user )
+            else:
+                log.info( 'Video processing did not return any data.' )
+
             self.faces_lock.release()
         except Exception as e:
             if hasattr( self, 'faces_lock' ) and self.faces_lock:
@@ -397,7 +410,7 @@ class Worker(Background):
         '''Copy temporary files to error directory.'''
         try:
             files = self.files
-            log = self.log
+            log = self.popeye_log
             self.__safe_log( log.info, 'Error occurred, relocating temp files to error directory...' )
 
             for label in files:
@@ -416,7 +429,7 @@ class Worker(Background):
     def __acquire_lock( self ):
         try:
             # Create the file if it doesn't exist, open it if it does.
-            log = self.log
+            log = self.popeye_log
             self.lockfile_name = self.data['full_filename'] + '.lock'
             log.info( 'Attempting to create lock file: ' + self.lockfile_name )
             self.lockfile = open( self.lockfile_name, 'a' )
@@ -430,7 +443,7 @@ class Worker(Background):
     def __release_lock( self ):
         try:
             # Create the file if it doesn't exist, open it if it does.
-            log = self.log
+            log = self.popeye_log
             if getattr( self, 'lock_acquired' ):
                 log.info( 'Attempting to release lock file: ' + self.lockfile_name )
                 fcntl.flock( self.lockfile, fcntl.LOCK_UN )
@@ -458,11 +471,12 @@ class Worker(Background):
             return
 
         try:
-            log = self.log
+            log = self.popeye_log
             tracks = json.loads( self.data['track_json'] )
             log.info( tracks['tracks']['numberoftracks'] + ' tracks detected.' )
 
             # Build up a dictionary of each person with an array of tracks.
+            log.debug( 'Building up face track dictionary.' )
             face_tracks = {}
             for track in tracks['tracks']['track']:
                 if track['personid'] != None:
@@ -473,6 +487,7 @@ class Worker(Background):
 
             # Sort tracks in order of decreasing goodness.
             for face in face_tracks:
+                log.debug( 'Sorting tracks.' )
                 face_tracks[face].sort( key=lambda f: f['recognitionconfidence']*10000+f['detectionscore'] )
 
             # Build up a dictionary of each person in our database.
@@ -512,8 +527,8 @@ class Worker(Background):
                                                width      = 500,
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
-                                               location   = 'us'
-                                               # , intellivision_file_id = tracks['fileid'] 
+                                               location   = 'us',
+                                               intellivision_file_id = tracks['fileid'] 
                                                )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
@@ -541,26 +556,26 @@ class Worker(Background):
         '''
         try:
             if label in self.files:
-                self.log.info( 'Overwriting existing file label: %s with new values.' % label )
-                self.log.debug( 'Old %s label ifile is: %s' % 
+                self.popeye_log.info( 'Overwriting existing file label: %s with new values.' % label )
+                self.popeye_log.debug( 'Old %s label ifile is: %s' % 
                                ( label, files[label].get( 'ifile', 'No ifile key' ) ) )
-                self.log.debug( 'Old %s label ofile is: %s' % 
+                self.popeye_log.debug( 'Old %s label ofile is: %s' % 
                                ( label, files[label].get( 'ofile', 'No ofile key' ) ) )
-                self.log.debug( 'Old %s label key is: %s' % 
+                self.popeye_log.debug( 'Old %s label key is: %s' % 
                                ( label, files[label].get( 'key', "No key called 'key'" ) ) )
             else:
-                self.log.info( 'Adding new file label: %s with new values.' % label )
+                self.popeye_log.info( 'Adding new file label: %s with new values.' % label )
 
             self.files[label] = { 'ifile' : ifile, 'ofile' : ofile, 'key' : key }
 
-            self.log.debug( 'New %s label ifile is: %s' % ( label, ifile ) )
-            self.log.debug( 'New %s label ofile is: %s' % ( label, ofile ) )
-            self.log.debug( 'New %s label key is: %s' % ( label, key ) )
+            self.popeye_log.debug( 'New %s label ifile is: %s' % ( label, ifile ) )
+            self.popeye_log.debug( 'New %s label ofile is: %s' % ( label, ofile ) )
+            self.popeye_log.debug( 'New %s label key is: %s' % ( label, key ) )
 
             return
 
         except Exception as e:
-            self.__safe_log( self.log.error, "Exception thrown while adding file: %s" % str( e ) )
+            self.__safe_log( self.popeye_log.error, "Exception thrown while adding file: %s" % str( e ) )
             raise
 
     ######################################################################
@@ -568,18 +583,18 @@ class Worker(Background):
     def __valid_file( self, input_filename ):
         '''Private method: Return true if input_filename exists and is
         readable, and false otherwise.'''
-        #self.log.debug( 'Checking whether file %s exists and is readable.' % input_filename )
+        #self.popeye_log.debug( 'Checking whether file %s exists and is readable.' % input_filename )
         if os.path.isfile( input_filename ):
-            #self.log.debug( 'File %s exists.' % input_filename )
+            #self.popeye_log.debug( 'File %s exists.' % input_filename )
 
             if os.access( input_filename, os.R_OK ):
-                self.log.debug( 'File %s exists and is readable.' % input_filename )
+                self.popeye_log.debug( 'File %s exists and is readable.' % input_filename )
                 return True
             else:
-                self.log.warn( 'File %s exists but is not readable.' % input_filename )
+                self.popeye_log.warn( 'File %s exists but is not readable.' % input_filename )
                 return False
         else:
-            self.log.debug( 'File %s does not exist.' % input_filename )
+            self.popeye_log.debug( 'File %s does not exist.' % input_filename )
             return False
 
     ######################################################################
@@ -617,7 +632,7 @@ class Worker(Background):
         '''
         self.__valid_file( input_filename )
         self.uuid = os.path.splitext( os.path.basename( input_filename ) )[0]
-        self.log.info( "Set uuid to %s" % self.uuid )
+        self.popeye_log.info( "Set uuid to %s" % self.uuid )
 
     def __initialize_metadata( self, ifile ):
         '''Load the contents of the metadata input file into the
@@ -717,7 +732,7 @@ class Worker(Background):
                 key   = None )
 
         except Exception as e:
-            self.__safe_log( self.log.error, 'Error while initializing files: ' + str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Error while initializing files: ' + str( e ) )
             self.handle_errors()
             return 
 
