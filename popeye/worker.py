@@ -126,6 +126,8 @@ class Worker(Background):
         log.info( 'Initializing info field from JSON file: ' + files['info']['ifile'] )
         self.__initialize_info( files['info']['ifile'] )
         log.info( 'info field is: ' + json.dumps( self.data['info'] ) )
+        if 'finalLength' in self.data['info'] and self.data['info']:
+            log.debug( 'JSON finalLength is: ' + str( self.data['info']['finalLength'] ) )
 
         # Load data from _metadata.json into self.data['metadata']
         log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
@@ -169,8 +171,10 @@ class Worker(Background):
         try: 
             # Transcode into mp4 and rotate as needed.
             log.info( 'Transcode %s to %s' % ( files['main']['ifile'], files['main']['ofile'] ) )
+            log.info( 'Before transcoding file %s is %s bytes.' % ( files['main']['ifile'], str( os.path.getsize( files['main']['ifile'] ) ) ) )
             video_processing.transcode_main( files['main'], log, self.data )
             log.info( 'Transcoded mime type is ' + self.data['mimetype'] )
+            log.info( 'After transcoding file %s is %s bytes.' % ( files['main']['ofile'], str( os.path.getsize( files['main']['ofile'] ) ) ) )
 
             # Move the atom to the front of the file.
             log.info( 'Move atom for: ' + files['main']['ofile'] )
@@ -589,6 +593,7 @@ class Worker(Background):
 
             if os.access( input_filename, os.R_OK ):
                 self.popeye_log.debug( 'File %s exists and is readable.' % input_filename )
+                self.popeye_log.debug( 'File %s is %s bytes.' % ( input_filename, str( os.path.getsize( input_filename ) ) ) )
                 return True
             else:
                 self.popeye_log.warn( 'File %s exists but is not readable.' % input_filename )
