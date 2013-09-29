@@ -43,12 +43,12 @@ def get_faces(file_data, log, data):
     session_info = iv.open_session()
     user_id = iv.login(session_info, uid)
     # Send the video for processing by IntelliVision
-    response = iv.analyze(session_info, user_id, media_url)
+    response = iv.analyze(session_info, user_id, uid, media_url)
     session_info = {'key': response['key'], 
                     'secret': response['secret']}
     user_id = response['user_id']
     file_id = response['file_id']
-    if (response['wait_time']):
+    if response.get( 'wait_time' ):
         wait_time = response['wait_time']
         time.sleep(wait_time)
     else:

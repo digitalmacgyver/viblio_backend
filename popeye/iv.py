@@ -130,7 +130,7 @@ def logout(session_info, user_id):
             print "Error: ", r.content
 
 ## Analyze face API
-def analyze(session_info, user_id, media_url):
+def analyze(session_info, user_id, uid, media_url):
     url = iv_config.iv_host + 'user/' + user_id + '/analyzeFaces'
     analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
     headers = generate_headers(session_info)
@@ -167,10 +167,9 @@ def analyze(session_info, user_id, media_url):
                         print 'Unknown success case'
                         print str(soup)
                 elif status == 'Failure':
-    #               print 'Got Failure line 175'
                     if(soup.result.description):
                         description = soup.result.description.string
-    #                   print 'description is: ' + description
+                        print 'description is: ' + description
                         if description == 'FR could not process specified file':
                             print 'TRYING AGAIN due to FR'
                         elif description == 'Request failed':
