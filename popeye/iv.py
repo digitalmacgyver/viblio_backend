@@ -158,6 +158,7 @@ def analyze(session_info, user_id, uid, media_url):
                                  'user_id': user_id})
                     elif(soup.result.description):
                         if soup.result.description.string == 'File downloading started':
+                            print 'Sleeping for: 60 seconds'
                             time.sleep(60)
                             r = requests.post(url, data=analyze_xml, headers=headers)
                             if r.status_code == requests.codes.ok:
@@ -172,12 +173,14 @@ def analyze(session_info, user_id, uid, media_url):
                         print 'description is: ' + description
                         if description == 'FR could not process specified file':
                             print 'TRYING AGAIN due to FR'
+                        elif description == 'Failed to fetch data':
+                            print 'TRYING AGAIN as Failed to fetch data'
+                        elif description == 'Previous file is in process':
+                            print 'TRYING AGAIN as previous file is in progress'
                         elif description == 'Request failed':
                             print 'START OVER close the session and restart'
                             session_info = open_session()
                             user_id = login(session_info, uid)
-                        elif description == 'Previous file is in process':
-                            print 'TRYING AGAIN as previous file is in progress'
                         elif description == 'Downloading failed':
                             print 'CANNOT DOWNLOAD, EXIT'
                             return ('__ANALYSIS__FAILED__')
