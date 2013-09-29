@@ -66,9 +66,9 @@ def get_faces(file_data, log, data):
     for i,track in enumerate(tracks.findAll('track')):
         track_id = track.trackid.string
         formatted_track_id = '%02d' %int(track_id)
-        person_id = int(track.personid.string)
+        person_id = track.personid.string
         detection_score = float(track.detectionscore.string)
-        if ( person_id < 0 ):
+        if ( person_id == '-1' ):
             if ( detection_score > minimum_detection_score ):
                 new_person_id = iv.add_person(session_info, user_id)
                 formatted_new_person_id = '%02d' %int(new_person_id)
@@ -88,7 +88,7 @@ def get_faces(file_data, log, data):
                     print 'Upload to S3 failed'
                 try:
                     iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
-                    print 'training: ' + str(new_person_id)
+                    print 'training: ' + new_person_id
                 except:
                     print 'Failed to train unknown person'
                 print "downloading with best face frame"
@@ -107,18 +107,37 @@ def get_faces(file_data, log, data):
                     print 'Upload to S3 failed'
                 # update bestfaceframe
                 track.bestfaceframe.string = face_key
+                track.personid.string = new_person_id
             else:
+                # Unknown person with low detection score
                 track.personid.string = ''
                 track.bestfaceframe.string = ''    
                 number_of_tracks -= 1
         else:
+            # Known person
             recognition_score = float(track.recognitionconfidence.string)
             if ( recognition_score > minimum_recognition_score ):
+                # Train known person only if recognition score was high enough
                 try:
-                    print 'training: ' + str(person_id)
+                    print 'training: ' + person_id
                     iv.train_person(session_info, user_id, str(person_id), track_id, file_id, media_url)
                 except:
                     print 'Failed to train known person'
+            formatted_person_id = '%02d' %int(person_id)            
+            url = track.bestfaceframe.string
+            r = requests.get(url)
+            filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
+            with open(filename, "wb") as f:
+                f.write(r.content)
+            face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
+            print "Uploading face to S3"
+            try:
+                bucket_contents.key = face_key
+                bucket_contents.set_contents_from_filename(filename)
+            except:
+                print 'Upload to S3 failed'
+            # update bestfaceframe
+            track.bestfaceframe.string = face_key
     tracks.numberoftracks.string = str(number_of_tracks)
     tracks_string = str(tracks)
     tracks_dict = xmltodict.parse(tracks_string)
