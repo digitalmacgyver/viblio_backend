@@ -44,9 +44,13 @@ def get_faces(file_data, log, data):
     user_id = iv.login(session_info, uid)
     # Send the video for processing by IntelliVision
     response = iv.analyze(session_info, user_id, media_url)
+    session_info = {'key': response['key'], 
+                    'secret': response['secret']}
+    user_id = response['user_id']
     file_id = response['file_id']
     wait_time = response['wait_time']
-    time.sleep(wait_time)
+    if (wait_time):
+        time.sleep(wait_time)
     # Get Face Recognition results from IntelliVision
     tracks = iv.retrieve(session_info, user_id, file_id, media_uuid)
     # Add FileId to the Tracks data structure
@@ -106,7 +110,7 @@ def get_faces(file_data, log, data):
     bucket_contents.set_acl(original_acl)
     iv.logout(session_info, user_id)
     iv.close_session(session_info)
-    log.debug( str( tracks_json ) )
+    print( str( tracks_json ) )
     return(tracks_json)
 
 def transcode_main( file_data, log, data, files=None ):

@@ -24,7 +24,8 @@ def open_session():
         try:
             session_key = soup.result.sessionkey.string
             session_secret = soup.result.sessionsecret.string
-            session_info = {'key': session_key, 'secret': session_secret}
+            session_info = {'key': session_key, 
+                            'secret': session_secret}
             return(session_info)
         except:
             print('Failed to extract session info')
@@ -133,7 +134,7 @@ def analyze(session_info, user_id, media_url):
     url = iv_config.iv_host + 'user/' + user_id + '/analyzeFaces'
     analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
     headers = generate_headers(session_info)
-    for trial in range (1, 10):
+    for trial in range (1, 20):
         print "Trial number: " + str(trial)
         r = requests.post(url, data=analyze_xml, headers=headers)
         if r.status_code == requests.codes.ok:
@@ -146,8 +147,15 @@ def analyze(session_info, user_id, media_url):
                         file_id = soup.result.fileid.string
                         if(soup.result.expectedwaitseconds):
                             wait_time = int(soup.result.expectedwaitseconds.text)
-                            return ({'file_id': file_id, 'wait_time': wait_time})
-                        return ({'file_id': file_id})
+                            return ({'file_id': file_id, 
+                                     'wait_time': wait_time, 
+                                     'key': session_info['key'], 
+                                     'secret': session_info['secret'],
+                                     'user_id': user_id})
+                        return ({'file_id': file_id,
+                                 'key': session_info['key'], 
+                                 'secret': session_info['secret'],
+                                 'user_id': user_id})
                     elif(soup.result.description):
                         if soup.result.description.string == 'File downloading started':
                             time.sleep(60)
@@ -167,7 +175,8 @@ def analyze(session_info, user_id, media_url):
                             print 'TRYING AGAIN due to FR'
                         elif description == 'Request failed':
                             print 'START OVER close the session and restart'
-                            return ('__ANALYSIS__FAILED__')
+                            session_info = open_session()
+                            user_id = login(session_info, uid)
                         elif description == 'Previous file is in process':
                             print 'TRYING AGAIN as previous file is in progress'
                         elif description == 'Downloading failed':
@@ -187,7 +196,7 @@ def analyze(session_info, user_id, media_url):
                     return ('__ANALYSIS__FAILED__')
             else:
                 print ' gk gk gk step 4.1  --> else'
-
+        time.sleep(15)
 ## Retrieve Faces API
 def retrieve(session_info, user_id, file_id, uuid):
     url = iv_config.iv_host + 'user/' + user_id + '/retrieveFaces?fileID=' + file_id
