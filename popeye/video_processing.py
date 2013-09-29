@@ -89,8 +89,21 @@ def get_faces(file_data, log, data):
                     print 'training: ' + str(new_person_id)
                 except:
                     print 'Failed to train unknown person'
-                # update person_id in tracks to the new person
-                track.personid.string = new_person_id
+                print "downloading with best face frame"
+                formatted_person_id = '%02d' %int(person_id)            
+                url = track.bestfaceframe.string
+                r = requests.get(url)
+                filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
+                with open(filename, "wb") as f:
+                    f.write(r.content)
+                face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
+                print "Uploading face to S3"
+                try:
+                    bucket_contents.key = face_key
+                    bucket_contents.set_contents_from_filename(filename)
+                except:
+                    print 'Upload to S3 failed'
+                # update bestfaceframe
                 track.bestfaceframe.string = face_key
             else:
                 track.personid.string = ''
@@ -100,8 +113,8 @@ def get_faces(file_data, log, data):
             recognition_score = float(track.recognitionconfidence.string)
             if ( recognition_score > minimum_recognition_score ):
                 try:
-                    iv.train_person(session_info, user_id, person_id, track_id, file_id, media_url)
-                    print 'training: ' + str(new_person_id)
+                    print 'training: ' + str(person_id)
+                    iv.train_person(session_info, user_id, str(person_id), track_id, file_id, media_url)
                 except:
                     print 'Failed to train known person'
     tracks.numberoftracks.string = str(number_of_tracks)
