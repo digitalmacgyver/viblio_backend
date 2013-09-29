@@ -55,6 +55,8 @@ def get_faces(file_data, log, data):
         time.sleep(120)
     # Get Face Recognition results from IntelliVision
     tracks = iv.retrieve(session_info, user_id, file_id, media_uuid)
+    if tracks == 'No Tracks':
+        return {"tracks": {"file_id": file_id, "numberoftracks": "0"}}
     # Add FileId to the Tracks data structure
     tag = Tag (name="file_id")
     tag.string = file_id
