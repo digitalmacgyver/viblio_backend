@@ -145,17 +145,17 @@ class Worker(Background):
             self.__release_lock()
             raise
 
-#         # Give the input file an extension.
-#         log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
-#         try:
-#             new_filename = helpers.rename_upload_with_extension( files['main'], log, self.data )
-#             log.info( 'Renamed input file is: ' + new_filename )
-#             files['main']['ifile'] = new_filename
-#         except Exception as e:
-#             self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
-#             self.handle_errors()
-#             self.__release_lock()
-#             raise
+        # Give the input file an extension.
+        #log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
+        #try:
+        #    new_filename = helpers.rename_upload_with_extension( files['main'], log, self.data )
+        #    log.info( 'Renamed input file is: ' + new_filename )
+        #    files['main']['ifile'] = new_filename
+        #except Exception as e:
+        #    self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
+        #    self.handle_errors()
+        #    self.__release_lock()
+        #    raise
 
         # Extract the mimetype and store it in self.data['mimetype']
         log.info( 'Getting mime type of input video.' )
@@ -226,7 +226,7 @@ class Worker(Background):
         try:
             # Media row
             log.info( 'Generating row for media file' )
-            client_filename = os.path.basename( files['main']['ifile'] )
+            client_filename = os.path.basename( files['main']['ofile'] )
             if self.data['metadata'] and self.data['metadata']['file'] and self.data['metadata']['file']['Path']:
                 client_filename = self.data['metadata']['file']['Path']
 
@@ -349,13 +349,13 @@ class Worker(Background):
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
             # DEBUG - Uncomment this to enable Intellivision
-            self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
-            if self.data['track_json'] != None:
-                log.info( 'Storing contacts and faces from Intellivision.' )
-                log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
-                self.store_faces( media, user )
-            else:
-                log.info( 'Video processing did not return any data.' )
+            # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
+            # if self.data['track_json'] != None:
+            #     log.info( 'Storing contacts and faces from Intellivision.' )
+            #     log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
+            #     self.store_faces( media, user )
+            # else:
+            #     log.info( 'Video processing did not return any data.' )
 
             self.faces_lock.release()
         except Exception as e:
@@ -676,8 +676,8 @@ class Worker(Background):
             # The 'main' media file, an mp4.
             self.add_file( 
                 label = 'main',
-                ifile = input_filename, 
-                ofile = abs_basename + '.mp4', 
+                ifile = abs_basename + '_input', 
+                ofile = abs_basename + '_output.mp4', 
                 key   = self.uuid + '/' + self.uuid + '.mp4' )
             
             # The 'thumbnail' media file, a jpg.
