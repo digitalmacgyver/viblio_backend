@@ -125,7 +125,6 @@
 	  if (status.error != null) {
 	      return httpStatus(res, status.error[0], status.error[1]);
 	  }
-	  winston.info( "Our Location header is: " + req.headers.host );
 	  res.setHeader("Location", "http://" + req.headers.host + "/files/" + fileId);
 	  return httpStatus(res, 201, "Created");
       });
@@ -291,7 +290,6 @@
     }
     parsed = url.parse(req.url, true);
     urlPath = parsed.pathname;
-    winston.info("URLPATH: " + urlPath + ", METHOD: " + req.method );
 
       var pmsg = "\n" +
 	  "pcol -----------------------------------------------------------------------------------------------\n" +
