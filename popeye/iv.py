@@ -143,7 +143,15 @@ def analyze(session_info, user_id, uid, media_url):
             if (soup.result.status):
                 status = soup.result.status.string
                 if status == 'Success':
-                    if (soup.result.fileid):
+                    if(soup.result.description):
+                        if soup.result.description.string == 'File downloading started':
+                            print 'Sleeping for: 60 seconds'
+                            time.sleep(60)
+                            r = requests.post(url, data=analyze_xml, headers=headers)
+                            if r.status_code == requests.codes.ok:
+                                soup = BeautifulSoup(r.content, 'lxml')
+                                print str(soup)
+                    elif (soup.result.fileid):
                         file_id = soup.result.fileid.string
                         if(soup.result.expectedwaitseconds):
                             wait_time = int(soup.result.expectedwaitseconds.text)
@@ -156,14 +164,6 @@ def analyze(session_info, user_id, uid, media_url):
                                  'key': session_info['key'], 
                                  'secret': session_info['secret'],
                                  'user_id': user_id})
-                        elif(soup.result.description):
-                            if soup.result.description.string == 'File downloading started':
-                                print 'Sleeping for: 60 seconds'
-                                time.sleep(60)
-                                r = requests.post(url, data=analyze_xml, headers=headers)
-                                if r.status_code == requests.codes.ok:
-                                    soup = BeautifulSoup(r.content, 'lxml')
-                                    print str(soup)
                     else:
                         print 'Unknown success case'
                         print str(soup)
