@@ -530,7 +530,7 @@ class Worker(Background):
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
                                                location   = 'us',
-                                               intellivision_file_id = tracks['file_id'] )
+                                               intellivision_file_id = tracks['tracks']['file_id'] )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
                     media_row.assets.append( track_asset )
