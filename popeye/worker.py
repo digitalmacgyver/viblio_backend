@@ -146,16 +146,16 @@ class Worker(Background):
             raise
 
         # Give the input file an extension.
-        #log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
-        #try:
-        #    new_filename = helpers.rename_upload_with_extension( files['main'], log, self.data )
-        #    log.info( 'Renamed input file is: ' + new_filename )
-        #    files['main']['ifile'] = new_filename
-        #except Exception as e:
-        #    self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
-        #    self.handle_errors()
-        #    self.__release_lock()
-        #    raise
+        log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
+        try:
+            new_filename = helpers.rename_upload_with_extension( files['main'], log, self.data )
+            log.info( 'Renamed input file is: ' + new_filename )
+            files['main']['ifile'] = new_filename
+        except Exception as e:
+            self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
+            self.handle_errors()
+            self.__release_lock()
+            raise
 
         # Extract the mimetype and store it in self.data['mimetype']
         log.info( 'Getting mime type of input video.' )
@@ -189,7 +189,7 @@ class Worker(Background):
             video_processing.generate_poster( files['poster'], log, self.data )
             
             # Create a thumbnail.
-            log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ifile'] ) )
+            log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ofile'] ) )
             video_processing.generate_thumbnail( files['thumbnail'], log, self.data )
 
             # Generate a single face.
@@ -331,14 +331,10 @@ class Worker(Background):
 
         # Serialize any operations by user and detect faces.
         try:
-            # DEBUG - Today we just run everything in parallel, in the future we'll serialize.
             # user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
 
-            # DEBUG - Try to put a lock row in the database manually,
-            # and then re-run this to see what happens - I want to see
-            # a heartbeat.
             self.faces_lock = Serialize.Serialize( app         = 'popeye',
                                                    object_name = self.data['info']['uid'], 
                                                    owner_id    = self.uuid,
