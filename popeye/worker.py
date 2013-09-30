@@ -348,12 +348,13 @@ class Worker(Background):
             # purposes.
             if True:
                 self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
-                if self.data['track_json'] != None:
+
+                if self.data['track_json'] == None or 'tracks' not in self.data['track_json'] or 'numberoftracks' not in self.data['track_json']['tracks'] or int( self.data['track_json']['tracks']['numberoftracks'] ) == 0:
+                    log.info( 'Video processing did not return any tracks.' )
+                else:
                     log.info( 'Storing contacts and faces from Intellivision.' )
                     log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
                     self.store_faces( media, user )
-                else:
-                    log.info( 'Video processing did not return any data.' )
 
             self.faces_lock.release()
         except Exception as e:
@@ -476,6 +477,10 @@ class Worker(Background):
             log = self.popeye_log
             tracks = json.loads( self.data['track_json'] )
             log.info( tracks['tracks']['numberoftracks'] + ' tracks detected.' )
+
+            if int( tracks['tracks']['numberoftracks'] ) == 0:
+                log.info( "No face tracks provided." )
+                return
 
             # Build up a dictionary of each person with an array of tracks.
             log.debug( 'Building up face track dictionary.' )
