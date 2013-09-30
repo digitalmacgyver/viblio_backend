@@ -676,28 +676,28 @@ class Worker(Background):
             # The 'main' media file, an mp4.
             self.add_file( 
                 label = 'main',
-                ifile = abs_basename + '_input', 
+                ifile = input_filename, 
                 ofile = abs_basename + '_output.mp4', 
                 key   = self.uuid + '/' + self.uuid + '.mp4' )
             
             # The 'thumbnail' media file, a jpg.
             self.add_file( 
                 label = 'thumbnail',
-                ifile = abs_basename+'.mp4', 
+                ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'_thumbnail.jpg', 
                 key   = self.uuid + '/' + self.uuid + '_thumbnail.jpg' )
             
             # The 'poster' media file, a jpg.
             self.add_file( 
                 label = 'poster',
-                ifile = abs_basename+'.mp4', 
+                ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'_poster.jpg', 
                 key   = self.uuid + '/' + self.uuid + '_poster.jpg' )
             
             # The 'face' media file, json.
             self.add_file( 
                 label = 'face',
-                ifile = abs_basename+'.mp4', 
+                ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'_face0.jpg', 
                 key   = self.uuid + '/' + self.uuid + '_face0.jpg' )
             
@@ -725,7 +725,7 @@ class Worker(Background):
             # The 'intellivision' media file, by convention an AVI.
             self.add_file( 
                 label = 'intellivision',
-                ifile = abs_basename+'.mp4', 
+                ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'.avi', 
                 key   = self.uuid + '/' + self.uuid + '.avi' )
 
