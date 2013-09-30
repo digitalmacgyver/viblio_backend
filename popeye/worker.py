@@ -358,9 +358,14 @@ class Worker(Background):
 
             self.faces_lock.release()
         except Exception as e:
-            if hasattr( self, 'faces_lock' ) and self.faces_lock:
-                self.faces_lock.release()
-            log.error( "Failed to process faces, errors: " + str( e ) )
+            try:
+                if hasattr( self, 'faces_lock' ) and self.faces_lock:
+                    self.faces_lock.release()
+                log.error( "Failed to process faces, errors: " + str( e ) )
+            except:
+                pass
+            self.handle_errors()
+            self.__release_lock()
             raise
 
         #######################################################################
