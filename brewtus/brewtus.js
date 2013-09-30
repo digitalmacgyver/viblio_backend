@@ -143,7 +143,7 @@
 	return httpStatus(res, status.error[0], status.error[1]);
     }
     info = status.info;
-      winston.debug( "HEAD: info: " + util.inspect(info) );
+      // winston.debug( "HEAD: info: " + util.inspect(info) );
     res.setHeader("Offset", info.offset);
     res.setHeader("Connection", "close");
     return httpStatus(res, 200, "Ok");
@@ -199,7 +199,6 @@
     info.offset = offsetIn;
     info.state = "patched";
     info.patchedOn = Date.now();
-      winston.debug( "Setting bytes received to zero for new request" );
     info.bytesReceived = 0;
       // This req.pipe(ws) was finishing before the req.on(end was getting
       // the last bytes.  So do the write in req.on(end to keep things in
@@ -207,10 +206,8 @@
       //
       req.pipe(ws);
       req.on("data", function(buffer) {
-	  winston.debug("old Offset " + info.offset + " of " + info.finalLength );
 	  info.bytesReceived += buffer.length;
 	  info.offset += buffer.length;
-	  winston.debug("new Offset " + info.offset + " of " + info.finalLength);
 	  if (info.offset > info.finalLength) {
               return httpStatus(res, 500, "Exceeded Final-Length");
 	  }
@@ -224,12 +221,11 @@
 	  winston.debug( "Request end: bytes received=" +  info.offset );
 	  if (!res.headersSent) {
               // httpStatus(res, 200, "Ok", JSON.stringify(info));
-	      winston.debug( "Sending HEADERs..." );
               httpStatus(res, 200, "Ok");
 	  }
 	  return u.save( function() {
 	      if ( config.popeye != "none" ) {
-		  winston.debug( "Sending popeye request to: " + config.popeye );
+		  winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
 		  request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
 		      if ( res.statusCode != 200 ) {
 			  winston.error( "Popeye error: " + res.statusCode );
@@ -256,11 +252,9 @@
 	return ws.end();
     });
     ws.on("close", function() {
-	winston.info("closed the file stream " + fileId);
-	return winston.debug("ws.on(close)");
+	// winston.info("closed the file stream " + fileId);
     });
     return ws.on("error", function(e) {
-	winston.error("closed the file stream " + fileId + " " + (util.inspect(e)));
 	return httpStatus(res, 500, "File Error");
     });
   };
@@ -298,6 +292,16 @@
     parsed = url.parse(req.url, true);
     urlPath = parsed.pathname;
     winston.info("URLPATH: " + urlPath + ", METHOD: " + req.method );
+
+      var pmsg = "\n" +
+	  "pcol -----------------------------------------------------------------------------------------------\n" +
+	  "pcol " + req.method + " " + urlPath + "\n";
+      for( var key in req.headers ) {
+	  pmsg = pmsg + "pcol   " + key + ": " + req.headers[key] + "\n"
+      }
+      pmsg = pmsg + "pcol -----------------------------------------------------------------------------------------------\n";
+      winston.info( pmsg );
+
     if (urlPath === "/") {
       if (req.method !== "GET") {
         return httpStatus(res, 405, "Not Allowed");
@@ -311,7 +315,7 @@
     for (_i = 0, _len = PATTERNS.length; _i < _len; _i++) {
       pattern = PATTERNS[_i];
       matches = urlPath.match(pattern.match);
-      winston.debug("" + (util.inspect(matches)));
+      // winston.debug("" + (util.inspect(matches)));
       if (matches != null) {
         return pattern[req.method](req, res, query, matches);
       }

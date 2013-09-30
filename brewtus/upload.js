@@ -64,7 +64,7 @@
     };
 
     Upload.prototype.save = function( callback ) {
-	winston.debug( "In save, br=" + this.info.offset + ", fl=" + this.info.finalLength );
+	// winston.debug( "In save, br=" + this.info.offset + ", fl=" + this.info.finalLength );
 	try {
             fs.writeFileSync(this.infoPath, JSON.stringify(this.info));
 	} catch (error) {
@@ -87,7 +87,6 @@
 		bytesReceived: this.info.bytesReceived
 	    }
 	};
-	winston.debug( "Returning (from save): " + util.inspect( Info ) );
 	return Info
     };
 
