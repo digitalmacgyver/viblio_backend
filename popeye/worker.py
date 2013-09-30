@@ -347,13 +347,15 @@ class Worker(Background):
             # DEBUG - easily turn this on and off for testing
             # purposes.
             if True:
+                log.info( 'Making call to get faces' )
                 self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
+                log.info( 'Get faces returned.' )
 
-                if self.data['track_json'] == None or 'tracks' not in self.data['track_json'] or 'numberoftracks' not in self.data['track_json']['tracks'] or int( self.data['track_json']['tracks']['numberoftracks'] ) == 0:
+                if self.data['track_json'] == None:
                     log.info( 'Video processing did not return any tracks.' )
                 else:
                     log.info( 'Storing contacts and faces from Intellivision.' )
-                    log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
+                    log.debug( "JSON is: " + self.data['track_json'] )
                     self.store_faces( media, user )
 
             self.faces_lock.release()
@@ -474,13 +476,21 @@ class Worker(Background):
     ######################################################################
     # Helper function to process Intellivision faces and store them
     def store_faces( self, media_row, owning_user ):
+        log = self.popeye_log
+
         if 'track_json' not in self.data or not self.data['track_json']:
             log.warning( 'No tracks / faces detected.' )
             return
 
+        log.info( 'Beginning to process store_faces' )
+
         try:
-            log = self.popeye_log
             tracks = json.loads( self.data['track_json'] )
+
+            if 'tracks' not in tracks or 'numberoftracks' not in tracks['tracks'] or int( tracks['tracks']['numberoftracks'] ) == 0:
+                log.warning( 'No tracks / faces detected.' )
+                return
+
             log.info( tracks['tracks']['numberoftracks'] + ' tracks detected.' )
 
             if int( tracks['tracks']['numberoftracks'] ) == 0:
