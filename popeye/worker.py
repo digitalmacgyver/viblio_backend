@@ -195,7 +195,7 @@ class Worker(Background):
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            video_processing.generate_face( files['face'], log, self.data, skip=False )
+            video_processing.generate_face( files['face'], log, self.data, skip=True )
 
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
@@ -344,14 +344,16 @@ class Worker(Background):
 
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
-            # DEBUG - Uncomment this to enable Intellivision
-            # self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
-            # if self.data['track_json'] != None:
-            #     log.info( 'Storing contacts and faces from Intellivision.' )
-            #     log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
-            #     self.store_faces( media, user )
-            # else:
-            #     log.info( 'Video processing did not return any data.' )
+            # DEBUG - easily turn this on and off for testing
+            # purposes.
+            if True:
+                self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
+                if self.data['track_json'] != None:
+                    log.info( 'Storing contacts and faces from Intellivision.' )
+                    log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
+                    self.store_faces( media, user )
+                else:
+                    log.info( 'Video processing did not return any data.' )
 
             self.faces_lock.release()
         except Exception as e:
@@ -528,8 +530,7 @@ class Worker(Background):
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
                                                location   = 'us',
-                                               intellivision_file_id = tracks['fileid'] 
-                                               )
+                                               intellivision_file_id = tracks['file_id'] )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
                     media_row.assets.append( track_asset )
