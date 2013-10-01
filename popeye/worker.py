@@ -496,6 +496,14 @@ class Worker(Background):
             if int( tracks['tracks']['numberoftracks'] ) == 0:
                 log.info( "No face tracks provided." )
                 return
+            elif int( tracks['tracks']['numberoftracks'] ) == 1:
+                log.info( "Handling special case of 1 track." )
+                single_track = tracks['tracks']['track']
+                if not isinstance( single_track, list ):
+                    tracks['tracks']['track'] = [single_track]
+                    log.info( "Reformatted data structure for 1 track." )
+                else:
+                    log.info( 'Tracks was a list despite number of tracks being 1, leaving alone.' )
 
             # Build up a dictionary of each person with an array of tracks.
             log.debug( 'Building up face track dictionary.' )
