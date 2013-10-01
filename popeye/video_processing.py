@@ -146,7 +146,12 @@ def transcode_main( file_data, log, data, files=None ):
 
     ffopts = ' -c:a libfdk_aac '
     if rotation == '0' and mimetype == 'video/mp4':
-        log.debug( 'Video is non-rotated mp4, leaving it alone.' )
+        log.debug( 'Video is non-rotated mp4, renaming it.' )
+        try:
+            os.rename( ifile, ofile )
+        except Exception as e:
+            log.error( "Failed to rename %s to %s" % ( src, tar ) )
+            raise
         data['mimetype'] = 'video/mp4'
         return
     else:

@@ -177,8 +177,8 @@ class Serialize( object ):
                                % ( self.app, self.object_name ) )
             
                 result = conn.execute( select( [serialize] )
-                                       .where( serialize.c.app == self.app 
-                                               and serialize.c.object_name == self.object_name ).execution_options( autocommit=True ) )
+                                       .where( and_( serialize.c.app == self.app,  
+                                               serialize.c.object_name == self.object_name ) ).execution_options( autocommit=True ) )
 
                 lock = result.fetchone()
                 result.close()
@@ -202,9 +202,9 @@ class Serialize( object ):
                                    % ( self.app, self.object_name ) )
                     update_result = conn.execute( serialize
                                                   .update()
-                                                  .where( serialize.c.app == self.app 
-                                                          and serialize.c.object_name == self.object_name 
-                                                          and serialize.c.owner_id == None )
+                                                  .where( and_( serialize.c.app == self.app, 
+                                                          serialize.c.object_name == self.object_name,
+                                                          serialize.c.owner_id == None ) )
                                                   .values( owner_id = self.owner_id, 
                                                            expirey_date = datetime.datetime.now() + timedelta( seconds=expirey ), 
                                                            server = platform.node() ) )
@@ -218,9 +218,9 @@ class Serialize( object ):
                     self.log.info( "We appear to own the lock, validating ownership of lock." )
                     update_result = conn.execute( serialize
                                                   .update()
-                                                  .where( serialize.c.app == self.app 
-                                                          and serialize.c.object_name == self.object_name 
-                                                          and serialize.c.owner_id == self.owner_id )
+                                                  .where( and_( serialize.c.app == self.app, 
+                                                          serialize.c.object_name == self.object_name, 
+                                                          serialize.c.owner_id == self.owner_id ) )
                                                   .values( owner_id = self.owner_id, 
                                                            expirey_date = datetime.datetime.now() + timedelta( seconds=expirey ), 
                                                            server = platform.node() ) )
@@ -254,10 +254,10 @@ class Serialize( object ):
                                               % ( lock['owner_id'], lock['expirey_date'], self.app, self.object_name, str( lock['server'] ) ) )
                             conn.execute( serialize
                                           .update()
-                                          .where( serialize.c.app == self.app 
-                                                  and serialize.c.object_name == self.object_name 
-                                                  and serialize.c.owner_id == lock['owner_id']
-                                                  and serialize.d.expirey_date == lock['expirey_date'] )
+                                          .where( and_( serialize.c.app == self.app, 
+                                                  serialize.c.object_name == self.object_name,
+                                                  serialize.c.owner_id == lock['owner_id'], 
+                                                  serialize.c.expirey_date == lock['expirey_date'] ) )
                                           .values( owner_id = self.owner_id, 
                                                    expirey_date = datetime.datetime.now() + timedelta( seconds=expirey ), 
                                                    server = platform.node() ) )
@@ -313,9 +313,9 @@ class Serialize( object ):
             self.log.info( "Trying to release lock %s, %s on behalf of %s." 
                       % ( self.app, self.object_name, self.owner_id ) )
             result = self.conn.execute( select( [serialize] )
-                                        .where( serialize.c.app == self.app 
-                                                and serialize.c.object_name == self.object_name 
-                                                and serialize.c.owner_id == self.owner_id ).execution_options( autocommit=True ) )
+                                        .where( and_( serialize.c.app == self.app,
+                                                serialize.c.object_name == self.object_name,
+                                                serialize.c.owner_id == self.owner_id ) ).execution_options( autocommit=True ) )
             
             lock = result.fetchone()
             result.close()
@@ -333,9 +333,9 @@ class Serialize( object ):
             else:
                 self.conn.execute( serialize
                                    .update()
-                                   .where( serialize.c.app == self.app 
-                                           and serialize.c.object_name == self.object_name 
-                                           and serialize.c.owner_id == self.owner_id )
+                                   .where( and_( serialize.c.app == self.app,
+                                                 serialize.c.object_name == self.object_name,
+                                                 serialize.c.owner_id == self.owner_id ) )
                                    .values( owner_id = None ) ) 
                 self.log.info( "Lock %s, %s released by %s."
                                % ( self.app, self.object_name, self.owner_id ) )
@@ -424,7 +424,7 @@ def _do_heartbeat( queue, config, app, object_name, owner_id, heartbeat ):
             return True
         else:
             log.info( "Heartbeating %s, %s, %s" % ( app, object_name, owner_id ) )
-            conn.execute( serialize.update().where( serialize.c.app == app and serialize.c.object_name == object_name and serialize.c.owner_id == owner_id ).values( expirey_date = datetime.datetime.now() + timedelta( seconds=heartbeat*3 ), server = platform.node() ) )
+            conn.execute( serialize.update().where( and_( serialize.c.app == app, serialize.c.object_name == object_name, serialize.c.owner_id == owner_id ) ).values( expirey_date = datetime.datetime.now() + timedelta( seconds=heartbeat*3 ), server = platform.node() ) )
             time.sleep( heartbeat )
 
 

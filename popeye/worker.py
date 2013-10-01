@@ -145,17 +145,17 @@ class Worker(Background):
             self.__release_lock()
             raise
 
-#         # Give the input file an extension.
-#         log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
-#         try:
-#             new_filename = helpers.rename_upload_with_extension( files['main'], log, self.data )
-#             log.info( 'Renamed input file is: ' + new_filename )
-#             files['main']['ifile'] = new_filename
-#         except Exception as e:
-#             self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
-#             self.handle_errors()
-#             self.__release_lock()
-#             raise
+        # Give the input file an extension.
+        log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
+        try:
+            new_filename = helpers.rename_upload_with_extension( files['main'], log, self.data )
+            log.info( 'Renamed input file is: ' + new_filename )
+            files['main']['ifile'] = new_filename
+        except Exception as e:
+            self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
+            self.handle_errors()
+            self.__release_lock()
+            raise
 
         # Extract the mimetype and store it in self.data['mimetype']
         log.info( 'Getting mime type of input video.' )
@@ -189,13 +189,13 @@ class Worker(Background):
             video_processing.generate_poster( files['poster'], log, self.data )
             
             # Create a thumbnail.
-            log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ifile'] ) )
+            log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ofile'] ) )
             video_processing.generate_thumbnail( files['thumbnail'], log, self.data )
 
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
             # If skip = True we simply skip face generation.
-            video_processing.generate_face( files['face'], log, self.data, skip=False )
+            video_processing.generate_face( files['face'], log, self.data, skip=True )
 
         except Exception as e:
             self.__safe_log( log.error, str( e ) )
@@ -226,7 +226,7 @@ class Worker(Background):
         try:
             # Media row
             log.info( 'Generating row for media file' )
-            client_filename = os.path.basename( files['main']['ifile'] )
+            client_filename = os.path.basename( files['main']['ofile'] )
             if self.data['metadata'] and self.data['metadata']['file'] and self.data['metadata']['file']['Path']:
                 client_filename = self.data['metadata']['file']['Path']
 
@@ -331,14 +331,10 @@ class Worker(Background):
 
         # Serialize any operations by user and detect faces.
         try:
-            # DEBUG - Today we just run everything in parallel, in the future we'll serialize.
             # user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
 
-            # DEBUG - Try to put a lock row in the database manually,
-            # and then re-run this to see what happens - I want to see
-            # a heartbeat.
             self.faces_lock = Serialize.Serialize( app         = 'popeye',
                                                    object_name = self.data['info']['uid'], 
                                                    owner_id    = self.uuid,
@@ -348,20 +344,30 @@ class Worker(Background):
 
             # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
-            # DEBUG - Uncomment this to enable Intellivision
-            self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
-            if self.data['track_json'] != None:
-                log.info( 'Storing contacts and faces from Intellivision.' )
-                log.debug( "JSON is: " + json.dumps( self.data['track_json'] ) )
-                self.store_faces( media, user )
-            else:
-                log.info( 'Video processing did not return any data.' )
+            # DEBUG - easily turn this on and off for testing
+            # purposes.
+            if True:
+                log.info( 'Making call to get faces' )
+                self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
+                log.info( 'Get faces returned.' )
+
+                if self.data['track_json'] == None:
+                    log.info( 'Video processing did not return any tracks.' )
+                else:
+                    log.info( 'Storing contacts and faces from Intellivision.' )
+                    log.debug( "JSON is: " + self.data['track_json'] )
+                    self.store_faces( media, user )
 
             self.faces_lock.release()
         except Exception as e:
-            if hasattr( self, 'faces_lock' ) and self.faces_lock:
-                self.faces_lock.release()
-            log.error( "Failed to process faces, errors: " + str( e ) )
+            try:
+                if hasattr( self, 'faces_lock' ) and self.faces_lock:
+                    self.faces_lock.release()
+                log.error( "Failed to process faces, errors: " + str( e ) )
+            except:
+                pass
+            self.handle_errors()
+            self.__release_lock()
             raise
 
         #######################################################################
@@ -470,14 +476,26 @@ class Worker(Background):
     ######################################################################
     # Helper function to process Intellivision faces and store them
     def store_faces( self, media_row, owning_user ):
+        log = self.popeye_log
+
         if 'track_json' not in self.data or not self.data['track_json']:
             log.warning( 'No tracks / faces detected.' )
             return
 
+        log.info( 'Beginning to process store_faces' )
+
         try:
-            log = self.popeye_log
             tracks = json.loads( self.data['track_json'] )
+
+            if 'tracks' not in tracks or 'numberoftracks' not in tracks['tracks'] or int( tracks['tracks']['numberoftracks'] ) == 0:
+                log.warning( 'No tracks / faces detected.' )
+                return
+
             log.info( tracks['tracks']['numberoftracks'] + ' tracks detected.' )
+
+            if int( tracks['tracks']['numberoftracks'] ) == 0:
+                log.info( "No face tracks provided." )
+                return
 
             # Build up a dictionary of each person with an array of tracks.
             log.debug( 'Building up face track dictionary.' )
@@ -532,8 +550,7 @@ class Worker(Background):
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
                                                location   = 'us',
-                                               intellivision_file_id = tracks['fileid'] 
-                                               )
+                                               intellivision_file_id = tracks['tracks']['file_id'] )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
                     media_row.assets.append( track_asset )
@@ -677,27 +694,27 @@ class Worker(Background):
             self.add_file( 
                 label = 'main',
                 ifile = input_filename, 
-                ofile = abs_basename + '.mp4', 
+                ofile = abs_basename + '_output.mp4', 
                 key   = self.uuid + '/' + self.uuid + '.mp4' )
             
             # The 'thumbnail' media file, a jpg.
             self.add_file( 
                 label = 'thumbnail',
-                ifile = abs_basename+'.mp4', 
+                ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'_thumbnail.jpg', 
                 key   = self.uuid + '/' + self.uuid + '_thumbnail.jpg' )
             
             # The 'poster' media file, a jpg.
             self.add_file( 
                 label = 'poster',
-                ifile = abs_basename+'.mp4', 
+                ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'_poster.jpg', 
                 key   = self.uuid + '/' + self.uuid + '_poster.jpg' )
             
             # The 'face' media file, json.
             self.add_file( 
                 label = 'face',
-                ifile = abs_basename+'.mp4', 
+                ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'_face0.jpg', 
                 key   = self.uuid + '/' + self.uuid + '_face0.jpg' )
             
@@ -725,7 +742,7 @@ class Worker(Background):
             # The 'intellivision' media file, by convention an AVI.
             self.add_file( 
                 label = 'intellivision',
-                ifile = abs_basename+'.mp4', 
+                ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'.avi', 
                 key   = self.uuid + '/' + self.uuid + '.avi' )
 
