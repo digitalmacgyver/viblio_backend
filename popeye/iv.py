@@ -175,8 +175,9 @@ def analyze(session_info, user_id, uid, media_url):
                             print 'TRYING AGAIN due to FR'
                         elif description == 'Failed to fetch data':
                             print 'TRYING AGAIN as Failed to fetch data'
-                        elif description == 'Previous file is in process':
-                            print 'TRYING AGAIN as previous file is in progress'
+                        elif description == 'Previous file is in process.':
+                            print 'TRYING AGAIN as previous file is in progress, sleep for 60 seconds'
+                            time.sleep(60)
                         elif description == 'Request failed':
                             print 'START OVER close the session and restart'
                             session_info = open_session()

@@ -56,12 +56,12 @@ def get_faces(file_data, log, data):
     # Get Face Recognition results from IntelliVision
     tracks = iv.retrieve(session_info, user_id, file_id, media_uuid)
     if tracks == 'No Tracks':
-        return {"tracks": {"file_id": file_id, "numberoftracks": "0"}}
+        return json.dumps( {"tracks": {"file_id": file_id, "numberoftracks": "0"}} )
     # Add FileId to the Tracks data structure
     tag = Tag (name="file_id")
     tag.string = file_id
     tracks.insert(0,tag)
-    number_of_tracks = int(tracks.numberoftracks.string)
+    number_of_tracks = int( tracks.numberoftracks.string )
     # Process each track, one at a time
     for i,track in enumerate(tracks.findAll('track')):
         track_id = track.trackid.string
@@ -95,23 +95,6 @@ def get_faces(file_data, log, data):
                     log.info( 'training: ' + new_person_id )
                 except:
                     log.warning( 'Failed to train unknown person' )
-                log.info( "downloading with best face frame" )
-                formatted_person_id = '%02d' %int(person_id)            
-                url = track.bestfaceframe.string
-                r = requests.get(url)
-                filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
-                with open(filename, "wb") as f:
-                    f.write(r.content)
-
-                face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
-                log.info( "Uploading face %s to S3" % ( face_key ) )
-
-                try:
-                    bucket_contents.key = face_key
-                    bucket_contents.set_contents_from_filename(filename)
-                except:
-                    log.info( 'Upload to S3 of %s failed' % ( filename ) )
-                    raise Exception( 'Upload to S3 of %s failed' % ( filename ) )
                 # update bestfaceframe
                 track.bestfaceframe.string = face_key
             else:
