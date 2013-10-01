@@ -74,12 +74,12 @@ def register_user(session_info, uid):
     register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password + '</password><metadata><email>bidyut@viblio.com</email><contactno>408-728-8130</contactno></metadata></user>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=register_xml, headers=headers)
+    print r.content
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
-        if (str(soup.status.text) == 'Success'):
-                user_id = str(soup.id.text)
-                print user_id
-                return (user_id)
+        if soup.status.string == 'Success':
+            print "User registered successfully " + uid
+            return
         else:
             print "Error: ", r.content
 
@@ -95,10 +95,13 @@ def login(session_info, uid):
     r = requests.post(url, data=login_xml, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
-        if (str(soup.status.text) == 'Success'):
-                user_id = str(soup.id.text)
-                print user_id
-                return (user_id)
+        if soup.status.string == 'Success':
+            user_id = soup.id.string
+            return user_id
+        if soup.description.string == 'User is not registered':
+            register_user(session_info, uid)
+            user_id = login(session_info, uid)
+            return user_id
         else:
             print "Error: ", r.content
 
