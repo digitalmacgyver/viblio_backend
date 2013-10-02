@@ -57,12 +57,16 @@ def get_faces(file_data, log, data):
     # Get Face Recognition results from IntelliVision
     tracks = iv.retrieve(session_info, user_id, file_id)
     if tracks == 'No Tracks':
+        log.info (log, 'No tracks found')
         return json.dumps( {"tracks": {"file_id": file_id, "numberoftracks": "0"}} )
-    # Add FileId to the Tracks data structure
-    tag = Tag (name="file_id")
-    tag.string = file_id
-    tracks.insert(0,tag)
     number_of_tracks = int( tracks.numberoftracks.string )
+    # Create a new Tracks data structure starting with file_id & numberftracks
+    file_id_tag = Tag (name="file_id")
+    file_id_tag.string = file_id
+    tracks_tag = Tag (name = "tracks")
+    tracks_tag.insert(0, tracks.numberoftracks)
+    tracks_tag.insert(0, file_id_tag)
+    log.debug(log, str(tracks_tag))
     # Process each track, one at a time
     for i,track in enumerate(tracks.findAll('track')):
         track_id = track.trackid.string
@@ -96,13 +100,16 @@ def get_faces(file_data, log, data):
                     log.info( 'training: ' + new_person_id )
                 except:
                     log.warning( 'Failed to train unknown person' )
-                # update bestfaceframe
+                # update bestfaceframe and insert track into output
                 track.bestfaceframe.string = face_key
+                tracks_tag.append(track)
+                log.debug(log, str(tracks_tag))
             else:
                 # Unknown person with low detection score
                 track.personid.string = ''
                 track.bestfaceframe.string = ''    
                 number_of_tracks -= 1
+                log.debug(log, str(tracks_tag))
         else:
             # Known person
             recognition_score = float(track.recognitionconfidence.string)
@@ -127,12 +134,15 @@ def get_faces(file_data, log, data):
             except:
                 log.info( 'Upload to S3 of %s failed' % ( filename ) )
                 raise Exception( 'Upload to S3 of %s failed' % ( filename ) )
-            # update bestfaceframe
+            # update bestfaceframe and append track to output
             track.bestfaceframe.string = face_key
-    tracks.numberoftracks.string = str(number_of_tracks)
-    tracks_string = str(tracks)
+            tracks_tag.append(track)
+            log.debug(log, str(tracks_tag))
+    tracks_tag.numberoftracks.string = str(number_of_tracks)
+    tracks_string = str(tracks_tag)
     tracks_dict = xmltodict.parse(tracks_string)
     tracks_json = json.dumps(tracks_dict)
+    log.info(log, str(tracks_json))
     # Cleanup permissions, logout & close session
     bucket_contents.set_acl(original_acl)
     iv.logout(session_info, user_id)
