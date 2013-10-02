@@ -370,6 +370,15 @@ class Worker(Background):
             self.__release_lock()
             raise
 
+        # Commit to database.
+        try:
+            orm.commit()
+        except Exception as e:
+            self.__safe_log( log.error, 'Failed to commit the database: %s' % str( e ) )
+            self.handle_errors()
+            self.__release_lock()
+            raise
+
         #######################################################################
         # Send notification to CAT server.
         #######################################################################
