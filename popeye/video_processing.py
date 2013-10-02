@@ -92,6 +92,10 @@ def get_faces(file_data, log, data):
                 try:
                     bucket_contents.key = face_key
                     bucket_contents.set_contents_from_filename(filename)
+                    cmd = 'rm %s' % ( filename )
+                    log.info( cmd )
+                    ( status, output ) = commands.getstatusoutput( cmd )
+                    log.debug( 'Command output was: ' + output )
                 except:
                     log.error( 'Upload to S3 failed' )
                     raise( 'Upload to S3 of %s failed' % ( face_key ) )
