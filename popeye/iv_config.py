@@ -1,7 +1,7 @@
 import pytz
 
 # Parameters provided my IntelliVision
-iv_host = 'http://71.6.45.228/FDFRRstService/RestService.svc/'
+iv_host = 'http://71.6.45.227/FDFRRstService/RestService.svc/'
 partner_id = 'VIBLIO'
 local_id = '9876543210'
 api_key = 'AAA111BBB222'
