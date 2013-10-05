@@ -96,7 +96,7 @@ def register_user(session_info, uid):
     metadata_tag = Tag(name='metadata')
     metadata_tag.string = ''
     email_tag = Tag(name='email')
-    email_tag.string = 'bidyut@viblio.com'
+    email_tag.string = 'user@viblio.com'
     contactno_tag = Tag(name='contactno')
     contactno_tag.string = '408-922-9800'
     tag.insert(0, metadata_tag)
@@ -138,12 +138,14 @@ def login(session_info, uid):
     # login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><loginName>' + uid + '</loginName><password>' + password + '</password></login>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=login_xml, headers=headers)
+    print r.content
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         if soup.status.string == 'Success':
             user_id = soup.id.string
             return user_id
-        if soup.description.string == 'User is not registered':
+        # if soup.description.string == 'User is not registered':
+        elif soup.status.string == 'Failure':
             register_user(session_info, uid)
             user_id = login(session_info, uid)
             return user_id

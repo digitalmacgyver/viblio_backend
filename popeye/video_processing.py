@@ -42,6 +42,7 @@ def get_faces(file_data, log, data):
     session_info = iv.open_session()
     user_id = iv.login(session_info, uid)
     # Send the video for processing by IntelliVision
+    # Since analyze may need to restart session, session info is returned
     response = iv.analyze(session_info, user_id, uid, media_url)
     session_info = {'key': response['key'], 
                     'secret': response['secret']}
