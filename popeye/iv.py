@@ -5,17 +5,30 @@ import hashlib
 import iv_config
 import uuid
 import time
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 def perror( log, msg ):
     log.error( msg )
     return { 'error': True, 'message': msg }
 
 def open_session():
+    #Generate session.xml for IntelliVision
+    tag = Tag( name = "session")
+    tag.attrs = iv_config.xmlns
+    partnerId_tag = Tag( name='partnerId')
+    partnerId_tag.string = iv_config.partner_id
+    apiKey_tag = Tag(name='apiKey')
+    apiKey_tag.string = iv_config.api_key
+    localId_tag = Tag(name='localId')
+    localId_tag.string = iv_config.local_id
+    tag.insert(0, localId_tag)
+    tag.insert(0, apiKey_tag)
+    tag.insert(0, partnerId_tag)
+    session_xml = str(tag)
+    # session_xml = '<?xml version="1.0"?><session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><partnerId>VIBLIO</partnerId><apiKey>AAA111BBB222</apiKey><localId>9876543210</localId></session>'
+    url = iv_config.iv_host + 'session'
     raw_date = datetime.datetime.now(iv_config.time_zone)
     formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')  
-    url = iv_config.iv_host + 'session'
-    session_xml = '<?xml version="1.0"?><session xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><partnerId>VIBLIO</partnerId><apiKey>AAA111BBB222</apiKey><localId>9876543210</localId></session>'
     headers = {'Content-Type':'text/xml', 'Date':formatted_date}
     r = requests.post(url, data=session_xml, headers=headers)
     if r.status_code == requests.codes.ok:
@@ -71,7 +84,29 @@ def register_user(session_info, uid):
     sha_instance = hashlib.sha1()
     sha_instance.update(uid)
     password = sha_instance.hexdigest()
-    register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password + '</password><metadata><email>bidyut@viblio.com</email><contactno>408-728-8130</contactno></metadata></user>'
+    # Generate register.xml for IntelliVision
+    tag = Tag( name = "user")
+    tag.attrs = iv_config.xmlns
+    name_tag = Tag( name='name')
+    name_tag.string = uid
+    loginName_tag = Tag(name='loginName')
+    loginName_tag.string = uid
+    password_tag = Tag(name='password')
+    password_tag.string = password
+    metadata_tag = Tag(name='metadata')
+    metadata_tag.string = ''
+    email_tag = Tag(name='email')
+    email_tag.string = 'bidyut@viblio.com'
+    contactno_tag = Tag(name='contactno')
+    contactno_tag.string = '408-922-9800'
+    tag.insert(0, metadata_tag)
+    tag.metadata.insert(0, contactno_tag)
+    tag.metadata.insert(0, email_tag)
+    tag.insert(0, password_tag)
+    tag.insert(0, loginName_tag)
+    tag.insert(0, name_tag)
+    register_xml = str(tag)
+    # register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password + '</password><metadata><email>bidyut@viblio.com</email><contactno>408-728-8130</contactno></metadata></user>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=register_xml, headers=headers)
     print r.content
@@ -90,8 +125,18 @@ def login(session_info, uid):
     sha_instance = hashlib.sha1()
     sha_instance.update(uid)
     password = sha_instance.hexdigest()
+    #Generate login.xml for IntelliVision
+    tag = Tag( name = "login")
+    tag.attrs = iv_config.xmlns
+    loginName_tag = Tag( name='loginName')
+    loginName_tag.string = uid
+    password_tag = Tag(name='password')
+    password_tag.string = password
+    tag.insert(0, password_tag)
+    tag.insert(0, loginName_tag)
+    login_xml = str(tag)
+    # login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><loginName>' + uid + '</loginName><password>' + password + '</password></login>'
     headers = generate_headers(session_info)
-    login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><loginName>' + uid + '</loginName><password>' + password + '</password></login>'
     r = requests.post(url, data=login_xml, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
@@ -134,8 +179,20 @@ def logout(session_info, user_id):
 
 ## Analyze face API
 def analyze(session_info, user_id, uid, media_url):
+    # create analyze.xml for IntelliVision
+    tag = Tag( name = "data")
+    tag.attrs = iv_config.xmlns
+    user_id_tag = Tag( name='userid')
+    user_id_tag.string = user_id
+    media_url_tag = Tag(name='mediaURL')
+    media_url_tag.string = media_url
+    recognize_tag = Tag(name = "recognize")
+    recognize_tag.string = '01'
+    tag.insert(0, recognize_tag)
+    tag.insert(0, media_url_tag)
+    tag.insert(0, user_id_tag)
+    analyze_xml = str(tag)
     url = iv_config.iv_host + 'user/' + user_id + '/analyzeFaces'
-    analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
     headers = generate_headers(session_info)
     for trial in range (1, 20):
         print "Trial number: " + str(trial)
