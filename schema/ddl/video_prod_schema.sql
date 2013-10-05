@@ -24,7 +24,6 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`users` (
   `uuid` VARCHAR(36) NOT NULL ,
   `provider` VARCHAR(16) NULL DEFAULT NULL ,
   `provider_id` VARCHAR(45) NULL DEFAULT NULL ,
-  `username` VARCHAR(128) NULL DEFAULT NULL ,
   `password` VARCHAR(128) NULL DEFAULT NULL ,
   `email` VARCHAR(256) NULL DEFAULT NULL ,
   `displayname` VARCHAR(128) NULL DEFAULT NULL ,
@@ -282,7 +281,7 @@ ENGINE = InnoDB;
 CREATE  TABLE IF NOT EXISTS `video_dev`.`media_shares` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `media_id` INT(11) NOT NULL ,
-  `user_id` INT(11) NOT NULL ,
+  `user_id` INT(11) NULL DEFAULT NULL ,
   `share_type` VARCHAR(16) NOT NULL ,
   `view_count` INT NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
@@ -519,6 +518,19 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`serialize` (
   `created_date` DATETIME NULL DEFAULT NULL COMMENT '	' ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
   PRIMARY KEY (`app`, `object_name`) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev`.`email_users`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev`.`email_users` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `email` VARCHAR(256) NOT NULL ,
+  `status` VARCHAR(45) NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) )
 ENGINE = InnoDB;
 
 USE `video_dev`;
@@ -1043,6 +1055,30 @@ USE `video_dev`$$
 
 CREATE
 	TRIGGER serialize_updated BEFORE UPDATE ON serialize FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER email_users_created BEFORE INSERT ON email_users FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER email_users_updated BEFORE UPDATE ON email_users FOR EACH ROW
 BEGIN
 	set NEW.updated_date = NOW();
 END;

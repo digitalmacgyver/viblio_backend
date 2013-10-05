@@ -244,7 +244,8 @@ class Worker(Background):
                            recording_date = recording_date,
                            lat            = self.data['exif']['lat'],
                            lng            = self.data['exif']['lng'],
-                           filename       = client_filename )
+                           filename       = client_filename,
+                           view_count     = 0 )
 
             # Associate media with user.
             user.media.append( media )
@@ -257,7 +258,8 @@ class Worker(Background):
                                 metadata_uri = files['metadata']['key'],
                                 bytes        = os.path.getsize( files['main']['ofile'] ),
                                 uri          = files['main']['key'],
-                                location     = 'us' )
+                                location     = 'us',
+                                view_count   = 0 )
             media.assets.append( asset )
 
             # Intellivision media_asset
@@ -267,7 +269,8 @@ class Worker(Background):
                                      mimetype   = 'video/avi',
                                      bytes      = os.path.getsize( files['intellivision']['ofile'] ),
                                      uri        = files['intellivision']['key'],
-                                     location   = 'us' )
+                                     location   = 'us',
+                                     view_count = 0)
             media.assets.append( avi_asset )
 
             # Thumbnail media_asset
@@ -279,7 +282,8 @@ class Worker(Background):
                                  width      = 128, 
                                  height     = 128,
                                  uri        = files['thumbnail']['key'],
-                                 location   = 'us' )
+                                 location   = 'us',
+                                 view_count = 0 )
             media.assets.append( asset )
 
             # Poster media_asset
@@ -291,7 +295,8 @@ class Worker(Background):
                                         width      = 320,
                                         height     = 180,
                                         uri        = files['poster']['key'],
-                                        location   = 'us' )
+                                        location   = 'us',
+                                        view_count = 0 )
             media.assets.append( poster_asset )
 
             if self.data['found_faces']:
@@ -305,7 +310,8 @@ class Worker(Background):
                                           width      = 128, 
                                           height     = 128,
                                           uri        = files['face']['key'],
-                                          location   = 'us' )
+                                          location   = 'us',
+                                          view_count = 0 )
                 media.assets.append( face_asset )
 
                 log.info( 'Generating for for face media_asset_feature' )
@@ -342,11 +348,11 @@ class Worker(Background):
                                                    heartbeat   = 30 )
             self.faces_lock.acquire()
 
-            # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
-
             # DEBUG - easily turn this on and off for testing
             # purposes.
             if True:
+                # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
+
                 log.info( 'Making call to get faces' )
                 self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
                 log.info( 'Get faces returned.' )
@@ -567,7 +573,8 @@ class Worker(Background):
                                                height     = 500,
                                                uri        = track['bestfaceframe'],
                                                location   = 'us',
-                                               intellivision_file_id = tracks['tracks']['file_id'] )
+                                               intellivision_file_id = tracks['tracks']['file_id'],
+                                               view_count = 0 )
             
                     log.info( 'Adding face asset %s at URI %s' % ( track_asset.uuid, track_asset.uri ) )
                     media_row.assets.append( track_asset )
