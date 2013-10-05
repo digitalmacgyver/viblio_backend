@@ -5,6 +5,7 @@ import random
 import sys
 import uuid
 from sqlalchemy import *
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 import boto
 from boto.s3.key import Key
@@ -64,3 +65,6 @@ def download_file_from_s3( file_name, s3_key ):
         log.critical( "Failed to download to file: '%s' From s3 key: '%s' Error was: %s" % ( file_name, s3_key, str( e ) ) )
         raise
 
+def get_orm():
+    Session = sessionmaker( bind=engine )
+    return Session()
