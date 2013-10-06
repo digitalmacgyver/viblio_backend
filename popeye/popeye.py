@@ -92,7 +92,7 @@ class Log(WsgiLog):
         WsgiLog.__init__(
             self,
             application,
-            logformat = '%(name)s: %(asctime)s %(levelname)-4s %(message)s',
+            logformat = '%(name)-22s: %(module)-7s: %(lineno)-3s: %(funcName)-12s: %(asctime)s: %(levelname)-5s: %(message)s',
             loglevel = config.loglevel,
             logname = 'popeye',
             tostream = True,
