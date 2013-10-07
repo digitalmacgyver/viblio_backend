@@ -532,7 +532,6 @@ class Worker(Background):
 
             # Sort tracks in order of decreasing goodness.
             for face in face_tracks:
-                log.debug( 'Sorting tracks.' )
                 face_tracks[face].sort( key=lambda f: f['recognitionconfidence']*10000+f['detectionscore'] )
 
             # Build up a dictionary of each person in our database.
@@ -613,9 +612,9 @@ class Worker(Background):
 
             self.files[label] = { 'ifile' : ifile, 'ofile' : ofile, 'key' : key }
 
-            self.popeye_log.debug( 'New %s label ifile is: %s' % ( label, ifile ) )
-            self.popeye_log.debug( 'New %s label ofile is: %s' % ( label, ofile ) )
-            self.popeye_log.debug( 'New %s label key is: %s' % ( label, key ) )
+            # self.popeye_log.debug( 'New %s label ifile is: %s' % ( label, ifile ) )
+            # self.popeye_log.debug( 'New %s label ofile is: %s' % ( label, ofile ) )
+            # self.popeye_log.debug( 'New %s label key is: %s' % ( label, key ) )
 
             return
 
@@ -633,7 +632,7 @@ class Worker(Background):
             #self.popeye_log.debug( 'File %s exists.' % input_filename )
 
             if os.access( input_filename, os.R_OK ):
-                self.popeye_log.debug( 'File %s exists and is readable.' % input_filename )
+                #self.popeye_log.debug( 'File %s exists and is readable.' % input_filename )
                 self.popeye_log.debug( 'File %s is %s bytes.' % ( input_filename, str( os.path.getsize( input_filename ) ) ) )
                 return True
             else:

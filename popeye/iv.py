@@ -1,20 +1,21 @@
-import datetime
-import sys
-import requests
-import hashlib
-import iv_config
-import uuid
-import time
 from bs4 import BeautifulSoup, Tag
+import datetime
+import hashlib
+import logging
+import requests
+import sys
+import time
+import threading
+import uuid
 
+import iv_config
 
-def print_log( log, message ):
-    if log:
-        log.info( str( message ) )
-    else:
-        print message
+def get_log():
+    return logging.getLogger( 'popeye.' + str( threading.current_thread().ident ) )
 
-def open_session( log = None ):
+def open_session():
+    log = get_log()
+
     #Generate session.xml for IntelliVision
     tag = Tag( name = "session")
     tag.attrs = iv_config.xmlns
@@ -36,7 +37,7 @@ def open_session( log = None ):
     r = requests.post(url, data=session_xml, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
-        print_log( log, str(soup) )
+        log.info( str(soup) )
         try:
             session_key = soup.result.sessionkey.string
             session_secret = soup.result.sessionsecret.string
@@ -44,11 +45,13 @@ def open_session( log = None ):
                             'secret': session_secret}
             return(session_info)
         except:
-            print_log( log, 'Failed to extract session info' )
+            log.error( 'Failed to extract session info' )
             return ('False')
 
 ## compute hashed values for subsequent API calls
-def generate_headers(session_info, log = None ):
+def generate_headers(session_info ):
+    log = get_log()
+
     session_key = session_info['key']
     session_secret = session_info['secret']
     ## Compute and format date
@@ -72,17 +75,21 @@ def generate_headers(session_info, log = None ):
     return(headers)
 
 ## Close session API
-def close_session(session_info, log = None ):
+def close_session(session_info ):
+    log = get_log()
+
     url = iv_config.iv_host + 'endSession'
     headers = generate_headers(session_info)
     r = requests.delete(url, headers=headers)
     if r.status_code == requests.codes.ok:
-        print_log( log, 'session closed' + r.content )
+        log.info( 'session closed' + r.content )
     else:
-        print_log( log, "error" + r.content )
+        log.error( "error" + r.content )
 
 ## Register User API
-def register_user(session_info, uid, log = None ):
+def register_user(session_info, uid ):
+    log = get_log()
+
     url = iv_config.iv_host + 'user'
     sha_instance = hashlib.sha1()
     sha_instance.update(uid)
@@ -112,17 +119,19 @@ def register_user(session_info, uid, log = None ):
     # register_xml = '<user xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><name>' + uid + '</name><loginName>' + uid + '</loginName><password>' + password + '</password><metadata><email>bidyut@viblio.com</email><contactno>408-728-8130</contactno></metadata></user>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=register_xml, headers=headers)
-    print_log( log, r.content )
+    log.info( r.content )
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         if soup.status.string == 'Success':
-            print_log( log, "User registered successfully " + uid )
+            log.info( "User registered successfully " + uid )
             return
         else:
-            print_log( log, "Error: ", r.content )
+            log.error( "Error: " + r.content )
 
 ## Login API
-def login(session_info, uid, log = None ):
+def login(session_info, uid ):
+    log = get_log()
+
     url = iv_config.iv_host + 'user/login'
     # Auto-generate password as SHA1 for uid
     sha_instance = hashlib.sha1()
@@ -141,7 +150,7 @@ def login(session_info, uid, log = None ):
     # login_xml = '<login xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><loginName>' + uid + '</loginName><password>' + password + '</password></login>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=login_xml, headers=headers)
-    print_log( log, r.content )
+    log.info( r.content )
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         if soup.status.string == 'Success':
@@ -153,10 +162,12 @@ def login(session_info, uid, log = None ):
             user_id = login(session_info, uid)
             return user_id
         else:
-            print_log( log, "Error: ", r.content )
+            log.error( "Error: " + r.content )
 
 ## Get User Details API
-def get_user_details(session_info, user_id, log = None ):
+def get_user_details(session_info, user_id ):
+    log = get_log()
+
     url = iv_config.iv_host + 'user/' + user_id + '/getUser'
     headers = generate_headers(session_info)
     r = requests.get(url, headers=headers)
@@ -164,26 +175,30 @@ def get_user_details(session_info, user_id, log = None ):
         soup = BeautifulSoup(r.content, 'lxml')
         if (str(soup.status.text) == 'Success'):
                 user_id = str(soup.id.text)
-                print_log( log, user_id )
+                log.info( user_id )
                 return (user_id)
         else:
-            print_log( log, "Error: ", r.content )
+            log.error( "Error: " + r.content )
 
 ## Logout user API
-def logout(session_info, user_id, log = None ):
+def logout(session_info, user_id ):
+    log = get_log()
+
     url = iv_config.iv_host + 'user/' + user_id + '/logout'
     headers = generate_headers(session_info)
     r = requests.get(url, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         if (str(soup.status.text) == 'Success'):
-            print_log( log, r.content )
+            log.info( r.content )
             return (user_id)
         else:
-            print_log( log, "Error: ", r.content )
+            log.error( "Error: " + r.content )
 
 ## Analyze face API
-def analyze(session_info, user_id, uid, media_url, log = None ):
+def analyze(session_info, user_id, uid, media_url ):
+    log = get_log()
+
     # create analyze.xml for IntelliVision
     tag = Tag( name = "data")
     tag.attrs = iv_config.xmlns
@@ -200,22 +215,22 @@ def analyze(session_info, user_id, uid, media_url, log = None ):
     url = iv_config.iv_host + 'user/' + user_id + '/analyzeFaces'
     headers = generate_headers(session_info)
     for trial in range (1, 20):
-        print_log( log, "Trial number: " + str(trial) )
+        log.info( "Trial number: " + str(trial) )
         r = requests.post(url, data=analyze_xml, headers=headers)
         if r.status_code == requests.codes.ok:
             soup = BeautifulSoup(r.content, 'lxml')
-            print_log( log, str(soup) )
+            log.info( str(soup) )
             if (soup.result.status):
                 status = soup.result.status.string
                 if status == 'Success':
                     if(soup.result.description):
                         if soup.result.description.string == 'File downloading started':
-                            print_log( log, 'Sleeping for: 60 seconds' )
+                            log.info( 'Sleeping for: 60 seconds' )
                             time.sleep(60)
                             r = requests.post(url, data=analyze_xml, headers=headers)
                             if r.status_code == requests.codes.ok:
                                 soup = BeautifulSoup(r.content, 'lxml')
-                                print_log( log, str(soup) )
+                                log.info( str(soup) )
                     elif (soup.result.fileid):
                         file_id = soup.result.fileid.string
                         if(soup.result.expectedwaitseconds):
@@ -230,59 +245,61 @@ def analyze(session_info, user_id, uid, media_url, log = None ):
                                  'secret': session_info['secret'],
                                  'user_id': user_id})
                     else:
-                        print_log( log, 'Unknown success case' )
-                        print_log( log, str(soup) )
+                        log.info( 'Unknown success case' )
+                        log.info( str(soup) )
                 elif status == 'Failure':
                     if(soup.result.description):
                         description = soup.result.description.string
-                        print_log( log, 'description is: ' + description )
+                        log.info( 'description is: ' + description )
                         if description == 'FR could not process specified file':
-                            print_log( log, 'TRYING AGAIN due to FR' )
+                            log.info( 'TRYING AGAIN due to FR' )
                         elif description == 'Failed to fetch data':
-                            print_log( log, 'TRYING AGAIN as Failed to fetch data' )
+                            log.info( 'TRYING AGAIN as Failed to fetch data' )
                         elif description == 'Previous file is in process.':
-                            print_log( log, 'TRYING AGAIN as previous file is in progress, sleep for 30 seconds' )
+                            log.info( 'TRYING AGAIN as previous file is in progress, sleep for 30 seconds' )
                             time.sleep(30)
                         elif description == 'Previous file downloading is in progress':
-                            print_log( log, 'TRYING AGAIN as previous file is in progress, sleep for 30 seconds' )
+                            log.info( 'TRYING AGAIN as previous file is in progress, sleep for 30 seconds' )
                             time.sleep(30)
                         elif description == 'Request failed':
-                            print_log( log, 'START OVER close the session and restart' )
+                            log.info( 'START OVER close the session and restart' )
                             session_info = open_session()
                             user_id = login(session_info, uid)
                         elif description == 'Downloading failed':
-                            print_log( log, 'CANNOT DOWNLOAD, EXIT' )
+                            log.info( 'CANNOT DOWNLOAD, EXIT' )
                             return ('__ANALYSIS__FAILED__')
                         else:
-                            print_log( log, 'Unknown failure case' )
-                            print_log( log, str(soup) )
+                            log.warning( 'Unknown failure case' )
+                            log.warning( str(soup) )
                     else:
-                        print_log( log, 'Encountered an error in getting the description' )
-                        print_log( log, str(soup) )
+                        log.error( 'Encountered an error in getting the description' )
+                        log.error( str(soup) )
                         return ('__ANALYSIS__FAILED__')
                 else :
-                    print_log( log, ' gk gk gk step 4.1.1 ELSE' )
-                    print_log( log, ' soup was ' )
-                    print_log( log, soup )
+                    log.error( ' gk gk gk step 4.1.1 ELSE' )
+                    log.error( ' soup was ' )
+                    log.error( str( soup ) )
                     return ('__ANALYSIS__FAILED__')
             else:
-                print_log( log, ' gk gk gk step 4.1  --> else' )
+                log.info( ' gk gk gk step 4.1  --> else' )
         time.sleep(5)
 
 ## Retrieve Faces API
-def retrieve(session_info, user_id, file_id, log = None ):
+def retrieve(session_info, user_id, file_id ):
+    log = get_log()
+
     url = iv_config.iv_host + 'user/' + user_id + '/retrieveFaces?fileID=' + file_id
     headers = generate_headers(session_info)
     r = requests.get(url, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
-        print_log( log, str(soup) )
+        log.info( str(soup) )
         if (soup.result.status.string == 'Success'):
-            print_log( log, 'success' )
+            log.info( 'success' )
             if(soup.find('description')):
-                print_log( log, ' found description' )
+                log.info( ' found description' )
                 if (soup.description.string == 'No Results'):
-                    print_log( log, 'No Tracks Found' )
+                    log.info( 'No Tracks Found' )
                     return ('No Tracks')
             else:
                 tracks = soup.result.tracks
@@ -293,7 +310,9 @@ def retrieve(session_info, user_id, file_id, log = None ):
 # <html><body><result><status>Success</status><expectedwaitseconds>0</expectedwaitseconds><tracks><numberoftracks>5</numberoftracks><track><trackid>0</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-10-34-497_0.jpg</bestfaceframe><starttime>2013-09-24 06:10:34</starttime><endtime>2013-09-24 06:10:35</endtime><width>110</width><height>110</height><facecenterx>910</facecenterx><facecentery>958</facecentery><detectionscore>12</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>1</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-22-217_1.jpg</bestfaceframe><starttime>2013-09-24 06:11:22</starttime><endtime>2013-09-24 06:11:22</endtime><width>254</width><height>254</height><facecenterx>969</facecenterx><facecentery>249</facecentery><detectionscore>4</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>2</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-46-188_2.jpg</bestfaceframe><starttime>2013-09-24 06:11:46</starttime><endtime>2013-09-24 06:11:46</endtime><width>102</width><height>102</height><facecenterx>252</facecenterx><facecentery>614</facecentery><detectionscore>5</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>3</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-51-220_3.jpg</bestfaceframe><starttime>2013-09-24 06:11:51</starttime><endtime>2013-09-24 06:11:51</endtime><width>110</width><height>110</height><facecenterx>257</facecenterx><facecentery>608</facecentery><detectionscore>4</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track><track><trackid>4</trackid><personid>-1</personid><bestfaceframe>http://71.6.45.228/FDFRRstService/Detected/FACES/FDFR_Cam21_24-09-2013_06-11-51-220_4.jpg</bestfaceframe><starttime>2013-09-24 06:11:51</starttime><endtime>2013-09-24 06:11:51</endtime><width>257</width><height>257</height><facecenterx>1394</facecenterx><facecentery>192</facecentery><detectionscore>29</detectionscore><recognitionconfidence>0.00</recognitionconfidence></track></tracks></result></body></html>
 
 ## Add Person API
-def add_person(session_info, user_id, log = None ):
+def add_person(session_info, user_id ):
+    log = get_log()
+
     name_uuid = str(uuid.uuid4())
     url = iv_config.iv_host + 'user/' + user_id + '/addPerson'
     add_person_xml = '<personDetails xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><firstName>' + name_uuid + '</firstName><lastName>' + name_uuid + '</lastName><description>Friend</description></personDetails>'
@@ -302,39 +321,45 @@ def add_person(session_info, user_id, log = None ):
     r = requests.post(url, data=add_person_xml, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
-        print_log( log, str(soup) )
+        log.info( str(soup) )
         if str(soup.body.person.status.string) == 'Success':
             person_id = soup.body.person.id.string
             return(person_id)
         else:
-            print_log( log, 'ERROR' )
+            log.error( 'ERROR' )
             return(soup)
 # <html><body><person><status>Success</status><id>3</id></person></bodsession_info = iv.open_session()y></html>
 
-def delete_person(session_info, user_id, person_id, log = None ):
+def delete_person(session_info, user_id, person_id ):
+    log = get_log()
+
     url = iv_config.iv_host + 'user/' + user_id + '/deletePerson/' + person_id
     headers = generate_headers(session_info)
     r = requests.delete(url, headers=headers)
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
-        print_log( log, str(soup) )
+        log.info( str(soup) )
         if str(soup.body.result.status.string) == 'Success':
-            print_log( log, 'Success' )
+            log.info( 'Success' )
         else:
-            print_log( log, "Error" )
-    else: print_log( log, r.content )
+            log.error( "Error" )
+    else: log.info( r.content )
 #'<?xml version="1.0"?>\r\n<Person><Status>Success</Status><Id>0</Id></Person>\r\n'
 
 
-def train_person(session_info, user_id, person_id, track_id, file_id, media_url, log = None ):
+def train_person(session_info, user_id, person_id, track_id, file_id, media_url):
+    log = get_log()
+
+    log.info( 'Training for user_id: %s, person_id: %s, track_id: %s, file_id: %s, and media_url: %s' % ( user_id, person_id, track_id, file_id, media_url ) )
+
     url = iv_config.iv_host + 'user/' + user_id + '/trainPerson?personID=' + person_id + '&trackID=' + track_id + '&fileID=' + file_id
     analyze_xml = '<data xmlns="http://schemas.datacontract.org/2004/07/RESTFulDemo"><userId>' + user_id + '</userId><mediaURL>' + media_url + '</mediaURL><recognize>01</recognize></data>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=analyze_xml, headers=headers)
-    print_log( log, r.content )
+    log.info( r.content )
     if r.status_code == requests.codes.OK:
         soup = BeautifulSoup(r.content, 'lxml')
-        print_log( log, soup )
+        log.info( str( soup ) )
         if str(soup.result.status.text) == 'Success':
             return('Success' + str(r.content))
 

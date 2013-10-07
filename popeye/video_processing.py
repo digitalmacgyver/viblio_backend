@@ -39,11 +39,11 @@ def get_faces(file_data, log, data):
     media_url = 'http://s3-us-west-2.amazonaws.com/' + config.bucket_name + '/' + s3_key
     log.info( media_url )
     # Open session and login user for IntelliVision
-    session_info = iv.open_session( log=log)
-    user_id = iv.login(session_info, uid, log=log)
+    session_info = iv.open_session()
+    user_id = iv.login(session_info, uid )
     # Send the video for processing by IntelliVision
     # Since analyze may need to restart session, session info is returned
-    response = iv.analyze(session_info, user_id, uid, media_url, log=log)
+    response = iv.analyze(session_info, user_id, uid, media_url)
     session_info = {'key': response['key'], 
                     'secret': response['secret']}
     user_id = response['user_id']
@@ -56,7 +56,7 @@ def get_faces(file_data, log, data):
         log.info(log, 'waiting for 120 seconds')
         time.sleep(120)
     # Get Face Recognition results from IntelliVision
-    tracks = iv.retrieve(session_info, user_id, file_id, log=log)
+    tracks = iv.retrieve(session_info, user_id, file_id)
     if tracks == 'No Tracks':
         log.info (log, 'No tracks found')
         return json.dumps( {"tracks": {"file_id": file_id, "numberoftracks": "0"}} )
@@ -78,7 +78,7 @@ def get_faces(file_data, log, data):
             # unknown person
             if ( detection_score > minimum_detection_score ):
                 # Train unknown person if detection score is high enough
-                new_person_id = iv.add_person(session_info, user_id, log=log)
+                new_person_id = iv.add_person(session_info, user_id)
                 track.personid.string = new_person_id
                 formatted_new_person_id = '%02d' %int(new_person_id)
                 log.info( 'Added a new person: ' + new_person_id )
@@ -101,7 +101,7 @@ def get_faces(file_data, log, data):
                     log.error( 'Upload to S3 failed' )
                     raise( 'Upload to S3 of %s failed' % ( face_key ) )
                 try:
-                    iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url, log=log)
+                    iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
                     log.info( 'training: ' + new_person_id )
                 except:
                     log.warning( 'Failed to train unknown person' )
@@ -122,7 +122,7 @@ def get_faces(file_data, log, data):
                 # Train known person only if recognition score was high enough
                 try:
                     log.info( 'training: ' + person_id )
-                    iv.train_person(session_info, user_id, str(person_id), track_id, file_id, media_url, log=log)
+                    iv.train_person(session_info, user_id, str(person_id), track_id, file_id, media_url)
                 except:
                     log.info( 'Failed to train known person' )
             formatted_person_id = '%02d' %int(person_id)            
@@ -150,8 +150,8 @@ def get_faces(file_data, log, data):
     log.info(log, str(tracks_json))
     # Cleanup permissions, logout & close session
     bucket_contents.set_acl(original_acl)
-    iv.logout(session_info, user_id, log=log)
-    iv.close_session(session_info, log=log)
+    iv.logout(session_info, user_id)
+    iv.close_session(session_info)
     return tracks_json
 
 def transcode_main( file_data, log, data, files=None ):
