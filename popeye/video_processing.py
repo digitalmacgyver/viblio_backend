@@ -67,7 +67,7 @@ def get_faces(file_data, log, data):
     tracks_tag = Tag (name = "tracks")
     tracks_tag.insert(0, tracks.numberoftracks)
     tracks_tag.insert(0, file_id_tag)
-    log.debug(log, str(tracks_tag))
+    log.debug( str(tracks_tag) )
     # Process each track, one at a time
     for i,track in enumerate(tracks.findAll('track')):
         track_id = track.trackid.string
