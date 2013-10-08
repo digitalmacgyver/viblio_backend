@@ -181,6 +181,18 @@ class Worker(Background):
             log.info( 'Move atom for: ' + files['main']['ofile'] )
             video_processing.move_atom( files['main'], log, self.data )
             
+            # Generate _exif.json for transcoded input
+            log.info( 'Getting exif data from file %s and storing it to %s' % ( files['transcoded_exif']['ifile'], files['transcoded_exif']['ofile'] ) )
+            try:
+                self.data['transcoded_exif'] = helpers.get_exif( files['transcoded_exif'], log, self.data )
+                log.info( 'Transcoded EXIF data extracted: ' + str( self.data['transcoded_exif'] ) )
+            except Exception as e:
+                self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
+                self.handle_errors()
+                self.__release_lock()
+                raise
+
+
             # Create an AVI for intellivision.
             log.info( 'Transcode %s to %s' % ( files['intellivision']['ifile'], files['intellivision']['ofile'] ) )
             video_processing.transcode_avi( files['intellivision'], log, self.data )
@@ -358,7 +370,7 @@ class Worker(Background):
 
             # DEBUG - easily turn this on and off for testing
             # purposes.
-            if True:
+            if False:
                 # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
                 log.info( 'Making call to get faces' )
@@ -769,6 +781,13 @@ class Worker(Background):
                 ifile = input_filename, 
                 ofile = abs_basename+'_exif.json', 
                 key   = self.uuid + '/' + self.uuid + '_exif.json' )
+
+            # The 'transcoded_exif' media file, json
+            self.add_file( 
+                label = 'transcoded_exif',
+                ifile = abs_basename+'_output.mp4',
+                ofile = abs_basename+'_output_exif.json', 
+                key   = None )
 
             # The 'intellivision' media file, by convention an AVI.
             self.add_file( 
