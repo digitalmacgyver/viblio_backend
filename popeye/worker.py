@@ -241,11 +241,8 @@ class Worker(Background):
             user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
 
             media_title = None
-            log.info( 'EXIF DATA IS ' + str( self.data['metadata'] ) )
             if 'file' in self.data['metadata']:
-                log.info( 'FILE DATA IS ' + str( self.data['metadata']['file'] ) )
                 if 'Path' in self.data['metadata']['file']:
-                    log.info( 'PATH DATA IS ' + str( self.data['metadata']['file']['Path'] ) )
                     if len( self.data['metadata']['file']['Path'] ):
                         media_title = os.path.splitext( ntpath.basename( self.data['metadata']['file']['Path'] ) )[0]
 
