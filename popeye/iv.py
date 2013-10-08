@@ -364,6 +364,7 @@ def train_person(session_info, user_id, person_id, track_id, file_id, media_url)
             return('Success' + str(r.content))
 
 def get_tracks(session_info, user_id, uid, media_url):
+    log = get_log()
     response = analyze(session_info, user_id, uid, media_url)
     session_info = {'key': response['key'], 
                     'secret': response['secret']}
