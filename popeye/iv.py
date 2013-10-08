@@ -364,7 +364,7 @@ def train_person(session_info, user_id, person_id, track_id, file_id, media_url)
             return('Success' + str(r.content))
 
 def get_tracks(session_info, user_id, uid, media_url, log=log):
-    response = iv.analyze(session_info, user_id, uid, media_url, log=log)
+    response = analyze(session_info, user_id, uid, media_url, log=log)
     session_info = {'key': response['key'], 
                     'secret': response['secret']}
     user_id = response['user_id']
@@ -376,7 +376,7 @@ def get_tracks(session_info, user_id, uid, media_url, log=log):
     else:
         log.info(log, 'waiting for 120 seconds')
         time.sleep(120)
-    tracks = iv.retrieve(session_info, user_id, file_id, log=log)
+    tracks = retrieve(session_info, user_id, file_id, log=log)
     if tracks == 'No Tracks':
         log.info (log, 'No tracks found')
         return json.dumps( {"tracks": {"file_id": file_id, "numberoftracks": "0"}} )
@@ -386,10 +386,10 @@ def get_tracks(session_info, user_id, uid, media_url, log=log):
         detection_score = float(track.detectionscore.string)
         if ( person_id == '-1' ) & ( detection_score > iv_config.minimum_detection_score ):
             # Train unknown person if detection score is high enough
-            new_person_id = iv.add_person(session_info, user_id, log=log)
+            new_person_id = add_person(session_info, user_id, log=log)
             log.info( 'Added a new person: ' + new_person_id )
             try:
-                iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url, log=log)
+                train_person(session_info, user_id, new_person_id, track_id, file_id, media_url, log=log)
                 log.info( 'training: ' + new_person_id )
                 get_tracks(session_info, user_id, uid, media_url, log=log)
             except:
