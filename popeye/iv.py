@@ -7,7 +7,7 @@ import sys
 import time
 import threading
 import uuid
-
+import json
 import iv_config
 
 def get_log():
@@ -363,3 +363,38 @@ def train_person(session_info, user_id, person_id, track_id, file_id, media_url)
         if str(soup.result.status.text) == 'Success':
             return('Success' + str(r.content))
 
+def get_tracks(session_info, user_id, uid, media_url, log=log):
+    response = analyze(session_info, user_id, uid, media_url, log=log)
+    session_info = {'key': response['key'], 
+                    'secret': response['secret']}
+    user_id = response['user_id']
+    file_id = response['file_id']
+    # in case wait_time is absent, wait for fixed time
+    if response.get( 'wait_time' ):
+        wait_time = response['wait_time']
+        time.sleep(wait_time)
+    else:
+        log.info(log, 'waiting for 120 seconds')
+        time.sleep(120)
+    tracks = retrieve(session_info, user_id, file_id, log=log)
+    if tracks == 'No Tracks':
+        log.info (log, 'No tracks found')
+        return json.dumps( {"tracks": {"file_id": file_id, "numberoftracks": "0"}} )
+    for i,track in enumerate(tracks.findAll('track')):
+        track_id = track.trackid.string
+        person_id = track.personid.string
+        detection_score = float(track.detectionscore.string)
+        if ( person_id == '-1' ) & ( detection_score > iv_config.minimum_detection_score ):
+            # Train unknown person if detection score is high enough
+            new_person_id = add_person(session_info, user_id, log=log)
+            log.info( 'Added a new person: ' + new_person_id )
+            try:
+                train_person(session_info, user_id, new_person_id, track_id, file_id, media_url, log=log)
+                log.info( 'training: ' + new_person_id )
+                get_tracks(session_info, user_id, uid, media_url, log=log)
+            except:
+                log.warning( 'Failed to train unknown person' )
+        else:
+            # Known person or Unknown person with low detection score
+            print 'Known person or Unknown person with low detection score'
+    return (tracks)
