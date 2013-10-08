@@ -5,6 +5,7 @@ import hmac
 import json
 import logging
 import mimetypes
+import ntpath
 import os
 import platform
 import requests
@@ -239,12 +240,22 @@ class Worker(Background):
             log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
             user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
 
+            media_title = None
+            log.info( 'EXIF DATA IS ' + str( self.data['metadata'] ) )
+            if 'file' in self.data['metadata']:
+                log.info( 'FILE DATA IS ' + str( self.data['metadata']['file'] ) )
+                if 'Path' in self.data['metadata']['file']:
+                    log.info( 'PATH DATA IS ' + str( self.data['metadata']['file']['Path'] ) )
+                    if len( self.data['metadata']['file']['Path'] ):
+                        media_title = os.path.splitext( ntpath.basename( self.data['metadata']['file']['Path'] ) )[0]
+
             media = Media( uuid           = self.uuid,
                            media_type     = 'original',
                            recording_date = recording_date,
                            lat            = self.data['exif']['lat'],
                            lng            = self.data['exif']['lng'],
                            filename       = client_filename,
+                           title          = media_title,
                            view_count     = 0 )
 
             # Associate media with user.
@@ -350,7 +361,9 @@ class Worker(Background):
 
             # DEBUG - easily turn this on and off for testing
             # purposes.
-            if True:
+
+            # DEBUG - Set this back to True
+            if False:
                 # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
                 log.info( 'Making call to get faces' )
