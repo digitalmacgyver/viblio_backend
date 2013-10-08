@@ -41,118 +41,141 @@ def get_faces(file_data, log, data):
     # Open session and login user for IntelliVision
     session_info = iv.open_session()
     user_id = iv.login(session_info, uid )
-    # Send the video for processing by IntelliVision
-    # Since analyze may need to restart session, session info is returned
-    response = iv.analyze(session_info, user_id, uid, media_url)
-    session_info = {'key': response['key'], 
-                    'secret': response['secret']}
-    user_id = response['user_id']
-    file_id = response['file_id']
-    # in case wait_time is absent, wait for fixed time
-    if response.get( 'wait_time' ):
-        wait_time = response['wait_time']
-        time.sleep(wait_time)
-    else:
-        log.info( 'waiting for 120 seconds' )
-        time.sleep(120)
-    # Get Face Recognition results from IntelliVision
-    tracks = iv.retrieve(session_info, user_id, file_id)
-    if tracks == 'No Tracks':
-        log.info( 'No tracks found' )
-        return json.dumps( {"tracks": {"file_id": file_id, "numberoftracks": "0"}} )
-    number_of_tracks = int( tracks.numberoftracks.string )
-    # Create a new Tracks data structure starting with file_id & numberftracks
-    file_id_tag = Tag (name="file_id")
-    file_id_tag.string = file_id
-    tracks_tag = Tag (name = "tracks")
-    tracks_tag.insert(0, tracks.numberoftracks)
-    tracks_tag.insert(0, file_id_tag)
-    log.debug( str(tracks_tag) )
-    # Process each track, one at a time
-    for i,track in enumerate(tracks.findAll('track')):
-        track_id = track.trackid.string
-        formatted_track_id = '%02d' %int(track_id)
-        person_id = track.personid.string
-        detection_score = float(track.detectionscore.string)
-        if ( person_id == '-1' ):
-            # unknown person
-            if ( detection_score > minimum_detection_score ):
-                # Train unknown person if detection score is high enough
-                new_person_id = iv.add_person(session_info, user_id)
-                track.personid.string = new_person_id
-                formatted_new_person_id = '%02d' %int(new_person_id)
-                log.info( 'Added a new person: ' + new_person_id )
-                log.info( "downloading with best face frame" )
+    try:
+        # Send the video for processing by IntelliVision
+        # Since analyze may need to restart session, session info is returned
+        response = iv.analyze(session_info, user_id, uid, media_url)
+        session_info = {'key': response['key'], 
+                        'secret': response['secret']}
+        user_id = response['user_id']
+        file_id = response['file_id']
+        # in case wait_time is absent, wait for fixed time
+        if response.get( 'wait_time' ):
+            wait_time = response['wait_time']
+            time.sleep(wait_time)
+        else:
+            log.info( 'waiting for 120 seconds' )
+            time.sleep(120)
+        # Get Face Recognition results from IntelliVision
+        tracks = iv.retrieve(session_info, user_id, file_id)
+        if tracks == 'No Tracks':
+            log.info( 'No tracks found' )
+            return json.dumps( {"tracks": {"file_id": file_id, "numberoftracks": "0"}} )
+        number_of_tracks = int( tracks.numberoftracks.string )
+        # Create a new Tracks data structure starting with file_id & numberftracks
+        file_id_tag = Tag (name="file_id")
+        file_id_tag.string = file_id
+        tracks_tag = Tag (name = "tracks")
+        tracks_tag.insert(0, tracks.numberoftracks)
+        tracks_tag.insert(0, file_id_tag)
+        log.debug( str(tracks_tag) )
+        # Process each track, one at a time
+        for i,track in enumerate(tracks.findAll('track')):
+            track_id = track.trackid.string
+            formatted_track_id = '%02d' %int(track_id)
+            person_id = track.personid.string
+            detection_score = float(track.detectionscore.string)
+            if ( person_id == '-1' ):
+                # unknown person
+                if ( detection_score > minimum_detection_score ):
+                    # Train unknown person if detection score is high enough
+                    new_person_id = iv.add_person(session_info, user_id)
+                    track.personid.string = new_person_id
+                    formatted_new_person_id = '%02d' %int(new_person_id)
+                    log.info( 'Added a new person: ' + new_person_id )
+                    log.info( "downloading with best face frame" )
+                    url = track.bestfaceframe.string
+                    r = requests.get(url)
+                    filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
+                    with open(filename, "wb") as f:
+                        f.write(r.content)
+                    face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
+                    log.info( "Uploading face to S3" )
+                    try:
+                        bucket_contents.key = face_key
+                        bucket_contents.set_contents_from_filename(filename)
+                        cmd = 'rm %s' % ( filename )
+                        log.info( cmd )
+                        ( status, output ) = commands.getstatusoutput( cmd )
+                        log.debug( 'Command output was: ' + output )
+                    except:
+                        log.error( 'Upload to S3 failed' )
+                        raise( 'Upload to S3 of %s failed' % ( face_key ) )
+                    try:
+                        iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
+                        log.info( 'training: ' + new_person_id )
+                    except:
+                        log.warning( 'Failed to train unknown person' )
+                    # update bestfaceframe and insert track into output
+                        track.bestfaceframe.string = face_key
+                        tracks_tag.append(track)
+                        log.debug( str( tracks_tag ) )
+                else:
+                    # Unknown person with low detection score
+                    track.personid.string = ''
+                    track.bestfaceframe.string = ''    
+                    number_of_tracks -= 1
+                    log.debug( str( tracks_tag ) )
+            else:
+                # Known person
+                recognition_score = float(track.recognitionconfidence.string)
+                if ( recognition_score > minimum_recognition_score ):
+                    # Train known person only if recognition score was high enough
+                    try:
+                        log.info( 'training: ' + person_id )
+                        iv.train_person(session_info, user_id, str(person_id), track_id, file_id, media_url)
+                    except:
+                        log.error( 'Failed to train known person' )
+                formatted_person_id = '%02d' %int(person_id)            
                 url = track.bestfaceframe.string
                 r = requests.get(url)
-                filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
+                filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
                 with open(filename, "wb") as f:
                     f.write(r.content)
-                face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_new_person_id + '.jpg'
+                face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
                 log.info( "Uploading face to S3" )
                 try:
                     bucket_contents.key = face_key
                     bucket_contents.set_contents_from_filename(filename)
-                    cmd = 'rm %s' % ( filename )
-                    log.info( cmd )
-                    ( status, output ) = commands.getstatusoutput( cmd )
-                    log.debug( 'Command output was: ' + output )
                 except:
-                    log.error( 'Upload to S3 failed' )
-                    raise( 'Upload to S3 of %s failed' % ( face_key ) )
-                try:
-                    iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
-                    log.info( 'training: ' + new_person_id )
-                except:
-                    log.warning( 'Failed to train unknown person' )
-                # update bestfaceframe and insert track into output
+                    log.info( 'Upload to S3 of %s failed' % ( filename ) )
+                    raise Exception( 'Upload to S3 of %s failed' % ( filename ) )
+                # update bestfaceframe and append track to output
                 track.bestfaceframe.string = face_key
                 tracks_tag.append(track)
                 log.debug( str( tracks_tag ) )
-            else:
-                # Unknown person with low detection score
-                track.personid.string = ''
-                track.bestfaceframe.string = ''    
-                number_of_tracks -= 1
-                log.debug( str( tracks_tag ) )
-        else:
-            # Known person
-            recognition_score = float(track.recognitionconfidence.string)
-            if ( recognition_score > minimum_recognition_score ):
-                # Train known person only if recognition score was high enough
-                try:
-                    log.info( 'training: ' + person_id )
-                    iv.train_person(session_info, user_id, str(person_id), track_id, file_id, media_url)
-                except:
-                    log.info( 'Failed to train known person' )
-            formatted_person_id = '%02d' %int(person_id)            
-            url = track.bestfaceframe.string
-            r = requests.get(url)
-            filename = '/mnt/uploaded_files/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
-            with open(filename, "wb") as f:
-                f.write(r.content)
-            face_key = media_uuid + '/' + media_uuid + '_face_' + formatted_track_id + '_' + formatted_person_id + '.jpg'
-            log.info( "Uploading face to S3" )
-            try:
-                bucket_contents.key = face_key
-                bucket_contents.set_contents_from_filename(filename)
-            except:
-                log.info( 'Upload to S3 of %s failed' % ( filename ) )
-                raise Exception( 'Upload to S3 of %s failed' % ( filename ) )
-            # update bestfaceframe and append track to output
-            track.bestfaceframe.string = face_key
-            tracks_tag.append(track)
-            log.debug( str( tracks_tag ) )
-    tracks_tag.numberoftracks.string = str(number_of_tracks)
-    tracks_string = str(tracks_tag)
-    tracks_dict = xmltodict.parse(tracks_string)
-    tracks_json = json.dumps(tracks_dict)
-    log.info( str( tracks_json ) )
-    # Cleanup permissions, logout & close session
-    bucket_contents.set_acl(original_acl)
-    iv.logout(session_info, user_id)
-    iv.close_session(session_info)
-    return tracks_json
+        tracks_tag.numberoftracks.string = str(number_of_tracks)
+        tracks_string = str(tracks_tag)
+        tracks_dict = xmltodict.parse(tracks_string)
+        tracks_json = json.dumps(tracks_dict)
+        log.info( str( tracks_json ) )
+        # Cleanup permissions, logout & close session
+        bucket_contents.set_acl(original_acl)
+        iv.logout(session_info, user_id)
+        iv.close_session(session_info)
+        return tracks_json
+    except Exception as e:
+        # Something went wrong
+        # Cleanup permissions, logout & close session
+        log.error( "Error in get faces: " + str( e ) )
+        try:
+            log.info( "Restoring original ACL permissions for AVI" )
+            bucket_contents.set_acl( original_acl )
+            log.info( "ACL restored." )
+        except:
+            log.error( "Could not restore ACL permissions" )
+        try:
+            log.info( "Logging out Intellivision session: %s for user: %s" % ( session_info, user_id ) )
+            iv.logout( session_info, user_id )
+            log.info( "Logged out." )
+        except:
+            log.error( "Could not log out user" )
+        try:
+            log.info( "Closing Intellivision session: %s" % ( session_info ) )
+            iv.close_session( session_info )
+        except:
+            log.error( "Could not close session" )
+        raise
 
 def transcode_main( file_data, log, data, files=None ):
     ifile = file_data['ifile']
