@@ -53,12 +53,12 @@ def get_faces(file_data, log, data):
         wait_time = response['wait_time']
         time.sleep(wait_time)
     else:
-        log.info(log, 'waiting for 120 seconds')
+        log.info( 'waiting for 120 seconds' )
         time.sleep(120)
     # Get Face Recognition results from IntelliVision
     tracks = iv.retrieve(session_info, user_id, file_id)
     if tracks == 'No Tracks':
-        log.info (log, 'No tracks found')
+        log.info( 'No tracks found' )
         return json.dumps( {"tracks": {"file_id": file_id, "numberoftracks": "0"}} )
     number_of_tracks = int( tracks.numberoftracks.string )
     # Create a new Tracks data structure starting with file_id & numberftracks
@@ -108,13 +108,13 @@ def get_faces(file_data, log, data):
                 # update bestfaceframe and insert track into output
                 track.bestfaceframe.string = face_key
                 tracks_tag.append(track)
-                log.debug(log, str(tracks_tag))
+                log.debug( str( tracks_tag ) )
             else:
                 # Unknown person with low detection score
                 track.personid.string = ''
                 track.bestfaceframe.string = ''    
                 number_of_tracks -= 1
-                log.debug(log, str(tracks_tag))
+                log.debug( str( tracks_tag ) )
         else:
             # Known person
             recognition_score = float(track.recognitionconfidence.string)
@@ -142,12 +142,12 @@ def get_faces(file_data, log, data):
             # update bestfaceframe and append track to output
             track.bestfaceframe.string = face_key
             tracks_tag.append(track)
-            log.debug(log, str(tracks_tag))
+            log.debug( str( tracks_tag ) )
     tracks_tag.numberoftracks.string = str(number_of_tracks)
     tracks_string = str(tracks_tag)
     tracks_dict = xmltodict.parse(tracks_string)
     tracks_json = json.dumps(tracks_dict)
-    log.info(log, str(tracks_json))
+    log.info( str( tracks_json ) )
     # Cleanup permissions, logout & close session
     bucket_contents.set_acl(original_acl)
     iv.logout(session_info, user_id)
