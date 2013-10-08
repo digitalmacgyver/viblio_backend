@@ -358,9 +358,7 @@ class Worker(Background):
 
             # DEBUG - easily turn this on and off for testing
             # purposes.
-
-            # DEBUG - Set this back to True
-            if False:
+            if True:
                 # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
                 log.info( 'Making call to get faces' )
