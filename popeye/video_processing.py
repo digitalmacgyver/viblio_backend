@@ -249,22 +249,23 @@ def move_atom( file_data, log, data=None ):
 def generate_poster( file_data, log, data=None ):
     ifile = file_data['ifile']
     ofile = file_data['ofile']    
-    rotation = data['exif']['rotation']
-    width    = data['exif']['width']
-    height   = data['exif']['height']
+    width    = data['transcoded_exif']['width']
+    height   = data['transcoded_exif']['height']
 
-    if height == 0: 
-        aspect_ratio = 4/float(3)
-    else:
-        aspect_ratio = width/float(height)
+    if not ( width and height ):
+        raise Exception( 'Could not get width and height for transcoded video, so can not generate poster.' )
+
+    aspect_ratio = width/float(height)
     log.info( 'Poster aspect ratio is ' + str( aspect_ratio ) )
     
-    cmd = ''
+    ffmpeg_opts = ' -vframes 1 '
 
-    if rotation == '90' or rotation == '270' or aspect_ratio < 16/float(9):
-        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=-1:180,pad=320:180:ow/2-iw/2:0 %s' %( ifile, ofile )
-    elif rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=320:-1,pad=320:180:0:oh/2-ih/2 %s' %( ifile, ofile )
+    if aspect_ratio < 16/float(9):
+        ffmpeg_opts += ' -vf scale=-1:180,pad="320:180:(ow-iw)/2:(oh-ih)/2" '
+    else:
+        ffmpeg_opts += ' -vf scale=320:-1,pad="320:180:(ow-iw)/2:(oh-ih)/2" '
+
+    cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s %s %s' %( ifile, ffmpeg_opts, ofile )
 
     log.info( 'Executing poster generation command: '+ cmd )
     ( status, output ) = commands.getstatusoutput( cmd )
@@ -277,16 +278,20 @@ def generate_poster( file_data, log, data=None ):
 def generate_thumbnail( file_data, log, data=None ):
     ifile = file_data['ifile']
     ofile = file_data['ofile']    
-    rotation = data['exif']['rotation']
-    width    = data['exif']['width']
-    height   = data['exif']['height']    
+    width    = data['transcoded_exif']['width']
+    height   = data['transcoded_exif']['height']    
 
-    cmd = ''
+    ffmpeg_opts = ' -vframes 1 '
 
-    if rotation == '90' or rotation == '270':
-        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=-1:128,pad=128:128:ow/2-iw/2:0 %s' %( ifile, ofile )
-    elif rotation == '0' or rotation == '180':
-        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=128:-1,pad=128:128:0:oh/2-ih/2 %s' %( ifile, ofile )
+    if width and height:
+        if width > height:
+            ffmpeg_opts += ' -vf scale=128:-1,pad="128:128:(ow-iw)/2:(oh-ih)/2" '
+        else:
+            ffmpeg_opts += ' -vf scale=-1:128,pad="128:128:(ow-iw)/2:(oh-ih)/2" '
+    else:
+        raise Exception( 'No width and height information available in transcoded exif, can not generate thumbnail' )
+
+    cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s %s %s' %( ifile, ffmpeg_opts, ofile )
 
     log.info( 'Executing thumbnail generation command: ' + cmd )
     ( status, output ) = commands.getstatusoutput( cmd )
