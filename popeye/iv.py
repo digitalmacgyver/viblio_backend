@@ -361,7 +361,9 @@ def train_person(session_info, user_id, person_id, track_id, file_id, media_url)
         soup = BeautifulSoup(r.content, 'lxml')
         log.info( str( soup ) )
         if str(soup.result.status.text) == 'Success':
-            return('Success' + str(r.content))
+            return('Success')
+        else:
+            return('Failure')
 
 def get_tracks(session_info, user_id, uid, media_url):
     log = get_log()
@@ -390,9 +392,12 @@ def get_tracks(session_info, user_id, uid, media_url):
             new_person_id = add_person(session_info, user_id)
             log.info( 'Added a new person: ' + new_person_id )
             try:
-                train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
                 log.info( 'training: ' + new_person_id )
-                get_tracks(session_info, user_id, uid, media_url)
+                result = train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
+                if result == 'Success':
+                    get_tracks(session_info, user_id, uid, media_url)
+                else:
+                    delete_person(session_info, user_id, new_person_id)
             except:
                 log.warning( 'Failed to train unknown person' )
         else:
