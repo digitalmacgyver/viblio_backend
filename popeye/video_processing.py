@@ -242,7 +242,7 @@ def move_atom( file_data, log, data=None ):
     ( status, output ) = commands.getstatusoutput( cmd )
     log.debug( 'Command output was: ' + output )
     if status != 0 or not os.path.isfile( ofile ):
-        log.error( 'Failed to run qtfaststart on the output file' )
+        log.warning( 'Failed to run qtfaststart on the output file' )
     else:
         log.debug( 'qtfaststart command returned successful completion status.' )        
 
@@ -252,18 +252,19 @@ def generate_poster( file_data, log, data=None ):
     width    = data['transcoded_exif']['width']
     height   = data['transcoded_exif']['height']
 
-    if not ( width and height ):
-        raise Exception( 'Could not get width and height for transcoded video, so can not generate poster.' )
-
-    aspect_ratio = width/float(height)
-    log.info( 'Poster aspect ratio is ' + str( aspect_ratio ) )
-    
     ffmpeg_opts = ' -vframes 1 '
 
-    if aspect_ratio < 16/float(9):
-        ffmpeg_opts += ' -vf scale=-1:180,pad="320:180:(ow-iw)/2:(oh-ih)/2" '
+    if width and height:
+        aspect_ratio = width/float(height)
+        log.info( 'Poster aspect ratio is ' + str( aspect_ratio ) )
+    
+        if aspect_ratio < 16/float(9):
+            ffmpeg_opts += ' -vf scale=-1:180,pad="320:180:(ow-iw)/2:(oh-ih)/2" '
+        else:
+            ffmpeg_opts += ' -vf scale=320:-1,pad="320:180:(ow-iw)/2:(oh-ih)/2" '
     else:
-        ffmpeg_opts += ' -vf scale=320:-1,pad="320:180:(ow-iw)/2:(oh-ih)/2" '
+        log.warning( 'Could not get width and height for transcoded video.' )
+        ffmpeg_opts += ' -vf scale=320:180 '
 
     cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s %s %s' %( ifile, ffmpeg_opts, ofile )
 
@@ -289,7 +290,8 @@ def generate_thumbnail( file_data, log, data=None ):
         else:
             ffmpeg_opts += ' -vf scale=-1:128,pad="128:128:(ow-iw)/2:(oh-ih)/2" '
     else:
-        raise Exception( 'No width and height information available in transcoded exif, can not generate thumbnail' )
+        log.warning( 'No width and height information available in transcoded exif' )
+        ffmpeg_opts += ' -vf scale=128:128 '
 
     cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s %s %s' %( ifile, ffmpeg_opts, ofile )
 

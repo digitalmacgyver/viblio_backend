@@ -67,7 +67,7 @@ class Worker(Background):
             self.popeye_log = None
             file_log = logging.getLogger( 'popeye.' + str( threading.current_thread().ident ) )
             fh = logging.FileHandler( self.files['media_log']['ofile'] )
-            fh.setFormatter( logging.Formatter( '%(name)s: %(asctime)s %(levelname)-4s %(message)s' ) )
+            fh.setFormatter( logging.Formatter( '%(name)-22s: %(module)-7s: %(lineno)-3s: %(funcName)-12s: %(asctime)s: %(levelname)-5s: %(message)s' ) )
             fh.setLevel( config.loglevel )
             self.popeye_logging_handler = fh
             file_log.addHandler( fh )
@@ -144,6 +144,9 @@ class Worker(Background):
             self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         # Give the input file an extension.
@@ -156,6 +159,9 @@ class Worker(Background):
             self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         # Extract the mimetype and store it in self.data['mimetype']
@@ -167,6 +173,9 @@ class Worker(Background):
             self.__safe_log( log.error, 'Failed to get mime type, error was: ' + str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         try: 
@@ -190,6 +199,9 @@ class Worker(Background):
                 self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
                 self.handle_errors()
                 self.__release_lock()
+                if self.popeye_logging_handler:
+                    self.popeye_log.removeHandler( self.popeye_logging_handler )
+                    self.popeye_logging_handler = None
                 raise
 
 
@@ -214,6 +226,9 @@ class Worker(Background):
             self.__safe_log( log.error, str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         ######################################################################
@@ -230,6 +245,9 @@ class Worker(Background):
             self.__safe_log( log.error, 'Failed to upload to S3: ' + str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         #######################################################################
@@ -344,6 +362,9 @@ class Worker(Background):
             self.__safe_log( log.error, 'Failed to add mediafile to database: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         # Commit to database.
@@ -353,6 +374,9 @@ class Worker(Background):
             self.__safe_log( log.error, 'Failed to commit the database: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         # Serialize any operations by user and detect faces.
@@ -394,6 +418,9 @@ class Worker(Background):
                 pass
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         # Commit to database.
@@ -403,6 +430,9 @@ class Worker(Background):
             self.__safe_log( log.error, 'Failed to commit the database: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         #######################################################################
@@ -421,11 +451,17 @@ class Worker(Background):
                 log.error( 'Cannot find body in response!' )
             jdata = json.loads( body )
             if 'error' in jdata:
+                if self.popeye_logging_handler:
+                    self.popeye_log.removeHandler( self.popeye_logging_handler )
+                    self.popeye_logging_handler = None
                 raise Exception( jdata['message'] )
         except Exception as e:
             self.__safe_log( log.error, 'Failed to notify Cat: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
             raise
 
         ######################################################################
@@ -447,6 +483,9 @@ class Worker(Background):
 
         log.info( 'DONE WITH %s' % self.uuid )
 
+        if self.popeye_logging_handler:
+            self.popeye_log.removeHandler( self.popeye_logging_handler )
+            self.popeye_logging_handler = None
         return
 
     ######################################################################
