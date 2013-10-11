@@ -11,7 +11,7 @@ import json
 import iv_config
 
 def get_log():
-    return logging.getLogger( 'popeye.' + str( threading.current_thread().ident ) )
+    return logging.getLogger( 'popeye.' + str( threading.current_thread().name ) )
 
 def open_session():
     log = get_log()

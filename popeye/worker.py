@@ -65,8 +65,10 @@ class Worker(Background):
         # Also log to a particular logging file.
         try:
             self.popeye_log = None
-            file_log = logging.getLogger( 'popeye.' + str( threading.current_thread().ident ) )
+            file_log = logging.getLogger( 'popeye.' + str( threading.current_thread().name ) )
             
+            file_log.info( "Constructing object for: %s" % self.uuid )
+
             # Try to remove existing handlers, of which we don't want
             # there to be any.
             current_handlers = file_log.handlers
