@@ -66,6 +66,14 @@ class Worker(Background):
         try:
             self.popeye_log = None
             file_log = logging.getLogger( 'popeye.' + str( threading.current_thread().ident ) )
+            
+            # Try to remove existing handlers, of which we don't want
+            # there to be any.
+            current_handlers = file_log.handlers
+            for current_handler in current_handlers:
+                file_log.warn( "For some reason there are existing handlers, removing handler: %s" % current_handler )
+                file_log.removeHandler( current_handler )
+
             fh = logging.FileHandler( self.files['media_log']['ofile'] )
             fh.setFormatter( logging.Formatter( '%(name)-22s: %(module)-7s: %(lineno)-3s: %(funcName)-12s: %(asctime)s: %(levelname)-5s: %(message)s' ) )
             fh.setLevel( config.loglevel )
