@@ -73,6 +73,8 @@ class Worker(Background):
             file_log.addHandler( fh )
 
             self.popeye_log = file_log
+
+            self.popeye_log.info( 'Logging handlers: %s' % ( self.popeye_log.handlers ) )
         except Exception as e:
             print "ERROR: " + str( e )
             raise
