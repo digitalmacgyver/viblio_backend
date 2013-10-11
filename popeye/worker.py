@@ -119,7 +119,10 @@ class Worker(Background):
             if not self.__valid_file( files[label]['ifile'] ):
                 log.error( 'File %s does not exist for label %s' % ( files[label]['ifile'], label ) )
                 self.handle_errors()
-                return
+                if self.popeye_logging_handler:
+                    self.popeye_log.removeHandler( self.popeye_logging_handler )
+                    self.popeye_logging_handler = None
+                raise Exception( 'File %s does not exist for label %s' % ( files[label]['ifile'], label ) )
             else:
                 log.info( '%s input file validated.' % label )
 
