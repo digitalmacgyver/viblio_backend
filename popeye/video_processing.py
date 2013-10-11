@@ -272,7 +272,14 @@ def generate_poster( file_data, log, data=None ):
     ( status, output ) = commands.getstatusoutput( cmd )
     log.debug( 'Command output was: ' + output )
     if status != 0 or not os.path.isfile( ofile ):
-        raise Exception( 'Failed to generate poster with command: %s' % cmd )
+        log.warning( 'Failed to generate poster with command: %s' % cmd )
+
+        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=320:180 %s' %( ifile, ofile )
+        log.info( 'Executing safer poster generation command: '+ cmd )
+        ( status, output ) = commands.getstatusoutput( cmd )
+        log.debug( 'Command output was: ' + output )            
+        if status != 0 or not os.path.isfile( ofile ):
+            raise Exception( 'Failed to generate poster with command: %s' % cmd )
     else:
         log.debug( 'ffmpeg command returned successful completion status.' )        
         
@@ -299,7 +306,14 @@ def generate_thumbnail( file_data, log, data=None ):
     ( status, output ) = commands.getstatusoutput( cmd )
     log.debug( 'Command output was: ' + output )
     if status != 0 or not os.path.isfile( ofile ):
-        raise Exception( 'Failed to generate thumbnail with command: %s' % cmd )
+        log.warning( 'Failed to generate thumbnail with command: %s' % cmd )
+
+        cmd = '/usr/local/bin/ffmpeg -y -ss 0.5 -i %s -vframes 1 -vf scale=320:180 %s' %( ifile, ofile )
+        log.info( 'Executing safer thumbnail generation command: '+ cmd )
+        ( status, output ) = commands.getstatusoutput( cmd )
+        log.debug( 'Command output was: ' + output )            
+        if status != 0 or not os.path.isfile( ofile ):
+            raise Exception( 'Failed to generate thumbnail with command: %s' % cmd )
     else:
         log.debug( 'ffmpeg command returned successful completion status.' )
 
