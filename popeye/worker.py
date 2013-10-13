@@ -99,7 +99,7 @@ class Worker(Background):
 
     def mp_log( self, user_id, event, properties = {} ):
         try:
-            properties['$time'] = str( datetime.datetime.now() )
+            #properties['$time'] = str( datetime.datetime.now() )
             properties['media_uuid'] = self.uuid
 
             if hasattr( self, 'data' ) and 'info' in self.data and 'fileExt' in self.data['info']:
