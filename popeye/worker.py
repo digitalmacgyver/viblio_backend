@@ -97,17 +97,18 @@ class Worker(Background):
             print "ERROR: " + str( e )
             raise
 
-    def mp_log( self, user_id, event, properties = {} ):
+    def mp_log( self, event, properties = {} ):
         try:
             #properties['$time'] = str( datetime.datetime.now() )
-            properties['media_uuid'] = self.uuid
+            if hasattr( self, 'data' ) and 'info' in self.data and 'uid' in self.data['info']:
+                properties['user_uuid'] = self.data['info']['uid']  
 
             if hasattr( self, 'data' ) and 'info' in self.data and 'fileExt' in self.data['info']:
                 properties['file_ext'] = self.data['info']['fileExt'].lower()
 
             event = self.mp_stage + '_' + event
             
-            self.mp.track( user_id, event, properties )
+            self.mp.track( self.uuid, event, properties )
         except Exception as e:
             self.__safe_log( self.popeye_log.warning, "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( user_id, event, properties, e ) )
 
@@ -173,7 +174,7 @@ class Worker(Background):
         self.__initialize_metadata( files['metadata']['ifile'] )
         log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
 
-        self.mp_log( self.data['info']['uid'], '010_input_validated' )
+        self.mp_log( '010_input_validated' )
 
         # Generate _exif.json and load it into self.data['exif']
         log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
@@ -218,7 +219,7 @@ class Worker(Background):
                 self.popeye_logging_handler = None
             raise
 
-        self.mp_log( self.data['info']['uid'], '020_mimetype_completed' )
+        self.mp_log( '020_mimetype_completed' )
 
         try: 
             # Transcode into mp4 and rotate as needed.
@@ -228,7 +229,7 @@ class Worker(Background):
             log.info( 'Transcoded mime type is ' + self.data['mimetype'] )
             log.info( 'After transcoding file %s is %s bytes.' % ( files['main']['ofile'], str( os.path.getsize( files['main']['ofile'] ) ) ) )
 
-            self.mp_log( self.data['info']['uid'], '030_transcode_mp4_completed' )
+            self.mp_log( '030_transcode_mp4_completed' )
 
             # Move the atom to the front of the file.
             log.info( 'Move atom for: ' + files['main']['ofile'] )
@@ -252,19 +253,19 @@ class Worker(Background):
             log.info( 'Transcode %s to %s' % ( files['intellivision']['ifile'], files['intellivision']['ofile'] ) )
             video_processing.transcode_avi( files['intellivision'], log, self.data )
 
-            self.mp_log( self.data['info']['uid'], '040_transcode_avi_completed' )
+            self.mp_log( '040_transcode_avi_completed' )
 
             # Create a poster.
             log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
             video_processing.generate_poster( files['poster'], log, self.data )
             
-            self.mp_log( self.data['info']['uid'], '050_poster_completed' )
+            self.mp_log( '050_poster_completed' )
 
             # Create a thumbnail.
             log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ofile'] ) )
             video_processing.generate_thumbnail( files['thumbnail'], log, self.data )
 
-            self.mp_log( self.data['info']['uid'], '060_thumbnail_completed' )
+            self.mp_log( '060_thumbnail_completed' )
 
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
@@ -299,7 +300,7 @@ class Worker(Background):
                 self.popeye_logging_handler = None
             raise
 
-        self.mp_log( self.data['info']['uid'], '070_store_s3_completed' )
+        self.mp_log( '070_store_s3_completed' )
 
         #######################################################################
         # DATABASE
@@ -430,7 +431,7 @@ class Worker(Background):
                 self.popeye_logging_handler = None
             raise
 
-        self.mp_log( self.data['info']['uid'], '080_store_db_completed' )
+        self.mp_log( '080_store_db_completed' )
 
         # Serialize any operations by user and detect faces.
         try:
@@ -445,7 +446,7 @@ class Worker(Background):
                                                    heartbeat   = 30 )
             self.faces_lock.acquire()
 
-            self.mp_log( self.data['info']['uid'], '090_face_lock_acquired' )
+            self.mp_log( '090_face_lock_acquired' )
 
             # DEBUG - easily turn this on and off for testing
             # purposes.
@@ -456,7 +457,7 @@ class Worker(Background):
                 self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
                 log.info( 'Get faces returned.' )
 
-                self.mp_log( self.data['info']['uid'], '100_get_faces_completed' )
+                self.mp_log( '100_get_faces_completed' )
 
                 if self.data['track_json'] == None:
                     log.info( 'Video processing did not return any tracks.' )
@@ -465,11 +466,11 @@ class Worker(Background):
                     log.debug( "JSON is: " + self.data['track_json'] )
                     self.store_faces( media, user )
 
-                self.mp_log( self.data['info']['uid'], '110_store_faces_completed' )
+                self.mp_log( '110_store_faces_completed' )
 
             self.faces_lock.release()
 
-            self.mp_log( self.data['info']['uid'], '120_face_lock_released' )
+            self.mp_log( '120_face_lock_released' )
         except Exception as e:
             try:
                 if hasattr( self, 'faces_lock' ) and self.faces_lock:
@@ -517,7 +518,7 @@ class Worker(Background):
                     self.popeye_logging_handler = None
                 raise Exception( jdata['message'] )
 
-            self.mp_log( self.data['info']['uid'], '130_cat_notification_completed' )
+            self.mp_log( '130_cat_notification_completed' )
         except Exception as e:
             self.__safe_log( self.popeye_log.error, 'Failed to notify Cat: %s' % str( e ) )
             self.handle_errors()
@@ -546,7 +547,7 @@ class Worker(Background):
 
         log.info( 'DONE WITH %s' % self.uuid )
 
-        self.mp_log( self.data['info']['uid'], '140_popeye_completed' )
+        self.mp_log( '140_popeye_completed' )
 
         if self.popeye_logging_handler:
             self.popeye_log.removeHandler( self.popeye_logging_handler )
