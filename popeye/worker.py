@@ -5,6 +5,7 @@ import hmac
 import json
 import logging
 import mimetypes
+import mixpanel
 import ntpath
 import os
 import platform
@@ -36,7 +37,6 @@ class Worker(Background):
     This class is a manager, which maintains some common data
     (e.g. filenames and S3 keys), and which initiates various other
     modules to actually perform the video processing.'''
-
 
     ######################################################################
     # Initialization
@@ -85,9 +85,33 @@ class Worker(Background):
             self.popeye_log = file_log
 
             self.popeye_log.info( 'Logging handlers: %s' % ( self.popeye_log.handlers ) )
+
+            # Mixpanel stuff.
+            self.mp_stage = '03'
+            try:
+                self.mp = mixpanel.Mixpanel( config.mp_token )
+            except Exception as e:
+                self.__safe_log( self.popeye_log.warning, "Couldn't instantiate mixpanel instrumentation." )
+
         except Exception as e:
             print "ERROR: " + str( e )
             raise
+
+    def mp_log( self, event, properties = {} ):
+        try:
+            #properties['$time'] = str( datetime.datetime.now() )
+            if hasattr( self, 'data' ) and 'info' in self.data and 'uid' in self.data['info']:
+                properties['user_uuid'] = self.data['info']['uid']  
+
+            if hasattr( self, 'data' ) and 'info' in self.data and 'fileExt' in self.data['info']:
+                properties['file_ext'] = self.data['info']['fileExt'].lower()
+
+            event = self.mp_stage + '_' + event
+            
+            self.mp.track( self.uuid, event, properties )
+        except Exception as e:
+            self.__safe_log( self.popeye_log.warning, "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( user_id, event, properties, e ) )
+
 
     def __del__( self ):
         '''Destructor.'''
@@ -150,13 +174,15 @@ class Worker(Background):
         self.__initialize_metadata( files['metadata']['ifile'] )
         log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
 
+        self.mp_log( '010_input_validated' )
+
         # Generate _exif.json and load it into self.data['exif']
         log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
         try:
             self.data['exif'] = helpers.get_exif( files['exif'], log, self.data )
             log.info( 'EXIF data extracted: ' + str( self.data['exif'] ) )
         except Exception as e:
-            self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Error during exif extraction: ' + str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
@@ -171,7 +197,7 @@ class Worker(Background):
             log.info( 'Renamed input file is: ' + new_filename )
             files['main']['ifile'] = new_filename
         except Exception as e:
-            self.__safe_log( log.error, 'Could not rename input file, error was: ' + str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Could not rename input file, error was: ' + str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
@@ -185,13 +211,15 @@ class Worker(Background):
             self.data['mimetype'] = str( mimetypes.guess_type( files['main']['ifile'] )[0] )
             log.info( 'Mime type was ' + self.data['mimetype'] )
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to get mime type, error was: ' + str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Failed to get mime type, error was: ' + str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
                 self.popeye_log.removeHandler( self.popeye_logging_handler )
                 self.popeye_logging_handler = None
             raise
+
+        self.mp_log( '020_mimetype_completed' )
 
         try: 
             # Transcode into mp4 and rotate as needed.
@@ -200,6 +228,8 @@ class Worker(Background):
             video_processing.transcode_main( files['main'], log, self.data )
             log.info( 'Transcoded mime type is ' + self.data['mimetype'] )
             log.info( 'After transcoding file %s is %s bytes.' % ( files['main']['ofile'], str( os.path.getsize( files['main']['ofile'] ) ) ) )
+
+            self.mp_log( '030_transcode_mp4_completed' )
 
             # Move the atom to the front of the file.
             log.info( 'Move atom for: ' + files['main']['ofile'] )
@@ -211,7 +241,7 @@ class Worker(Background):
                 self.data['transcoded_exif'] = helpers.get_exif( files['transcoded_exif'], log, self.data )
                 log.info( 'Transcoded EXIF data extracted: ' + str( self.data['transcoded_exif'] ) )
             except Exception as e:
-                self.__safe_log( log.error, 'Error during exif extraction: ' + str( e ) )
+                self.__safe_log( self.popeye_log.error, 'Error during exif extraction: ' + str( e ) )
                 self.handle_errors()
                 self.__release_lock()
                 if self.popeye_logging_handler:
@@ -219,18 +249,23 @@ class Worker(Background):
                     self.popeye_logging_handler = None
                 raise
 
-
             # Create an AVI for intellivision.
             log.info( 'Transcode %s to %s' % ( files['intellivision']['ifile'], files['intellivision']['ofile'] ) )
             video_processing.transcode_avi( files['intellivision'], log, self.data )
+
+            self.mp_log( '040_transcode_avi_completed' )
 
             # Create a poster.
             log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
             video_processing.generate_poster( files['poster'], log, self.data )
             
+            self.mp_log( '050_poster_completed' )
+
             # Create a thumbnail.
             log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ofile'] ) )
             video_processing.generate_thumbnail( files['thumbnail'], log, self.data )
+
+            self.mp_log( '060_thumbnail_completed' )
 
             # Generate a single face.
             log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
@@ -238,7 +273,7 @@ class Worker(Background):
             video_processing.generate_face( files['face'], log, self.data, skip=True )
 
         except Exception as e:
-            self.__safe_log( log.error, str( e ) )
+            self.__safe_log( self.popeye_log.error, str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
@@ -257,13 +292,15 @@ class Worker(Background):
                     log.info( 'Starting upload for %s to %s' % ( files[label]['ofile'], files[label]['key'] ) )
                     helpers.upload_file( files[label], log, self.data )
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to upload to S3: ' + str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Failed to upload to S3: ' + str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
                 self.popeye_log.removeHandler( self.popeye_logging_handler )
                 self.popeye_logging_handler = None
             raise
+
+        self.mp_log( '070_store_s3_completed' )
 
         #######################################################################
         # DATABASE
@@ -374,7 +411,7 @@ class Worker(Background):
                 face_asset.media_asset_features.append( face_feature )
 
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to add mediafile to database: %s' % str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Failed to add mediafile to database: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
@@ -386,13 +423,15 @@ class Worker(Background):
         try:
             orm.commit()
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to commit the database: %s' % str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Failed to commit the database: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
                 self.popeye_log.removeHandler( self.popeye_logging_handler )
                 self.popeye_logging_handler = None
             raise
+
+        self.mp_log( '080_store_db_completed' )
 
         # Serialize any operations by user and detect faces.
         try:
@@ -407,6 +446,8 @@ class Worker(Background):
                                                    heartbeat   = 30 )
             self.faces_lock.acquire()
 
+            self.mp_log( '090_face_lock_acquired' )
+
             # DEBUG - easily turn this on and off for testing
             # purposes.
             if True:
@@ -416,6 +457,8 @@ class Worker(Background):
                 self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
                 log.info( 'Get faces returned.' )
 
+                self.mp_log( '100_get_faces_completed' )
+
                 if self.data['track_json'] == None:
                     log.info( 'Video processing did not return any tracks.' )
                 else:
@@ -423,7 +466,11 @@ class Worker(Background):
                     log.debug( "JSON is: " + self.data['track_json'] )
                     self.store_faces( media, user )
 
+                self.mp_log( '110_store_faces_completed' )
+
             self.faces_lock.release()
+
+            self.mp_log( '120_face_lock_released' )
         except Exception as e:
             try:
                 if hasattr( self, 'faces_lock' ) and self.faces_lock:
@@ -442,7 +489,7 @@ class Worker(Background):
         try:
             orm.commit()
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to commit the database: %s' % str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Failed to commit the database: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
@@ -470,8 +517,10 @@ class Worker(Background):
                     self.popeye_log.removeHandler( self.popeye_logging_handler )
                     self.popeye_logging_handler = None
                 raise Exception( jdata['message'] )
+
+            self.mp_log( '130_cat_notification_completed' )
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to notify Cat: %s' % str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Failed to notify Cat: %s' % str( e ) )
             self.handle_errors()
             self.__release_lock()
             if self.popeye_logging_handler:
@@ -491,12 +540,14 @@ class Worker(Background):
                     if files[label][file_type] and self.__valid_file( files[label][file_type] ):
                         os.remove( files[label][file_type] )
         except Exception as e:
-            self.__safe_log( log.error, 'Some trouble removing temp files: %s' % str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Some trouble removing temp files: %s' % str( e ) )
             self.handle_errors()
 
         self.__release_lock()
 
         log.info( 'DONE WITH %s' % self.uuid )
+
+        self.mp_log( '140_popeye_completed' )
 
         if self.popeye_logging_handler:
             self.popeye_log.removeHandler( self.popeye_logging_handler )
@@ -521,9 +572,9 @@ class Worker(Background):
                             file_name = os.path.split( full_name )[1]
                             os.rename( full_name, base_path + '/errors/' + file_name )
                         except Exception as e_inner:
-                            self.__safe_log( log.error, 'Failed to rename file: ' + full_name )
+                            self.__safe_log( self.popeye_log.error, 'Failed to rename file: ' + full_name )
         except Exception as e:
-            self.__safe_log( log.error, 'Some trouble relocating temp files temp files: %s' % str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Some trouble relocating temp files temp files: %s' % str( e ) )
 
     def __acquire_lock( self ):
         try:
@@ -536,14 +587,14 @@ class Worker(Background):
             self.lock_data = fcntl.flock( self.lockfile, fcntl.LOCK_EX|fcntl.LOCK_NB )
             self.lock_acquired = True
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to acquire lock, error: ' + str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Failed to acquire lock, error: ' + str( e ) )
             raise
 
     def __release_lock( self ):
         try:
             # Create the file if it doesn't exist, open it if it does.
             log = self.popeye_log
-            if getattr( self, 'lock_acquired' ):
+            if hasattr( self, 'lock_acquired' ):
                 log.info( 'Attempting to release lock file: ' + self.lockfile_name )
                 fcntl.flock( self.lockfile, fcntl.LOCK_UN )
                 self.lock_acquired = False
@@ -552,14 +603,14 @@ class Worker(Background):
             else:
                 log.warn( '__release_lock called but no lock held: ' + self.lockfile_name )
         except Exception as e:
-            self.__safe_log( log.error, 'Failed to release lock, error: ' + str( e ) )
+            self.__safe_log( self.popeye_log.error, 'Failed to release lock, error: ' + str( e ) )
             raise
         finally:
             try:
                 os.remove( self.lockfile_name )
             except:
                 pass
-            if getattr( self, 'lock_acquired' ):
+            if hasattr( self, 'lock_acquired' ):
                 self.lock_acquired = False
 
     ######################################################################
@@ -676,11 +727,11 @@ class Worker(Background):
             if label in self.files:
                 self.popeye_log.info( 'Overwriting existing file label: %s with new values.' % label )
                 self.popeye_log.debug( 'Old %s label ifile is: %s' % 
-                               ( label, files[label].get( 'ifile', 'No ifile key' ) ) )
+                               ( label, self.files[label].get( 'ifile', 'No ifile key' ) ) )
                 self.popeye_log.debug( 'Old %s label ofile is: %s' % 
-                               ( label, files[label].get( 'ofile', 'No ofile key' ) ) )
+                               ( label, self.files[label].get( 'ofile', 'No ofile key' ) ) )
                 self.popeye_log.debug( 'Old %s label key is: %s' % 
-                               ( label, files[label].get( 'key', "No key called 'key'" ) ) )
+                               ( label, self.files[label].get( 'key', "No key called 'key'" ) ) )
             else:
                 self.popeye_log.info( 'Adding new file label: %s with new values.' % label )
 
@@ -740,7 +791,7 @@ class Worker(Background):
             f = open( ifile )
             self.data['info'] = json.load( f )
         except Exception as e:
-            log.error( 'Failed to open and parse as JSON: %s error was: %s' % ( ifile, str( e ) ) )
+            self.popeye_log.error( 'Failed to open and parse as JSON: %s error was: %s' % ( ifile, str( e ) ) )
             self.handle_errors()
             raise
 
@@ -760,7 +811,7 @@ class Worker(Background):
             f = open( ifile )
             self.data['metadata'] = json.load( f )
         except Exception as e:
-            log.error( 'Failed to open and parse %s as JSON error was %s' % ( ifile, str( e ) ) )
+            self.popeye_log.error( 'Failed to open and parse %s as JSON error was %s' % ( ifile, str( e ) ) )
             self.handle_errors()
             raise
 

@@ -11,7 +11,8 @@ PYPKGS=\
 	sqlalchemy \
 	requests \
 	qtfaststart \
-	pytz
+	pytz \
+	mixpanel-py
 
 install_deps:
 	apt-get -y install python-pip
