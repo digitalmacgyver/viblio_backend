@@ -28,7 +28,7 @@ class Background(object):
 
     def start( self ):
         try:
-            self.log.info( "Creating a DB session for thread: " + str( threading.current_thread().ident ) )
+            self.log.info( "Creating a DB session for thread: " + str( threading.current_thread().name ) )
             Session = scoped_session( self.SessionFactory )
             self.orm = Session()
 
