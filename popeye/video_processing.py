@@ -71,6 +71,7 @@ def get_faces(file_data, log, data):
         log.debug( str(tracks_tag) )
         # Process each track, one at a time
         for i,track in enumerate(tracks.findAll('track')):
+            log.debug('current track is' + str(track))
             track_id = track.trackid.string
             formatted_track_id = '%02d' %int(track_id)
             person_id = track.personid.string
@@ -81,7 +82,7 @@ def get_faces(file_data, log, data):
                     # Train unknown person if detection score is high enough
                     new_person_id = iv.add_person(session_info, user_id)
                     track.personid.string = new_person_id
-                    formatted_new_person_id = '%02d' %int(new_person_id)
+                    formatted_new_person_id = '%04d' %int(new_person_id)
                     log.info( 'Added a new person: ' + new_person_id )
                     log.info( "downloading with best face frame" )
                     url = track.bestfaceframe.string
@@ -107,9 +108,10 @@ def get_faces(file_data, log, data):
                     except:
                         log.warning( 'Failed to train unknown person' )
                     # update bestfaceframe and insert track into output
-                        track.bestfaceframe.string = face_key
-                        tracks_tag.append(track)
-                        log.debug( str( tracks_tag ) )
+                    track.bestfaceframe.string = face_key
+                    log.debug('current updated track is' + str(track))
+                    tracks_tag.append(track)
+                    log.debug('Tracks Tag after appending track is ' +  str( tracks_tag ) )
                 else:
                     # Unknown person with low detection score
                     track.personid.string = ''
