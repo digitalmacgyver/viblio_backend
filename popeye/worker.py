@@ -514,6 +514,7 @@ class Worker(Background):
                 log.error( 'Cannot find body in response!' )
             jdata = json.loads( body )
             if 'error' in jdata:
+                self.__release_lock()
                 if self.popeye_logging_handler:
                     self.popeye_log.removeHandler( self.popeye_logging_handler )
                     self.popeye_logging_handler = None
