@@ -105,13 +105,17 @@ def get_faces(file_data, log, data):
                     try:
                         iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
                         log.info( 'training: ' + str( new_person_id ) )
+                        track.bestfaceframe.string = face_key
+                        log.debug('current updated track is' + str(track))
+                        tracks_tag.append(track)
+                        log.debug('Tracks Tag after appending track is ' +  str( tracks_tag ) )
                     except:
                         log.warning( 'Failed to train unknown person' )
                     # update bestfaceframe and insert track into output
-                    track.bestfaceframe.string = face_key
-                    log.debug('current updated track is' + str(track))
-                    tracks_tag.append(track)
-                    log.debug('Tracks Tag after appending track is ' +  str( tracks_tag ) )
+                        track.personid.string = ''
+                        track.bestfaceframe.string = ''    
+                        number_of_tracks -= 1
+                        log.debug( str( tracks_tag ) )
                 else:
                     # Unknown person with low detection score
                     track.personid.string = ''
@@ -144,6 +148,7 @@ def get_faces(file_data, log, data):
                     raise Exception( 'Upload to S3 of %s failed' % ( filename ) )
                 # update bestfaceframe and append track to output
                 track.bestfaceframe.string = face_key
+                log.debug('current updated track is' + str(track))
                 tracks_tag.append(track)
                 log.debug( str( tracks_tag ) )
         tracks_tag.numberoftracks.string = str(number_of_tracks)
