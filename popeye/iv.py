@@ -35,6 +35,7 @@ def open_session():
     formatted_date = raw_date.strftime('%a, %d %b %Y %H:%M:%S %Z')  
     headers = {'Content-Type':'text/xml', 'Date':formatted_date}
     r = requests.post(url, data=session_xml, headers=headers)
+    log.info ( r.content )
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         log.info( str(soup) )
@@ -81,6 +82,7 @@ def close_session(session_info ):
     url = iv_config.iv_host + 'endSession'
     headers = generate_headers(session_info)
     r = requests.delete(url, headers=headers)
+    log.info ( r.content )
     if r.status_code == requests.codes.ok:
         log.info( 'session closed' + r.content )
     else:
@@ -171,6 +173,7 @@ def get_user_details(session_info, user_id ):
     url = iv_config.iv_host + 'user/' + user_id + '/getUser'
     headers = generate_headers(session_info)
     r = requests.get(url, headers=headers)
+    log.info ( r.content )
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         if (str(soup.status.text) == 'Success'):
@@ -217,6 +220,7 @@ def analyze(session_info, user_id, uid, media_url ):
     for trial in range (1, 20):
         log.info( "Trial number: " + str(trial) )
         r = requests.post(url, data=analyze_xml, headers=headers)
+        log.info ( r.content )
         if r.status_code == requests.codes.ok:
             soup = BeautifulSoup(r.content, 'lxml')
             log.info( str(soup) )
@@ -234,16 +238,17 @@ def analyze(session_info, user_id, uid, media_url ):
                     elif (soup.result.fileid):
                         file_id = soup.result.fileid.string
                         if(soup.result.expectedwaitseconds):
-                            wait_time = int(soup.result.expectedwaitseconds.text)
-                            return ({'file_id': file_id, 
+                            wait_time = int(soup.result.expectedwaitseconds.string)
+                            return ({'file_id': file_id,
                                      'wait_time': wait_time, 
                                      'key': session_info['key'], 
                                      'secret': session_info['secret'],
                                      'user_id': user_id})
-                        return ({'file_id': file_id,
-                                 'key': session_info['key'], 
-                                 'secret': session_info['secret'],
-                                 'user_id': user_id})
+                        else:
+                            return ({'file_id': file_id,
+                                     'key': session_info['key'], 
+                                     'secret': session_info['secret'],
+                                     'user_id': user_id})
                     else:
                         log.info( 'Unknown success case' )
                         log.info( str(soup) )
@@ -291,6 +296,7 @@ def retrieve(session_info, user_id, file_id ):
     url = iv_config.iv_host + 'user/' + user_id + '/retrieveFaces?fileID=' + file_id
     headers = generate_headers(session_info)
     r = requests.get(url, headers=headers)
+    log.info ( r.content )
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         log.info( str(soup) )
@@ -319,6 +325,7 @@ def add_person(session_info, user_id ):
     # add_person_xml = '<personDetails><firstName>' + name_uuid + '</firstName><lastName>' + name_uuid + '</lastName><description>Friend</description></personDetails>'
     headers = generate_headers(session_info)
     r = requests.post(url, data=add_person_xml, headers=headers)
+    log.info ( r.content )
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         log.info( str(soup) )
@@ -336,6 +343,7 @@ def delete_person(session_info, user_id, person_id ):
     url = iv_config.iv_host + 'user/' + user_id + '/deletePerson/' + person_id
     headers = generate_headers(session_info)
     r = requests.delete(url, headers=headers)
+    log.info ( r.content )
     if r.status_code == requests.codes.ok:
         soup = BeautifulSoup(r.content, 'lxml')
         log.info( str(soup) )
