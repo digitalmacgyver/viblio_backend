@@ -226,6 +226,7 @@ class Worker(Background):
             log.info( 'Transcode %s to %s' % ( files['main']['ifile'], files['main']['ofile'] ) )
             log.info( 'Before transcoding file %s is %s bytes.' % ( files['main']['ifile'], str( os.path.getsize( files['main']['ifile'] ) ) ) )
             video_processing.transcode_main( files['main'], log, self.data )
+
             log.info( 'Transcoded mime type is ' + self.data['mimetype'] )
             log.info( 'After transcoding file %s is %s bytes.' % ( files['main']['ofile'], str( os.path.getsize( files['main']['ofile'] ) ) ) )
 

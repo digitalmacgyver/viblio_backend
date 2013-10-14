@@ -103,7 +103,7 @@ def get_faces(file_data, log, data):
                         raise( 'Upload to S3 of %s failed' % ( face_key ) )
                     try:
                         iv.train_person(session_info, user_id, new_person_id, track_id, file_id, media_url)
-                        log.info( 'training: ' + new_person_id )
+                        log.info( 'training: ' + str( new_person_id ) )
                     except:
                         log.warning( 'Failed to train unknown person' )
                     # update bestfaceframe and insert track into output
@@ -122,7 +122,7 @@ def get_faces(file_data, log, data):
                 if ( recognition_score > minimum_recognition_score ):
                     # Train known person only if recognition score was high enough
                     try:
-                        log.info( 'training: ' + person_id )
+                        log.info( 'training: ' + str( person_id ) )
                         iv.train_person(session_info, user_id, str(person_id), track_id, file_id, media_url)
                     except:
                         log.error( 'Failed to train known person' )
@@ -189,7 +189,7 @@ def transcode_main( file_data, log, data, files=None ):
         try:
             os.rename( ifile, ofile )
         except Exception as e:
-            log.error( "Failed to rename %s to %s" % ( src, tar ) )
+            log.error( "Failed to rename %s to %s error was: %s" % ( ifile, ofile, e ) )
             raise
         data['mimetype'] = 'video/mp4'
         return
