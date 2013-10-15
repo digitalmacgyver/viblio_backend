@@ -386,27 +386,6 @@ class Worker( Background ):
                                         view_count = 0 )
             media.assets.append( poster_asset )
 
-            if self.data['found_faces']:
-                log.info( 'Generating row for face media_asset' )
-
-                # Face media_asset.
-                face_asset = MediaAssets( uuid       = str(uuid.uuid4()),
-                                          asset_type = 'face',
-                                          mimetype   = 'image/jpg',
-                                          bytes      = os.path.getsize( files['face']['ofile'] ),
-                                          width      = 128, 
-                                          height     = 128,
-                                          uri        = files['face']['key'],
-                                          location   = 'us',
-                                          view_count = 0 )
-                media.assets.append( face_asset )
-
-                log.info( 'Generating for for face media_asset_feature' )
-                face_feature = MediaAssetFeatures( feature_type = 'face',
-                                                   )
-                # Face media_asset_feature.
-                face_asset.media_asset_features.append( face_feature )
-
         except Exception as e:
             self.__safe_log( self.popeye_log.error, 'Failed to add mediafile to database: %s' % str( e ) )
             self.handle_errors()
