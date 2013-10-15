@@ -3,12 +3,14 @@ This is the base class for any/all background tasks that will perform
 database operations.  It exists to properly close down the ORM session
 when it is finished with.
 """
+import sys
+
 from appconfig import AppConfig
 try:
     config = AppConfig( 'popeye' ).config()
-except Exception, e:
-    print( str(e) )
-    sys.exit(1)
+except Exception as e:
+    print str( e ) 
+    sys.exit( 1 )
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -16,7 +18,7 @@ from models import *
 
 import threading
 
-class Background(object):
+class Background( object ):
     # Subclasses must override this method
     def run():
         pass
@@ -31,7 +33,6 @@ class Background(object):
             self.log.info( "Creating a DB session for thread: " + str( threading.current_thread().name ) )
             Session = scoped_session( self.SessionFactory )
             self.orm = Session()
-
             self.run()
         except Exception as e:
             self.log.error( "Rolling back DB on exception: %s" % str(e)  )

@@ -31,7 +31,7 @@ import video_processing
 config = AppConfig( 'popeye' ).config()
 
 # Base class for Worker.
-class Worker(Background):
+class Worker( Background ):
     '''The class which drives the video processing pipeline.
 
     This class is a manager, which maintains some common data
