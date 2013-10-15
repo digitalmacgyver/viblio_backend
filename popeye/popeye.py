@@ -43,7 +43,7 @@ do what I needed (i.e. work!)
 
 conn = 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name
 engine = create_engine( conn, pool_recycle=3600 )
-SessionFactory = map( engine )
+SessionFactory = db_map( engine )
 Session = scoped_session( SessionFactory )
 
 def load_sqla( handler ):

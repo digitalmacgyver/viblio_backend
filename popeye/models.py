@@ -78,7 +78,7 @@ between the tables for ORM queries.  The Perl DBIx does this for
 you automatically!
 
 """
-def map(engine):
+def db_map(engine):
     models=modules['models']
     mappers, tables, SessionFactory = reflect(engine, models)
     mappers["users"].add_properties({
