@@ -324,18 +324,3 @@ def generate_thumbnail( file_data, log, data=None ):
     else:
         log.debug( 'ffmpeg command returned successful completion status.' )
 
-def generate_face( file_data, log, data=None, skip=False ):
-    ifile = file_data['ifile']
-    ofile = file_data['ofile']    
-    data['found_faces'] = False
-
-    if not skip:
-        cmd = 'python /viblio/bin/extract_face.py %s %s' % ( ifile, ofile )
-        log.info( 'Executing face generation command: ' + cmd )
-        ( status, output ) = commands.getstatusoutput( cmd )
-        log.debug( 'Command output was: ' + output )
-        if status != 0 or not os.path.isfile( ofile ):
-            log.warning( 'Failed to find any faces in video %s for command: %s' % ( ifile, cmd ) )
-        else:
-            log.debug( 'extract_face command returned successful completion status.' )
-            data['found_faces'] = True

@@ -23,9 +23,9 @@ from wsgilog import WsgiLog
 from appconfig import AppConfig
 try:
     config = AppConfig( 'popeye' ).config()
-except Exception, e:
-    print( str(e) )
-    sys.exit(1)
+except Exception as e:
+    print( str( e ) )
+    sys.exit( 1 )
 
 # Create a webpy session-like thing for SQLAlchemy,
 # so the database session is available to all web 
@@ -40,7 +40,6 @@ scoped_session() stuff and the code in base/models.py to
 make sure I ain't doing something stupid/low performance
 with this code.  I had a tough time getting it to
 do what I needed (i.e. work!)
-
 """
 
 conn = 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name
@@ -48,7 +47,7 @@ engine = create_engine( conn, pool_recycle=3600 )
 SessionFactory = map( engine )
 Session = scoped_session( SessionFactory )
 
-def load_sqla(handler):
+def load_sqla( handler ):
     print( "Getting a new session...")
     web.ctx.orm = Session()
     web.ctx.SessionFactory = SessionFactory
@@ -86,9 +85,9 @@ urls = (
 )
 
 # The WSGI Logger
-class Log(WsgiLog):
-    def __init__(self, application):
-        print("Initializing WSGI Logger" )
+class Log( WsgiLog ):
+    def __init__( self, application ):
+        print "Initializing WSGI Logger"
         WsgiLog.__init__(
             self,
             application,
@@ -102,12 +101,12 @@ class Log(WsgiLog):
             )
 
 if __name__ == "__main__":
-    app = web.application(urls, globals())
+    app = web.application( urls, globals() )
     app.add_processor( attach_logger )
     app.add_processor( load_sqla ) 
-    app.run(Log)
+    app.run( Log )
 else:
-    app = web.application(urls, globals(), autoreload=False)
+    app = web.application( urls, globals(), autoreload=False )
     app.add_processor( attach_logger )
     app.add_processor( load_sqla )
-    application = app.wsgifunc(Log)
+    application = app.wsgifunc( Log )

@@ -31,25 +31,25 @@ indicated by the user uuid.
 
 """
 class get( object ):
-    def GET(self):
+    def GET( self ):
         # Get input params
         data = web.input()
 
         # Prepare response
-        web.header('Content-Type', 'application/json')
+        web.header( 'Content-Type', 'application/json' )
         res = {}
 
         if not 'uid' in data:
-            return toJSON({'error': True, 'message': 'Missing uid param'})
+            return toJSON( {'error': True, 'message': 'Missing uid param'} )
         uid = data.uid
 
         try:
             user = web.ctx.orm.query( Users ).filter_by( uuid = uid ).one()
-        except Exception, e:
-            return toJSON({'error': True, 'message': str(e) })
+        except Exception as e:
+            return toJSON( {'error': True, 'message': str( e ) } )
 
         if not user:
-            return toJSON({'error': True, 'message': 'User not found for uuid=%s' % uid })
+            return toJSON( {'error': True, 'message': 'User not found for uuid=%s' % uid } )
 
         web.ctx.log.debug( user.toJSON() )
         
@@ -60,57 +60,58 @@ class get( object ):
 
         try:
             if not mid:
-                result = user.media.options(eagerload_all(Media.assets)).order_by( Media.id.desc() ).all()
+                result = user.media.options( eagerload_all( Media.assets ) ).order_by( Media.id.desc() ).all()
             else:
-                result = user.media.options(eagerload_all(Media.assets)).filter_by( uuid = mid ).one()
-        except Exception, e:
-            return toJSON({ 'error': True, 'message': str(e) })
+                result = user.media.options( eagerload_all( Media.assets ) ).filter_by( uuid = mid ).one()
+        except Exception as e:
+            return toJSON( { 'error': True, 'message': str(e) } )
 
-        if not result: result = []
-        return toJSON({ 'media': result })
+        if not result:
+            result = []
+        return toJSON( { 'media': result } )
 
 class delete( object ):
-    def GET(self):
+    def GET( self ):
         # Get input params
         data = web.input()
 
         # Prepare response
-        web.header('Content-Type', 'application/json')
+        web.header( 'Content-Type', 'application/json' )
         res = {}
 
         if not 'uid' in data:
-            return toJSON({'error': True, 'message': 'Missing uid param'})
+            return toJSON( {'error': True, 'message': 'Missing uid param'} )
         uid = data.uid
         
         if not 'mid' in data:
-            return toJSON({'error': True, 'message': 'Missing mid param'})
+            return toJSON( {'error': True, 'message': 'Missing mid param'} )
         mid = data.mid
         
         # Do the database query
         result = web.ctx.orm.query( Video ).filter_by( user_id = uid, uuid = mid ).first()
 
         if not result:
-            return toJSON({'error':True, 'message':'Mediafile not found for %s' % mid})
+            return toJSON( {'error':True, 'message':'Mediafile not found for %s' % mid} )
 
         # Delete it from S3
         try:
-            s3 = boto.connect_s3(config.awsAccess, config.awsSecret)
-            bucket = s3.get_bucket(config.bucket_name)
-        except Exception, e:
-            return toJSON({'error':True, 'message': 'Failed to obtain s3 bucket: %s' % e.message})
+            s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+            bucket = s3.get_bucket( config.bucket_name )
+        except Exception as e:
+            return toJSON( {'error':True, 'message': 'Failed to obtain s3 bucket: %s' % e.message} )
 
         try:
             for key in bucket.list( prefix=mid ):
                 key.delete()
-        except Exception, e:
-            return toJSON({'error':True, 'message': 'Failed to delete from bucket: %s' % e.message})
+        except Exception as e:
+            return toJSON( {'error':True, 'message': 'Failed to delete from bucket: %s' % e.message} )
 
         # Now the database record delete
         try:
             web.ctx.orm.delete( result )
-        except Exception, e:
-            return toJSON({'error':True, 'message': 'Failed to delete from ORMt: %s' % e.message})
+        except Exception as e:
+            return toJSON( {'error':True, 'message': 'Failed to delete from ORMt: %s' % e.message} )
 
-        return toJSON({})
+        return toJSON( {} )
 
-media_app = web.application(urls, locals())
+media_app = web.application( urls, locals() )

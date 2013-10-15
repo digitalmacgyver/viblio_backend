@@ -111,7 +111,7 @@ class Worker(Background):
             
             self.mp.track( self.uuid, event, properties )
         except Exception as e:
-            self.__safe_log( self.popeye_log.warning, "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( user_id, event, properties, e ) )
+            self.__safe_log( self.popeye_log.warning, "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( self.uuid, event, properties, e ) )
 
 
     def __del__( self ):
@@ -268,11 +268,6 @@ class Worker(Background):
             video_processing.generate_thumbnail( files['thumbnail'], log, self.data )
 
             self.mp_log( '060_thumbnail_completed' )
-
-            # Generate a single face.
-            log.info( 'Generate face from %s to %s' % ( files['face']['ifile'], files['face']['ofile'] ) )
-            # If skip = True we simply skip face generation.
-            video_processing.generate_face( files['face'], log, self.data, skip=True )
 
         except Exception as e:
             self.__safe_log( self.popeye_log.error, str( e ) )

@@ -15,38 +15,38 @@ urls = (
 # is nominally functional.
 #
 class ping( object ):
-    def GET(self):
+    def GET( self ):
         data = web.input()
         web.ctx.log.debug( "PING()" )
-        web.header('Content-Type', 'application/json')
-        return json.dumps(data)
+        web.header( 'Content-Type', 'application/json' )
+        return json.dumps( data )
 
 class users( object ):
-    def GET(self):
+    def GET( self ):
         print "Users in Database:"
         data = {}
         for user in web.ctx.orm.query( Users ).order_by( Users.id ):
             print "%s: %s" % ( user.email, user.uuid )
             data[user.email] = user.uuid
-        return json.dumps(data, indent=2)
+        return json.dumps( data, indent=2 )
 
 # /error/<type>
 #
 # Test error handling and logging
 #
 class error( object ):
-    def GET(self, etype):
+    def GET( self, etype ):
 
         # Grab query params
         data = web.input()
 
         # Prepare response headers
-        web.header('Content-Type', 'application/json')
+        web.header( 'Content-Type', 'application/json' )
 
         if etype == 'stdout':
             # STDOUT is logged to the application log file as DEBUG
             print 'Error: etype is: %s' % etype
-            return json.dumps(data)
+            return json.dumps( data )
 
         elif etype == 'exception':
             # This is how you should handle normal application
@@ -55,7 +55,7 @@ class error( object ):
             try:
                 raise Exception( 'bummer' );
             except Exception, e:
-                return json.dumps({'error': True, 'message': str(e)})
+                return json.dumps( {'error': True, 'message': str(e)} )
                 
 
-dev_app = web.application(urls, locals())
+dev_app = web.application( urls, locals() )
