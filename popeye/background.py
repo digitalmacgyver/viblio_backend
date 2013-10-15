@@ -20,7 +20,7 @@ import threading
 
 class Background( object ):
     # Subclasses must override this method
-    def run():
+    def run( self ):
         pass
 
     def __init__( self, SessionFactory, log, data ):
