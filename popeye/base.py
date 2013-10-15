@@ -26,30 +26,30 @@ from sqlalchemy.orm.session import object_session
 import json
 import datetime
 
-class Serializer(object):
+class Serializer( object ):
     __private__ = []
 
-    def to_serializable_dict(self):
+    def to_serializable_dict( self ):
         dict = {}
         tmp = self.__dict__.copy()
         for key in tmp:
             if key.startswith( '_sa_' ): continue
             if not key in self.__private__:
-                value = getattr(self, key)
+                value = getattr( self, key )
                 if value:
                     dict[key] = value
         return dict
 
-class SWEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Serializer):
+class SWEncoder( json.JSONEncoder ):
+    def default( self, obj ):
+        if isinstance( obj, Serializer ):
             return obj.to_serializable_dict()
-        if isinstance(obj, (datetime.datetime)):
+        if isinstance( obj, ( datetime.datetime ) ):
             return obj.isoformat()
-        return json.JSONEncoder.default(self, obj)
+        return json.JSONEncoder.default( self, obj )
 
-def toJSON(*args, **kwargs):
-    return json.dumps(dict(*args, **kwargs), cls=SWEncoder, indent=2)
+def toJSON( *args, **kwargs ):
+    return json.dumps( dict( *args, **kwargs ), cls=SWEncoder, indent=2 )
     # stolen: https://github.com/mitsuhiko/flask/blob/master/flask/helpers.py
 
 # Three alternative methods exist for constructing new
@@ -63,15 +63,15 @@ def toJSON(*args, **kwargs):
 # o.col1 = 'val'
 # o.col2 = 'val'
 #
-class BaseModel(object):
+class BaseModel( object ):
     @property
-    def session(self):
-        return object_session(self)
+    def session( self ):
+        return object_session( self )
 
     def toJSON( self ):
-        return json.dumps( self, cls=SWEncoder, indent=2)
+        return json.dumps( self, cls=SWEncoder, indent=2 )
 
-    def __init__(self, *args, **kwargs):
+    def __init__( self, *args, **kwargs ):
         if args and args[0]:
             dic = args[0]
             for k in dic:
@@ -79,7 +79,7 @@ class BaseModel(object):
         for key in kwargs:
             setattr( self, key, kwargs[key] )
 
-def reflect(engine, models):
+def reflect( engine, models ):
     metadata = MetaData()
     # metadata.bind = create_engine(engine)
     metadata.bind = engine
@@ -110,17 +110,17 @@ def reflect(engine, models):
 
     for table_name in metadata.tables:
         if table_name not in orm_tables: continue
-        model_name = "".join(part.capitalize()
-                             for part in table_name.split("_"))
+        model_name = "".join( part.capitalize()
+                              for part in table_name.split( "_" ) )
         try:
-            model = getattr(models, model_name)
+            model = getattr( models, model_name )
         except AttributeError:
             raise NameError, "Model %s not found in module %s" \
-                %(model_name, repr(models))
-        mappers[table_name] = mapper(model, metadata.tables[table_name])
+                % ( model_name, repr( models ) )
+        mappers[table_name] = mapper( model, metadata.tables[table_name] )
 
     # I took this Session out in favor of the scoped_session() being
     # done in load_sqla() in popeye.py, when new requests come in.
-    SessionFactory = sessionmaker(metadata.bind, autocommit=False, autoflush=True)
+    SessionFactory = sessionmaker( metadata.bind, autocommit=False, autoflush=True )
     # Session = None
-    return (mappers, metadata.tables, SessionFactory)
+    return ( mappers, metadata.tables, SessionFactory )
