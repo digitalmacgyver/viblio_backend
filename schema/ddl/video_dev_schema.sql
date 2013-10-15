@@ -28,6 +28,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`users` (
   `email` VARCHAR(256) NULL DEFAULT NULL ,
   `displayname` VARCHAR(128) NULL DEFAULT NULL ,
   `active` VARCHAR(32) NULL DEFAULT NULL ,
+  `confirmed` TINYINT(1) NULL DEFAULT false ,
   `accepted_terms` TINYINT(1) NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
@@ -280,6 +281,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_shares` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `uuid` VARCHAR(36) NULL DEFAULT NULL ,
   `media_id` INT(11) NOT NULL ,
   `user_id` INT(11) NULL DEFAULT NULL ,
   `share_type` VARCHAR(16) NOT NULL ,
@@ -290,6 +292,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_shares` (
   INDEX `fk_media_shares_share_types1` (`share_type` ASC) ,
   PRIMARY KEY (`id`) ,
   INDEX `fk_media_shares_media1` (`media_id` ASC) ,
+  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
   CONSTRAINT `fk_media_shares_users1`
     FOREIGN KEY (`user_id` )
     REFERENCES `video_dev_1`.`users` (`id` )
