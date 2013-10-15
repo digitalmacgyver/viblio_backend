@@ -18,21 +18,21 @@ urls = (
 # Incoming request from Cat server to get facebook data
 #
 class fbsync( object ):
-    def GET(self):
+    def GET( self ):
         # Get input params
         data = web.input()
 
         # Prepare response
-        web.header('Content-Type', 'application/json')
+        web.header( 'Content-Type', 'application/json' )
 
         if not 'uid' in data:
-            return json.dumps({'error': True, 'message': 'Missing uid param'})
+            return json.dumps( { 'error': True, 'message': 'Missing uid param' } )
 
         if not 'access_token' in data:
-            return json.dumps({'error': True, 'message': 'Missing access_token param'})
+            return json.dumps( { 'error': True, 'message': 'Missing access_token param' } )
 
         if not 'id' in data:
-            return json.dumps({'error': True, 'message': 'Missing id param'})
+            return json.dumps( { 'error': True, 'message': 'Missing id param' } )
 
         web.ctx.log.info( 'Starting a facebook sync thread for ' + data['uid'] )
 
@@ -40,26 +40,26 @@ class fbsync( object ):
         thread = threading.Thread( target=fb.start )
         thread.start()
 
-        return json.dumps({})
+        return json.dumps( {} )
 
 # Incoming request from Cat server to remove facebook data
 #
 class fbunsync( object ):
-    def GET(self):
+    def GET( self ):
         # Get input params
         data = web.input()
 
         # Prepare response
-        web.header('Content-Type', 'application/json')
+        web.header( 'Content-Type', 'application/json' )
 
         if not 'uid' in data:
-            return json.dumps({'error': True, 'message': 'Missing uid param'})
+            return json.dumps( { 'error': True, 'message': 'Missing uid param' } )
 
         if not 'access_token' in data:
-            return json.dumps({'error': True, 'message': 'Missing access_token param'})
+            return json.dumps( { 'error': True, 'message': 'Missing access_token param' } )
 
         if not 'id' in data:
-            return json.dumps({'error': True, 'message': 'Missing id param'})
+            return json.dumps( { 'error': True, 'message': 'Missing id param' } )
 
         web.ctx.log.info( 'Starting a facebook un-sync thread for ' + data['uid'] )
 
@@ -67,7 +67,7 @@ class fbunsync( object ):
         thread = threading.Thread( target=fb.start )
         thread.start()
 
-        return json.dumps({})
+        return json.dumps( {} )
 
 # Brewtus has successfully uploaded a new file.  It will
 # call this endpoint with path=xxx where xxx is the full
@@ -75,16 +75,16 @@ class fbunsync( object ):
 # information, everything else will be guessed.
 #
 class process( object ):
-    def GET(self):
+    def GET( self ):
         # Get input params
         data = web.input()
 
         # Prepare response
-        web.header('Content-Type', 'application/json')
+        web.header( 'Content-Type', 'application/json' )
 
         if not 'path' in data:
-            return json.dumps({'error': True, 'message': 'Missing path param'})
-        res = {'full_filename': data.path}
+            return json.dumps( { 'error': True, 'message': 'Missing path param' } )
+        res = { 'full_filename': data.path }
 
         # Go do the work.  This routine will "fork"
         # and return control immediately to here
@@ -99,6 +99,6 @@ class process( object ):
         thread = threading.Thread( target=wrk.start )
         thread.start()
 
-        return json.dumps(res)
+        return json.dumps( res )
 
-processor_app = web.application(urls, locals())
+processor_app = web.application( urls, locals() )
