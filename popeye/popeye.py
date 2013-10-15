@@ -12,7 +12,6 @@ import json
 # logic
 import dev
 import processor
-import media
 
 # wsgilog will manage logging to the main server's
 # log files over WSGI
@@ -81,7 +80,6 @@ def attach_logger( handler ):
 urls = (
     '/dev', dev.dev_app,
     '/processor', processor.processor_app,
-    '/media', media.media_app
 )
 
 # The WSGI Logger

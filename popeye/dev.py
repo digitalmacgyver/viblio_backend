@@ -54,8 +54,8 @@ class error( object ):
             # struct that looks like { error: True, message: error-message }
             try:
                 raise Exception( 'bummer' );
-            except Exception, e:
-                return json.dumps( {'error': True, 'message': str(e)} )
+            except Exception as e:
+                return json.dumps( {'error': True, 'message': str( e ) } )
                 
 
 dev_app = web.application( urls, locals() )

@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup, Tag
 from appconfig import AppConfig
 try:
     config = AppConfig( 'popeye' ).config()
-except Exception, e:
+except Exception as e:
     print( str(e) )
     sys.exit(1)
 

@@ -63,25 +63,25 @@ class AppConfig:
         basefile = basename+'.config'
         try:
             base = Config( basefile )
-            base.addNamespace(logging)
-        except Exception, e:
-            raise Exception( 'Cannot open/read/parse %s: %s' % (basefile, str(e)) )
+            base.addNamespace( logging )
+        except Exception as e:
+            raise Exception( 'Cannot open/read/parse %s: %s' % ( basefile, str( e) ) )
 
         if 'DEPLOYMENT' in os.environ:
             deployment = os.environ['DEPLOYMENT']+'.config'
             try:
                 dep = Config( deployment )
                 dep.addNamespace(logging)
-            except Exception, e:
-                raise Exception( 'Cannot open/read/parse %s: %s' % (deployment, str(e)) )
+            except Exception as e:
+                raise Exception( 'Cannot open/read/parse %s: %s' % ( deployment, str( e ) ) )
 
             try:
-                ConfigMerger(lambda m1,m2,key: "overwrite").merge( base, dep)
-            except Exception, e:
-                raise Exception( 'Failed to merge %s and %s: %s' % (basefile, deployment, str(e)) )
+                ConfigMerger( lambda m1, m2, key: "overwrite" ).merge( base, dep )
+            except Exception as e:
+                raise Exception( 'Failed to merge %s and %s: %s' % ( basefile, deployment, str( e ) ) )
             
         self.base = base
 
-    def config(self):
+    def config( self ):
         return self.base
 
