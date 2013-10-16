@@ -30,12 +30,12 @@ class Background( object ):
 
     def start( self ):
         try:
-            self.log.info( "Creating a DB session for thread: " + str( threading.current_thread().name ) )
+            self.log.info( "Creating a DB session for filename: %s" % self.data )
             Session = scoped_session( self.SessionFactory )
             self.orm = Session()
             self.run()
         except Exception as e:
-            self.log.error( "Rolling back DB on exception: %s" % str(e)  )
+            self.log.error( "Rolling back DB on exception: %s" % str( e )  )
             self.orm.rollback()
             self.orm.close()
             raise
