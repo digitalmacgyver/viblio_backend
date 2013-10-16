@@ -107,6 +107,10 @@ class Worker( Background ):
             if hasattr( self, 'data' ) and 'info' in self.data and 'fileExt' in self.data['info']:
                 properties['file_ext'] = self.data['info']['fileExt'].lower()
 
+            mp_deployment = getattr( config, 'mp_deployment', 'unknown' )
+
+            properties['deployment'] = mp_deployment
+
             event = self.mp_stage + '_' + event
             
             self.mp.track( self.uuid, event, properties )
