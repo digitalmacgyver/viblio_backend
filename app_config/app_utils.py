@@ -95,7 +95,7 @@ def upload_app_file( engine, app, version_string, input_file ):
         s3_key = version_string + "/" + os.path.basename( input_file )
         upload_file_to_s3( input_file, s3_key )
 
-        uri = json.dumps( { 'uri' : config.bucket_name + '/' + s3_key } )
+        uri = json.dumps( { 'uri' : config.bucket_name + '/' + s3_key, size : os.path.getsize( input_file ) } )
 
         try:
             log.info( "Updating database" )
