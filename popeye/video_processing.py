@@ -190,26 +190,17 @@ def transcode_main( file_data, log, data, files=None ):
     rotation = data['exif']['rotation']
     mimetype = data['mimetype']
 
-    ffopts = ' -c:a libfdk_aac '
-    if rotation == '0' and mimetype == 'video/mp4':
-        log.debug( 'Video is non-rotated mp4, renaming it.' )
-        try:
-            os.rename( ifile, ofile )
-        except Exception as e:
-            log.error( "Failed to rename %s to %s error was: %s" % ( ifile, ofile, e ) )
-            raise
-        data['mimetype'] = 'video/mp4'
-        return
-    else:
-        if rotation == '90':
-            log.info( 'Video is rotated 90 degrees, rotating.' )
-            ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
-        elif rotation == '180':
-            log.info( 'Video is rotated 180 degrees, rotating.' )
-            ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
-        elif rotation == '270':
-            log.info( 'Video is rotated 270 degrees, rotating.' )
-            ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
+    ffopts = ' -c:a libfdk_aac -b:v 1500k '
+
+    if rotation == '90':
+        log.info( 'Video is rotated 90 degrees, rotating.' )
+        ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
+    elif rotation == '180':
+        log.info( 'Video is rotated 180 degrees, rotating.' )
+        ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
+    elif rotation == '270':
+        log.info( 'Video is rotated 270 degrees, rotating.' )
+        ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
 
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s %s' % ( ifile, ffopts, ofile )
     log.info( cmd )
