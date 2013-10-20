@@ -27,6 +27,9 @@ class Upload( swf.ActivityWorker ):
                 print "Key: %s, Value %s" % ( k, v )
                 print
 
+            print "Sleeping for 5 seconds"
+            time.sleep( 5 )
+
             self.complete( result = json.dumps( [ 'we', 'also', 'return json' ] ) )
 
         except Exception as error:

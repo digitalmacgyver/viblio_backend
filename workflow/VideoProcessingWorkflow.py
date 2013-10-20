@@ -19,7 +19,7 @@
 # wait to retry broken things that could be better now.
 
 domain = 'Viblio'
-version = '1.0.2'
+version = '1.0.4'
 
 VPW = {
 
@@ -30,7 +30,9 @@ VPW = {
         'task_list'     : 'UploadTask',
         'prerequisites' : [],
         'default_task_schedule_to_close_timeout' : str( 21*60 ),
-        'default_task_start_to_close_timeout' : str( 20*60 )
+        'default_task_schedule_to_start_timeout' : str( 21*60 ),
+        'default_task_start_to_close_timeout' : str( 20*60 ),
+        'default_task_heartbeat_timeout' : 'NONE',
         },
 
     'Transcode' : {
@@ -40,7 +42,9 @@ VPW = {
         'task_list'     : 'TranscodeTask',
         'prerequisites' : [ 'Upload' ],
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
-        'default_task_start_to_close_timeout' : str( 10*60*60 )
+        'default_task_schedule_to_start_timeout' : str( 15*60*60 ),
+        'default_task_start_to_close_timeout' : str( 10*60*60 ),
+        'default_task_heartbeat_timeout' : 'NONE',
         },
 
     'FaceDetect' : {
@@ -50,7 +54,9 @@ VPW = {
         'task_list'     : 'FaceDetectTask',
         'prerequisites' : [ 'Transcode'] ,
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
-        'default_task_start_to_close_timeout' : str( 10*60*60 )
+        'default_task_schedule_to_start_timeout' : str( 15*60*60),
+        'default_task_start_to_close_timeout' : str( 10*60*60 ),
+        'default_task_heartbeat_timeout' : 'NONE',
         },
 
     'FaceRecognize' : {
@@ -60,7 +66,9 @@ VPW = {
         'task_list'     : 'FaceRecognizeTask',
         'prerequisites' : [ 'FaceDetect' ],
         'default_task_schedule_to_close_timeout' : str( 30*60 ),
-        'default_task_start_to_close_timeout' : str( 20*60 )
+        'default_task_schedule_to_start_timeout' : str( 30*60 ),
+        'default_task_start_to_close_timeout' : str( 20*60 ),
+        'default_task_heartbeat_timeout' : 'NONE',
         },
 
     'NotifyComplete' : {
@@ -70,7 +78,9 @@ VPW = {
         'task_list'     : 'NotifyCompleteTask',
         'prerequisites' : [ 'FaceRecognize' ],
         'default_task_schedule_to_close_timeout' : str( 15*60 ),
+        'default_task_schedule_to_start_timeout' : str( 15*60 ),
         'default_task_start_to_close_timeout'    : str( 5*60 ),
+        'default_task_heartbeat_timeout' : 'NONE',
         },
 
 }

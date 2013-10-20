@@ -9,14 +9,16 @@ probably should set it to be our media_uuid or something.  It will
 show up in logs better.  Check on the requisite uniqueness of that
 field - is it per execution, or all time, or what.
 
-
 --
 
 Window 1:
 
 import boto.swf.layer2 as swf
 import json
-execution = swf.WorkflowType( name='VideoProcessing', domain='Viblio', version='1.0.2', task_list='VideoProcessingDecider', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) ).start()
+
+execution = swf.WorkflowType( name='VideoProcessing', domain='Viblio', version='1.0.3' ).start( task_list='VideoProcessingDecider', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) )
+
+
 
 import pprint
 pp = pprint.PrettyPrinter( indent = 4 )
@@ -25,37 +27,14 @@ print pp.pprint( execution.history() )
 Window 2:
 
 python -i VideoProcessingDecider.py 
-import VideoProcessingWorkflow; reload( VideoProcessingWorkflow ); 
 while VideoProcessingDecider().run(): pass
 
-Window 2:
+Window 3:
 
 python -i Upload.py 
 while Upload().run(): pass
 
-
-
---
-
-NOTES:
-
-1) Region set in boto configuration, it is impossible to set it through the Layer2 interaface.
-
-NOTE: Keys can be set by contriving to run
-layer2.set_default_credentials prior to object construction, or before
-super.__init__.
-
-2) Everything is stateless, deciders and workers have access to a
-paged event history.
-
-3) task_lists are the actual things that matter in terms of where messages go. 
-
-Actions simply: 
-a) Must be registered
-b) Can specify a default task list for the action in question
-c) Show up in job bodies for logic decisions in workers, etc.
-
-4) Messages are limited to 32 KB.
+==
 
 FULL API DOCS:
 
@@ -82,7 +61,6 @@ CompleteWorkflowExecution
 ScheduleActivityTask
 StartChildWorkflowExecution
 ScheduleActivityTaskFailed
-
 
 Things seem to have:
 
@@ -147,29 +125,90 @@ same unix.time() - this can actually happen.
 
 --
 
+2) Get full flow for a worker that is killed (must set short timeouts
+for testing).
 
-1) Make a hello world type SWF application.
+First I set the timeout of the particular task to something short, 10
+seconds.  Then I kill the process before those 10 seconds are up.
 
-2) Verify what happens if a worker is killed (auto retry, failure to
-decider, what?)
+Eventually the task timed out (in this case task timeout was faster
+than queue time out) and a new decision task is scheduled.  This
+appears in the event history for the timeout:
 
-3) Verify what happens if a decider is killed midaway (do existing
-worker tasks finish?)
+    {   'activityTaskTimedOutEventAttributes': {   'scheduledEventId': 5,
+                                                   'startedEventId': 6,
+                                                   'timeoutType': 'START_TO_CLOSE'},
+        'eventId': 7,
+        'eventTimestamp': 1382306442.71,
+        'eventType': 'ActivityTaskTimedOut'},
 
-4) Verify what happens if a worker times out - is it actually
-terminated somehow, or does the worker finish it's work and just get
-told when it tries to say done that there is an exception of the "you
-suck" variety.
+event id 5 is the thing we were working on.
 
-Job description:
+3) Get full flow for a worker that times out.  And, does that worker
+somehow get notified to curl up and die, or does it just keep running.
 
-stageA -> 30 seconds
-stageB, C run in parallel -> 5 and 10 seconds
-stageD -> 8 seconds
+The worker just keeps on running, but gets a 400 bad request when it
+tries to send its results in.
 
+4) Get full flow for a workflow, not activity that times out.
+
+When this happens, an event called: 'WorkflowExecutionTimedOut' as
+added, and tha Workflow is moved to a status of CLOSED.  If the child
+tasks tries to mark things as done they get a 400 Bad Request back
+from the server.
+
+5) What happens if a decider is killed while processing a thing?
+
+THIS IS IMPORTANT: The currently executing event doesn't see a
+problem, the history says: hey- a decision is in progress.  
+
+When a DecisionTaskTimedOut occurs, then the system automatically schedules a new decision event:
+
+The timeout and new decision event looks like:
+
+    {   'decisionTaskTimedOutEventAttributes': {   'scheduledEventId': 2,
+                                                   'startedEventId': 3,
+                                                   'timeoutType': 'START_TO_CLOSE'},
+        'eventId': 4,
+        'eventTimestamp': 1382308347.929,
+        'eventType': 'DecisionTaskTimedOut'},
+    {   'decisionTaskScheduledEventAttributes': {   'startToCloseTimeout': '1',
+                                                    'taskList': {   'name': 'TimeoutTest'}},
+        'eventId': 5,
+        'eventTimestamp': 1382308347.929,
+        'eventType': 'DecisionTaskScheduled'}]
+
+6) Implement actual logic in Decider for detection, recognition
+stages.
+
+7) Implement TemplateWorker.py class that does everything right and
+everyone else can inherit from.  They just define one method that
+takes in a JSON and outputs a JSON.
+
+MAKE A BASE CLASS THAT IS FOR REALS, AND A TEMPLATE THAT SHOWS HOW TO
+USE IT.
+
+DESIGN NOTE: THESE CLASSES JUST DO THEIR TASK, THAT IS IT!  A manager
+class that spins these up, looks at CPU resources, etc. is a whole
+different thing.
+
+Write a manager wrapper that does the right things, tracks CPU, etc.
+
+THINK ABOUT ERROR LOGIC, FATAL and/or RETRY with counters?  Retry with
+growing time if time expires?
+
+Workers of tasks can set things to a "failed" state rather than
+completed - we should set things to failed rather than completed with
+an error code:
+
+http://docs.aws.amazon.com/amazonswf/latest/apireference/API_RespondActivityTaskFailed.html
+
+
+Send note to Bidyut / Ramsri about how to wrap their thing in it.
+
+Start working on Rekognition in it.
 
 --
-
 
 Possible management tools: Chef, Puppet.
 
@@ -190,3 +229,90 @@ There could also be third party solitions:
 
 For a queue based model, have a way to manually inject tasks into the
 workflow for testing.
+
+
+==== SAMPLE HISTORY WITH A DECISION TIMEOUT ==
+
+>>> print pp.pprint( execution.history() )
+[   {   'eventId': 1,
+        'eventTimestamp': 1382306943.108,
+        'eventType': 'WorkflowExecutionStarted',
+        'workflowExecutionStartedEventAttributes': {   'childPolicy': 'TERMINATE',
+                                                       'executionStartToCloseTimeout': '90',
+                                                       'input': '{"media_uuid": "1234", "user_uuid": "45567"}',
+                                                       'parentInitiatedEventId': 0,
+                                                       'taskList': {   'name': 'TimeoutTest'},
+                                                       'taskStartToCloseTimeout': '60',
+                                                       'workflowType': {   'name': 'TimeoutTest',
+                                                                           'version': '1.0'}}},
+    {   'decisionTaskScheduledEventAttributes': {   'startToCloseTimeout': '60',
+                                                    'taskList': {   'name': 'TimeoutTest'}},
+        'eventId': 2,
+        'eventTimestamp': 1382306943.108,
+        'eventType': 'DecisionTaskScheduled'},
+    {   'decisionTaskStartedEventAttributes': {   'scheduledEventId': 2},
+        'eventId': 3,
+        'eventTimestamp': 1382306943.152,
+        'eventType': 'DecisionTaskStarted'},
+    {   'decisionTaskTimedOutEventAttributes': {   'scheduledEventId': 2,
+                                                   'startedEventId': 3,
+                                                   'timeoutType': 'START_TO_CLOSE'},
+        'eventId': 4,
+        'eventTimestamp': 1382307003.155,
+        'eventType': 'DecisionTaskTimedOut'},
+    {   'decisionTaskScheduledEventAttributes': {   'startToCloseTimeout': '60',
+                                                    'taskList': {   'name': 'TimeoutTest'}},
+        'eventId': 5,
+        'eventTimestamp': 1382307003.155,
+        'eventType': 'DecisionTaskScheduled'},
+    {   'decisionTaskStartedEventAttributes': {   'scheduledEventId': 5},
+        'eventId': 6,
+        'eventTimestamp': 1382307003.186,
+        'eventType': 'DecisionTaskStarted'},
+    {   'decisionTaskCompletedEventAttributes': {   'scheduledEventId': 5,
+                                                    'startedEventId': 6},
+        'eventId': 7,
+        'eventTimestamp': 1382307013.374,
+        'eventType': 'DecisionTaskCompleted'},
+    {   'activityTaskScheduledEventAttributes': {   'activityId': 'activity id, an arbitrary string',
+                                                    'activityType': {   'name': 'Upload',
+                                                                        'version': '1.0.3'},
+                                                    'decisionTaskCompletedEventId': 7,
+                                                    'heartbeatTimeout': 'NONE',
+                                                    'input': '{"arbitrary": ["string", "we", "use", "json"]}',
+                                                    'scheduleToCloseTimeout': '1260',
+                                                    'scheduleToStartTimeout': '1260',
+                                                    'startToCloseTimeout': '60',
+                                                    'taskList': {   'name': 'UploadTask'}},
+        'eventId': 8,
+        'eventTimestamp': 1382307013.374,
+        'eventType': 'ActivityTaskScheduled'},
+    {   'activityTaskStartedEventAttributes': {   'scheduledEventId': 8},
+        'eventId': 9,
+        'eventTimestamp': 1382307020.434,
+        'eventType': 'ActivityTaskStarted'},
+    {   'activityTaskCompletedEventAttributes': {   'result': '["we", "also", "return json"]',
+                                                    'scheduledEventId': 8,
+                                                    'startedEventId': 9},
+        'eventId': 10,
+        'eventTimestamp': 1382307025.542,
+        'eventType': 'ActivityTaskCompleted'},
+    {   'decisionTaskScheduledEventAttributes': {   'startToCloseTimeout': '60',
+                                                    'taskList': {   'name': 'TimeoutTest'}},
+        'eventId': 11,
+        'eventTimestamp': 1382307025.542,
+        'eventType': 'DecisionTaskScheduled'},
+    {   'decisionTaskStartedEventAttributes': {   'scheduledEventId': 11},
+        'eventId': 12,
+        'eventTimestamp': 1382307025.574,
+        'eventType': 'DecisionTaskStarted'},
+    {   'decisionTaskCompletedEventAttributes': {   'scheduledEventId': 11,
+                                                    'startedEventId': 12},
+        'eventId': 13,
+        'eventTimestamp': 1382307025.892,
+        'eventType': 'DecisionTaskCompleted'},
+    {   'eventId': 14,
+        'eventTimestamp': 1382307025.892,
+        'eventType': 'WorkflowExecutionCompleted',
+        'workflowExecutionCompletedEventAttributes': {   'decisionTaskCompletedEventId': 13}}]
+None

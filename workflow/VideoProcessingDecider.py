@@ -3,6 +3,7 @@
 import boto.swf
 import boto.swf.layer2 as swf
 import json
+import pprint
 import time
 
 import VideoProcessingWorkflow
@@ -18,11 +19,12 @@ class VideoProcessingDecider( swf.Decider ):
         print "Polling for events"
 
         history = self.poll( task_list = 'VideoProcessingDecider' )
+        # history = self.poll( task_list = 'TimeoutTest' )
         
         print "Polling completed"
 
-        # Make helpers to iterate over all events and determine if a
-        # given VPW is ready to go.
+        # DEBUG - Make helpers to iterate over all events and
+        # determine if a given VPW is ready to go.
 
         if 'events' in history:
             workflow_events = [e for e in history['events'] if not e['eventType'].startswith( 'Decision' )]
@@ -32,15 +34,19 @@ class VideoProcessingDecider( swf.Decider ):
 
             if last_event['eventType'] == 'WorkflowExecutionStarted':
                 print "Starting Upload Task"
+
+                print "But sleeping first"
+                time.sleep( 10 )
+
                 decisions.schedule_activity_task( 
                     'activity id, an arbitrary string', 
                     'Upload', # The Activity Type - must be a reigstered type
-                    '1.0.2', # The activity version.
+                    '1.0.4', # The activity version.
                     task_list = 'UploadTask', # The Activity task list
-                    heartbeat_timeout = str( 900 ), # Override
+                    heartbeat_timeout = None, # Override
                     schedule_to_close_timeout = None, # Override
-                    schedule_to_start_timeout = str( 900 ), # Override
-                    start_to_close_timeout = None, # Override
+                    schedule_to_start_timeout = None, # Override
+                    start_to_close_timeout = '60', # Override
                     control = None, # 32 kb string not sent to task, but available to the decider in the future.
                     input = json.dumps( { 'arbitrary' : ['string', 'we', 'use', 'json'] } )
                     )
