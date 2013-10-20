@@ -1,0 +1,192 @@
+DEBUG:
+
+We must manually set long timeouts on Face Recognition jobs that are
+manual - we've set machine default type speeds in the pipeline
+currently.
+
+We can set the workflow_id manually in call to WorkflowType.start - we
+probably should set it to be our media_uuid or something.  It will
+show up in logs better.  Check on the requisite uniqueness of that
+field - is it per execution, or all time, or what.
+
+
+--
+
+Window 1:
+
+import boto.swf.layer2 as swf
+import json
+execution = swf.WorkflowType( name='VideoProcessing', domain='Viblio', version='1.0.2', task_list='VideoProcessingDecider', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) ).start()
+
+import pprint
+pp = pprint.PrettyPrinter( indent = 4 )
+print pp.pprint( execution.history() )
+
+Window 2:
+
+python -i VideoProcessingDecider.py 
+import VideoProcessingWorkflow; reload( VideoProcessingWorkflow ); 
+while VideoProcessingDecider().run(): pass
+
+Window 2:
+
+python -i Upload.py 
+while Upload().run(): pass
+
+
+
+--
+
+NOTES:
+
+1) Region set in boto configuration, it is impossible to set it through the Layer2 interaface.
+
+NOTE: Keys can be set by contriving to run
+layer2.set_default_credentials prior to object construction, or before
+super.__init__.
+
+2) Everything is stateless, deciders and workers have access to a
+paged event history.
+
+3) task_lists are the actual things that matter in terms of where messages go. 
+
+Actions simply: 
+a) Must be registered
+b) Can specify a default task list for the action in question
+c) Show up in job bodies for logic decisions in workers, etc.
+
+4) Messages are limited to 32 KB.
+
+FULL API DOCS:
+
+http://docs.aws.amazon.com/amazonswf/latest/apireference/API_ActivityTaskCompletedEventAttributes.html
+
+How ActivityWorkers behave:
+
+Inherits from SWFBase:
+
+Has built in class scoped variables: task_list, last_tasktoken, domain
+
+task_list used as a default in wrapped calls to various Layer1 things.
+
+Data structure of:
+
+Decider.poll() calls layer1.poll_for_decision_task with self.task_list
+as default.  Can be overwridden with { 'task_list' : 'foo' } same as
+the method below.
+
+DECISION TYPES:
+http://docs.aws.amazon.com/amazonswf/latest/apireference/API_Decision.html
+
+CompleteWorkflowExecution
+ScheduleActivityTask
+StartChildWorkflowExecution
+ScheduleActivityTaskFailed
+
+
+Things seem to have:
+
+eventId - numeric
+eventTimestamp - epoch seconds
+eventType - Name of type, e.g. DecisionTaskScheduled
+
+Attributes for the event which appear to be some camel cased event
+type with EventAttributes appended, e.g.:
+
+decisionTaskScheduledEventAttributes : hash with a bunch of different
+stuff depending on the event type.
+
+ActivityWorker.poll() calls layer1.poll_for_activity_task and sets
+self.last_tasktoken.  
+
+Calls a request to a web services api, with keys:
+domain
+taskList : { 'name' : task_list }
+
+List of event types:
+
+ActivityTaskScheduledEventAttributes:
+
+activityId
+activityType : { name : 'FooBear', version } <- This is where activity type shows up.
+control: 32kb string - data for the decider in the future.  This IS NOT SENT TO THE ACTIVITY
+scheduleToCloseTimeout - Max time for this to finish ( includes start delay plus run time )
+startToCloseTimeout - timeout on runtime.
+taskList - Name of the task list itself.
+
+..Started..
+identity
+scheduledEventId
+
+ActivityTaskCompletedEventAttributes: result, scheduledEventId (the ID of the event for when this was scheduled ), startedEventId (the id of the start event) 
+
+--
+
+BUGS: 
+
+1) Should pass KWargs from Layer2 constructor to Layer1?  Looks
+like it might simply be a forgetful bug? 
+
+If not, need a way to pass region through Layer2.
+
+2) Domain class defaults retention to 30, no way to override it.
+
+It's default should be the same as the AWS default, and should be a
+configurable element.
+
+3) activity / other Layer2 registrations shouldn't set defaults for
+various timeouts.
+
+4) Indentation in example with return True in decider.
+
+5) The workflow_id generator will output duplicate workflow ids at the
+same unix.time() - this can actually happen.
+
+5) The simple demo assumes your decider is running before you start the task - otherwise the most recent task will be like DecisionTaskScheduled or something.
+
+
+--
+
+
+1) Make a hello world type SWF application.
+
+2) Verify what happens if a worker is killed (auto retry, failure to
+decider, what?)
+
+3) Verify what happens if a decider is killed midaway (do existing
+worker tasks finish?)
+
+4) Verify what happens if a worker times out - is it actually
+terminated somehow, or does the worker finish it's work and just get
+told when it tries to say done that there is an exception of the "you
+suck" variety.
+
+Job description:
+
+stageA -> 30 seconds
+stageB, C run in parallel -> 5 and 10 seconds
+stageD -> 8 seconds
+
+
+--
+
+
+Possible management tools: Chef, Puppet.
+
+--
+
+Logging and Metrics:
+
+* In a queue model this is harder because the processing is distributed.
+
+Groupon uses Splunk, but there is an open source alternative logstash.
+
+There could also be third party solitions:
+
+* Logly - log verbosely, times, durations, user_ids.  Push the
+  complexity of analysis onto the logging solution.
+
+-- 
+
+For a queue based model, have a way to manually inject tasks into the
+workflow for testing.
