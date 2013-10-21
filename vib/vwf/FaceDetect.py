@@ -29,5 +29,5 @@ class FaceDetect( VWorker ):
         elif recoverable_error:
             return { 'ACTIVITY_ERROR' : True, 'retry' : True }
         else: 
-            return { 'media_uuid' : 1234, 'tracks' : [ { 's3url' : 'blahblahblah' } ] }
+            return { 'media_uuid' : 1234, 'user_uuid' : 4567, 'tracks' : [ { 's3url' : 'blahblahblah' } ] }
 

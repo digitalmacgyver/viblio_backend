@@ -7,6 +7,14 @@ import mixpanel
 import pprint
 import time
 
+# DEBUG - This is temporary until we reorganize popeye into vib.
+import sys
+sys.path.append( '../../popeye' )
+from appconfig import AppConfig
+config = AppConfig( '../../popeye/popeye' ).config()
+
+mp = mixpanel.Mixpanel( config.mp_token )
+
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
 
@@ -38,6 +46,8 @@ class VPDecider( swf.Decider ):
         tasks = [ 'FaceDetect', 'FaceRecognize' ]
 
         workflow_input = _get_workflow_input( history_events )
+        media_uuid = workflow_input['media_uuid']
+        user_uuid = workflow_input['user_uuid']
         failed_tasks = _get_failed( history_events )
         timed_out_tasks = _get_timed_out_activities( history_events )
         completed_tasks = _get_completed( history_events )
@@ -47,6 +57,7 @@ class VPDecider( swf.Decider ):
         if _all_tasks_complete( tasks, completed_tasks ):
             # We are done.
             print "Workflow completed."
+            _mp_log( "Workflow_Complete", media_uuid, user_uuid )
             decisions.complete_workflow_execution()
         else:
             # We are not done.  See if we can start anything or if we
@@ -62,20 +73,21 @@ class VPDecider( swf.Decider ):
                     if len( details ) > VPW[task]['failure_retries']:
                         reason = "Task %s has exceeded maximum failure retries, terminating workflow." % task
                         print reason
+                        _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity': task, 'type' : 'max_retries' } )
                         decisions.fail_workflow_execution( reason=reason )
                     elif not details[-1].get( 'retry', False ):
                         reason = "Most recent failure for task %s said not to retry, terminating workflow." % task
                         print reason
+                        _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task, 'type' : 'fatal_error' } )
                         decisions.fail_workflow_execution( reason=reason )
                     else:
                         print "Retrying task %s" % task
 
-                        task_input = {}
-                        if len( VPW[task]['prerequisites'] ):
-                            task_input = _get_input( task, completed_tasks )
-                        else:
-                            task_input = workflow_input
+                        task_input = workflow_input
+                        for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
+                            task_input[prerequisite] = input_opts
 
+                        _mp_log( task+" Retry", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity' : task } )
                         decisions.schedule_activity_task( 
                             task + '-' + workflow_input['media_uuid'],
                             task,
@@ -92,15 +104,14 @@ class VPDecider( swf.Decider ):
                     if len( details ) > len( VPW[task]['timeout_retries'] ):
                         reason = "Task %s has exceeded maximum timeout retries, terminating workflow." % task
                         print reason
+                        _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.fail_workflow_execution( reason=reason )
                     else:
                         print "Retrying task %s" % task
 
-                        task_input = {}
-                        if len( VPW[task]['prerequisites'] ):
-                            task_input = _get_input( task, completed_tasks )
-                        else:
-                            task_input = workflow_input
+                        task_input = workflow_input
+                        for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
+                            task_input[prerequisite] = input_opts
 
                         # Details is an array of all our past
                         # timeouts.  The N'th slot of the VPW
@@ -121,6 +132,7 @@ class VPDecider( swf.Decider ):
                         if VPW[task]['default_task_heartbeat_timeout']         != 'NONE':
                             heartbeat_timeout         = str( timeout_factor * int( VPW[task]['default_task_heartbeat_timeout'] ) )
 
+                        _mp_log( task + " Retry", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.schedule_activity_task( 
                             task + '-' + workflow_input['media_uuid'],
                             task,
@@ -137,12 +149,11 @@ class VPDecider( swf.Decider ):
                     # We can start a new task.
                     print "Starting %s" % task
 
-                    task_input = {}
-                    if len( VPW[task]['prerequisites'] ):
-                        task_input = _get_input( task, completed_tasks )
-                    else:
-                        task_input = workflow_input
+                    task_input = workflow_input
+                    for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
+                        task_input[prerequisite] = input_opts
 
+                    _mp_log( task + " Scheduled", media_uuid, user_uuid, { 'activity' : task } )
                     decisions.schedule_activity_task( 
                         task + '-' + workflow_input['media_uuid'],
                         task,
@@ -156,6 +167,18 @@ class VPDecider( swf.Decider ):
         self.complete( decisions=decisions )
             
         return True
+
+def _mp_log( event, media_uuid, user_uuid, properties = {} ):
+    try:
+        properties['$time'] = time.strftime( "%Y-%m-%dT%H:%M:%S", time.gmtime() )
+        properties['user_uuid'] = user_uuid
+
+        mp_deployment = getattr( config, 'mp_deployment', 'unknown' )
+        properties['deployment'] = mp_deployment
+
+        mp.track( media_uuid, event, properties )
+    except Exception as e:
+        print "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( media_uuid, event, properties, e )
 
 def _get_workflow_input( history_events ):
     '''Return the original input to our workflow.'''

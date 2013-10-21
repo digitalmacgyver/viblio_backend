@@ -2,7 +2,7 @@ DEBUG:
 
 1) Determine how to read appconfig from Popeye.
 
-2) Add mixpanel stuff.
+* Different Workflow / queues by deployment type?
 
 3) Add hook to popeye.
 
