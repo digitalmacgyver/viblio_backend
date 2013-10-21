@@ -7,7 +7,7 @@ from vib.vwf.VWorker import VWorker
 
 class FaceDetect( VWorker ):
     # This line controls how we interact with SWF, and changes here
-    # must be made in coordination with VideoProcessorWorkflow.py
+    # must be made in coordination with VPWorkflow.py
     task_name = 'FaceDetect'
     
     def run_task( self, options ):
@@ -21,5 +21,13 @@ class FaceDetect( VWorker ):
         pp = pprint.PrettyPrinter( indent=4 )
         pp.pprint( options )
         print "Doing face detection stuff!"
-        return { 'media_uuid' : 1234, 'tracks' : [ { 's3url' : 'blahblahblah' } ] }
+
+        recoverable_error = False
+        catastrophic_error = False
+        if catastrophic_error:
+            return { 'ACTIVITY_ERROR' : True, 'retry' : False }
+        elif recoverable_error:
+            return { 'ACTIVITY_ERROR' : True, 'retry' : True }
+        else: 
+            return { 'media_uuid' : 1234, 'tracks' : [ { 's3url' : 'blahblahblah' } ] }
 

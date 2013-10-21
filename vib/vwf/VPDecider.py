@@ -37,7 +37,8 @@ class VPDecider( swf.Decider ):
         tasks = [ 'FaceDetect', 'FaceRecognize' ]
 
         workflow_input = _get_workflow_input( history_events )
-        
+        failed_tasks = _get_failed( history_events )
+        timed_out_tasks = _get_timed_out_activities( history_events )
         completed_tasks = _get_completed( history_events )
 
         decisions = swf.Layer1Decisions()
@@ -46,17 +47,91 @@ class VPDecider( swf.Decider ):
             # We are done.
             print "Workflow completed."
             decisions.complete_workflow_execution()
-        elif _any_failed_activities( history_events ):
-            # We hit a failure or timeout, today do this simple thing
-            # and kill the while workflow.
-            print "Some task failed, failing this workflow."
-            decisions.fail_workflow_execution( reason="At least one task failed" )
         else:
-            # We are not done.  See if we can start anything.
+            # We are not done.  See if we can start anything or if we
+            # are in an error state and need to terminate.
             for task in tasks:
                 print "Evaluating %s" % task
                 if task in completed_tasks:
                     print "Task %s already completed." % task
+                elif task in failed_tasks:
+                    details = failed_tasks[task]
+                    # We hit a failure, see if we should restart a task.
+                    print "Task %s has failed %d times, details were: %s" % ( task, len(details), details )
+                    if len( details ) > VPW[task]['failure_retries']:
+                        reason = "Task %s has exceeded maximum failure retries, terminating workflow." % task
+                        print reason
+                        decisions.fail_workflow_execution( reason=reason )
+                    elif not details[-1].get( 'retry', False ):
+                        reason = "Most recent failure for task %s said not to retry, terminating workflow." % task
+                        print reason
+                        decisions.fail_workflow_execution( reason=reason )
+                    else:
+                        print "Retrying task %s" % task
+
+                        task_input = {}
+                        if len( VPW[task]['prerequisites'] ):
+                            task_input = _get_input( task, completed_tasks )
+                        else:
+                            task_input = workflow_input
+
+                        decisions.schedule_activity_task( 
+                            task + '-' + workflow_input['media_uuid'],
+                            task,
+                            VPW[task]['version'],
+                            task_list = VPW[task]['task_list'],
+                            input = json.dumps( task_input )
+                            )
+
+                elif task in timed_out_tasks:
+                    details = timed_out_tasks[task]
+                    # We hit a timeout, see if we should restart the
+                    # task and if we should change the timeout values.
+                    print "Task %s has timed out %d times, details were: %s" % ( task, len(details), details )
+                    if len( details ) > len( VPW[task]['timeout_retries'] ):
+                        reason = "Task %s has exceeded maximum timeout retries, terminating workflow." % task
+                        print reason
+                        decisions.fail_workflow_execution( reason=reason )
+                    else:
+                        print "Retrying task %s" % task
+
+                        task_input = {}
+                        if len( VPW[task]['prerequisites'] ):
+                            task_input = _get_input( task, completed_tasks )
+                        else:
+                            task_input = workflow_input
+
+                        # Details is an array of all our past
+                        # timeouts.  The N'th slot of the VPW
+                        # configuration's timeout_retries lists how
+                        # the N'th timeout should be handled with
+                        # regard to extended timeouts.
+                        timeout_factor = VPW[task]['timeout_retries'][ len( details )-1 ]
+                        schedule_to_close_timeout = 'NONE'
+                        schedule_to_start_timeout = 'NONE'
+                        start_to_close_timeout    = 'NONE'
+                        heartbeat_timeout         = 'NONE'
+                        if VPW[task]['default_task_schedule_to_close_timeout'] != 'NONE':
+                            schedule_to_close_timeout = str( timeout_factor * int( VPW[task]['default_task_schedule_to_close_timeout'] ) )
+                        if VPW[task]['default_task_schedule_to_start_timeout'] != 'NONE':
+                            schedule_to_start_timeout = str( timeout_factor * int( VPW[task]['default_task_schedule_to_start_timeout'] ) )
+                        if VPW[task]['default_task_start_to_close_timeout'   ] != 'NONE':
+                            start_to_close_timeout    = str( timeout_factor * int( VPW[task]['default_task_start_to_close_timeout'] ) )
+                        if VPW[task]['default_task_heartbeat_timeout']         != 'NONE':
+                            heartbeat_timeout         = str( timeout_factor * int( VPW[task]['default_task_heartbeat_timeout'] ) )
+
+                        decisions.schedule_activity_task( 
+                            task + '-' + workflow_input['media_uuid'],
+                            task,
+                            VPW[task]['version'],
+                            task_list = VPW[task]['task_list'],
+                            input = json.dumps( task_input ),
+                            schedule_to_close_timeout = schedule_to_close_timeout,
+                            schedule_to_start_timeout = schedule_to_start_timeout,
+                            start_to_close_timeout    = start_to_close_timeout,
+                            heartbeat_timeout         = heartbeat_timeout
+                            )
+
                 elif _all_prerequisites_complete( task, completed_tasks ):
                     # We can start a new task.
                     print "Starting %s" % task
@@ -96,7 +171,8 @@ def _get_workflow_input( history_events ):
     raise Exception( "Could not find workflow start event!" )
 
 def _get_completed( history_events ):
-    '''Goes through a set of events and returns all the ActivityTasks which have been completed'''
+    '''Goes through a set of events and returns all the ActivityTasks
+    which have been completed'''
     completed = {}
     for event in history_events:
         if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskCompleted':
@@ -107,6 +183,53 @@ def _get_completed( history_events ):
                 raise Exception("AcivityTaskCompleted scheduled event attribute not an activity task!")
     
     return completed
+
+def _get_failed( history_events ):
+    '''Goes through a set of events and returns a hash of the failed
+    ActivityTasks keyed on task name, with a value of the failure
+    event's "details" attribute converted from JSON, or { "retry" :
+    true } if there were no details.
+
+    This does not include SWF timeouts.
+    '''
+    failed = {}
+    for event in history_events:
+        if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskFailed':
+            failed_event = history_events[ event['activityTaskFailedEventAttributes']['scheduledEventId'] - 1 ]
+            if failed_event['eventType'] == 'ActivityTaskScheduled':
+                failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name']
+                details =  json.loads( event['activityTaskFailedEventAttributes'].get( 'details', '{ "retry" : true }' ) )
+                if failed_event_name in failed:
+                    failed[ failed_event_name ].append( details )
+                else:
+                    failed[ failed_event_name ] = [ details ]
+            else:
+                raise Exception("AcivityTaskFailed scheduled event attribute not an activity task!")            
+
+    return failed
+
+def _get_timed_out_activities( history_events ):
+    '''Goes through a set of events and returns a hash of the timed
+    out ActivityTasks keyed on task name, with a value of an array of
+    the timeout's EventAttributes converted from JSON, which is a
+    dictionary including the key timeoutType.
+
+    This does not include decision timeouts.
+    '''
+    timed = {}
+    for event in history_events:
+        if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskTimedOut':
+            timed_event = history_events[ event['activityTaskTimedOutEventAttributes']['scheduledEventId'] - 1 ]
+            if timed_event['eventType'] == 'ActivityTaskScheduled':
+                timed_event_name = timed_event['activityTaskScheduledEventAttributes']['activityType']['name']
+                details = event['activityTaskTimedOutEventAttributes']
+                if timed_event_name in timed:
+                    timed[ timed_event_name ].append( details )
+                else:
+                    timed[ timed_event_name ] = [ details ]
+            else:
+                raise Exception("AcivityTaskTimedOut scheduled event attribute not an activity task!")            
+    return timed
 
 def _any_failed_activities( history_events ):
     '''Goes through a set of events and returns true if we had an event of a sort of failure we deem to be fatal here.'''

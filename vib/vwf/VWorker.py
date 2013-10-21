@@ -29,8 +29,13 @@ class VWorker( swf.ActivityWorker ):
             else:
                 print "Running task."
                 result = self.run_task( json.loads( activity_task['input'] ) )
-
-                self.complete( result = json.dumps( result ) )
+                
+                if 'ACTIVITY_ERROR' in result:
+                    print "Task had an error, failing the task with retry: %s" % result.get( 'retry', False ) 
+                    self.fail( details = json.dumps( { 'retry' : result.get( 'retry', False ) } ) )
+                else:
+                    print "Task completed"
+                    self.complete( result = json.dumps( result ) )
 
                 return True
 

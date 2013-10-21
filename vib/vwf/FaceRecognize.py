@@ -7,7 +7,7 @@ from vib.vwf.VWorker import VWorker
 
 class FaceRecognize( VWorker ):
     # This line controls how we interact with SWF, and changes here
-    # must be made in coordination with VideoProcessorWorkflow.py
+    # must be made in coordination with VPWorkflow.py
     task_name = 'FaceRecognize'
     
     def run_task( self, options ):

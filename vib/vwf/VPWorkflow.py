@@ -24,11 +24,13 @@ version = '1.0.4'
 VPW = {
 
     'Upload' : {
-        'name'          : 'Upload',
-        'domain'        : domain,
-        'version'       : version,
-        'task_list'     : 'UploadTask',
-        'prerequisites' : [],
+        'name'            : 'Upload',
+        'domain'          : domain,
+        'version'         : version,
+        'task_list'       : 'UploadTask',
+        'prerequisites'   : [],
+        'failure_retries' : 1,
+        'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 21*60 ),
         'default_task_schedule_to_start_timeout' : str( 21*60 ),
         'default_task_start_to_close_timeout' : str( 20*60 ),
@@ -36,11 +38,13 @@ VPW = {
         },
 
     'Transcode' : {
-        'name'          : 'Transcode',
-        'domain'        : domain,
-        'version'       : version,
-        'task_list'     : 'TranscodeTask',
-        'prerequisites' : [ 'Upload' ],
+        'name'            : 'Transcode',
+        'domain'          : domain,
+        'version'         : version,
+        'task_list'       : 'TranscodeTask',
+        'prerequisites'   : [ 'Upload' ],
+        'failure_retries' : 1,
+        'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
         'default_task_schedule_to_start_timeout' : str( 15*60*60 ),
         'default_task_start_to_close_timeout' : str( 10*60*60 ),
@@ -48,14 +52,16 @@ VPW = {
         },
 
     'FaceDetect' : {
-        'name'          : 'FaceDetect',
-        'domain'        : domain,
-        'version'       : version,
-        'task_list'     : 'FaceDetectTask',
+        'name'            : 'FaceDetect',
+        'domain'          : domain,
+        'version'         : version,
+        'task_list'       : 'FaceDetectTask',
         # For the time being, everything above FaceDetect happens out
         # of this workflow, so FaceDetect is an entry point into the
         # existing workflow.
-        'prerequisites' : [] ,
+        'prerequisites'   : [] ,
+        'failure_retries' : 1,
+        'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
         'default_task_schedule_to_start_timeout' : str( 15*60*60),
         'default_task_start_to_close_timeout' : str( 10*60*60 ),
@@ -63,11 +69,13 @@ VPW = {
         },
 
     'FaceRecognize' : {
-        'name'          : 'FaceRecognize',
-        'domain'        : domain,
-        'version'       : version,
-        'task_list'     : 'FaceRecognizeTask',
-        'prerequisites' : [ 'FaceDetect' ],
+        'name'            : 'FaceRecognize',
+        'domain'          : domain,
+        'version'         : version,
+        'task_list'       : 'FaceRecognizeTask',
+        'prerequisites'   : [ 'FaceDetect' ],
+        'failure_retries' : 1,
+        'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 30*60 ),
         'default_task_schedule_to_start_timeout' : str( 30*60 ),
         'default_task_start_to_close_timeout' : str( 20*60 ),
@@ -75,11 +83,13 @@ VPW = {
         },
 
     'NotifyComplete' : {
-        'name'          : 'NotifyComplete',
-        'domain'        : domain,
-        'version'       : version,
-        'task_list'     : 'NotifyCompleteTask',
-        'prerequisites' : [ 'FaceRecognize' ],
+        'name'            : 'NotifyComplete',
+        'domain'          : domain,
+        'version'         : version,
+        'task_list'       : 'NotifyCompleteTask',
+        'prerequisites'   : [ 'FaceRecognize' ],
+        'failure_retries' : 1,
+        'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 15*60 ),
         'default_task_schedule_to_start_timeout' : str( 15*60 ),
         'default_task_start_to_close_timeout'    : str( 5*60 ),
