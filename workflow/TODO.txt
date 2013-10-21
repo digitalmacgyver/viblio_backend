@@ -69,14 +69,11 @@ same unix.time() - this can actually happen.
 
 5) The simple demo assumes your decider is running before you start the task - otherwise the most recent task will be like DecisionTaskScheduled or something.
 
+6) Docks say poll in activity task returns '' for taskToken when there
+is nothing, but it doesn't, we get an empty dictionary.
+
 
 --
-
-2) Get full flow for a worker that is killed (must set short timeouts
-for testing).
-
-First I set the timeout of the particular task to something short, 10
-seconds.  Then I kill the process before those 10 seconds are up.
 
 Eventually the task timed out (in this case task timeout was faster
 than queue time out) and a new decision task is scheduled.  This
@@ -89,14 +86,6 @@ appears in the event history for the timeout:
         'eventTimestamp': 1382306442.71,
         'eventType': 'ActivityTaskTimedOut'},
 
-event id 5 is the thing we were working on.
-
-3) Get full flow for a worker that times out.  And, does that worker
-somehow get notified to curl up and die, or does it just keep running.
-
-The worker just keeps on running, but gets a 400 bad request when it
-tries to send its results in.
-
 4) Get full flow for a workflow, not activity that times out.
 
 When this happens, an event called: 'WorkflowExecutionTimedOut' as
@@ -105,12 +94,6 @@ tasks tries to mark things as done they get a 400 Bad Request back
 from the server.
 
 5) What happens if a decider is killed while processing a thing?
-
-THIS IS IMPORTANT: The currently executing event doesn't see a
-problem, the history says: hey- a decision is in progress.  
-
-When a DecisionTaskTimedOut occurs, then the system automatically schedules a new decision event:
-
 The timeout and new decision event looks like:
 
     {   'decisionTaskTimedOutEventAttributes': {   'scheduledEventId': 2,
@@ -125,19 +108,8 @@ The timeout and new decision event looks like:
         'eventTimestamp': 1382308347.929,
         'eventType': 'DecisionTaskScheduled'}]
 
-6) Implement actual logic in Decider for detection, recognition
-stages.
-
-7) Implement TemplateWorker.py class that does everything right and
-everyone else can inherit from.  They just define one method that
-takes in a JSON and outputs a JSON.
-
-MAKE A BASE CLASS THAT IS FOR REALS, AND A TEMPLATE THAT SHOWS HOW TO
-USE IT.
-
-DESIGN NOTE: THESE CLASSES JUST DO THEIR TASK, THAT IS IT!  A manager
-class that spins these up, looks at CPU resources, etc. is a whole
-different thing.
+8) Check the job history when we get a failed state, what does it show
+up as in the decider.
 
 9) Write a manager wrapper that does the right things, tracks CPU.
 Should this be threaded, and should it start many workers?
@@ -145,18 +117,11 @@ Should this be threaded, and should it start many workers?
 10 ) THINK ABOUT ERROR LOGIC, FATAL and/or RETRY with counters?  Retry with
 growing time if time expires?
 
-DEBUG - The specific case where a worker just keep dying.  Today if a
-worker dies we're toast - it stalls the pipeline until we hit the
-timeout.  To hanlde this we _MUST_ fail, not just crash in our
-children, and have retry logic in Decider.
+Can users specify non-fatal failures?
 
-Workers of tasks can set things to a "failed" state rather than
-completed - we should set things to failed rather than completed with
-an error code:
+
 
 http://docs.aws.amazon.com/amazonswf/latest/apireference/API_RespondActivityTaskFailed.html
-
-11) Send note to Bidyut / Ramsri about how to wrap their thing in it.
 
 12) Start working on Rekognition in it.
 

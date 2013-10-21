@@ -113,7 +113,7 @@ def _any_failed_activities( history_events ):
 
     failure_types = {
         'ActivityTaskTimedOut' : True,
-        'ActivityTaskFailedEvent' : True
+        'ActivityTaskFailed' : True
         }
     
     for event in history_events:
