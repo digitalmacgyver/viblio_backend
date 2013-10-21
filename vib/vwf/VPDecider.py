@@ -3,6 +3,7 @@
 import boto.swf
 import boto.swf.layer2 as swf
 import json
+import mixpanel
 import pprint
 import time
 
