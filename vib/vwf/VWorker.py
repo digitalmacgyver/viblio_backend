@@ -21,7 +21,7 @@ class VWorker( swf.ActivityWorker ):
 
     def __init__( self, **kwargs ):
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
-        self.task_list = VPW[self.task_name].get( 'task_list', None )
+        self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix
         self.version   = VPW[self.task_name].get( 'version'  , None )
 
         super( VWorker, self ).__init__( **kwargs )
@@ -71,9 +71,7 @@ def _mp_log( event, media_uuid, user_uuid, properties = {} ):
     try:
         properties['$time'] = time.strftime( "%Y-%m-%dT%H:%M:%S", time.gmtime() )
         properties['user_uuid'] = user_uuid
-
-        mp_deployment = getattr( config, 'mp_deployment', 'unknown' )
-        properties['deployment'] = mp_deployment
+        properties['deployment'] = config.mp_deployment
 
         mp.track( media_uuid, event, properties )
     except Exception as e:

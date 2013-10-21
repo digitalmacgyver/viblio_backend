@@ -1,4 +1,5 @@
 # Python libraries
+import boto.swf.layer2 as swf
 import datetime
 import fcntl
 import hmac
@@ -433,6 +434,15 @@ class Worker( Background ):
             if True:
                 # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
 
+                # Stub here to invoke alternate workflow for detection
+                # and recognition.
+                try:
+                    log.info( 'Making call to Video Processing Workflow external to Popeye' )
+                    execution = swf.WorkflowType( name = 'VideoProcessing', domain = 'Viblio', version = '1.0.4' ).start( task_list = 'VPDecider', input = json.dumps( { 'media_uuid' : self.uuid, 'user_uuid'  : self.data['info']['uid'], 'video_file' : { 's3_bucket' : config.bucket_name, 's3_key'    : self.files['main']['key'] } } ) )
+                    log.info( 'Exernal Video Processing Workflow %s initiated' % execution.workflowId )
+                except Exception as e:
+                    log.warning( "Failed to launch External Video Processing Workflow, error was: %s" % e )
+
                 log.info( 'Making call to get faces' )
                 self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
                 log.info( 'Get faces returned.' )
@@ -839,13 +849,6 @@ class Worker( Background ):
                 ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'_poster.jpg', 
                 key   = self.uuid + '/' + self.uuid + '_poster.jpg' )
-            
-            # The 'face' media file, json.
-            self.add_file( 
-                label = 'face',
-                ifile = abs_basename+'_output.mp4', 
-                ofile = abs_basename+'_face0.jpg', 
-                key   = self.uuid + '/' + self.uuid + '_face0.jpg' )
             
             # The 'metadata' media file, json.
             self.add_file( 

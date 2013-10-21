@@ -28,11 +28,11 @@ class VPDecider( swf.Decider ):
         print "Polling for events"
 
         # Listen for decisions in this task list.
-        history = self.poll( task_list = 'VPDecider' )
+        history = self.poll( task_list = 'VPDecider' + config.VPWSuffix )
         history_events = history.get( 'events', [] )
         while 'nextPageToken' in history:
             print "Getting next page of history."
-            history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VPDecider' )
+            history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VPDecider' + config.VPWSuffix )
             history_events += history.get( 'events', [] )
 
         print "Polling completed"
@@ -90,9 +90,9 @@ class VPDecider( swf.Decider ):
                         _mp_log( task+" Retry", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity' : task } )
                         decisions.schedule_activity_task( 
                             task + '-' + workflow_input['media_uuid'],
-                            task,
+                            task + config.VPWSuffix,
                             VPW[task]['version'],
-                            task_list = VPW[task]['task_list'],
+                            task_list = VPW[task]['task_list'] + config.VPWSuffix,
                             input = json.dumps( task_input )
                             )
 
@@ -135,9 +135,9 @@ class VPDecider( swf.Decider ):
                         _mp_log( task + " Retry", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.schedule_activity_task( 
                             task + '-' + workflow_input['media_uuid'],
-                            task,
+                            task + config.VPWSuffix,
                             VPW[task]['version'],
-                            task_list = VPW[task]['task_list'],
+                            task_list = VPW[task]['task_list'] + config.VPWSuffix,
                             input = json.dumps( task_input ),
                             schedule_to_close_timeout = schedule_to_close_timeout,
                             schedule_to_start_timeout = schedule_to_start_timeout,
@@ -156,9 +156,9 @@ class VPDecider( swf.Decider ):
                     _mp_log( task + " Scheduled", media_uuid, user_uuid, { 'activity' : task } )
                     decisions.schedule_activity_task( 
                         task + '-' + workflow_input['media_uuid'],
-                        task,
+                        task + config.VPWSuffix,
                         VPW[task]['version'],
-                        task_list = VPW[task]['task_list'],
+                        task_list = VPW[task]['task_list'] + config.VPWSuffix,
                         input = json.dumps( task_input )
                         )
                 else:
@@ -172,9 +172,7 @@ def _mp_log( event, media_uuid, user_uuid, properties = {} ):
     try:
         properties['$time'] = time.strftime( "%Y-%m-%dT%H:%M:%S", time.gmtime() )
         properties['user_uuid'] = user_uuid
-
-        mp_deployment = getattr( config, 'mp_deployment', 'unknown' )
-        properties['deployment'] = mp_deployment
+        properties['deployment'] = config.mp_deployment
 
         mp.track( media_uuid, event, properties )
     except Exception as e:
@@ -202,7 +200,9 @@ def _get_completed( history_events ):
         if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskCompleted':
             completed_event = history_events[ event['activityTaskCompletedEventAttributes']['scheduledEventId'] - 1 ]
             if completed_event['eventType'] == 'ActivityTaskScheduled':
-                completed[ completed_event['activityTaskScheduledEventAttributes']['activityType']['name'] ] = json.loads( event['activityTaskCompletedEventAttributes'].get( 'result', '{ "no_output" : true }' ) )
+                completed_event_name =  completed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
+
+                completed[ completed_event_name ] = json.loads( event['activityTaskCompletedEventAttributes'].get( 'result', '{ "no_output" : true }' ) )
             else:
                 raise Exception("AcivityTaskCompleted scheduled event attribute not an activity task!")
     
@@ -221,7 +221,7 @@ def _get_failed( history_events ):
         if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskFailed':
             failed_event = history_events[ event['activityTaskFailedEventAttributes']['scheduledEventId'] - 1 ]
             if failed_event['eventType'] == 'ActivityTaskScheduled':
-                failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name']
+                failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
                 details =  json.loads( event['activityTaskFailedEventAttributes'].get( 'details', '{ "retry" : true }' ) )
                 if failed_event_name in failed:
                     failed[ failed_event_name ].append( details )
@@ -245,7 +245,7 @@ def _get_timed_out_activities( history_events ):
         if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskTimedOut':
             timed_event = history_events[ event['activityTaskTimedOutEventAttributes']['scheduledEventId'] - 1 ]
             if timed_event['eventType'] == 'ActivityTaskScheduled':
-                timed_event_name = timed_event['activityTaskScheduledEventAttributes']['activityType']['name']
+                timed_event_name = timed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
                 details = event['activityTaskTimedOutEventAttributes']
                 if timed_event_name in timed:
                     timed[ timed_event_name ].append( details )

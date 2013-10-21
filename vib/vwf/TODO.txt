@@ -4,7 +4,7 @@ DEBUG:
 
 * Different Workflow / queues by deployment type?
 
-3) Add hook to popeye.
+3) Add hook to popeye - Depends on reading in boto.config - think about how to solve this in real deployment.
 
 4) Add deployment stuff.
 
@@ -39,7 +39,7 @@ import json
 import pprint
 pp = pprint.PrettyPrinter( indent = 4 )
 
-execution = swf.WorkflowType( name='VideoProcessing', domain='Viblio', version='1.0.4' ).start( task_list='VPDecider', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) )
+execution = swf.WorkflowType( name='VideoProcessingLocal', domain='Viblio', version='1.0.4' ).start( task_list='VPDeciderLocal', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) )
 
 print pp.pprint( execution.history() )
 

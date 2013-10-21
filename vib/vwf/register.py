@@ -3,6 +3,13 @@
 import boto.swf
 import boto.swf.layer2 as swf
 
+# DEBUG - This is temporary until we reorganize popeye into vib.
+import sys
+sys.path.append( '../../popeye' )
+from appconfig import AppConfig
+config = AppConfig( '../../popeye/popeye' ).config()
+#config = AppConfig( 'popeye' ).config()
+
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
 
@@ -11,12 +18,13 @@ VERSION = vib.vwf.VPWorkflow.version
 
 # Register our domain.
 d = swf.Domain( name=DOMAIN )
+'''
 d.register()
 print d.name, 'registered successfully'
-
+'''
 # Register our workflow.
 vp = swf.WorkflowType( 
-    name    = 'VideoProcessing',
+    name    = 'VideoProcessing' + config.VPWSuffix,
     domain  = DOMAIN, 
     version = VERSION
     )
@@ -42,7 +50,7 @@ print vp.name, "successfully registered"
 # Register our activities.
 for activity, args in VPW.items():
     at = swf.ActivityType( 
-        name      = activity, 
+        name      = activity + config.VPWSuffix, 
         domain    = args.get( 'domain'   , None ),
         version   = args.get( 'version'  , None )
         )
