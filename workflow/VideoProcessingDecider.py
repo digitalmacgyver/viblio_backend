@@ -55,7 +55,9 @@ class VideoProcessingDecider( swf.Decider ):
             # We are not done.  See if we can start anything.
             for task in tasks:
                 print "Evaluating %s" % task
-                if _all_prerequisites_complete( task, completed_tasks ):
+                if task in completed_tasks:
+                    print "Task %s already completed." % task
+                elif _all_prerequisites_complete( task, completed_tasks ):
                     # We can start a new task.
                     print "Starting %s" % task
 
@@ -75,7 +77,7 @@ class VideoProcessingDecider( swf.Decider ):
                 else:
                     print "Can't start %s due to missing prerequisites." % task
 
-            self.complete( decisions=decisions )
+        self.complete( decisions=decisions )
             
         return True
 
@@ -100,7 +102,7 @@ def _get_completed( history_events ):
         if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskCompleted':
             completed_event = history_events[ event['activityTaskCompletedEventAttributes']['scheduledEventId'] - 1 ]
             if completed_event['eventType'] == 'ActivityTaskScheduled':
-                completed[ completed_event['activityTaskScheduledEventAttributes']['activityType']['name'] ] = json.loads( event.get( 'result', '{ "no_output" : true }' ) )
+                completed[ completed_event['activityTaskScheduledEventAttributes']['activityType']['name'] ] = json.loads( event['activityTaskCompletedEventAttributes'].get( 'result', '{ "no_output" : true }' ) )
             else:
                 raise Exception("AcivityTaskCompleted scheduled event attribute not an activity task!")
     
@@ -140,7 +142,7 @@ def _get_input( task, completed_tasks ):
     '''Given a task, aggregate the outputs of its prerequisites from history events.'''
     task_input = {}
     for prerequisite in VPW[task]['prerequisites']:
-        task_input[task] = completed_tasks.get( task, {} )
+        task_input[prerequisite] = completed_tasks.get( prerequisite, {} )
     return task_input
         
     
