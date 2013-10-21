@@ -16,8 +16,9 @@ Window 1:
 import boto.swf.layer2 as swf
 import json
 
-execution = swf.WorkflowType( name='VideoProcessing', domain='Viblio', version='1.0.3' ).start( task_list='VideoProcessingDecider', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) )
+execution = swf.WorkflowType( name='VideoProcessing', domain='Viblio', version='1.0.4' ).start( task_list='VideoProcessingDecider', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) )
 
+execution = swf.WorkflowType( name='TimeoutTest', domain='Viblio', version='1.0' ).start( task_list='TimeoutTest', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ), task_start_to_close_timeout='1' ) 
 
 
 import pprint
@@ -39,64 +40,10 @@ while Upload().run(): pass
 FULL API DOCS:
 
 http://docs.aws.amazon.com/amazonswf/latest/apireference/API_ActivityTaskCompletedEventAttributes.html
-
-How ActivityWorkers behave:
-
-Inherits from SWFBase:
-
-Has built in class scoped variables: task_list, last_tasktoken, domain
-
-task_list used as a default in wrapped calls to various Layer1 things.
-
-Data structure of:
-
-Decider.poll() calls layer1.poll_for_decision_task with self.task_list
-as default.  Can be overwridden with { 'task_list' : 'foo' } same as
-the method below.
+http://docs.aws.amazon.com/amazonswf/latest/developerguide/swf-dev-about-workflows.html
 
 DECISION TYPES:
 http://docs.aws.amazon.com/amazonswf/latest/apireference/API_Decision.html
-
-CompleteWorkflowExecution
-ScheduleActivityTask
-StartChildWorkflowExecution
-ScheduleActivityTaskFailed
-
-Things seem to have:
-
-eventId - numeric
-eventTimestamp - epoch seconds
-eventType - Name of type, e.g. DecisionTaskScheduled
-
-Attributes for the event which appear to be some camel cased event
-type with EventAttributes appended, e.g.:
-
-decisionTaskScheduledEventAttributes : hash with a bunch of different
-stuff depending on the event type.
-
-ActivityWorker.poll() calls layer1.poll_for_activity_task and sets
-self.last_tasktoken.  
-
-Calls a request to a web services api, with keys:
-domain
-taskList : { 'name' : task_list }
-
-List of event types:
-
-ActivityTaskScheduledEventAttributes:
-
-activityId
-activityType : { name : 'FooBear', version } <- This is where activity type shows up.
-control: 32kb string - data for the decider in the future.  This IS NOT SENT TO THE ACTIVITY
-scheduleToCloseTimeout - Max time for this to finish ( includes start delay plus run time )
-startToCloseTimeout - timeout on runtime.
-taskList - Name of the task list itself.
-
-..Started..
-identity
-scheduledEventId
-
-ActivityTaskCompletedEventAttributes: result, scheduledEventId (the ID of the event for when this was scheduled ), startedEventId (the id of the start event) 
 
 --
 
@@ -192,10 +139,16 @@ DESIGN NOTE: THESE CLASSES JUST DO THEIR TASK, THAT IS IT!  A manager
 class that spins these up, looks at CPU resources, etc. is a whole
 different thing.
 
-Write a manager wrapper that does the right things, tracks CPU, etc.
+9) Write a manager wrapper that does the right things, tracks CPU.
+Should this be threaded, and should it start many workers?
 
-THINK ABOUT ERROR LOGIC, FATAL and/or RETRY with counters?  Retry with
+10 ) THINK ABOUT ERROR LOGIC, FATAL and/or RETRY with counters?  Retry with
 growing time if time expires?
+
+DEBUG - The specific case where a worker just keep dying.  Today if a
+worker dies we're toast - it stalls the pipeline until we hit the
+timeout.  To hanlde this we _MUST_ fail, not just crash in our
+children, and have retry logic in Decider.
 
 Workers of tasks can set things to a "failed" state rather than
 completed - we should set things to failed rather than completed with
@@ -203,10 +156,9 @@ an error code:
 
 http://docs.aws.amazon.com/amazonswf/latest/apireference/API_RespondActivityTaskFailed.html
 
+11) Send note to Bidyut / Ramsri about how to wrap their thing in it.
 
-Send note to Bidyut / Ramsri about how to wrap their thing in it.
-
-Start working on Rekognition in it.
+12) Start working on Rekognition in it.
 
 --
 

@@ -21,6 +21,11 @@ class Upload( swf.ActivityWorker ):
 
             activity_task = self.poll()
 
+            # DEBUG - we have a bug here in that we are calling
+            # complete when we didn't find a task in the poll.  When
+            # poll fails we get something like: Key: startedEventId, Value 0
+            # We need to test if we got that and do nothing otherwise.
+
             print "Activity_task type %s" % type( activity_task )
         
             for k, v in activity_task.items():
