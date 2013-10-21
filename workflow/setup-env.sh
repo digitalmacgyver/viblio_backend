@@ -1,1 +1,0 @@
-export BOTO_CONFIG=`pwd`/boto.config

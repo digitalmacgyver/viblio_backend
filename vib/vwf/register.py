@@ -3,11 +3,11 @@
 import boto.swf
 import boto.swf.layer2 as swf
 
-import VideoProcessingWorkflow
-from VideoProcessingWorkflow import VPW
+import vib.vwf.VPWorkflow
+from vib.vwf.VPWorkflow import VPW
 
-DOMAIN = VideoProcessingWorkflow.domain
-VERSION = VideoProcessingWorkflow.version
+DOMAIN = vib.vwf.VPWorkflow.domain
+VERSION = vib.vwf.VPWorkflow.version
 
 # Register our domain.
 d = swf.Domain( name=DOMAIN )

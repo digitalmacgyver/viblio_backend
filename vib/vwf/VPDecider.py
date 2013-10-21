@@ -6,12 +6,12 @@ import json
 import pprint
 import time
 
-import VideoProcessingWorkflow
-from VideoProcessingWorkflow import VPW
+import vib.vwf.VPWorkflow
+from vib.vwf.VPWorkflow import VPW
 
-class VideoProcessingDecider( swf.Decider ):
-    domain = VideoProcessingWorkflow.domain
-    version = VideoProcessingWorkflow.version
+class VPDecider( swf.Decider ):
+    domain = vib.vwf.VPWorkflow.domain
+    version = vib.vwf.VPWorkflow.version
 
     task_list = None
 
@@ -19,11 +19,11 @@ class VideoProcessingDecider( swf.Decider ):
         print "Polling for events"
 
         # Listen for decisions in this task list.
-        history = self.poll( task_list = 'VideoProcessingDecider' )
+        history = self.poll( task_list = 'VPDecider' )
         history_events = history.get( 'events', [] )
         while 'nextPageToken' in history:
             print "Getting next page of history."
-            history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VideoProcessingDecider' )
+            history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VPDecider' )
             history_events += history.get( 'events', [] )
 
         print "Polling completed"
@@ -129,14 +129,14 @@ def _all_tasks_complete( tasks, completed_tasks ):
     return True
 
 def _all_prerequisites_complete( task, completed_tasks ):
-    '''Checks a given task against a list of completed tasks, and the specification provided by the VideoProcessingWorkflow data structure.'''
+    '''Checks a given task against a list of completed tasks, and the specification provided by the VPWorkflow data structure.'''
     if task in VPW:
         for prerequisite in VPW[task]['prerequisites']:
             if prerequisite not in completed_tasks:
                 return False
         return True
     else:
-        raise Exception("Task %s not found in VideoProcessingWorkflow data structure." % task )
+        raise Exception("Task %s not found in VPWorkflow data structure." % task )
 
 def _get_input( task, completed_tasks ):
     '''Given a task, aggregate the outputs of its prerequisites from history events.'''

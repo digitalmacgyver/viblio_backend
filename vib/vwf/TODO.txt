@@ -1,5 +1,11 @@
 DEBUG:
 
+Incorporate retry logic in configuration:
+
+1) Max worker retries - if we exceed that we fail.
+2) Timeout retries - if we exceed the number of array slots we fail
+
+
 We must manually set long timeouts on Face Recognition jobs that are
 manual - we've set machine default type speeds in the pipeline
 currently.
@@ -15,25 +21,23 @@ Window 1:
 
 import boto.swf.layer2 as swf
 import json
-
-execution = swf.WorkflowType( name='VideoProcessing', domain='Viblio', version='1.0.4' ).start( task_list='VideoProcessingDecider', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) )
-
-execution = swf.WorkflowType( name='TimeoutTest', domain='Viblio', version='1.0' ).start( task_list='TimeoutTest', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ), task_start_to_close_timeout='1' ) 
-
-
 import pprint
 pp = pprint.PrettyPrinter( indent = 4 )
+
+execution = swf.WorkflowType( name='VideoProcessing', domain='Viblio', version='1.0.4' ).start( task_list='VPDecider', input = json.dumps( { 'media_uuid' : '1234', 'user_uuid' : '45567' } ) )
+
 print pp.pprint( execution.history() )
 
-Window 2:
+Window 2-4
 
-python -i VideoProcessingDecider.py 
-while VideoProcessingDecider().run(): pass
+python -i VPDecider.py 
+while VPDecider().run(): pass
 
-Window 3:
+python -i FaceDetect.py
+while FaceDetect().run(): pass
 
-python -i Upload.py 
-while Upload().run(): pass
+python -i FaceRecognize.py
+while FaceRecognize().run(): pass
 
 ==
 
@@ -119,7 +123,9 @@ growing time if time expires?
 
 Can users specify non-fatal failures?
 
+11) Integrate mixpanel stuff.
 
+12) Integrate logly - try to log to syslog first and then to logly.
 
 http://docs.aws.amazon.com/amazonswf/latest/apireference/API_RespondActivityTaskFailed.html
 
