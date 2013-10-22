@@ -1,7 +1,5 @@
 DEBUG:
 
-0) Get init.d script working for supervisor.
-
 1) Popeye - how to get boto configuration from a location other than ~/.boto.
 
 0) Upgrade boto on staging / prod

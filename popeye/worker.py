@@ -1,4 +1,4 @@
-# Python libraries
+# Python librarie
 import boto.swf.layer2 as swf
 import datetime
 import fcntl
@@ -26,7 +26,6 @@ from models import *
 sys.path.append("../utils")
 import Serialize
 import video_processing
-
 
 # Popeye configuration object.
 config = AppConfig( 'popeye' ).config()
@@ -438,12 +437,6 @@ class Worker( Background ):
                 # and recognition.
                 try:
                     log.info( 'Making call to Video Processing Workflow external to Popeye' )
-                    # This is a horrible kludge to deal with the fact
-                    # that boto.swf can't set it's region for layer2
-                    # stuff any way other than the config file.
-                    #os.environ.setdefault( 'BOTO_CONFIG', os.path.dirname( os.path.abspath( __file__ ) ) + '/../vib/vwf/boto.config' )
-                    os.environ.setdefault( 'BOTO_CONFIG', '/deploy/local/vib/vwf/boto.config' )
-                    log.info( "Boto config is at %s" % os.environ.get( 'BOTO_CONFIG' ) )
 
                     execution = swf.WorkflowType( name = 'VideoProcessing' + config.VPWSuffix, domain = 'Viblio', version = '1.0.4' ).start( task_list = 'VPDecider' + config.VPWSuffix, input = json.dumps( { 'media_uuid' : self.uuid, 'user_uuid'  : self.data['info']['uid'], 'video_file' : { 's3_bucket' : config.bucket_name, 's3_key'    : self.files['main']['key'] } } ), workflow_id=self.uuid )
                     log.info( 'External Video Processing Workflow %s initiated' % execution.workflowId )
@@ -451,9 +444,7 @@ class Worker( Background ):
                     log.warning( "Failed to launch External Video Processing Workflow, error was: %s" % e )
 
                 log.info( 'Making call to get faces' )
-                # DEBUG
-                #self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
-                self.data['track_json'] = None
+                self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
                 log.info( 'Get faces returned.' )
 
                 self.mp_log( '100_get_faces_completed' )
