@@ -55,9 +55,11 @@ development: exiftool
 	make LVL=local deploy
 	ln -s /deploy/local/brewtus/brewtus-local.init.d /etc/init.d/brewtus
 	ln -s /deploy/local/popeye/deployment/init.d/popeye-local /etc/init.d/popeye
-	( cd /etc/init.d; update-rc.d brewtus defaults; update-rc.d popeye defaults )
+	ln -s /deploy/local/popeye/deployment/init.d/supervisor-local /etc/init.d/supervisor
+	( cd /etc/init.d; update-rc.d brewtus defaults; update-rc.d popeye defaults; update-rc.d supervisor )
 	/etc/init.d/brewtus start
 	/etc/init.d/popeye start
+	/etc/init.d/supervisor start
 
 exiftool:
 	( cd /tmp; \

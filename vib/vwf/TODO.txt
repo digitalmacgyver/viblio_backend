@@ -1,13 +1,8 @@
 DEBUG:
 
+0) Get init.d script working for supervisor.
+
 1) Popeye - how to get boto configuration from a location other than ~/.boto.
-
-2) Determine how to set deployment=LOCAL etc. in supervisor config so
-it starts its workers on the right deployment.
-
-3) Set media_uuid as the workflow_id
-
-5) Get working on local.
 
 0) Upgrade boto on staging / prod
 0) Install supervisor with easy_install
@@ -18,6 +13,16 @@ it starts its workers on the right deployment.
 7) We must manually set long timeouts on Face Recognition jobs that
 are manual - we've set machine default type speeds in the pipeline
 currently.
+
+8) Extend logic: there are task fatal errors, and workflow fatal
+errors.  We can decide to bail on a task (and everything after it), or
+we can mark the dependent tree as completed?  Maybe it is better for
+us to just have our application logic work such that this isn't
+necessary.
+
+9) Scale transcoder - does it become it's own service?  If so then
+upload becomes it's own service.  Can we just scale popeye in some
+stupid way for the time being?
 
 9) Document the failure details = JSON with retry : true or false.  -
 you can call self.fail with a reason (256 chars), and a details
