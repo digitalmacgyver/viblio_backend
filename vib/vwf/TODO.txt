@@ -1,32 +1,23 @@
 DEBUG:
 
-0) Upgrade boto on staging / prod
-0.1) Install supervisor with easy_install
+1) Popeye - how to get boto configuration from a location other than ~/.boto.
 
-1) Determine how to read appconfig from Popeye.
+2) Determine how to set deployment=LOCAL etc. in supervisor config so
+it starts its workers on the right deployment.
 
-* Different Workflow / queues by deployment type?
-
-3) Add hook to popeye - Depends on reading in boto.config - think about how to solve this in real deployment.
-
-4) Add deployment stuff.
+3) Set media_uuid as the workflow_id
 
 5) Get working on local.
 
-5) Write simple wrapper that spins up workers and has outstanding# and
-CPU throttles.
-    - Check Supervisor / Circus for this first.
+0) Upgrade boto on staging / prod
+0) Install supervisor with easy_install
+6) Get working on staging
 
 6) Add loggly logging.
 
 7) We must manually set long timeouts on Face Recognition jobs that
 are manual - we've set machine default type speeds in the pipeline
 currently.
-
-8) We can set the workflow_id manually in call to WorkflowType.start -
-we probably should set it to be our media_uuid or something.  It will
-show up in logs better.  Check on the requisite uniqueness of that
-field - is it per execution, or all time, or what.
 
 9) Document the failure details = JSON with retry : true or false.  -
 you can call self.fail with a reason (256 chars), and a details

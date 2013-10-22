@@ -12,7 +12,8 @@ PYPKGS=\
 	requests \
 	qtfaststart \
 	pytz \
-	mixpanel-py
+	mixpanel-py \
+	supervisor
 
 install_deps:
 	apt-get -y install python-pip

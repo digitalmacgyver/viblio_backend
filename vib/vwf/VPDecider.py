@@ -11,7 +11,7 @@ import time
 import sys
 sys.path.append( '../../popeye' )
 from appconfig import AppConfig
-config = AppConfig( '../../popeye/popeye' ).config()
+config = AppConfig( 'popeye', relpath="../../popeye/" ).config()
 
 mp = mixpanel.Mixpanel( config.mp_token )
 

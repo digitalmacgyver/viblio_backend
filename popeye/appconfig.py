@@ -59,8 +59,11 @@ except:
     pass
 
 class AppConfig:
-    def __init__(self, basename):
-        basefile = basename+'.config'
+    def __init__(self, basename, relpath=''):
+        if len( relpath ) and relpath[-1] != '/':
+            relpath += '/'
+            
+        basefile = relpath+basename+'.config'
         try:
             base = Config( basefile )
             base.addNamespace( logging )
@@ -70,7 +73,7 @@ class AppConfig:
         if 'DEPLOYMENT' in os.environ:
             deployment = os.environ['DEPLOYMENT']+'.config'
             try:
-                dep = Config( deployment )
+                dep = Config( relpath+deployment )
                 dep.addNamespace(logging)
             except Exception as e:
                 raise Exception( 'Cannot open/read/parse %s: %s' % ( deployment, str( e ) ) )
