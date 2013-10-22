@@ -438,8 +438,15 @@ class Worker( Background ):
                 # and recognition.
                 try:
                     log.info( 'Making call to Video Processing Workflow external to Popeye' )
-                    execution = swf.WorkflowType( name = 'VideoProcessing', domain = 'Viblio', version = '1.0.4' ).start( task_list = 'VPDecider', input = json.dumps( { 'media_uuid' : self.uuid, 'user_uuid'  : self.data['info']['uid'], 'video_file' : { 's3_bucket' : config.bucket_name, 's3_key'    : self.files['main']['key'] } } ) )
-                    log.info( 'Exernal Video Processing Workflow %s initiated' % execution.workflowId )
+                    # This is a horrible kludge to deal with the fact
+                    # that boto.swf can't set it's region for layer2
+                    # stuff any way other than the config file.
+                    #os.environ.setdefault( 'BOTO_CONFIG', os.path.dirname( os.path.abspath( __file__ ) ) + '/../vib/vwf/boto.config' )
+                    os.environ.setdefault( 'BOTO_CONFIG', '/deploy/local/vib/vwf/boto.config' )
+                    log.info( "Boto config is at %s" % os.environ.get( 'BOTO_CONFIG' ) )
+
+                    execution = swf.WorkflowType( name = 'VideoProcessing' + config.VPWSuffix, domain = 'Viblio', version = '1.0.4' ).start( task_list = 'VPDecider' + config.VPWSuffix, input = json.dumps( { 'media_uuid' : self.uuid, 'user_uuid'  : self.data['info']['uid'], 'video_file' : { 's3_bucket' : config.bucket_name, 's3_key'    : self.files['main']['key'] } } ) )
+                    log.info( 'External Video Processing Workflow %s initiated' % execution.workflowId )
                 except Exception as e:
                     log.warning( "Failed to launch External Video Processing Workflow, error was: %s" % e )
 

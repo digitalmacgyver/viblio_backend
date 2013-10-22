@@ -1,5 +1,8 @@
 DEBUG:
 
+0) Upgrade boto on staging / prod
+0.1) Install supervisor with easy_install
+
 1) Determine how to read appconfig from Popeye.
 
 * Different Workflow / queues by deployment type?
