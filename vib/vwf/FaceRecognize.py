@@ -17,5 +17,6 @@ class FaceRecognize( VWorker ):
 
         NOTE: The size of the return value is limited to 32 kB
         '''
+
         return {}
 
