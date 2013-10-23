@@ -17,9 +17,5 @@ class FaceRecognize( VWorker ):
 
         NOTE: The size of the return value is limited to 32 kB
         '''
-        print "Face recognition inputs are:"
-        pp = pprint.PrettyPrinter( indent=4 )
-        pp.pprint( options )
-        print "Doing face recognition stuff!"
-        return { 'media_uuid' : 1234, 'people' : { 'x' : 'y', 'a' : 'b' } }
+        return {}
 
