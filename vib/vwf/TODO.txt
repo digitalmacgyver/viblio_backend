@@ -1,10 +1,16 @@
 DEBUG:
 
-1) Popeye - how to get boto configuration from a location other than ~/.boto.
+TOP LEVEL TODO:
+
+1) Scalability: 
+
+* Get 2 servers running Popeye in staging
+* Get 2 servers running the rest of the pipeline in staging
+
+On prod:
 
 0) Upgrade boto on staging / prod
 0) Install supervisor with easy_install
-6) Get working on staging
 
 6) Add loggly logging.
 

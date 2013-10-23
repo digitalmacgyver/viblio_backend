@@ -343,15 +343,16 @@ class Worker( Background ):
             
             # Main media_asset
             log.info( 'Generating row for main media_asset' )
-            asset = MediaAssets( uuid        = str(uuid.uuid4()),
-                                asset_type   = 'main',
-                                mimetype     = self.data['mimetype'],
-                                metadata_uri = files['metadata']['key'],
-                                bytes        = os.path.getsize( files['main']['ofile'] ),
-                                uri          = files['main']['key'],
-                                location     = 'us',
-                                view_count   = 0 )
-            media.assets.append( asset )
+            main_asset = MediaAssets( 
+                uuid         = str( uuid.uuid4() ),
+                asset_type   = 'main',
+                mimetype     = self.data['mimetype'],
+                metadata_uri = files['metadata']['key'],
+                bytes        = os.path.getsize( files['main']['ofile'] ),
+                uri          = files['main']['key'],
+                location     = 'us',
+                view_count   = 0 )
+            media.assets.append( main_asset )
 
             # Intellivision media_asset
             log.info( 'Generating row for intellivision media_asset' )
@@ -438,7 +439,28 @@ class Worker( Background ):
                 try:
                     log.info( 'Making call to Video Processing Workflow external to Popeye' )
 
-                    execution = swf.WorkflowType( name = 'VideoProcessing' + config.VPWSuffix, domain = 'Viblio', version = '1.0.4' ).start( task_list = 'VPDecider' + config.VPWSuffix, input = json.dumps( { 'media_uuid' : self.uuid, 'user_uuid'  : self.data['info']['uid'], 'video_file' : { 's3_bucket' : config.bucket_name, 's3_key'    : self.files['main']['key'] } } ), workflow_id=self.uuid )
+                    execution = swf.WorkflowType( 
+                        name = 'VideoProcessing' + config.VPWSuffix, 
+                        domain = 'Viblio', version = '1.0.4' 
+                        ).start( 
+                        task_list = 'VPDecider' + config.VPWSuffix, 
+                        input = json.dumps( 
+                                { 
+                                    'media_uuid' : self.uuid, 
+                                    'user_uuid'  : self.data['info']['uid'], 
+                                    'media_assets' : [ 
+                                        { 
+                                            'uuid'             : main_asset.uuid,
+                                            'asset_type'       : 'main',
+                                            's3_bucket'        : config.bucket_name, 
+                                            's3_key'           : self.files['main']['key'] 
+                                            } 
+                                        ]
+                                    } 
+                                ), 
+                        workflow_id=self.uuid 
+                        )
+
                     log.info( 'External Video Processing Workflow %s initiated' % execution.workflowId )
                 except Exception as e:
                     log.warning( "Failed to launch External Video Processing Workflow, error was: %s" % e )
