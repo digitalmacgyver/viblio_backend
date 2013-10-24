@@ -1,17 +1,29 @@
 #!/usr/bin/env python
 
 import json
+import time
 import uuid
 
 from vib.vwf.VWorker import VWorker
+from vib.thirdParty.mturkcore import MechanicalTurk
 
 # NEXT UP
 #
 # 1. Get _process_hit working:
-# Hello world hit.
+
 # Hello world hit with image from our site.
-# Same by submit, accept, poll, resolve, post next
-# Fix layout.
+
+# Same by submit, accept, poll, resolve, post next - Or think about
+# asking notification to go to a SWQ.
+
+# Debug - make the hits private to just our list.
+
+# Debug - Categotize HITs by a "typeID" we set (medai_uuid) so we can
+# track all the ones for a single track?
+
+# Apparently we create a customj qualification type, require workers
+# have that type, and allow workers to request it and then we grant
+# it.
 
 class FaceRecognize( VWorker ):
     # This line controls how we interact with SWF, and changes here
@@ -25,10 +37,145 @@ class FaceRecognize( VWorker ):
 
         NOTE: The size of the return value is limited to 32 kB
         '''
-        
-        # DEBUG - placeholder till we get real data on input.
-        options = _get_sample_data()
+        try:
+            # DEBUG - placeholder till we get real data on input.
+            options = _get_sample_data()
 
+            user_uuid  = options['user_uuid']
+            media_uuid = options['media_uuid']
+            tracks     = options['tracks']
+
+            # First we do quality control on the tracks, and merge
+            # different tracks into one.
+            print "Getting merged tracks"
+            merged_tracks, bad_tracks = self._get_merged_tracks( user_uuid, media_uuid, tracks )
+
+            # Then we go through each face post merge and try to
+            # recognize them
+            print "Recognizing faces"
+            recognized_faces, new_faces = self._recognize_faces( user_uuid, media_uuid, merged_tracks )
+        
+            # Then we persist our results.
+            print "Updating contacts"
+            result = _update_contacts( user_uuid, media_uuid, recognized_faces, new_faces )
+            if not result:
+                # We had an error updating the DB contacts, most
+                # likely there was a race condition and a face we
+                # recognized no longer exists due to user behavior in
+                # the UI.  Retry the entire task from scratch.
+                return { 'ACTIVITY_ERROR' : True, 'retry' : True }
+            else:
+                print "Returning successfully"
+                return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
+            
+        except Exception as e:
+            # We had an unknown error, fail the task.
+            print "Exception was: %s" % ( e )
+            raise
+            return { 'ACTIVITY_ERROR' : True, 'retry' : False }
+
+    def _recognize_faces( self, user_uuid, media_uuid, merged_tracks ):
+        '''
+        The original options which includes the media_uuid and
+        user_uuid that we are working on, and an array of merged
+        tracks.  Each element of merged tracks is itself an array of
+        track data structures.
+
+        This method:
+        1) Heartbeats Amazon SWF that it is working.
+        2) Creates one Mechanical Turk task for each element of merged_tracks
+        3) Polls Mechanical Turk until all the Mechanical Turk tasks are done.
+        4) Interprets the Mechanical Turk results.
+
+        Returns two dictionaries:
+        recognized_faces, new_faces
+
+        The keys of both dictionaries are uuids, in the case of
+        recognized_faces they are the contact_uuids of the recognized
+        faces.
+
+        The values in both dictionaries are arrays of track data
+        structures whichwere determined to be those faces.
+        '''
+
+        return None, None
+
+    def _get_merged_tracks( self, user_uuid, media_uuid, tracks ):
+        '''
+        Input - the options which includes an array of tracks, each of
+        which includes an array of faces.  Each Face has a URI for
+        where it is in S3.
+        
+        This method:
+        1) Heartbeats Amazon SWF that it is working.
+        2) Creates a Mechanical Turk task.
+        3) Polls Mechanciacl Turk until that task is done.
+        4) Interprets the Mechanical Turk results.
+
+        Returns two arrays:
+        merged_tracks, bad_tracks
+
+        The elements of merged_tracks are themselves arrays, each
+        element being a track that was merged with the others in the
+        same element.
+
+        The elements of bad_tracks are dictionaries, with keys
+        "reason" and "track" and values describing the reason this
+        track was bad, and the track itself that was bad.
+        '''
+
+        # Heartbeat.
+        # Build form.
+        # Heartbeat.
+        # Submit form.
+        # While (poll form not done)
+        #   heartbeat
+        # process results
+        # heartbeat
+        # return
+
+        print "heartbeating."
+        self.heartbeat()
+
+        # DEBUG - Check if there is are hits already out there for
+        # this media uuid, if there are clean them up (it means
+        # something went wrong in a prior attempt).
+
+        print "Creating mturk hit"
+        hit_id = _create_hit( media_uuid )
+
+        print "heartbeating."
+        self.heartbeat()
+
+
+        return None, None
+
+def _create_hit( media_uuid ):
+    '''Hello world hit creation'''
+    mt = MechanicalTurk( 
+        { 
+            'use_sandbox'           : True, 
+            'stdout_log'            : True, 
+            # DEBUG add keys to come global configuration
+            'aws_key'     : 'AKIAJHD46VMHB2FBEMMA',
+            'aws_secret_key' : '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',
+            }  )
+
+    # DEBUG register this hit type
+
+    create_options = {
+        
+        }
+        
+
+def _update_contacts( user_uuid, media_uuid, recognized_faces, new_faces ):
+    '''Should be implemented perhaps in another DB centric module.  We
+    want to handle recognized and new faces here because we want the
+    management of those things to be transactional.
+    '''
+    return True
+
+'''
         user_contacts = _get_contacts_for_user( user_uuid )
 
         recognized_faces = 0
@@ -82,6 +229,7 @@ class FaceRecognize( VWorker ):
                 'media_uuid' : options['media_uuid'],
                 'user_uuid' : options['user_uuid'],
                 }
+'''
 
 def _update_database( user_contacts, matched_contacts, new_contacts, media_uuid, user_uuid, tracks ):
     '''DEBUG In another library, rationalize everything, return false
@@ -143,7 +291,7 @@ def _get_recognition_guess( faces ):
         }
 
 def _get_sample_data():
-    return json.loads( {
+    return {
             "media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
             "tracks": [
                 {
@@ -737,4 +885,4 @@ def _get_sample_data():
                     }
                 ],
             "user_uuid": "C209A678-03AF-11E3-8D79-41BD85EDDE05"
-            } )
+            }
