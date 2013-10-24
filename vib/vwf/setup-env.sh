@@ -1,2 +1,2 @@
-export BOTO_CONFIG=`pwd`/boto.config
+export BOTO_CONFIG=`pwd`/../config/boto.config
 export PYTHONPATH=${PYTONPATH}:`pwd`/../../
