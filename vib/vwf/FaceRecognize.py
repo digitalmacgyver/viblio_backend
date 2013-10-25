@@ -7,23 +7,9 @@ import uuid
 from vib.vwf.VWorker import VWorker
 from vib.thirdParty.mturkcore import MechanicalTurk
 
-# NEXT UP
-#
-# 1. Get _process_hit working:
-
-# Hello world hit with image from our site.
-
-# Same by submit, accept, poll, resolve, post next - Or think about
-# asking notification to go to a SWQ.
-
-# Debug - make the hits private to just our list.
-
-# Debug - Categotize HITs by a "typeID" we set (medai_uuid) so we can
-# track all the ones for a single track?
-
-# Apparently we create a customj qualification type, require workers
-# have that type, and allow workers to request it and then we grant
-# it.
+# DEBUG Get from configuration
+MergeHITTypeId = '2PCIA0RYNJ96UXSXBA2MMTUHYKA837'
+RecognizeHITTypeId = '2SVYU98JHSTPIHTBQGA9LOBJE7ZDPU'
 
 class FaceRecognize( VWorker ):
     # This line controls how we interact with SWF, and changes here
@@ -98,6 +84,37 @@ class FaceRecognize( VWorker ):
         structures whichwere determined to be those faces.
         '''
 
+        print "heartbeating."
+        self.heartbeat()
+
+        # Debug - get contacts for user from database.
+        contacts = None
+
+        print "heartbeating."
+        self.heartbeat()
+
+        print "Creating mturk hit"
+        hit_ids = _create_recognize_hits( media_uuid, merged_tracks, contacts )
+        print "Created %d hits" % len( hit_ids )
+
+        print "heartbeating."
+        self.heartbeat()
+
+        hit_completed = False
+        
+        for hit_id in hit_ids:
+            while not _hit_completed( hit_id ):
+                print "Hit not complete, sleeping for 60 seconds"
+                time.sleep( 60 )
+                print "heartbeating."
+                self.heartbeat()
+
+        # DEBUG - We'll get back a bunch of junk we have to turn into
+        # recognized_faces and merged_faces
+
+        print "heartbeating."
+        self.heartbeat()
+
         return None, None
 
     def _get_merged_tracks( self, user_uuid, media_uuid, tracks ):
@@ -124,33 +141,53 @@ class FaceRecognize( VWorker ):
         track was bad, and the track itself that was bad.
         '''
 
-        # Heartbeat.
-        # Build form.
-        # Heartbeat.
-        # Submit form.
-        # While (poll form not done)
-        #   heartbeat
-        # process results
-        # heartbeat
-        # return
-
         print "heartbeating."
         self.heartbeat()
-
-        # DEBUG - Check if there is are hits already out there for
-        # this media uuid, if there are clean them up (it means
-        # something went wrong in a prior attempt).
 
         print "Creating mturk hit"
-        hit_id = _create_hit( media_uuid )
+        hit_id = _create_merge_hit( media_uuid )
+        print "Had HITId of %s" % hit_id
 
         print "heartbeating."
         self.heartbeat()
 
+        hit_completed = False
+        
+        while not _hit_completed( hit_id ):
+            print "Hit not complete, sleeping for 60 seconds"
+            time.sleep( 60 )
+            print "heartbeating."
+            self.heartbeat()
+
+        # DEBUG - We'll get back a bunch of junk we have to turn into
+        # merged_tracks and bad_tracks.
+
+        print "heartbeating."
+        self.heartbeat()
 
         return None, None
 
-def _create_hit( media_uuid ):
+def _hit_completed( hit_id ):
+    mt = MechanicalTurk( 
+        { 
+            'use_sandbox'           : True, 
+            'stdout_log'            : True, 
+            # DEBUG add keys to come global configuration
+            'aws_key'     : 'AKIAJHD46VMHB2FBEMMA',
+            'aws_secret_key' : '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',
+            }  )
+
+    get_options = {
+        'HITId' : hit_id 
+        }
+
+    result = mt.create_request( 'GetHIT', get_options )
+
+    print "Result was %s" % result
+    return result['GetHITResponse']['HIT']['HITStatus'] == 'Reviewable'
+    
+
+def _create_merge_hit( media_uuid ):
     '''Hello world hit creation'''
     mt = MechanicalTurk( 
         { 
@@ -161,12 +198,128 @@ def _create_hit( media_uuid ):
             'aws_secret_key' : 'gPKpaSdHdHwgc45DRFEsZkTDpX9Y8UzJNjz0fQlX',
             }  )
 
-    # DEBUG register this hit type
-
     create_options = {
-        
+        # DEBUG - get this from configuration
+        'HITTypeId' : MergeHITTypeId,
+        'LifetimeInSeconds' : 36*60*60,
+        'RequesterAnnotation' : media_uuid,
+        'UniqueRequestToken' : 'merge-' + media_uuid,
+        'Question' : 
+        '''
+<QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+  <Overview>
+    <Title>Sample Merge Question</Title>
+  </Overview>
+  <Question>
+    <QuestionIdentifier>not_face</QuestionIdentifier>
+     <QuestionContent><Text>Question 1</Text></QuestionContent>
+     <AnswerSpecification>
+      <SelectionAnswer>
+        <MinSelectionCount>1</MinSelectionCount>
+        <MaxSelectionCount>1</MaxSelectionCount>
+        <StyleSuggestion>radiobutton</StyleSuggestion>
+
+        <Selections>
+          <Selection>
+          <SelectionIdentifier>not_face_selection</SelectionIdentifier>
+          <Text>Check here if one of the above images is not a face</Text>
+          </Selection>
+
+          <Selection>
+          <SelectionIdentifier>two_face_selection</SelectionIdentifier>
+          <Text>Check here if there are two different people</Text>
+          </Selection>
+        </Selections>
+      </SelectionAnswer>
+    </AnswerSpecification>
+  </Question>
+</QuestionForm>
+'''
         }
-        
+
+    result = mt.create_request( 'CreateHIT', create_options )
+    print "Result was %s" % result
+
+    # DEBUG - Think about what happens if there is some other sort of
+    # error.
+    hit_id = None
+    try:
+        hit_id = result['CreateHITResponse']['HIT']['HITId']
+    except:
+        # Handle the case where this hit already exists.
+        hit_id = result['CreateHITResponse']['HIT']['Request']['Errors']['Error']['Data'][1]['Value']
+
+    return hit_id
+
+def _create_recognize_hits( media_uuid, merged_tracks, contacts ):
+    '''Hello world hit creation'''
+    mt = MechanicalTurk( 
+        { 
+            'use_sandbox'           : True, 
+            'stdout_log'            : True, 
+            # DEBUG add keys to come global configuration
+            'aws_key'     : 'AKIAJHD46VMHB2FBEMMA',
+            'aws_secret_key' : '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',
+            }  )
+
+    ret = []
+
+    # DEBUG - in reality iterate over merged tracks
+    for i in range( 2 ):
+        # DEBUG - USE THE TRACK ID AS THE UNIQUEREQUESTTOKEN SO WE GET
+        # DETERMINISTIC BEHAVIOR ON RETRY
+        create_options = {
+            # DEBUG - get this from configuration
+            'HITTypeId' : RecognizeHITTypeId,
+            'LifetimeInSeconds' : 36*60*60,
+            'RequesterAnnotation' : media_uuid + '-%d' % ( i ),
+            'UniqueRequestToken' : ( 'recognize-%d-' % ( i ) ) + media_uuid,
+            'Question' : 
+            '''
+<QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+  <Overview>
+    <Title>Sample Recognize Question</Title>
+  </Overview>
+  <Question>
+    <QuestionIdentifier>matched_face</QuestionIdentifier>
+     <QuestionContent><Text>Question 1</Text></QuestionContent>
+     <AnswerSpecification>
+      <SelectionAnswer>
+        <MinSelectionCount>1</MinSelectionCount>
+        <MaxSelectionCount>1</MaxSelectionCount>
+        <StyleSuggestion>radiobutton</StyleSuggestion>
+
+        <Selections>
+          <Selection>
+          <SelectionIdentifier>first_face_selection</SelectionIdentifier>
+          <Text>Is it this face:</Text>
+          </Selection>
+
+          <Selection>
+          <SelectionIdentifier>second_face_selection</SelectionIdentifier>
+          <Text>Is it this face:</Text>
+          </Selection>
+        </Selections>
+      </SelectionAnswer>
+    </AnswerSpecification>
+  </Question>
+</QuestionForm>
+'''
+            }
+
+        result = mt.create_request( 'CreateHIT', create_options )
+        print "Result was %s" % result
+        hit_id = None
+        try:
+            hit_id = result['CreateHITResponse']['HIT']['HITId']
+        except:
+            # Handle the case where this hit already exists.
+            hit_id = result['CreateHITResponse']['HIT']['Request']['Errors']['Error']['Data'][1]['Value']
+
+        ret.append( hit_id )
+
+    return ret
+
 
 def _update_contacts( user_uuid, media_uuid, recognized_faces, new_faces ):
     '''Should be implemented perhaps in another DB centric module.  We

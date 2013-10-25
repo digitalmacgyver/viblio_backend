@@ -14,6 +14,52 @@ mt = MechanicalTurk(
     )
 
 
+MergeHITTypeId = '2PCIA0RYNJ96UXSXBA2MMTUHYKA837'
+
+media_uuid = '123456'
+
+create_options = {
+    # DEBUG - get this from configuration
+    'HITTypeId' : MergeHITTypeId,
+    'LifetimeInSeconds' : 36*60*60,
+    'RequesterAnnotation' : media_uuid,
+    'UniqueRequestToken' : 'merge-' + media_uuid,
+    'Question' : 
+    '''
+<QuestionForm xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionForm.xsd">
+  <Overview>
+    <Title>Sample Merge Question</Title>
+  </Overview>
+  <Question>
+    <QuestionIdentifier>not_face</QuestionIdentifier>
+     <QuestionContent><Text>Question 1</Text></QuestionContent>
+     <AnswerSpecification>
+      <SelectionAnswer>
+        <MinSelectionCount>1</MinSelectionCount>
+        <MaxSelectionCount>1</MaxSelectionCount>
+        <StyleSuggestion>radiobutton</StyleSuggestion>
+
+        <Selections>
+          <Selection>
+          <SelectionIdentifier>not_face_selection</SelectionIdentifier>
+          <Text>Check here if one of the above images is not a face</Text>
+          </Selection>
+
+          <Selection>
+          <SelectionIdentifier>two_face_selection</SelectionIdentifier>
+          <Text>Check here if there are two different people</Text>
+          </Selection>
+        </Selections>
+      </SelectionAnswer>
+    </AnswerSpecification>
+  </Question>
+</QuestionForm>
+'''
+    }
+
+#result = mt.create_request( 'CreateHIT', create_options )
+#print "Result was %s" % result
+
 register_hit_options = {
     'Title' : 'Recognize Face',
     'Description' : 'Given a face, match it against a list of potential matching faces, or decide there is no match.',
@@ -27,11 +73,14 @@ register_hit_options = {
     'QualificationRequirement' : {
         'QualificationTypeId' : '2EA1XERSQV6AYZXSTYUHYWAVKM791C',
         'Comparator' : 'Exists',
-        'RequiredToPreview' : True
+        'RequiredToPreview' : True#result = mt.create_request( 'GetAssignmentsForHIT', get_assignments_options )
+#<class 'collections.OrderedDict'>
+#OrderedDict([(u'GetAssignmentsForHITResponse', OrderedDict([(u'OperationRequest', OrderedDict([(u'RequestId', u'e966dd16-6639-4be3-894a-ed4da3de6621')])), (u'GetAssignmentsForHITResult', OrderedDict([(u'Request', OrderedDict([(u'IsValid', u'True')])), (u'NumResults', u'1'), (u'TotalNumResults', u'1'), (u'PageNumber', u'1'), (u'Assignment', OrderedDict([(u'AssignmentId', u'2V12HECWA6X752KNQ53P8KXPUA4LKK'), (u'WorkerId', u'A2UAN9XAD1587R'), (u'HITId', u'2NA8SV7WGKCG2ZTENFU3PHAP1WI1RQ'), (u'AssignmentStatus', u'Submitted'), (u'AutoApprovalTime', u'2013-10-24T08:19:51Z'), (u'AcceptTime', u'2013-10-24T08:09:19Z'), (u'SubmitTime', u'2013-10-24T08:19:51Z'), (u'Answer', u'<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<QuestionFormAnswers xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/QuestionFormAnswers.xsd">\n<Answer>\n<QuestionIdentifier>answer</QuestionIdentifier>\n<FreeText>recognized_face</FreeText>\n</Answer>\n</QuestionFormAnswers>')]))]))]))])
+
         }
     }
 
-result = mt.create_request( 'RegisterHITType', register_hit_options )
+#result = mt.create_request( 'RegisterHITType', register_hit_options )
 
 # DEBUG - Need to use HTML Create Option because otherwise there is no
 # way to put all known contacts in a tabular grid.  Also it's a little
@@ -308,10 +357,10 @@ multi_question_create_options = {
 
 
 get_options = {
-    'HITId' : '2Q2SSZVXX2Q8C82V1TPGQIW1YJ1O6N'
+    'HITId' : '28RZJMJUNU8P6KZIBLWRC8D8UX5G0E'
     }
 
-#result = mt.create_request( 'GetHIT', get_options )
+result = mt.create_request( 'GetHIT', get_options )
 #<class 'collections.OrderedDict'>
 #OrderedDict([(u'GetHITResponse', OrderedDict([(u'OperationRequest', OrderedDict([(u'RequestId', u'2ffdd107-2f2f-4d54-b013-44f57ca00ecc')])), (u'HIT', OrderedDict([(u'Request', OrderedDict([(u'IsValid', u'True')])), (u'HITId', u'2Q2SSZVXX2Q8C82V1TPGQIW1YJ1O6N'), (u'HITTypeId', u'2KO0FK0COK2NLFUI0PB9ORW6ONHQJB'), (u'HITGroupId', u'2HGWQIHPCGJ6KG9ZE1WXK0KQR1P714'), (u'CreationTime', u'2013-10-24T05:04:18Z'), (u'Title', u'My Test Hit'), (u'Description', u'Lots of details'), (u'Question', u'<HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">\n  <HTMLContent><![CDATA[\n<!DOCTYPE html>\n<html>\n <head>\n  <meta http-equiv=\'Content-Type\' content=\'text/html; charset=UTF-8\'/>\n  <script type=\'text/javascript\' src=\'https://s3.amazonaws.com/mturk-public/externalHIT_v1.js\'></script>\n </head>\n <body>\n  <form name=\'mturk_form\' method=\'post\' id=\'mturk_form\' action=\'https://www.mturk.com/mturk/externalSubmit\'>\n  <input type=\'hidden\' value=\'\' name=\'assignmentId\' id=\'assignmentId\'/>\n  <h1>What\'s up?</h1>\n  <p><textarea name=\'comment\' cols=\'80\' rows=\'3\'></textarea></p>\n  <p><input type=\'submit\' id=\'submitButton\' value=\'Submit\' /></p></form>\n  <script language=\'Javascript\'>turkSetAssignmentID();</script>\n </body>\n</html>\n]]>\n  </HTMLContent>\n  <FrameHeight>450</FrameHeight>\n</HTMLQuestion>'), (u'HITStatus', u'Reviewable'), (u'MaxAssignments', u'1'), (u'Reward', OrderedDict([(u'Amount', u'0.01'), (u'CurrencyCode', u'USD'), (u'FormattedPrice', u'$0.01')])), (u'AutoApprovalDelayInSeconds', u'0'), (u'Expiration', u'2013-10-25T05:04:18Z'), (u'AssignmentDurationInSeconds', u'86400'), (u'RequesterAnnotation', u'My Annotated UUID'), (u'HITReviewStatus', u'NotReviewed')]))]))])
 
