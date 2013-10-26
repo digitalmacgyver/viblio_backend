@@ -5,7 +5,7 @@ import pprint
 
 from vib.vwf.VWorker import VWorker
 
-class FaceDetect( VWorker ):
+class Detect( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
     task_name = 'FaceDetect'

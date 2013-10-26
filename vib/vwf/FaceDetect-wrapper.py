@@ -3,6 +3,6 @@
 # Execution of this file is managed by Supervisor, configuration at
 # ../config/FaceDetect.conf
 
-from vib.vwf.FaceDetect import FaceDetect
+from vib.vwf.FaceDetect.Detect import Detect
 
-while FaceDetect().run(): pass
+while Detect().run(): pass
