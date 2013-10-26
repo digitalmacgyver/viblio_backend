@@ -2,8 +2,6 @@
 
 # Create hello world HIT.
 
-
-
 def _get_sample_tracks():
     return [
                 {
@@ -640,8 +638,8 @@ def _get_question_html_for_track( track, max_faces ):
     track_id = track['track_id']
 
     if face_count: 
-        html = "<tr>"
-        html += '<td rowspan="4">Group %d</td>' % ( track_id )
+        html = '<tr>'# style="border-bottom: 1px solid #000;">'
+        html += '<td rowspan="4" style="border-bottom: 1px solid #000;">Group %d</td>' % ( track_id )
 
         for i in range( face_count ):
             face = track['faces'][i]
@@ -649,31 +647,33 @@ def _get_question_html_for_track( track, max_faces ):
             if face['s3_bucket'] != "viblio-uploaded-files":
                 server = "http://prod.viblio.com/s/ip/"
 
-            html += '<td rowspan="4"><img src="%s%s" height="50" width="50" alt="Img. %s" /></td>' % ( server, face['s3_key'] , i )
+            html += '<td rowspan="4" style="border-bottom: 1px solid #000;"><img src="%s%s" height="50" width="50" alt="Img. %s" /></td>' % ( server, face['s3_key'] , i )
 
 
         for i in range( face_count, max_faces ):
-            html += '<td rowspan="4"></td>'
+            html += '<td rowspan="4" style="border-bottom: 1px solid #000;"></td>'
 
         html += '<td><input type="radio" name="answer_%d" value="%d_notface" /></td>' % ( track_id, track_id )
         html += '<td>1. One of the images for Group %d is not a face</td>' % track_id
 
         html += "</tr>"
 
-        html += '<tr>'
+        html += '<tr>'# style="border-bottom: 1px solid #000;">'
         html += '<td><input type="radio" name="answer_%d" value="%d_twoface" /></td>' % ( track_id, track_id )
         html += '<td>2. The faces for Group %d include two or more different people</td>' % track_id
         html += '</tr>'
-        html += '<tr>'
+
+        html += '<tr>'# style="border-bottom: 1px solid #000;">'
         html += '<td><input type="radio" name="answer_%d" value="%d_new" /></td>' % ( track_id, track_id )
         html += '<td>3. Ignoring any groups that had non-faces, or multiple different people, this is the lowest numbered Group that the pictured person appears in.</td>'
         html += '</tr>'
-        html += '<tr>'
+
+        html += '<tr>'# style="border-bottom: 1px solid #000;">'
         if track_id == 0:
-            html += '<td></td><td></td>'
+            html += '<td style="border-bottom: 1px solid #000;"></td><td style="border-bottom: 1px solid #000;"></td>'
         else:
-            html += '<td><input type="number" name="merge_track_%d" min="0" max="%d" step="1" style="width:30px;" /></td>' % ( track_id, track_id - 1 )
-            html += '<td>4. If none of the above were true, enter the lowest numbered Group that also has this person to the left (Ignore any groups that had non-faces, or multiple differnent people)</td>'
+            html += '<td style="border-bottom: 1px solid #000;"><input type="number" name="merge_track_%d" min="0" max="%d" step="1" style="width:30px;" /></td>' % ( track_id, track_id - 1 )
+            html += '<td style="border-bottom: 1px solid #000;">4. If none of the above were true, enter the lowest numbered Group that also has this person to the left (Ignore any groups that had non-faces, or multiple differnent people)</td>'
         html += '</tr>'
 
     return html
@@ -688,12 +688,13 @@ def _get_question( tracks ):
         if max_faces < len( track['faces'] ):
             max_faces = len( track['faces'] )
         
-    html += '<table border="1">'
+    #    html += '<table border="1">'
+    html += '<table style="border-collapse: collapse;">'
     for track in tracks:
         html += _get_question_html_for_track( track, max_faces )
     html += '</table>'
     html += form_back
-    html += html_back % ( 250*len( tracks ) + 100 ) 
+    html += html_back % ( 150*len( tracks ) + 100 ) 
     #html += html_back % 500
     
     return html
@@ -712,7 +713,7 @@ mt = MechanicalTurk(
 
 MergeHITTypeId = '2PCIA0RYNJ96UXSXBA2MMTUHYKA837'
 
-media_uuid = '123467'
+media_uuid = '123474'
 
 tracks = _get_sample_tracks()
 
@@ -754,12 +755,12 @@ get_assignments_options = {
 assignment = mt.create_request( 'GetAssignmentsForHIT', get_assignments_options )
 
 #answer = result['GetAssignmentsForHITResponse']['GetAssignmentsForHITResult']['Assignment']['Answer']
-answer = mt.get_response_element( 'Answer', assignment )
-answer_dict = xmltodict.parse( answer )
+#answer = mt.get_response_element( 'Answer', assignment )
+#answer_dict = xmltodict.parse( answer )
 
-for answer in answer_dict['QuestionFormAnswers']['Answer']:
-    label = answer['QuestionIdentifier']
-    value = answer['FreeText']
+#for answer in answer_dict['QuestionFormAnswers']['Answer']:
+#    label = answer['QuestionIdentifier']
+#    value = answer['FreeText']
 
 # NOTE: We'll get back merge_track_n for everything except track 0,
 # just with a value of None if it wasn't selected.  Typical output:

@@ -31,6 +31,8 @@ class FaceRecognize( VWorker ):
             media_uuid = options['media_uuid']
             tracks     = options['tracks']
 
+            print "Working on media_uuid: %s" % media_uuid
+
             # First we do quality control on the tracks, and merge
             # different tracks into one.
             print "Getting merged tracks"
@@ -445,7 +447,8 @@ def _get_recognition_guess( faces ):
 
 def _get_sample_data():
     return {
-            "media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
+        #"media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
+        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bag94",
             "tracks": [
                 {
                     "faces": [

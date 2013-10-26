@@ -33,6 +33,8 @@ you can call self.fail with a reason (256 chars), and a details
 (stringified JSON with a mandatory "retry" value which must be True or
 False)
 
+10) Use the best face confidence as the picture_uri.
+
 --
 
 Window 1:
