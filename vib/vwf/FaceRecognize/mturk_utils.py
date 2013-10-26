@@ -7,24 +7,24 @@ from vib.thirdParty.mturkcore import MechanicalTurk
 import vib.vwf.FaceRecognize.merge_tracks_form as merge_tracks_form
 import vib.vwf.FaceRecognize.recognize_face_form as recognize_face_form
 
-# DEBUG Get from configuration
-MergeHITTypeId = '2PCIA0RYNJ96UXSXBA2MMTUHYKA837'
-RecognizeHITTypeId = '2SVYU98JHSTPIHTBQGA9LOBJE7ZDPU'
+import vib.config.AppConfig
+config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
+
+MergeHITTypeId = config.MergeHITTypeId
+RecognizeHITTypeId = config.RecognizeHITTypeId
 
 mt = MechanicalTurk( 
     { 
         'use_sandbox'           : True, 
         'stdout_log'            : True, 
-        # DEBUG add keys to come global configuration
-        'aws_key'     : 'AKIAJHD46VMHB2FBEMMA',
-        'aws_secret_key' : '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',
+        'aws_key'     : config.awsAccess,
+        'aws_secret_key' : config.awsSecret
         }  )
 
 def create_merge_hit( media_uuid, tracks ):
     '''Hello world hit creation'''
 
     create_options = {
-        # DEBUG - get this from configuration
         'HITTypeId' : MergeHITTypeId,
         'LifetimeInSeconds' : 36*60*60,
         'RequesterAnnotation' : media_uuid,
@@ -80,7 +80,6 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guess ):
 def hit_completed( hit_id ):
     result = get_hit( hit_id )
 
-    #return result['GetHITResponse']['HIT']['HITStatus'] == 'Reviewable'
     return mt.get_response_element( 'HITStatus', result ) == 'Reviewable'
 
 def get_hit( hit_id ):

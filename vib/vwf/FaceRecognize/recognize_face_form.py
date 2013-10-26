@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import vib.config.AppConfig
+config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
+
 form_front = '''
   <form name='mturk_form' method='post' id='mturk_form' action='https://www.mturk.com/mturk/externalSubmit'>
 '''
@@ -34,7 +37,9 @@ html_back = '''
 </HTMLQuestion>
 '''
 
-def _get_contact_row_html( contacts, start_idx, cell_count, server ):
+def _get_contact_row_html( contacts, start_idx, cell_count ):
+
+    server = config.ImageServer
 
     contact_count = len( contacts )
 
@@ -65,12 +70,7 @@ def _get_contact_row_html( contacts, start_idx, cell_count, server ):
 def get_question( person_tracks, contacts, guess ):
     html = html_front
 
-    # DEBUG - Move server detection somewhere sane.
-    # Do the same for merge_face_form
-    face = person_tracks[0]['faces'][0]
-    server = "http://staging.viblio.com/s/ip/"
-    if face['s3_bucket'] != "viblio-uploaded-files":
-        server = "http://prod.viblio.com/s/ip/"
+    server = config.ImageServer
     
     # Create a table of the person we're recognizing
     html += '<table><tr>'
@@ -101,7 +101,7 @@ def get_question( person_tracks, contacts, guess ):
     col_faces = 12
 
     for idx in range( 0, len( contacts ), col_faces ):
-        html += _get_contact_row_html( contacts[idx:idx+col_faces], idx, col_faces, server )
+        html += _get_contact_row_html( contacts[idx:idx+col_faces], idx, col_faces )
         
     html += '</table>'
 

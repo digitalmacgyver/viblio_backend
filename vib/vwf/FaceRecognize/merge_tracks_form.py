@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import vib.config.AppConfig
+config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
+
 form_front = '''
   <form name='mturk_form' method='post' id='mturk_form' action='https://www.mturk.com/mturk/externalSubmit'>
 '''
@@ -45,11 +48,10 @@ def _get_question_html_for_track( track, max_faces ):
         html = '<tr>'
         html += '<td rowspan="4" style="border-bottom: 1px solid #000;">Group %d</td>' % ( track_id )
 
+        server = config.ImageServer
+
         for i in range( face_count ):
             face = track['faces'][i]
-            server = "http://staging.viblio.com/s/ip/"
-            if face['s3_bucket'] != "viblio-uploaded-files":
-                server = "http://prod.viblio.com/s/ip/"
 
             html += '<td rowspan="4" style="border-bottom: 1px solid #000;"><img src="%s%s" height="50" width="50" alt="Img. %s" /></td>' % ( server, face['s3_key'] , i )
 
@@ -99,28 +101,4 @@ def get_question( tracks ):
     html += html_back % ( 150*len( tracks ) + 100 ) 
     
     return html
-
-#get_assignments_options = {
-#    'HITId' : hit_id
-#    }
-
-#assignment = mt.create_request( 'GetAssignmentsForHIT', get_assignments_options )
-
-#answer = result['GetAssignmentsForHITResponse']['GetAssignmentsForHITResult']['Assignment']['Answer']
-#answer = mt.get_response_element( 'Answer', assignment )
-#answer_dict = xmltodict.parse( answer )
-
-#for answer in answer_dict['QuestionFormAnswers']['Answer']:
-#    label = answer['QuestionIdentifier']
-#    value = answer['FreeText']
-
-# NOTE: We'll get back merge_track_n for everything except track 0,
-# just with a value of None if it wasn't selected.  Typical output:
-# merge_track_1 : None
-# merge_track_2 : None
-# merge_track_3 : 1
-# merge_track_4 : 2
-# answer_0 : 0_new
-# answer_1 : 1_new
-# answer_2 : 2_new
 

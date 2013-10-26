@@ -4,11 +4,8 @@ import boto.swf
 import boto.swf.layer2 as swf
 
 # DEBUG - This is temporary until we reorganize popeye into vib.
-import sys
-sys.path.append( '../../popeye' )
-from appconfig import AppConfig
-config = AppConfig( '../../popeye/popeye' ).config()
-#config = AppConfig( 'popeye' ).config()
+import vib.config.AppConfig
+config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
