@@ -8,6 +8,9 @@ from vib.vwf.VWorker import VWorker
 
 import vib.vwf.FaceRecognize.mturk_utils as mturk_utils
 
+# DEBUG
+import pdb
+
 class Recognize( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
@@ -41,7 +44,7 @@ class Recognize( VWorker ):
             # recognize them
             print "Recognizing faces"
             recognized_faces, new_faces = self._recognize_faces( user_uuid, media_uuid, merged_tracks )
-        
+
             # Then we persist our results.
             print "Updating contacts"
             result = _update_contacts( user_uuid, media_uuid, recognized_faces, new_faces )
@@ -85,33 +88,29 @@ class Recognize( VWorker ):
         track was bad, and the track itself that was bad.
         '''
 
-        print "heartbeating."
+        print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
 
         print "Creating merge hit"
         hit_id = mturk_utils.create_merge_hit( media_uuid, tracks )
         print "Had HITId of %s" % hit_id
 
-        print "heartbeating."
+        print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
 
         hit_completed = False
         
-        # DEBUG
-        #import pdb
-        #pdb.set_trace()
-
         while not mturk_utils.hit_completed( hit_id ):
             print "Hit not complete, sleeping for %d seconds" % self.polling_secs
             time.sleep( self.polling_secs )
-            print "heartbeating."
+            print "heartbeating: %s" % self.last_tasktoken
             self.heartbeat()
 
         answer_dict = mturk_utils.get_answer_dict_for_hit( hit_id )
 
         merged_tracks, bad_tracks = self._process_merge( answer_dict, tracks )
 
-        print "heartbeating."
+        print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
 
         return merged_tracks, bad_tracks
@@ -176,12 +175,14 @@ class Recognize( VWorker ):
                         merge_dict[merge_target] = [ track_disposition[track_id]['track'] ]
                     else:
                         merge_dict[merge_target].append( track_disposition[track_id]['track'] )
-                                                 
-        merge_tracks = []
+            else:
+                raise Exception( "Unexpected answer label %s" % label )
+            
+        merged_tracks = []
         for track_id in sorted( merge_dict.keys() ):
-            merge_tracks.append( merge_dict[track_id] )
+            merged_tracks.append( merge_dict[track_id] )
 
-        return merge_tracks, bad_tracks
+        return merged_tracks, bad_tracks
 
     def _recognize_faces( self, user_uuid, media_uuid, merged_tracks ):
         '''
@@ -204,132 +205,114 @@ class Recognize( VWorker ):
         faces.
 
         The values in both dictionaries are arrays of track data
-        structures whichwere determined to be those faces.
+        structures which were determined to be those faces.
         '''
 
-        print "heartbeating."
+        print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
 
         # Debug - get contacts for user from database.
         contacts = test_contacts.items()
 
-        print "heartbeating."
+        print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
 
         # DEBUG - get a guess as to who the best contact is, pull them
         # from the other list of contacts.
-        guess = None
+        guess = guess_contact
 
         print "Creating recognize hit"
-        hit_ids = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guess )
-        print "Created %d hits" % len( hit_ids )
+        # hit_tracks is An array of hash elements with HITId and merged_tracks keys.
+        hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guess )
+        print "Created %d hits" % len( hit_tracks )
 
-        print "heartbeating."
+        print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
+
+        answer_dicts = {}
 
         hit_completed = False
         
-        for hit_id in hit_ids:
+        for hit_track in hit_tracks:
+            hit_id = hit_track['HITId']
             while not mturk_utils.hit_completed( hit_id ):
                 print "Hit not complete, sleeping for %d seconds" % self.polling_secs
                 time.sleep( self.polling_secs )
-                print "heartbeating."
+                print "heartbeating: %s" % self.last_tasktoken
                 self.heartbeat()
+            answer_dicts[hit_id] = mturk_utils.get_answer_dict_for_hit( hit_id )
+            print "heartbeating: %s" % self.last_tasktoken
+            self.heartbeat()
 
-        # DEBUG - We'll get back a bunch of junk we have to turn into
-        # recognized_faces and merged_faces
+        recognized_faces, new_faces = self._process_recognized( answer_dicts, hit_tracks, guess )
 
-        print "heartbeating."
+        print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
 
-        return None, None
+        return recognized_faces, new_faces
+
+    def _process_recognized( self, answer_dicts, hit_tracks, guess ):
+        '''Given sets of user answers, interpret the results to tag
+        users.  Return a recognized_faces, new_faces tuple.
+
+        Answers are in ['QuestionFormAnswers']['Answer']
+          * Label is ['QuestionIdentifier']
+          * Value is ['FreeText']
+        
+        Merge answers take the form:
+        answer - Will be one of:
+        * recognized_[uuid]
+        * new_face
+        '''
+        recognized_faces = {}
+        new_faces = {}
+
+        for hit_track in hit_tracks:
+            hit_id = hit_track['HITId']
+            person_tracks = hit_track['merged_tracks']
+
+            print "Working on HIT %s" % hit_id
+
+            answer_dict = answer_dicts[ hit_id ]
+
+            value = answer_dict['QuestionFormAnswers']['Answer']['FreeText']
+
+            print "Found value %s" % ( value )
+
+            if value == 'new_face':
+                contact_uuid = str( uuid.uuid4() )
+                new_faces[contact_uuid] = person_tracks
+            elif value.startswith( 'recognized_' ):
+                contact_uuid = value.rpartition( '_' )[2]
+                recognized_faces[contact_uuid] = person_tracks
+            else:
+                raise Exception( "Unexpected answer value %s" % value )
+                
+        return recognized_faces, new_faces
+
 
 def _update_contacts( user_uuid, media_uuid, recognized_faces, new_faces ):
     '''Should be implemented perhaps in another DB centric module.  We
     want to handle recognized and new faces here because we want the
     management of those things to be transactional.
     '''
+
+    for uuid, tracks in recognized_faces.items():
+        print "Associating these with existing person %s: " % uuid
+        for track in tracks:
+            print "Track_id %d" % track['track_id']
+
+    for uuid, tracks in new_faces.items():
+        print "Creating new contact for %s: " % uuid
+        for track in tracks:
+            print "Track_id %d" % track['track_id']
+
     return True
 
-'''
-        user_contacts = _get_contacts_for_user( user_uuid )
-
-        recognized_faces = 0
-        total_faces = 0
-
-        matched_contacts = {}
-        new_contacts = {}
-
-        for track in options['tracks']:
-            track_id = track['track_id']
-            faces = track['faces']
-            
-            guess_uuid = _get_recognition_guess( faces )['contact_uuid']
-            guess_contact = _get_contact_by_uuid( guess_uuid )
-            
-            result = _process_hit( faces, user_contacts, guess_contact, new_contacts )
-            
-            answer = result['answer']
-            matched_uuid = result['contact_uuid']
-
-            if answer == 'not_face':
-                _log_error( "Not a face", options, track_id )
-            elif answer == 'different_faces':
-                _log_error( "Different people in same track", options, track_id )
-            elif answer == 'recognized_face':
-                recognized_faces += 1
-                total_faces +=1
-                matched_contacts[track_id] = matched_uuid
-                _train_face( matched_uuid, faces )
-            elif answer == 'existing_face':
-                total_faces += 1
-                matched_contacts[track_id] = matched_uuid
-                _train_face( matched_uuid, faces )
-            elif answer == 'new_face':
-                total_faces += 1
-                new_uuid = str( uuid.uuid4() )
-                new_contacts[track_id] = { 
-                    'uuid' : new_uuid,
-                    's3_bucket' : faces[0]['s3_bucket'],
-                    's3_key' : faces[0]['s3_key']
-                    }
-                _train_face( new_uuid, faces )
-
-        if not _update_database( user_contacts, matched_contacts, new_contacts, tracks ):
-            return { 
-                'ACTIVITY_ERROR' : True, 
-                'retry' : True 
-                }
-        else:
-            return { 
-                'media_uuid' : options['media_uuid'],
-                'user_uuid' : options['user_uuid'],
-                }
-'''
-
-def _update_database( user_contacts, matched_contacts, new_contacts, media_uuid, user_uuid, tracks ):
-    '''DEBUG In another library, rationalize everything, return false
-    if a contact has changed'''
-    return
-
-
-def _train_face( recognizer_id, faces ):
-    '''DEBUG - TBD in another library'''
-    return
-
-def _process_hit( faces, user_contacts, guess_contact ):
-    '''DEBUG - TBD'''
-    return
-
-def _log_error( message, options, track_id ):
-    '''DEBUG - Notify someone that our tracking is doing bad stuff.'''
-    return
-
+guess_contact = { 'uuid' : 'guess-uuid-1234', 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-3e95a54a-afa4-479b-9893-f5307c71a7df.jpg', 'intellivision_id' : -99.9 }
 
 # DEBUG test data for stub methods below.
 test_contacts = {
-    'e4f4a8f4-e6de-4b46-887f-56b604883751' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-3e95a54a-afa4-479b-9893-f5307c71a7df.jpg', 'intellivision_id' : -99.9 },
-
     '7bdcb12f-8a4b-4970-919f-300dc45f8e6e' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-01e6ca90-95e2-47c3-a33d-22fa2dd1b413.jpg', 'intellivision_id' : -99.9 },
     '350c353d-96ea-4d2c-a601-8951fdd790e6' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-f800b9c8-1f1e-4778-a016-6389200212fb.jpg', 'intellivision_id' : -99.9 },
     'cb6b60d5-cfc2-42c0-877f-e948bdbf654f' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-a09ed5db-976b-44b8-bda1-5b0c8f7db2ba.jpg', 'intellivision_id' : -99.9 },
@@ -341,35 +324,10 @@ test_contacts = {
     'dd468776-56c4-4892-8a88-a9651ddbd5a9' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-587edda1-7acf-4e7a-a67c-17134adcdf61.jpg', 'intellivision_id' : -99.9 }
     }
 
-
-def _get_contacts_for_user( uuid ):
-    '''DEBUG - will be implemented as a seperate method in a DB
-    accessing library'''
-    
-    return test_contacts
-
-def _get_contact_by_uuid( uuid ):
-    '''DEBUG - will be implemented as a seperate method in a DB
-    accessing library'''
-
-    return test_contacts[ uuid ]
-
-def _get_recognition_guess( faces ):
-    '''DEBUG - to be implemented after we get the basic MTurk stuff
-    working
-
-    DEBUG - To be implemented in it's own method/class in
-    vib/recognize or something.
-    '''
-
-    return { 
-        'contact_uuid' : 'e4f4a8f4-e6de-4b46-887f-56b604883751',
-        }
-
 def _get_sample_data():
     return {
         #"media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
-        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bag97",
+        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bb000",
             "tracks": [
                 {
                     "faces": [

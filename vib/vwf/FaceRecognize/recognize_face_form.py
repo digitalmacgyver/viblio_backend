@@ -116,7 +116,7 @@ def get_question( person_tracks, contacts, guess ):
     html += '</table>'
     html += form_back
     # Parenthesis because of integer division not being associative.
-    html += html_back % ( 85*( 1+len( contacts )/col_faces ) + 250 ) 
+    html += html_back % ( 85*( 1+len( contacts )/col_faces ) + 325 ) 
     
     return html
 

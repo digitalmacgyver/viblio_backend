@@ -47,7 +47,10 @@ def create_merge_hit( media_uuid, tracks ):
     return hit_id
 
 def create_recognize_hits( media_uuid, merged_tracks, contacts, guess ):
-    '''Hello world hit creation'''
+    '''Returns an array of hash with keys:
+    merged_tracks : the tracks associated with the HIT for this element
+    HITId : the hit_id for this element
+    '''
     ret = []
 
     for person_tracks in merged_tracks:
@@ -70,7 +73,7 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guess ):
             # Handle the case where this hit already exists.
             hit_id = result['CreateHITResponse']['HIT']['Request']['Errors']['Error']['Data'][1]['Value']
 
-        ret.append( hit_id )
+        ret.append( { 'HITId' : hit_id, 'merged_tracks' : person_tracks } )
 
     return ret
 
@@ -106,7 +109,6 @@ def get_answer_dict_for_hit( hit_id ):
     answer_dict = xmltodict.parse( answer )
 
     return answer_dict
-
 
 #for answer in answer_dict['QuestionFormAnswers']['Answer']:
 #    label = answer['QuestionIdentifier']
