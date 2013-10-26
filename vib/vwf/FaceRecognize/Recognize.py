@@ -11,7 +11,7 @@ from vib.thirdParty.mturkcore import MechanicalTurk
 MergeHITTypeId = '2PCIA0RYNJ96UXSXBA2MMTUHYKA837'
 RecognizeHITTypeId = '2SVYU98JHSTPIHTBQGA9LOBJE7ZDPU'
 
-class FaceRecognize( VWorker ):
+class Recognize( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
     task_name = 'FaceRecognize'

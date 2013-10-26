@@ -3,6 +3,6 @@
 # Execution of this file is managed by Supervisor, configuration at
 # ../config/FaceRecognize.conf
 
-from vib.vwf.FaceRecognize import FaceRecognize
+from vib.vwf.FaceRecognize.Recognize import Recognize
 
-while FaceRecognize().run(): pass
+while Recognize().run(): pass
