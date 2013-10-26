@@ -88,7 +88,7 @@ class Recognize( VWorker ):
         print "heartbeating."
         self.heartbeat()
 
-        print "Creating mturk hit"
+        print "Creating merge hit"
         hit_id = mturk_utils.create_merge_hit( media_uuid, tracks )
         print "Had HITId of %s" % hit_id
 
@@ -97,18 +97,91 @@ class Recognize( VWorker ):
 
         hit_completed = False
         
+        # DEBUG
+        #import pdb
+        #pdb.set_trace()
+
         while not mturk_utils.hit_completed( hit_id ):
             print "Hit not complete, sleeping for %d seconds" % self.polling_secs
             time.sleep( self.polling_secs )
             print "heartbeating."
             self.heartbeat()
 
-        merged_tracks, bad_tracks = mturk_utils.process_merge_hit( hit_id )
+        answer_dict = mturk_utils.get_answer_dict_for_hit( hit_id )
+
+        merged_tracks, bad_tracks = self._process_merge( answer_dict, tracks )
 
         print "heartbeating."
         self.heartbeat()
 
         return merged_tracks, bad_tracks
+
+    def _process_merge( self, answer_dict, tracks ):
+        '''Given a set of user answers, interpret the results and
+        return a merge_tracks, bad_tracks tuple.
+
+        Answers are in ['QuestionFormAnswers']['Answer']
+          * Label is ['QuestionIdentifier']
+          * Value is ['FreeText']
+        
+        Merge answers take the form:
+        answer_track# - Will be one of:
+        * track#_notface
+        * track#_twoface
+        * track#_new
+        
+        merge_track_track# - Will always be present, with a (hopefully)
+        # numeric value in our range of tracks, or None
+        '''
+        
+        track_disposition = {}
+        merge_dict = {}
+        bad_tracks = []
+
+        for track in tracks:
+            track_id = track['track_id']
+            track_disposition[track_id] = { 'track' : track }
+        
+        for answer in answer_dict['QuestionFormAnswers']['Answer']:
+            label = answer['QuestionIdentifier']
+            value = answer['FreeText']
+
+            track_id = int( label.rpartition( '_' )[2] )
+            if track_id not in track_disposition:
+                raise Exception( "Found answer for track %d which was not present in tracks: %s" % track_id, tracks )
+            
+            if label.startswith( 'answer_' ):
+                disposition = value.rpartition( '_' )[2]
+                if disposition == 'new':
+                    print "Found new track %d" % track_id
+                    if track_id not in merge_dict:
+                        merge_dict[track_id] = [ track_disposition[track_id]['track'] ]
+                    else:
+                        merge_dict[track_id].append( track_disposition[track_id]['track'] )
+                elif disposition == 'notface':
+                    print "Bad notface track %d" % track_id
+                    bad_tracks.append( track_disposition[track_id]['track'] )
+                    # DEBUG - log error not face
+                elif disposition == 'twoface':
+                    print "Bad twoface track %d" % track_id
+                    bad_tracks.append( track_disposition[track_id]['track'] )
+                    # DEBUG - log error two face
+            elif label.startswith( 'merge_' ):
+                if value:
+                    print "Merging track %d with %s" % ( track_id, value )
+                    merge_target = int( value )
+                    if merge_target not in track_disposition:
+                        raise Exception( "Asked to merge track %d with nonexistant track %d, tracks was: %s" % track_id, merge_target, tracks )
+                    if merge_target not in merge_dict:
+                        merge_dict[merge_target] = [ track_disposition[track_id]['track'] ]
+                    else:
+                        merge_dict[merge_target].append( track_disposition[track_id]['track'] )
+                                                 
+        merge_tracks = []
+        for track_id in sorted( merge_dict.keys() ):
+            merge_tracks.append( merge_dict[track_id] )
+
+        return merge_tracks, bad_tracks
 
     def _recognize_faces( self, user_uuid, media_uuid, merged_tracks ):
         '''
@@ -138,7 +211,7 @@ class Recognize( VWorker ):
         self.heartbeat()
 
         # Debug - get contacts for user from database.
-        contacts = None
+        contacts = test_contacts.items()
 
         print "heartbeating."
         self.heartbeat()
@@ -147,7 +220,7 @@ class Recognize( VWorker ):
         # from the other list of contacts.
         guess = None
 
-        print "Creating mturk hit"
+        print "Creating recognize hit"
         hit_ids = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guess )
         print "Created %d hits" % len( hit_ids )
 
@@ -296,7 +369,7 @@ def _get_recognition_guess( faces ):
 def _get_sample_data():
     return {
         #"media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
-        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bag95",
+        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bag97",
             "tracks": [
                 {
                     "faces": [

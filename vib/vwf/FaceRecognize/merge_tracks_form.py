@@ -76,7 +76,7 @@ def _get_question_html_for_track( track, max_faces ):
         if track_id == 0:
             html += '<td style="border-bottom: 1px solid #000;"></td><td style="border-bottom: 1px solid #000;"></td>'
         else:
-            html += '<td style="border-bottom: 1px solid #000;"><input type="number" name="merge_track_%d" min="0" max="%d" step="1" style="width:30px;" /></td>' % ( track_id, track_id - 1 )
+            html += '<td style="border-bottom: 1px solid #000;"><input type="number" name="merge_%d" min="0" max="%d" step="1" style="width:30px;" /></td>' % ( track_id, track_id - 1 )
             html += '<td style="border-bottom: 1px solid #000;">4. If none of the above were true, enter the lowest numbered Group that also has this person to the left (Ignore any groups that had non-faces, or multiple differnent people)</td>'
         html += '</tr>'
 

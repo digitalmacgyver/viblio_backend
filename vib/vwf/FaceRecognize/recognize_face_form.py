@@ -65,6 +65,8 @@ def _get_contact_row_html( contacts, start_idx, cell_count, server ):
 def get_question( person_tracks, contacts, guess ):
     html = html_front
 
+    # DEBUG - Move server detection somewhere sane.
+    # Do the same for merge_face_form
     face = person_tracks[0]['faces'][0]
     server = "http://staging.viblio.com/s/ip/"
     if face['s3_bucket'] != "viblio-uploaded-files":
@@ -96,7 +98,7 @@ def get_question( person_tracks, contacts, guess ):
     html += '<td>'
 
     html += '<table>'
-    col_faces = 5
+    col_faces = 12
 
     for idx in range( 0, len( contacts ), col_faces ):
         html += _get_contact_row_html( contacts[idx:idx+col_faces], idx, col_faces, server )
@@ -114,7 +116,7 @@ def get_question( person_tracks, contacts, guess ):
     html += '</table>'
     html += form_back
     # Parenthesis because of integer division not being associative.
-    html += html_back % ( 75*( len( contacts )/col_faces ) + 150 ) 
+    html += html_back % ( 85*( 1+len( contacts )/col_faces ) + 250 ) 
     
     return html
 

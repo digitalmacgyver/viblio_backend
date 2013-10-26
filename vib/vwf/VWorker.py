@@ -3,8 +3,13 @@
 import boto.swf
 import boto.swf.layer2 as swf
 import json
+import logging
 import mixpanel
 import time
+
+# DEBUG - placeholder
+log = logging.getLogger( __name__ )
+log.addHandler( logging.StreamHandler() )
 
 # DEBUG - This is temporary until we reorganize popeye into vib.
 import sys
@@ -59,6 +64,7 @@ class VWorker( swf.ActivityWorker ):
                 return True
 
         except Exception as error:
+            log.exception( error )
             self.fail( reason = str( error ) )
             raise error
 
