@@ -7,6 +7,7 @@ import uuid
 from vib.vwf.VWorker import VWorker
 
 import vib.vwf.FaceRecognize.mturk_utils as mturk_utils
+import vib.vwf.FaceRecognize.db_utils as db_utils
 
 # DEBUG
 import pdb
@@ -47,7 +48,7 @@ class Recognize( VWorker ):
 
             # Then we persist our results.
             print "Updating contacts"
-            result = _update_contacts( user_uuid, media_uuid, recognized_faces, new_faces )
+            result = db_utils.update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tracks )
             if not result:
                 # We had an error updating the DB contacts, most
                 # likely there was a race condition and a face we
@@ -211,18 +212,18 @@ class Recognize( VWorker ):
         print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
 
-        # Debug - get contacts for user from database.
-        contacts = test_contacts.items()
+        contacts = db_utils.get_contacts_for_user_uuid( user_uuid )
 
         print "heartbeating: %s" % self.last_tasktoken
         self.heartbeat()
 
-        # DEBUG - get a guess as to who the best contact is, pull them
-        # from the other list of contacts.
-        guess = guess_contact
+        # Debug - actually do some work with recognition here.
+        guess = contacts[0]
+        contacts = contacts[1:]
 
         print "Creating recognize hit"
-        # hit_tracks is An array of hash elements with HITId and merged_tracks keys.
+        # hit_tracks is An array of hash elements with HITId and
+        # merged_tracks keys.
         hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guess )
         print "Created %d hits" % len( hit_tracks )
 
@@ -290,44 +291,10 @@ class Recognize( VWorker ):
                 
         return recognized_faces, new_faces
 
-
-def _update_contacts( user_uuid, media_uuid, recognized_faces, new_faces ):
-    '''Should be implemented perhaps in another DB centric module.  We
-    want to handle recognized and new faces here because we want the
-    management of those things to be transactional.
-    '''
-
-    for uuid, tracks in recognized_faces.items():
-        print "Associating these with existing person %s: " % uuid
-        for track in tracks:
-            print "Track_id %d" % track['track_id']
-
-    for uuid, tracks in new_faces.items():
-        print "Creating new contact for %s: " % uuid
-        for track in tracks:
-            print "Track_id %d" % track['track_id']
-
-    return True
-
-guess_contact = { 'uuid' : 'guess-uuid-1234', 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-3e95a54a-afa4-479b-9893-f5307c71a7df.jpg', 'intellivision_id' : -99.9 }
-
-# DEBUG test data for stub methods below.
-test_contacts = {
-    '7bdcb12f-8a4b-4970-919f-300dc45f8e6e' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-01e6ca90-95e2-47c3-a33d-22fa2dd1b413.jpg', 'intellivision_id' : -99.9 },
-    '350c353d-96ea-4d2c-a601-8951fdd790e6' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-f800b9c8-1f1e-4778-a016-6389200212fb.jpg', 'intellivision_id' : -99.9 },
-    'cb6b60d5-cfc2-42c0-877f-e948bdbf654f' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-a09ed5db-976b-44b8-bda1-5b0c8f7db2ba.jpg', 'intellivision_id' : -99.9 },
-    'ce926853-5621-4a4e-86b2-4758824ba311' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-5578fa1c-c948-4f5f-89f1-58ff94ddca33.jpg', 'intellivision_id' : -99.9 },
-    '42339711-c033-491a-983b-1ce81ecf010e' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-cfddfcf3-0eda-4966-ab5b-933ebcd913a0.jpg', 'intellivision_id' : -99.9 },
-    'cbe49436-8e7e-47de-8cd9-adb8215020de' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-8d4181d1-bf60-49b7-b0f9-935fae935098.jpg', 'intellivision_id' : -99.9 },
-    '0c04b683-fe79-4ab6-93bb-39ac9f096649' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-fb82b100-9990-43ab-8803-67946397fd0d.jpg', 'intellivision_id' : -99.9 },
-    '4c037dd9-0843-4460-830d-a45b77aaf2f5' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-5e65755c-3e6f-47fc-9781-92dc9bb18461.jpg', 'intellivision_id' : -99.9 },
-    'dd468776-56c4-4892-8a88-a9651ddbd5a9' : { 'picture_uri' : '4dd58749-958c-4fd2-93b6-0e49403c01af/face-587edda1-7acf-4e7a-a67c-17134adcdf61.jpg', 'intellivision_id' : -99.9 }
-    }
-
 def _get_sample_data():
     return {
         #"media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
-        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bb001",
+        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bb002",
             "tracks": [
                 {
                     "faces": [

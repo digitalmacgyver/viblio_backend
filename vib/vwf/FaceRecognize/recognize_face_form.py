@@ -45,9 +45,10 @@ def _get_contact_row_html( contacts, start_idx, cell_count ):
 
     html = "<tr>"
     for i in range( contact_count ):
-        contact_uuid, contact = contacts[i]
+        contact = contacts[i]
+        contact_uuid = contact.uuid
         
-        html += '<td><img src="%s%s" height="50" width="50" alt="Img. %s" /></td>' % ( server, contact['picture_uri'], start_idx + i )
+        html += '<td><img src="%s%s" height="50" width="50" alt="Img. %s" /></td>' % ( server, contact.picture_uri, start_idx + i )
 
     for i in range( contact_count, cell_count ):
         html += '<td></td>'
@@ -56,7 +57,8 @@ def _get_contact_row_html( contacts, start_idx, cell_count ):
     html += '<tr>'
 
     for i in range( contact_count ):
-        contact_uuid, contact = contacts[i]
+        contact = contacts[i]
+        contact_uuid = contact.uuid
         
         html += '<td><input type="radio" name="answer" value="recognized_%s" /></td>' % ( contact_uuid )
 
@@ -84,8 +86,8 @@ def get_question( person_tracks, contacts, guess ):
 
     if guess:
         html += '<tr>'
-        html += '<td><input type="radio" name="answer" value="recognized_%s" /></td>' % ( guess['uuid'] )
-        html += '<td>The person  is the same as this person: <img src="%s%s" height="50" width="50" alt="Img. %s" /></td>' % ( server, guess['picture_uri'], 'guess' )
+        html += '<td><input type="radio" name="answer" value="recognized_%s" /></td>' % ( guess.uuid )
+        html += '<td>The person  is the same as this person: <img src="%s%s" height="50" width="50" alt="Img. %s" /></td>' % ( server, guess.picture_uri, 'guess' )
         html += '</tr>'
 
     html += '<tr>'
