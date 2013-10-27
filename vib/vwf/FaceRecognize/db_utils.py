@@ -38,9 +38,6 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
     '''
     orm = vib.db.orm.get_session()
 
-    import pdb
-    pdb.set_trace()
-
     try:
         media = orm.query( Media ).filter( Media.uuid == media_uuid )[0]
         media_id = media.id
