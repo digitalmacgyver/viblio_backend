@@ -38,12 +38,15 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
     '''
     orm = vib.db.orm.get_session()
 
+    import pdb
+    pdb.set_trace()
+
     try:
         media = orm.query( Media ).filter( Media.uuid == media_uuid )[0]
-        media_id = media.uuid
+        media_id = media.id
 
         user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
-        user_id = user.uuid
+        user_id = user.id
 
         # Handle bad tracks
         for bad_track in bad_tracks:
@@ -53,7 +56,7 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
         # Handle new contacts
         for uuid, tracks in new_faces.items():
-            print "Creating new contact for %s: " % uuid
+            print "Creating new contact with uuid %s for user_id %s " % ( uuid, user_id )
             new_contact = Contacts( 
                 uuid        = uuid, 
                 user_id     = user_id,
@@ -66,7 +69,7 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
         # Handle existing contacts
         for uuid, tracks in recognized_faces.items():
-            print "Associating these with existing person %s: " % uuid
+            print "Associating these with existing contact.uuid %s: " % uuid
             existing_contact = orm.query( Contacts ).filter( and_( Contacts.uuid == uuid ) )
             if existing_contact.count() == 0:
                 print "Error - contact %s did not exist" % uuid

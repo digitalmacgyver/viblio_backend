@@ -5,9 +5,14 @@ import time
 import uuid
 
 from vib.vwf.VWorker import VWorker
+from vib.utils import Serialize
+from vib.vwf.VPWorkflow import VPW
 
 import vib.vwf.FaceRecognize.mturk_utils as mturk_utils
 import vib.vwf.FaceRecognize.db_utils as db_utils
+
+import vib.config.AppConfig
+config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 class Recognize( VWorker ):
     # This line controls how we interact with SWF, and changes here
@@ -26,11 +31,50 @@ class Recognize( VWorker ):
             # is done.
             self.polling_secs = 10
             
+            self.lock_acquired = False
+
             user_uuid  = options['FaceDetect']['user_uuid']
             media_uuid = options['FaceDetect']['media_uuid']
             tracks     = options['FaceDetect']['tracks']
 
             print "Working on media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+
+            print "heartbeating"
+            self.heartbeat()
+
+            # Ensure we're the only one working on this particular
+            # user.  This allows us to correctly spot and track a
+            # person who is present in 2 videos that are uploaded
+            # simultaneously.
+            self.faces_lock = Serialize.Serialize( app = 'FaceRecognize',
+                                                   # These assignments
+                                                   # are not a typo.
+                                                   object_name = user_uuid,
+                                                   owner_id = media_uuid,
+                                                   app_config = config,
+                                                   heartbeat = 30,
+                                                   timeout = 120 )
+
+            # This will wait for up to 2 minutes trying to get the
+            # lock.
+            self.lock_acquired = self.faces_lock.acquire()
+
+            if not self.lock_acquired:
+                # We didn't get the lock - we want this task to be
+                # terminated, and we want another task the chance to
+                # get in and use it's slot in our limited number of
+                # workers who can handle these jobs.
+                #
+                # We achieve this by sleeping until the timeout for
+                # this task would have expired, and then exiting.
+                time.sleep( int( VPW[task_name].get( 'default_task_heartbeat_timeout', '600' ) ) )
+                # Attempting a heartbeat now results in an exception
+                # being thrown.
+                raise Exception( "media_uuid: %s, user_uuid %s committed suicide after failing to get lock" % ( media_uuid, user_uuid ) )
+            else:
+                # We got the lock - proceed
+                print "heartbeating"
+                self.heartbeat()
 
             # First we do quality control on the tracks, and merge
             # different tracks into one.
@@ -63,6 +107,10 @@ class Recognize( VWorker ):
             # the heartbeat timeout to bring us back.
             print "Exception was: %s" % ( e )
             raise
+        finally:
+            # On the way out let go of our lock if we've got it.
+            if self.lock_acquired:
+                self.faces_lock.release()
 
     def _get_merged_tracks( self, user_uuid, media_uuid, tracks ):
         '''
