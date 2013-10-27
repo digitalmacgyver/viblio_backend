@@ -5,6 +5,13 @@ import pprint
 
 from vib.vwf.VWorker import VWorker
 
+import vib.db.orm
+from vib.db.models import *
+from sqlalchemy import and_
+
+import vib.config.AppConfig
+config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
+
 class Detect( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
@@ -22,6 +29,16 @@ class Detect( VWorker ):
         pp.pprint( options )
         print "Doing face detection stuff!"
 
+        print "Config defined in vib/config/viblio.config."
+
+        print "DB Stuff in vib.db.orm"
+        orm = vib.db.orm.get_session()
+        # Example ORM Questy - we use the SQLAlchemy and_ construct
+        # here to test two things.
+        users = orm.query( Users ).filter( and_( Users.email == 'bidyut@viblio.com', Users.displayname != None ) )
+        if users.count() == 1:
+            print "Bidyut's user id/uuid are %s/%s" % ( users[0].id, users[0].uuid )
+        
         recoverable_error = False
         catastrophic_error = False
         if catastrophic_error:

@@ -22,9 +22,6 @@ class Recognize( VWorker ):
         NOTE: The size of the return value is limited to 32 kB
         '''
         try:
-            # DEBUG - placeholder till we get real data on input.
-            options = _get_sample_data()
-
             # How often should we poll Mechanical Turk to see if a job
             # is done.
             self.polling_secs = 10
@@ -62,9 +59,9 @@ class Recognize( VWorker ):
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
             
         except Exception as e:
-            # We had an unknown error, still try to retry
+            # We had an unknown error, still try to retry but allow
+            # the heartbeat timeout to bring us back.
             print "Exception was: %s" % ( e )
-            return { 'ACTIVITY_ERROR' : True, 'retry' : True }
             raise
 
     def _get_merged_tracks( self, user_uuid, media_uuid, tracks ):
@@ -146,7 +143,13 @@ class Recognize( VWorker ):
             track_id = track['track_id']
             track_disposition[track_id] = { 'track' : track }
         
-        for answer in answer_dict['QuestionFormAnswers']['Answer']:
+        # Amazon's answer XML is a bit goofy - they give singleton
+        # elements instead of an array with one item.
+        answer_list = answer_dict['QuestionFormAnswers']['Answer']
+        if not isinstance( answer_list, list):
+            answer_list = [ answer_list ]
+
+        for answer in answer_list:
             label = answer['QuestionIdentifier']
             value = answer['FreeText']
 
@@ -320,7 +323,7 @@ class Recognize( VWorker ):
 def _get_sample_data():
     return {
         #"media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
-        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bb003",
+        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bb004",
             "tracks": [
                 {
                     "faces": [
