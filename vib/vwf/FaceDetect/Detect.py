@@ -46,5 +46,7 @@ class Detect( VWorker ):
         elif recoverable_error:
             return { 'ACTIVITY_ERROR' : True, 'retry' : True }
         else: 
-            return { 'media_uuid' : 1234, 'user_uuid' : 4567, 'tracks' : [ { 's3url' : 'blahblahblah' } ] }
+            # As a placeholder, just pass our input back out.
+            return options
+
 

@@ -26,9 +26,9 @@ class Recognize( VWorker ):
             # is done.
             self.polling_secs = 10
             
-            user_uuid  = options['user_uuid']
-            media_uuid = options['media_uuid']
-            tracks     = options['tracks']
+            user_uuid  = options['FaceDetect']['user_uuid']
+            media_uuid = options['FaceDetect']['media_uuid']
+            tracks     = options['FaceDetect']['tracks']
 
             print "Working on media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
 

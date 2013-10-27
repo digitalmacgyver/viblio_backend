@@ -432,39 +432,6 @@ class Worker( Background ):
             # DEBUG - easily turn this on and off for testing
             # purposes.
             if True:
-                # self.data['track_json'] = helpers.get_iv_tracks( files['intellivision'], log, self.data )
-
-                # Stub here to invoke alternate workflow for detection
-                # and recognition.
-                try:
-                    log.info( 'Making call to Video Processing Workflow external to Popeye' )
-
-                    execution = swf.WorkflowType( 
-                        name = 'VideoProcessing' + config.VPWSuffix, 
-                        domain = 'Viblio', version = '1.0.4' 
-                        ).start( 
-                        task_list = 'VPDecider' + config.VPWSuffix, 
-                        input = json.dumps( 
-                                { 
-                                    'media_uuid' : self.uuid, 
-                                    'user_uuid'  : self.data['info']['uid'], 
-                                    'media_assets' : [ 
-                                        { 
-                                            'uuid'             : main_asset.uuid,
-                                            'asset_type'       : 'main',
-                                            's3_bucket'        : config.bucket_name, 
-                                            's3_key'           : self.files['main']['key'] 
-                                            } 
-                                        ]
-                                    } 
-                                ), 
-                        workflow_id=self.uuid 
-                        )
-
-                    log.info( 'External Video Processing Workflow %s initiated' % execution.workflowId )
-                except Exception as e:
-                    log.warning( "Failed to launch External Video Processing Workflow, error was: %s" % e )
-
                 log.info( 'Making call to get faces' )
                 self.data['track_json'] = video_processing.get_faces( files['intellivision'], log, self.data )
                 log.info( 'Get faces returned.' )
@@ -476,7 +443,33 @@ class Worker( Background ):
                 else:
                     log.info( 'Storing contacts and faces from Intellivision.' )
                     log.debug( "JSON is: " + self.data['track_json'] )
-                    self.store_faces( media, user )
+                    new_tracks = self.store_faces( media, user )
+
+                ### START CALLOUT TO NEW PIPELINE ###
+                # Stub here to invoke alternate workflow for detection
+                # and recognition.
+                try:
+                    log.info( 'Making call to Video Processing Workflow external to Popeye' )
+
+                    execution = swf.WorkflowType( 
+                        name = 'VideoProcessing' + config.VPWSuffix, 
+                        domain = 'Viblio', version = '1.0.5' 
+                        ).start( 
+                        task_list = 'VPDecider' + config.VPWSuffix, 
+                        input = json.dumps( 
+                                { 
+                                    'media_uuid' : self.uuid, 
+                                    'user_uuid'  : self.data['info']['uid'], 
+                                    'tracks' : new_tracks
+                                    }
+                                ), 
+                        workflow_id=self.uuid 
+                        )
+
+                    log.info( 'External Video Processing Workflow %s initiated' % execution.workflowId )
+                except Exception as e:
+                    log.warning( "Failed to launch External Video Processing Workflow, error was: %s" % e )
+                ### END CALLOUT TO NEW PIPELINE ###
 
                 self.mp_log( '110_store_faces_completed' )
 
@@ -631,6 +624,9 @@ class Worker( Background ):
     def store_faces( self, media_row, owning_user ):
         log = self.popeye_log
 
+        result = []
+        track_id = 0
+
         if 'track_json' not in self.data or not self.data['track_json']:
             log.warning( 'No tracks / faces detected.' )
             return
@@ -699,7 +695,7 @@ class Worker( Background ):
                     contact = database_contacts[intellivision_id]['contact']
 
                 contact.picture_uri = person_tracks[0]['bestfaceframe']
-            
+
                 for track in person_tracks:
                     track_asset = MediaAssets( uuid       = str( uuid.uuid4() ),
                                                asset_type = 'face',
@@ -719,11 +715,30 @@ class Worker( Background ):
                     track_feature = MediaAssetFeatures( feature_type           = 'face',
                                                         coordinates            = json.dumps( track ),
                                                         detection_confidence   = track['detectionscore'],
-                                                        recognition_confidence = track['recognitionconfidence'] )
-                 
+                                                        recognition_confidence = track['recognitionconfidence'],
+                                                        track_id               = track_id )
+                    
+
                     log.info( 'Adding face feature uuid for contact uuid: %s and asset uuid: %s ' % ( contact.uuid, track_asset.uuid ) )   
                     track_asset.media_asset_features.append( track_feature )
                     contact.media_asset_features.append( track_feature )
+                    
+                    # Code to hook into new pipeline.
+                    result.append( 
+                        { 
+                            'faces' : [
+                                {
+                                    's3_key' : track['bestfaceframe'],
+                                    's3_bucket' : config.bucket_name,
+                                    'face_confidence' : 50
+                                    }
+                                ],
+                            'track_id' : track_id
+                            }
+                        )
+                    track_id += 1
+
+            return result
 
         except Exception as e:
             log.exception( 'Failed to update faces, error was: ' + str( e ) )
