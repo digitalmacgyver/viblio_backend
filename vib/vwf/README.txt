@@ -24,6 +24,9 @@ ACTIVITY_ERROR key.  If it does this, the truth value of the "retry"
 key in the return will specify if this task should be tried again or
 if the error is fatal.
 
+It is recommended to create a subdirectory in vib/vwf for each worker
+which will have multiple implementation files.
+
 CONFIGURATION
 ======================================================================
 The scripts in this directory require the BOTO_CONFIG environment

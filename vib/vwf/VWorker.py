@@ -4,14 +4,25 @@ import boto.swf
 import boto.swf.layer2 as swf
 import json
 import logging
+from logging import handlers
 import mixpanel
 import time
 
-# DEBUG - placeholder
+# DEBUG - Add in Loggly when their site is working maybe.
 log = logging.getLogger( __name__ )
 log.addHandler( logging.StreamHandler() )
 
-# DEBUG - This is temporary until we reorganize popeye into vib.
+'''
+logger.setLevel( logging.DEBUG )
+# Log to console
+
+# Log to syslog / loggly
+syslog = logging.handlers.SysLogHandler()
+formatter = logging.Formatter('loggly: { "name" : "%(name)", "module" : "%(module)", "lineno" : "%(lineno)", "funcName" : "%(funcName)",  "level" : "%(levelname)", "message : "%(message)s" }' )
+syslog.setFormatter( formatter )
+logger.addHandler( syslog )
+'''
+
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
@@ -31,12 +42,12 @@ class VWorker( swf.ActivityWorker ):
 
     def run( self ):
         try:
-            print "Starting run"
+            print "Starting run."
 
             activity_task = self.poll()
 
             if 'taskToken' not in activity_task or len( activity_task['taskToken'] ) == 0:
-                print "Nothing to do"
+                print "Nothing to do."
                 return True
             else:
                 print "Running task."

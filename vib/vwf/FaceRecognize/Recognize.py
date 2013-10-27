@@ -9,9 +9,6 @@ from vib.vwf.VWorker import VWorker
 import vib.vwf.FaceRecognize.mturk_utils as mturk_utils
 import vib.vwf.FaceRecognize.db_utils as db_utils
 
-# DEBUG
-import pdb
-
 class Recognize( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
@@ -28,13 +25,15 @@ class Recognize( VWorker ):
             # DEBUG - placeholder till we get real data on input.
             options = _get_sample_data()
 
+            # How often should we poll Mechanical Turk to see if a job
+            # is done.
             self.polling_secs = 10
             
             user_uuid  = options['user_uuid']
             media_uuid = options['media_uuid']
             tracks     = options['tracks']
 
-            print "Working on media_uuid: %s" % media_uuid
+            print "Working on media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
 
             # First we do quality control on the tracks, and merge
             # different tracks into one.
@@ -45,6 +44,9 @@ class Recognize( VWorker ):
             # recognize them
             print "Recognizing faces"
             recognized_faces, new_faces = self._recognize_faces( user_uuid, media_uuid, merged_tracks )
+
+            print "heartbeating"
+            self.heartbeat()
 
             # Then we persist our results.
             print "Updating contacts"
@@ -60,21 +62,21 @@ class Recognize( VWorker ):
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
             
         except Exception as e:
-            # We had an unknown error, fail the task.
+            # We had an unknown error, still try to retry
             print "Exception was: %s" % ( e )
+            return { 'ACTIVITY_ERROR' : True, 'retry' : True }
             raise
-            return { 'ACTIVITY_ERROR' : True, 'retry' : False }
 
     def _get_merged_tracks( self, user_uuid, media_uuid, tracks ):
         '''
-        Input - the options which includes an array of tracks, each of
-        which includes an array of faces.  Each Face has a URI for
-        where it is in S3.
+        Input - the user and media_uuids we are working with, and an
+        array of tracks, each of which includes an array of faces.
+        Each Face has a URI for where it is in S3.
         
         This method:
         1) Heartbeats Amazon SWF that it is working.
         2) Creates a Mechanical Turk task.
-        3) Polls Mechanciacl Turk until that task is done.
+        3) Polls Mechanical Turk until that task is done.
         4) Interprets the Mechanical Turk results.
 
         Returns two arrays:
@@ -89,14 +91,16 @@ class Recognize( VWorker ):
         track was bad, and the track itself that was bad.
         '''
 
-        print "heartbeating: %s" % self.last_tasktoken
+        print "heartbeating"
         self.heartbeat()
+
+        # DEBUG - Sort the incoming tracks with face recognition.
 
         print "Creating merge hit"
         hit_id = mturk_utils.create_merge_hit( media_uuid, tracks )
         print "Had HITId of %s" % hit_id
 
-        print "heartbeating: %s" % self.last_tasktoken
+        print "heartbeating"
         self.heartbeat()
 
         hit_completed = False
@@ -104,14 +108,14 @@ class Recognize( VWorker ):
         while not mturk_utils.hit_completed( hit_id ):
             print "Hit not complete, sleeping for %d seconds" % self.polling_secs
             time.sleep( self.polling_secs )
-            print "heartbeating: %s" % self.last_tasktoken
+            print "heartbeating"
             self.heartbeat()
 
         answer_dict = mturk_utils.get_answer_dict_for_hit( hit_id )
 
         merged_tracks, bad_tracks = self._process_merge( answer_dict, tracks )
 
-        print "heartbeating: %s" % self.last_tasktoken
+        print "heartbeating"
         self.heartbeat()
 
         return merged_tracks, bad_tracks
@@ -152,34 +156,40 @@ class Recognize( VWorker ):
             
             if label.startswith( 'answer_' ):
                 disposition = value.rpartition( '_' )[2]
+
                 if disposition == 'new':
                     print "Found new track %d" % track_id
                     if track_id not in merge_dict:
                         merge_dict[track_id] = [ track_disposition[track_id]['track'] ]
                     else:
                         merge_dict[track_id].append( track_disposition[track_id]['track'] )
+
                 elif disposition == 'notface':
                     print "Bad notface track %d" % track_id
                     bad_tracks.append( track_disposition[track_id]['track'] )
-                    # DEBUG - log error not face
+
                 elif disposition == 'twoface':
                     print "Bad twoface track %d" % track_id
                     bad_tracks.append( track_disposition[track_id]['track'] )
-                    # DEBUG - log error two face
+
             elif label.startswith( 'merge_' ):
                 if value:
                     print "Merging track %d with %s" % ( track_id, value )
                     merge_target = int( value )
+
                     if merge_target not in track_disposition:
-                        raise Exception( "Asked to merge track %d with nonexistant track %d, tracks was: %s" % track_id, merge_target, tracks )
+                        raise Exception( "Asked to merge track %d with nonexistent track %d, tracks was: %s" % track_id, merge_target, tracks )
+
                     if merge_target not in merge_dict:
                         merge_dict[merge_target] = [ track_disposition[track_id]['track'] ]
                     else:
                         merge_dict[merge_target].append( track_disposition[track_id]['track'] )
+
             else:
                 raise Exception( "Unexpected answer label %s" % label )
             
         merged_tracks = []
+
         for track_id in sorted( merge_dict.keys() ):
             merged_tracks.append( merge_dict[track_id] )
 
@@ -187,14 +197,13 @@ class Recognize( VWorker ):
 
     def _recognize_faces( self, user_uuid, media_uuid, merged_tracks ):
         '''
-        The original options which includes the media_uuid and
-        user_uuid that we are working on, and an array of merged
-        tracks.  Each element of merged tracks is itself an array of
-        track data structures.
+        Input: The media_uuid and user_uuid that we are working on,
+        and an array of merged tracks.  Each element of merged tracks
+        is itself an array of track data structures.
 
         This method:
         1) Heartbeats Amazon SWF that it is working.
-        2) Creates one Mechanical Turk task for each element of merged_tracks
+        2) Creates one Mechanical Turk task for each element of merged_tracks.
         3) Polls Mechanical Turk until all the Mechanical Turk tasks are done.
         4) Interprets the Mechanical Turk results.
 
@@ -206,48 +215,65 @@ class Recognize( VWorker ):
         faces.
 
         The values in both dictionaries are arrays of track data
-        structures which were determined to be those faces.
+        structures which were determined to be for those faces.
         '''
 
-        print "heartbeating: %s" % self.last_tasktoken
+        print "heartbeating"
         self.heartbeat()
 
-        contacts = db_utils.get_contacts_for_user_uuid( user_uuid )
+        contacts = db_utils.get_picture_contacts_for_user_uuid( user_uuid )
 
-        print "heartbeating: %s" % self.last_tasktoken
+        print "heartbeating"
         self.heartbeat()
 
-        # Debug - actually do some work with recognition here.
-        guess = contacts[0]
-        contacts = contacts[1:]
+        if len( contacts ) > 0:
+            # There user has at least one contact with a picture
 
-        print "Creating recognize hit"
-        # hit_tracks is An array of hash elements with HITId and
-        # merged_tracks keys.
-        hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guess )
-        print "Created %d hits" % len( hit_tracks )
+            # DEBUG - actually do some work with recognition here.
+            guess = None
+            if len( contacts ) > 1: 
+                guess = contacts[0]
+                contacts = contacts[1:]
 
-        print "heartbeating: %s" % self.last_tasktoken
-        self.heartbeat()
+            print "Creating recognize hit"
+            # hit_tracks is An array of hash elements with HITId and
+            # merged_tracks keys.
+            hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guess )
+            print "Created %d hits" % len( hit_tracks )
 
-        answer_dicts = {}
-
-        hit_completed = False
-        
-        for hit_track in hit_tracks:
-            hit_id = hit_track['HITId']
-            while not mturk_utils.hit_completed( hit_id ):
-                print "Hit not complete, sleeping for %d seconds" % self.polling_secs
-                time.sleep( self.polling_secs )
-                print "heartbeating: %s" % self.last_tasktoken
-                self.heartbeat()
-            answer_dicts[hit_id] = mturk_utils.get_answer_dict_for_hit( hit_id )
-            print "heartbeating: %s" % self.last_tasktoken
+            print "heartbeating"
             self.heartbeat()
 
-        recognized_faces, new_faces = self._process_recognized( answer_dicts, hit_tracks, guess )
+            answer_dicts = {}
 
-        print "heartbeating: %s" % self.last_tasktoken
+            hit_completed = False
+        
+            for hit_track in hit_tracks:
+                hit_id = hit_track['HITId']
+                while not mturk_utils.hit_completed( hit_id ):
+                    print "Hit not complete, sleeping for %d seconds" % self.polling_secs
+                    time.sleep( self.polling_secs )
+                    print "heartbeating"
+                    self.heartbeat()
+                answer_dicts[hit_id] = mturk_utils.get_answer_dict_for_hit( hit_id )
+                print "heartbeating"
+                self.heartbeat()
+
+            recognized_faces, new_faces = self._process_recognized( answer_dicts, hit_tracks, guess )
+        else:
+            # The user has no contacts with pictures, so everyone here is new.
+
+            # DEBUG - Consider doing recognition here with Facebook
+            # stuff - we'd have to seed images from Facebook in for
+            # our reviewers?
+            recognized_faces = {}
+            new_faces = {}
+            for track in hit_tracks:
+                person_tracks = hit_track['merged_tracks']
+                contact_uuid = str( uuid.uuid4() )
+                new_faces[contact_uuid] = person_tracks
+            
+        print "heartbeating"
         self.heartbeat()
 
         return recognized_faces, new_faces
@@ -294,7 +320,7 @@ class Recognize( VWorker ):
 def _get_sample_data():
     return {
         #"media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
-        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bb002",
+        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bb003",
             "tracks": [
                 {
                     "faces": [

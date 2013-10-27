@@ -22,7 +22,8 @@ mt = MechanicalTurk(
         }  )
 
 def create_merge_hit( media_uuid, tracks ):
-    '''Hello world hit creation'''
+    '''Creates a mechanical turn task for the quality control and
+    de-duplication of the input tracks.'''
 
     create_options = {
         'HITTypeId' : MergeHITTypeId,
@@ -32,17 +33,19 @@ def create_merge_hit( media_uuid, tracks ):
         'Question' : merge_tracks_form.get_question( tracks )
         }
 
+    print "Creating Merge Track HIT for %s" % media_uuid
     result = mt.create_request( 'CreateHIT', create_options )
-    print "Result was %s" % result
 
-    # DEBUG - Think about what happens if there is some other sort of
-    # error.
     hit_id = None
     try:
         hit_id = result['CreateHITResponse']['HIT']['HITId']
     except:
-        # Handle the case where this hit already exists.
-        hit_id = result['CreateHITResponse']['HIT']['Request']['Errors']['Error']['Data'][1]['Value']
+        try:
+            # Handle the case where this hit already exists.
+            hit_id = result['CreateHITResponse']['HIT']['Request']['Errors']['Error']['Data'][1]['Value']
+        except Exception as e:
+            print "Could not determine hit_id, error: %s" % e
+            raise
 
     return hit_id
 
@@ -54,9 +57,12 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guess ):
     ret = []
 
     for person_tracks in merged_tracks:
+        # We need a deterministic ID here across multiple runs of the
+        # script / submissions of input to ensure we don't re-create
+        # HITs that have already been created.
         id_for_person_track = min( a['track_id'] for a in person_tracks )
+
         create_options = {
-            # DEBUG - get this from configuration
             'HITTypeId' : RecognizeHITTypeId,
             'LifetimeInSeconds' : 36*60*60,
             'RequesterAnnotation' : media_uuid + '-%d' % ( id_for_person_track ),
@@ -64,14 +70,19 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guess ):
             'Question' : recognize_face_form.get_question( person_tracks, contacts, guess )
             }
 
+        print "Creating Recognize Face HIT for media/track %s/%s" % ( media_uuid, id_for_person_track )
         result = mt.create_request( 'CreateHIT', create_options )
-        print "Result was %s" % result
+
         hit_id = None
         try:
             hit_id = result['CreateHITResponse']['HIT']['HITId']
         except:
-            # Handle the case where this hit already exists.
-            hit_id = result['CreateHITResponse']['HIT']['Request']['Errors']['Error']['Data'][1]['Value']
+            try:
+                # Handle the case where this hit already exists.
+                hit_id = result['CreateHITResponse']['HIT']['Request']['Errors']['Error']['Data'][1]['Value']
+            except Exception as e:
+                print "Could not determine hit_id, error: %s" % e
+                raise
 
         ret.append( { 'HITId' : hit_id, 'merged_tracks' : person_tracks } )
 
@@ -80,26 +91,35 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guess ):
 def hit_completed( hit_id ):
     result = get_hit( hit_id )
 
-    return mt.get_response_element( 'HITStatus', result ) == 'Reviewable'
+    print "Getting status for hit: %s" % hit_id
+    status = mt.get_response_element( 'HITStatus', result )
+
+    if status == None:
+        raise Exception( "Could not determine status for hit: %s" % hit_id )
+    else:
+        return status == 'Reviewable'
 
 def get_hit( hit_id ):
     get_options = {
         'HITId' : hit_id 
         }
 
+    print "Getting hit: %s" % hit_id
     result = mt.create_request( 'GetHIT', get_options )
 
-    print "Result was %s" % result
     return result
 
 def get_assignment_for_hit( hit_id ):
+    '''Note: This method assumes there is only one assignment for the
+    HIT. Within the scope of the FaceRecognize application this is
+    true.'''
     get_assignments_options = {
         'HITId' : hit_id 
         }
-    
+
+    print "Getting assignment for hit: %s" % hit_id
     result = mt.create_request( 'GetAssignmentsForHIT', get_assignments_options )
-    # DEBUG - Check that there is only one assignment.
-    print "Result was %s" % result
+
     return result
 
 def get_answer_dict_for_hit( hit_id ):
@@ -109,16 +129,3 @@ def get_answer_dict_for_hit( hit_id ):
 
     return answer_dict
 
-#for answer in answer_dict['QuestionFormAnswers']['Answer']:
-#    label = answer['QuestionIdentifier']
-#    value = answer['FreeText']
-
-# NOTE: We'll get back merge_track_n for everything except track 0,
-# just with a value of None if it wasn't selected.  Typical output:
-# merge_track_1 : None
-# merge_track_2 : None
-# merge_track_3 : 1
-# merge_track_4 : 2
-# answer_0 : 0_new
-# answer_1 : 1_new
-# answer_2 : 2_new

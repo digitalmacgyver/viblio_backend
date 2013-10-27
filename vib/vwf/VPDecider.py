@@ -7,11 +7,8 @@ import mixpanel
 import pprint
 import time
 
-# DEBUG - This is temporary until we reorganize popeye into vib.
-import sys
-sys.path.append( '../../popeye' )
-from appconfig import AppConfig
-config = AppConfig( 'popeye', relpath="../../popeye/" ).config()
+import vib.config.AppConfig
+config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 mp = mixpanel.Mixpanel( config.mp_token )
 
