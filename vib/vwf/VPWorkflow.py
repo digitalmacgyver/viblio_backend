@@ -19,7 +19,7 @@
 # wait to retry broken things that could be better now.
 
 domain = 'Viblio'
-version = '1.0.5'
+version = '1.0.6'
 
 VPW = {
 

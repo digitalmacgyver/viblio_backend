@@ -453,7 +453,7 @@ class Worker( Background ):
 
                     execution = swf.WorkflowType( 
                         name = 'VideoProcessing' + config.VPWSuffix, 
-                        domain = 'Viblio', version = '1.0.5' 
+                        domain = 'Viblio', version = '1.0.6' 
                         ).start( 
                         task_list = 'VPDecider' + config.VPWSuffix, 
                         input = json.dumps( 
