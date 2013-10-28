@@ -8,20 +8,21 @@ from logging import handlers
 import mixpanel
 import time
 
-# DEBUG - Add in Loggly when their site is working maybe.
-log = logging.getLogger( __name__ )
-log.addHandler( logging.StreamHandler() )
-
-'''
+logger = logging.getLogger( __name__ )
 logger.setLevel( logging.DEBUG )
-# Log to console
 
-# Log to syslog / loggly
-syslog = logging.handlers.SysLogHandler()
-formatter = logging.Formatter('loggly: { "name" : "%(name)", "module" : "%(module)", "lineno" : "%(lineno)", "funcName" : "%(funcName)",  "level" : "%(levelname)", "message : "%(message)s" }' )
-syslog.setFormatter( formatter )
+syslog = logging.handlers.SysLogHandler( address="/dev/log" )
+sys_formatter = logging.Formatter('vwf: { "name" : "%(name)", "module" : "%(module)", "lineno" : "%(lineno)", "funcName" : "%(funcName)",  "level" : "%(levelname)", "activity_log" : %(message)s }' )
+syslog.setFormatter( sys_formatter )
+syslog.setLevel( logging.INFO )
+
+consolelog = logging.StreamHandler()
+con_formatter = logging.Formatter( 'vwf: %(name)-22s: %(module)-7s: %(lineno)-3s: %(funcName)-12s: %(asctime)s: %(levelname)-5s: %(message)s' )
+syslog.setFormatter( con_formatter )
+consolelog.setLevel( logging.DEBUG )
+
 logger.addHandler( syslog )
-'''
+logger.addHandler( consolelog )
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -40,32 +41,48 @@ class VWorker( swf.ActivityWorker ):
 
         super( VWorker, self ).__init__( **kwargs )
 
+        self.logger = logger
+
     def run( self ):
         try:
-            print "Starting run."
+            log = self.logger
+
+            log.debug( json.dumps( { 'message' : 'Polling for task.' } ) )
 
             activity_task = self.poll()
 
             if 'taskToken' not in activity_task or len( activity_task['taskToken'] ) == 0:
-                print "Nothing to do."
+                log.debug( json.dumps( { 'message' : 'Nothing to do.' } ) )
                 return True
             else:
-                print "Running task."
-                
                 input_opts = json.loads( activity_task['input'] )
 
                 media_uuid = input_opts['media_uuid']
                 user_uuid  = input_opts['user_uuid']
+
+                log.info( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : 'Starting task.' 
+                            } ) )
                 
                 _mp_log( self.task_name + " Started", media_uuid, user_uuid, { 'activity' : self.task_name } )
                 result = self.run_task( input_opts )
 
                 if 'ACTIVITY_ERROR' in result:
-                    print "Task had an error, failing the task with retry: %s" % result.get( 'retry', False ) 
+                    log.error( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'message' : "Task had an error, failing the task with retry: %s" % result.get( 'retry', False ) } ) ) 
                     _mp_log( self.task_name + " Failed", media_uuid, user_uuid, { 'activity' : self.task_name } )
                     self.fail( details = json.dumps( { 'retry' : result.get( 'retry', False ) } ) )
                 else:
-                    print "Task completed"
+                    log.info( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'message' : 'Task completed.'
+                                } ) )
+
                     _mp_log( self.task_name + " Completed", media_uuid, user_uuid, { 'activity' : self.task_name } )
 
                     self.complete( result = json.dumps( result ) )
@@ -73,7 +90,10 @@ class VWorker( swf.ActivityWorker ):
                 return True
 
         except Exception as error:
-            log.exception( error )
+            log.error( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Task had an exception: %s" % error } ) )
             self.fail( reason = str( error ) )
             raise error
 
@@ -90,4 +110,7 @@ def _mp_log( event, media_uuid, user_uuid, properties = {} ):
 
         mp.track( media_uuid, event, properties )
     except Exception as e:
-        print "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( media_uuid, event, properties, e )
+        logger.warning( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Error sending instrumentation ( %s, %s ) to mixpanel: %s" % ( event, properties, e ) } ) )
