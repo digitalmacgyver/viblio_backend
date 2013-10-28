@@ -46,7 +46,7 @@ class VPDecider( swf.Decider ):
             raise
 
     def run_helper( self ):
-        log.info( json.dumps( {
+        log.debug( json.dumps( {
                     'message' : 'Polling for events'
                     } ) )
 
@@ -59,7 +59,7 @@ class VPDecider( swf.Decider ):
             history_events += history.get( 'events', [] )
 
         if len( history_events ) == 0:
-            log.info( json.dumps( {
+            log.debug( json.dumps( {
                         'message' : 'Nothing to do.'
                         } ) )
             return True
