@@ -56,7 +56,7 @@ class Recognize( VWorker ):
                         } ) )
             self.heartbeat()
 
-            if len( tracks ) == 0:
+            if tracks == None or len( tracks ) == 0:
                 log.info( json.dumps( { 
                             'media_uuid' : media_uuid,
                             'user_uuid' : user_uuid,
