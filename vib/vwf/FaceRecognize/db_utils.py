@@ -14,7 +14,7 @@ def get_picture_contacts_for_user_uuid( user_uuid ):
     orm = vib.db.orm.get_session()
 
     user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
-    result = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.picture_uri != None ) ).order_by( Contacts.updated_date.desc() )[:]
+    result = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.picture_uri != None ) ).order_by( Contacts.created_date.desc() )[:]
     return result
 
 def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tracks ):

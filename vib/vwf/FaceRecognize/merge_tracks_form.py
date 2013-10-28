@@ -85,9 +85,16 @@ def _get_question_html_for_track( track, max_faces ):
     return html
 
 def get_question( tracks ):
+    '''We rely on the tracks being ordered by increasing track_id to
+    constrain the valid selections on group_id, so this sorts the
+    input by track_id'''
+
     html = html_front
     html += form_front
     max_faces = 0
+
+    # Sort the tracks by increasing track_id
+    tracks.sort( key = lambda x : x['track_id'] )
 
     for track in tracks:
         if max_faces < len( track['faces'] ):

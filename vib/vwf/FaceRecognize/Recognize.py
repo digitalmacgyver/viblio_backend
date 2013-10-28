@@ -14,6 +14,9 @@ import vib.vwf.FaceRecognize.db_utils as db_utils
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
+import logging
+log = logging.getLogger( __name__ )
+
 class Recognize( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
@@ -37,7 +40,17 @@ class Recognize( VWorker ):
             media_uuid = options['FaceDetect']['media_uuid']
             tracks     = options['FaceDetect']['tracks']
 
-            print "Working on media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+            log.info( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Working on media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                        } ) )
+
+            log.debug( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Heatbeating"
+                        } ) )
 
             print "heartbeating"
             self.heartbeat()

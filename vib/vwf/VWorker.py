@@ -8,17 +8,16 @@ from logging import handlers
 import mixpanel
 import time
 
-logger = logging.getLogger( __name__ )
+logger = logging.getLogger( 'vib.vwf' )
 logger.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
-sys_formatter = logging.Formatter('vwf: { "name" : "%(name)", "module" : "%(module)", "lineno" : "%(lineno)", "funcName" : "%(funcName)",  "level" : "%(levelname)", "activity_log" : %(message)s }' )
+sys_formatter = logging.Formatter('vwf: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "activity_log" : %(message)s }' )
 syslog.setFormatter( sys_formatter )
 syslog.setLevel( logging.INFO )
 
 consolelog = logging.StreamHandler()
-con_formatter = logging.Formatter( 'vwf: %(name)-22s: %(module)-7s: %(lineno)-3s: %(funcName)-12s: %(asctime)s: %(levelname)-5s: %(message)s' )
-syslog.setFormatter( con_formatter )
+#syslog.setFormatter( con_formatter )
 consolelog.setLevel( logging.DEBUG )
 
 logger.addHandler( syslog )
