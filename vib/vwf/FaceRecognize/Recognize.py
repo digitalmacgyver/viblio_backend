@@ -42,6 +42,11 @@ class Recognize( VWorker ):
             print "heartbeating"
             self.heartbeat()
 
+            if len( tracks ) == 0:
+                print "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
+                print "Returning successfully"
+                return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
+
             # Ensure we're the only one working on this particular
             # user.  This allows us to correctly spot and track a
             # person who is present in 2 videos that are uploaded
@@ -67,7 +72,7 @@ class Recognize( VWorker ):
                 #
                 # We achieve this by sleeping until the timeout for
                 # this task would have expired, and then exiting.
-                time.sleep( int( VPW[task_name].get( 'default_task_heartbeat_timeout', '600' ) ) )
+                time.sleep( 1.5 * int( VPW[task_name].get( 'default_task_heartbeat_timeout', '300' ) ) )
                 # Attempting a heartbeat now results in an exception
                 # being thrown.
                 raise Exception( "media_uuid: %s, user_uuid %s committed suicide after failing to get lock" % ( media_uuid, user_uuid ) )
