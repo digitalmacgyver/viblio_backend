@@ -37,7 +37,7 @@ deploy_vib:
 	tar --exclude node_modules --exclude '*.pyc' -zcf - vib | \
 		(cd /deploy/$(LVL); tar zxf -)
 	( cd /deploy/$(LVL); chown -R www-data:www-data vib )
-	( cp /deploy/$(LVL)/vib/vwf/boto.config ~www-data/.boto ; chown www-data:www-data ~www-data/.boto )
+	( cp /deploy/$(LVL)/vib/config/boto.config ~www-data/.boto ; chown www-data:www-data ~www-data/.boto )
 
 
 # Execute this only once when you are building

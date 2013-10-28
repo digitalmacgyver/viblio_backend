@@ -40,7 +40,7 @@ class VPDecider( swf.Decider ):
 
         pprint.PrettyPrinter( indent=4 ).pprint( history_events )
 
-        tasks = [ 'FaceDetect', 'FaceRecognize' ]
+        tasks = [ 'FaceDetect', 'FaceRecognize', 'NotifyComplete' ]
 
         workflow_input = _get_workflow_input( history_events )
         media_uuid = workflow_input['media_uuid']
