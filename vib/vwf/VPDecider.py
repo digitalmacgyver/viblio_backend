@@ -3,17 +3,32 @@
 import boto.swf
 import boto.swf.layer2 as swf
 import json
+import logging
 import mixpanel
 import pprint
 import time
+
+import vib.vwf.VPWorkflow
+from vib.vwf.VPWorkflow import VPW
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 mp = mixpanel.Mixpanel( config.mp_token )
 
-import vib.vwf.VPWorkflow
-from vib.vwf.VPWorkflow import VPW
+log = logging.getLogger( 'vib.vwf.VPDecider' )
+log.setLevel( logging.DEBUG )
+
+syslog = logging.handlers.SysLogHandler( address="/dev/log" )
+sys_formatter = logging.Formatter('vwf: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "activity_log" : %(message)s }' )
+syslog.setFormatter( sys_formatter )
+syslog.setLevel( logging.INFO )
+
+consolelog = logging.StreamHandler()
+consolelog.setLevel( logging.DEBUG )
+
+log.addHandler( syslog )
+log.addHandler( consolelog )
 
 class VPDecider( swf.Decider ):
     domain = vib.vwf.VPWorkflow.domain
@@ -22,7 +37,18 @@ class VPDecider( swf.Decider ):
     task_list = None
 
     def run( self ):
-        print "Polling for events"
+        try:
+            return self.run_helper()
+        except Exception as e:
+            log.error( json.dumps( {
+                        'message' : 'Exception during decision: %s' % e
+                        } ) )
+            raise
+
+    def run_helper( self ):
+        log.info( json.dumps( {
+                    'message' : 'Polling for events'
+                    } ) )
 
         # Listen for decisions in this task list.
         history = self.poll( task_list = 'VPDecider' + config.VPWSuffix )
@@ -32,10 +58,10 @@ class VPDecider( swf.Decider ):
             history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VPDecider' + config.VPWSuffix )
             history_events += history.get( 'events', [] )
 
-        print "Polling completed"
-
         if len( history_events ) == 0:
-            print "Nothing to do."
+            log.info( json.dumps( {
+                        'message' : 'Nothing to do.'
+                        } ) )
             return True
 
         pprint.PrettyPrinter( indent=4 ).pprint( history_events )
@@ -53,7 +79,11 @@ class VPDecider( swf.Decider ):
 
         if _all_tasks_complete( tasks, completed_tasks ):
             # We are done.
-            print "Workflow completed."
+            log.info( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Workflow for user %s video %s completed successfully." % ( user_uuid, media_uuid )
+                        } ) )
             _mp_log( "Workflow_Complete", media_uuid, user_uuid )
             decisions.complete_workflow_execution()
         else:
@@ -62,29 +92,69 @@ class VPDecider( swf.Decider ):
             for task in tasks:
                 print "Evaluating %s" % task
                 if task in completed_tasks:
-                    print "Task %s already completed." % task
+                    log.info( json.dumps( {
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'task' : task,
+                                'message' : "Task %s is completed." % task
+                                } ) )
                 elif task in failed_tasks:
                     details = failed_tasks[task]
                     # We hit a failure, see if we should restart a task.
-                    print "Task %s has failed %d times, details were: %s" % ( task, len(details), details )
+
+                    log.warning( json.dumps( {
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'task' : task,
+                                'message' : "Task %s has failed %d times, details were: %s" % ( task, len(details), details )
+                                } ) )
+
                     if len( details ) > VPW[task]['failure_retries']:
                         reason = "Task %s has exceeded maximum failure retries, terminating workflow." % task
-                        print reason
+
+                        log.error( json.dumps( {
+                                    'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'task' : task,
+                                    'error_code' : 'max_failures',
+                                    'history_events' : history_events,
+                                    'message' : reason
+                                    } ) )
+
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity': task, 'type' : 'max_retries' } )
+
                         decisions.fail_workflow_execution( reason=reason )
+
                     elif not details[-1].get( 'retry', False ):
                         reason = "Most recent failure for task %s said not to retry, terminating workflow." % task
-                        print reason
+
+                        log.error( json.dumps( {
+                                    'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'task' : task,
+                                    'error_code' : 'fatal_error',
+                                    'history_events' : history_events,
+                                    'message' : reason
+                                    } ) )
+
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task, 'type' : 'fatal_error' } )
+
                         decisions.fail_workflow_execution( reason=reason )
                     else:
-                        print "Retrying task %s" % task
+
+                        log.info( json.dumps( {
+                                    'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'task' : task,
+                                    'message' : "Retrying task %s" % task
+                                    } ) )
 
                         task_input = workflow_input
                         for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
                             task_input[prerequisite] = input_opts
 
                         _mp_log( task+" Retry", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity' : task } )
+
                         decisions.schedule_activity_task( 
                             task + '-' + workflow_input['media_uuid'],
                             task + config.VPWSuffix,
@@ -97,14 +167,29 @@ class VPDecider( swf.Decider ):
                     details = timed_out_tasks[task]
                     # We hit a timeout, see if we should restart the
                     # task and if we should change the timeout values.
-                    print "Task %s has timed out %d times, details were: %s" % ( task, len(details), details )
+
+
                     if len( details ) > len( VPW[task]['timeout_retries'] ):
-                        reason = "Task %s has exceeded maximum timeout retries, terminating workflow." % task
-                        print reason
+                        reason = "Task %s has timed out %d times exceeding the maximum allowed timeouts of %d, details were: %s" % ( task, len(details), len( VPW[task]['timeout_retries'] ), details )
+
+                        log.error( json.dumps( {
+                                    'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'task' : task,
+                                    'error_code' : 'max_timeouts',
+                                    'history_events' : history_events,
+                                    'message' : reason
+                                    } ) )
+
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.fail_workflow_execution( reason=reason )
                     else:
-                        print "Retrying task %s" % task
+                        log.warning( json.dumps( {
+                                    'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'task' : task,
+                                    'message' : "Retrying task %s has timed out %d times of a maximum allowed timeouts of %d, details were: %s" % ( task, len(details), len( VPW[task]['timeout_retries'] ), details )
+                                    } ) )
 
                         task_input = workflow_input
                         for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
@@ -144,7 +229,13 @@ class VPDecider( swf.Decider ):
 
                 elif _all_prerequisites_complete( task, completed_tasks ):
                     # We can start a new task.
-                    print "Starting %s" % task
+
+                    log.info( json.dumps( {
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'task' : task,
+                                'message' : "Starting %s for the first time" % task
+                                } ) )
 
                     task_input = workflow_input
                     for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
@@ -159,7 +250,12 @@ class VPDecider( swf.Decider ):
                         input = json.dumps( task_input )
                         )
                 else:
-                    print "Can't start %s due to missing prerequisites." % task
+                    log.debug( json.dumps( {
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'task' : task,
+                                'message' : "Can't start %s due to missing prerequisites." % task
+                                } ) )
 
         self.complete( decisions=decisions )
             

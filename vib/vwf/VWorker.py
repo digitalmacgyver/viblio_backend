@@ -17,7 +17,6 @@ syslog.setFormatter( sys_formatter )
 syslog.setLevel( logging.INFO )
 
 consolelog = logging.StreamHandler()
-#syslog.setFormatter( con_formatter )
 consolelog.setLevel( logging.DEBUG )
 
 logger.addHandler( syslog )

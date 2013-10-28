@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
+import json
+import logging
+from sqlalchemy import and_
+
 import vib.db.orm
 from vib.db.models import *
 
-from sqlalchemy import and_
+log = logging.getLogger( __name__ )
 
 def get_picture_contacts_for_user_uuid( user_uuid ):
     '''inputs: a user_uuid string
@@ -11,10 +15,22 @@ def get_picture_contacts_for_user_uuid( user_uuid ):
     outputs: an array of Contacts data structures from SQLAlchemy
     related to the input user_uuid who have pictures. Members of
     contacts are accessed through dot notation, not indexing.'''
+
+    log.debug( json.dumps( {
+                'user_uuid' : user_uuid,
+                'message' : 'Getting contacts with pictures for user %s' % user_uuid
+                } ) )
+
     orm = vib.db.orm.get_session()
 
     user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
     result = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.picture_uri != None ) ).order_by( Contacts.created_date.desc() )[:]
+
+    log.info( json.dumps( {
+                'user_uuid' : user_uuid,
+                'message' : 'User %s had %d contacts with pictures' % ( user_uuid, len( result ) )
+                } ) )
+
     return result
 
 def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tracks ):
@@ -36,6 +52,13 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
     Returns True on success.
     '''
+
+    log.debug( json.dumps( {
+                'user_uuid' : user_uuid,
+                'media_uuid' : media_uuid,
+                'message' : 'Updating contacts in video %s for user %s' % ( media_uuid, user_uuid )
+                } ) )
+
     orm = vib.db.orm.get_session()
 
     try:
@@ -53,35 +76,62 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
         # Handle new contacts
         for uuid, tracks in new_faces.items():
-            print "Creating new contact with uuid %s for user_id %s " % ( uuid, user_id )
+            log.info( json.dumps( {
+                        'user_uuid' : user_uuid,
+                        'media_uuid' : media_uuid,
+                        'contact_uuid' : uuid,
+                        'message' : "Creating new contact with uuid %s for user_id %s " % ( uuid, user_id )
+                        } ) )
+
             new_contact = Contacts( 
                 uuid        = uuid, 
                 user_id     = user_id,
                 picture_uri = _get_best_picture_uri( tracks )
                 )
+
             for track in tracks:
-                print "Associating %s with track_id %d" % ( uuid, track['track_id'] )
+                log.info( json.dumps( {
+                            'user_uuid' : user_uuid,
+                            'media_uuid' : media_uuid,
+                            'contact_uuid' : uuid,
+                            'track_id' : track['track_id'],
+                            'message' : "Associating new user %s with track_id %d" % ( uuid, track['track_id'] )
+                        } ) )
                 new_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == track['track_id'] ) )[:]
                 new_contact.media_asset_features.extend( new_features )
 
         # Handle existing contacts
         for uuid, tracks in recognized_faces.items():
-            print "Associating these with existing contact.uuid %s: " % uuid
             existing_contact = orm.query( Contacts ).filter( and_( Contacts.uuid == uuid ) )
             if existing_contact.count() == 0:
-                print "Error - contact %s did not exist" % uuid
+                log.warning( json.dumps( {
+                            'user_uuid' : user_uuid,
+                            'media_uuid' : media_uuid,
+                            'contact_uuid' : uuid,
+                            'message' : "Error existing contact %s no longer exists" % uuid
+                            } ) )
                 orm.rollback()
                 return False
             else:
                 existing_contact = existing_contact[0]
                 for track in tracks:
-                    print "Associating %s with track_id %d" % ( existing_contact.uuid, track['track_id'] )
+                    log.info( json.dumps( {
+                                'user_uuid' : user_uuid,
+                                'media_uuid' : media_uuid,
+                                'contact_uuid' : existing_contact.uuid,
+                                'track_id' : track['track_id'],
+                                'message' : "Associating existing user %s with track_id %d" % ( existing_contact.uuid, track['track_id'] )
+                                } ) )
                     existing_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == track['track_id'] ) )[:]
                     existing_contact.media_asset_features.extend( existing_features )
 
         orm.commit()
     except Exception as e:
-        print "Exception in update_contacts: %s" % e
+        log.warning( json.dumps( {
+                    'user_uuid' : user_uuid,
+                    'media_uuid' : media_uuid,
+                    'message' : "Exception in update_contacts: %s" % e
+                    } ) )
         orm.rollback()
         raise
 

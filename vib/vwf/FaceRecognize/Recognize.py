@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
 import json
+import logging
 import time
 import uuid
 
-from vib.vwf.VWorker import VWorker
 from vib.utils import Serialize
 from vib.vwf.VPWorkflow import VPW
+from vib.vwf.VWorker import VWorker
 
 import vib.vwf.FaceRecognize.mturk_utils as mturk_utils
 import vib.vwf.FaceRecognize.db_utils as db_utils
@@ -14,7 +15,6 @@ import vib.vwf.FaceRecognize.db_utils as db_utils
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-import logging
 log = logging.getLogger( __name__ )
 
 class Recognize( VWorker ):
@@ -445,7 +445,7 @@ class Recognize( VWorker ):
             log.debug( json.dumps( { 
                         'media_uuid' : media_uuid,
                         'user_uuid' : user_uuid,
-                        'message' : "Creating %d recognition hits" % len( contacts )
+                        'message' : "Creating %d recognition hits" % len( merged_tracks )
                         } ) )
 
             # hit_tracks is An array of hash elements with HITId and
