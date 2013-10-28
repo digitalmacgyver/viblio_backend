@@ -40,6 +40,9 @@ class Recognize( VWorker ):
             media_uuid = options['FaceDetect']['media_uuid']
             tracks     = options['FaceDetect']['tracks']
 
+            self.user_uuid = user_uuid
+            self.media_uuid = media_uuid
+
             log.info( json.dumps( { 
                         'media_uuid' : media_uuid,
                         'user_uuid' : user_uuid,
@@ -49,15 +52,16 @@ class Recognize( VWorker ):
             log.debug( json.dumps( { 
                         'media_uuid' : media_uuid,
                         'user_uuid' : user_uuid,
-                        'message' : "Heatbeating"
+                        'message' : "Heartbeating"
                         } ) )
-
-            print "heartbeating"
             self.heartbeat()
 
             if len( tracks ) == 0:
-                print "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
-                print "Returning successfully"
+                log.info( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
+                            } ) )
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
 
             # Ensure we're the only one working on this particular
@@ -72,6 +76,12 @@ class Recognize( VWorker ):
                                                    app_config = config,
                                                    heartbeat = 30,
                                                    timeout = 120 )
+
+            log.debug( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Attempting to acquire serialization lock for %s" % user_uuid
+                        } ) )
 
             # This will wait for up to 2 minutes trying to get the
             # lock.
@@ -88,27 +98,54 @@ class Recognize( VWorker ):
                 time.sleep( 1.5 * int( VPW[task_name].get( 'default_task_heartbeat_timeout', '300' ) ) )
                 # Attempting a heartbeat now results in an exception
                 # being thrown.
-                raise Exception( "media_uuid: %s, user_uuid %s committed suicide after failing to get lock" % ( media_uuid, user_uuid ) )
+                message = "media_uuid: %s, user_uuid %s committed suicide after failing to get lock" % ( media_uuid, user_uuid )
+                log.info( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : message
+                            } ) )
+
+                raise Exception( message )
             else:
                 # We got the lock - proceed
-                print "heartbeating"
+                log.debug( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "Heartbeating"
+                            } ) )
                 self.heartbeat()
 
             # First we do quality control on the tracks, and merge
             # different tracks into one.
-            print "Getting merged tracks"
-            merged_tracks, bad_tracks = self._get_merged_tracks( user_uuid, media_uuid, tracks )
+            log.info( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Getting merged tracks"
+                        } ) )
+            merged_tracks, bad_tracks = self._get_merged_tracks( tracks )
 
             # Then we go through each face post merge and try to
             # recognize them
-            print "Recognizing faces"
-            recognized_faces, new_faces = self._recognize_faces( user_uuid, media_uuid, merged_tracks )
+            log.info( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Recognizing faces"
+                        } ) )
+            recognized_faces, new_faces = self._recognize_faces( merged_tracks )
 
-            print "heartbeating"
+            log.debug( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Heartbeating"
+                        } ) )
             self.heartbeat()
 
             # Then we persist our results.
-            print "Updating contacts"
+            log.info( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Updating contacts"
+                        } ) )
             result = db_utils.update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tracks )
             if not result:
                 # We had an error updating the DB contacts, most
@@ -117,20 +154,28 @@ class Recognize( VWorker ):
                 # the UI.  Retry the entire task from scratch.
                 return { 'ACTIVITY_ERROR' : True, 'retry' : True }
             else:
-                print "Returning successfully"
+                log.info( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "Returning successfully"
+                            } ) )
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
             
         except Exception as e:
-            # We had an unknown error, still try to retry but allow
-            # the heartbeat timeout to bring us back.
-            print "Exception was: %s" % ( e )
+            # We had an unknown error, fail the job - it will be
+            # retried if we're under max_failures.
+            log.error( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Exception was: %s" % ( e )
+                        } ) )
             raise
         finally:
             # On the way out let go of our lock if we've got it.
             if self.lock_acquired:
                 self.faces_lock.release()
 
-    def _get_merged_tracks( self, user_uuid, media_uuid, tracks ):
+    def _get_merged_tracks( self, tracks ):
         '''
         Input - the user and media_uuids we are working with, and an
         array of tracks, each of which includes an array of faces.
@@ -154,31 +199,66 @@ class Recognize( VWorker ):
         track was bad, and the track itself that was bad.
         '''
 
-        print "heartbeating"
+        user_uuid = self.user_uuid
+        media_uuid = self.media_uuid
+
+        log.debug( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Heartbeating"
+                    } ) )
         self.heartbeat()
 
         # DEBUG - Sort the incoming tracks with face recognition.
 
-        print "Creating merge hit"
+        log.debug( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Creating merge hit"
+                    } ) )
         hit_id = mturk_utils.create_merge_hit( media_uuid, tracks )
-        print "Had HITId of %s" % hit_id
+        log.info( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'hit_id' : hit_id,
+                    'message' : "Created merge hit with HITId of %s" % hit_id
+                    } ) )
 
-        print "heartbeating"
+        log.debug( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Heartbeating"
+                    } ) )
         self.heartbeat()
 
         hit_completed = False
         
         while not mturk_utils.hit_completed( hit_id ):
-            print "Hit not complete, sleeping for %d seconds" % self.polling_secs
+            log.info( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'hit_id' : hit_id,
+                        'message' : "Hit %s not complete, sleeping for %d seconds" % ( hit_id, self.polling_secs )
+                    } ) )
+
             time.sleep( self.polling_secs )
-            print "heartbeating"
+
+            log.debug( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Heartbeating"
+                        } ) )
             self.heartbeat()
 
         answer_dict = mturk_utils.get_answer_dict_for_hit( hit_id )
 
         merged_tracks, bad_tracks = self._process_merge( answer_dict, tracks )
 
-        print "heartbeating"
+        log.debug( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Heartbeating"
+                    } ) )
         self.heartbeat()
 
         return merged_tracks, bad_tracks
@@ -201,6 +281,9 @@ class Recognize( VWorker ):
         # numeric value in our range of tracks, or None
         '''
         
+        user_uuid = self.user_uuid
+        media_uuid = self.media_uuid
+
         track_disposition = {}
         merge_dict = {}
         bad_tracks = []
@@ -221,33 +304,71 @@ class Recognize( VWorker ):
 
             track_id = int( label.rpartition( '_' )[2] )
             if track_id not in track_disposition:
-                raise Exception( "Found answer for track %d which was not present in tracks: %s" % track_id, tracks )
+                message = "Found answer for track %d which was not present in tracks: %s" % ( track_id, tracks )
+                log.error( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'track_id' : track_id,
+                            'message' : message
+                            } ) )
+                raise Exception( message )
             
             if label.startswith( 'answer_' ):
                 disposition = value.rpartition( '_' )[2]
 
                 if disposition == 'new':
-                    print "Found new track %d" % track_id
+                    log.info( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'track_id' : track_id,
+                                'message' : "Found new track %d" % track_id
+                                } ) )
                     if track_id not in merge_dict:
                         merge_dict[track_id] = [ track_disposition[track_id]['track'] ]
                     else:
                         merge_dict[track_id].append( track_disposition[track_id]['track'] )
 
                 elif disposition == 'notface':
-                    print "Bad notface track %d" % track_id
+                    log.warning( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'track_id' : track_id,
+                                'error_code' : 'not_face',
+                                'message' : "Bad not face track %d" % track_id
+                                } ) )
                     bad_tracks.append( track_disposition[track_id]['track'] )
 
                 elif disposition == 'twoface':
-                    print "Bad twoface track %d" % track_id
+                    log.warning( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'track_id' : track_id,
+                                'error_code' : 'two_face',
+                                'message' : "Bad two face track %d" % track_id
+                                } ) )
                     bad_tracks.append( track_disposition[track_id]['track'] )
 
             elif label.startswith( 'merge_' ):
                 if value:
-                    print "Merging track %d with %s" % ( track_id, value )
+                    log.info( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'track_id' : track_id,
+                                'value' : value,
+                                'message' : "Merging track %d with %s" % ( track_id, value )
+                                } ) )
                     merge_target = int( value )
 
                     if merge_target not in track_disposition:
-                        raise Exception( "Asked to merge track %d with nonexistent track %d, tracks was: %s" % track_id, merge_target, tracks )
+                        message = "Asked to merge track %d with nonexistent track %d, tracks was: %s" % ( track_id, merge_target, tracks )
+                        log.error( json.dumps( { 
+                                    'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'track_id' : track_id,
+                                    'merge_target' : merge_target,
+                                    'message' : message
+                                    } ) )
+                        raise Exception( message )
 
                     if merge_target not in merge_dict:
                         merge_dict[merge_target] = [ track_disposition[track_id]['track'] ]
@@ -255,7 +376,13 @@ class Recognize( VWorker ):
                         merge_dict[merge_target].append( track_disposition[track_id]['track'] )
 
             else:
-                raise Exception( "Unexpected answer label %s" % label )
+                message = "Unexpected answer label %s" % label
+                log.error( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : message
+                            } ) )
+                raise Exception( message )
             
         merged_tracks = []
 
@@ -264,7 +391,7 @@ class Recognize( VWorker ):
 
         return merged_tracks, bad_tracks
 
-    def _recognize_faces( self, user_uuid, media_uuid, merged_tracks ):
+    def _recognize_faces( self, merged_tracks ):
         '''
         Input: The media_uuid and user_uuid that we are working on,
         and an array of merged tracks.  Each element of merged tracks
@@ -287,12 +414,23 @@ class Recognize( VWorker ):
         structures which were determined to be for those faces.
         '''
 
-        print "heartbeating"
+        user_uuid = self.user_uuid
+        media_uuid = self.media_uuid
+
+        log.debug( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Heartbeating"
+                    } ) )
         self.heartbeat()
 
         contacts = db_utils.get_picture_contacts_for_user_uuid( user_uuid )
 
-        print "heartbeating"
+        log.debug( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Heartbeating"
+                    } ) )
         self.heartbeat()
 
         if len( contacts ) > 0:
@@ -304,13 +442,26 @@ class Recognize( VWorker ):
                 guess = contacts[0]
                 contacts = contacts[1:]
 
-            print "Creating recognize hit"
+            log.debug( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Creating %d recognition hits" % len( contacts )
+                        } ) )
+
             # hit_tracks is An array of hash elements with HITId and
             # merged_tracks keys.
             hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guess )
-            print "Created %d hits" % len( hit_tracks )
+            log.info( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Created %d hits, HITIds are: %s" % ( len( hit_tracks ), hit_tracks )
+                        } ) )
 
-            print "heartbeating"
+            log.debug( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Heartbeating"
+                        } ) )
             self.heartbeat()
 
             answer_dicts = {}
@@ -320,12 +471,22 @@ class Recognize( VWorker ):
             for hit_track in hit_tracks:
                 hit_id = hit_track['HITId']
                 while not mturk_utils.hit_completed( hit_id ):
-                    print "Hit not complete, sleeping for %d seconds" % self.polling_secs
+                    log.info( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'hit_id' : hit_id,
+                                'message' : "Hit %s not complete, sleeping for %d seconds" % ( hit_id, self.polling_secs )
+                                } ) )
+
                     time.sleep( self.polling_secs )
-                    print "heartbeating"
                     self.heartbeat()
                 answer_dicts[hit_id] = mturk_utils.get_answer_dict_for_hit( hit_id )
-                print "heartbeating"
+
+                log.debug( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "Heartbeating"
+                            } ) )
                 self.heartbeat()
 
             recognized_faces, new_faces = self._process_recognized( answer_dicts, hit_tracks, guess )
@@ -342,7 +503,11 @@ class Recognize( VWorker ):
                 contact_uuid = str( uuid.uuid4() )
                 new_faces[contact_uuid] = person_tracks
             
-        print "heartbeating"
+        log.debug( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Heartbeating"
+                    } ) )
         self.heartbeat()
 
         return recognized_faces, new_faces
@@ -360,6 +525,10 @@ class Recognize( VWorker ):
         * recognized_[uuid]
         * new_face
         '''
+
+        user_uuid = self.user_uuid
+        media_uuid = self.media_uuid
+
         recognized_faces = {}
         new_faces = {}
 
@@ -367,13 +536,17 @@ class Recognize( VWorker ):
             hit_id = hit_track['HITId']
             person_tracks = hit_track['merged_tracks']
 
-            print "Working on HIT %s" % hit_id
-
             answer_dict = answer_dicts[ hit_id ]
 
             value = answer_dict['QuestionFormAnswers']['Answer']['FreeText']
 
-            print "Found value %s" % ( value )
+            log.info( json.dumps( { 
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'hit_id' : hit_id,
+                        'value' : value,
+                        'message' : "Found value %s for hit %s" % ( value, hit_id )
+                        } ) )
 
             if value == 'new_face':
                 contact_uuid = str( uuid.uuid4() )
@@ -382,604 +555,13 @@ class Recognize( VWorker ):
                 contact_uuid = value.rpartition( '_' )[2]
                 recognized_faces[contact_uuid] = person_tracks
             else:
-                raise Exception( "Unexpected answer value %s" % value )
+                message = "Unexpected answer value %s" % value
+                log.error( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : message
+                            } ) )
+                raise Exception( message )
                 
         return recognized_faces, new_faces
 
-def _get_sample_data():
-    return {
-        #"media_uuid": "12a66e50-3497-11e3-85db-d3cef39baf91",
-        "media_uuid": "12a66e50-3497-11e3-85db-d3cef39bb004",
-            "tracks": [
-                {
-                    "faces": [
-                        {
-                            "Genderconfidence": 34,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_0_2.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "2470109b93cc87d8d52c18c39cc6a20b",
-                            "GlassesConfidence": 40,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 9,
-                            "DarkGlassesConfidence": 12,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 66.6208,
-                            "face_id": 1,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 26,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 38,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_0_3.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "2a7297129393d0a70f08cc4ab672d745",
-                            "GlassesConfidence": 85,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 255,
-                            "DarkGlassesConfidence": 61,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 62.3178,
-                            "face_id": 2,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 12,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 33,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_0_4.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "796b65e2fdec46ab6eb716d38a5dd10a",
-                            "GlassesConfidence": 40,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 10,
-                            "DarkGlassesConfidence": 26,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 65.8241,
-                            "face_id": 3,
-                            "Blink": "yes",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 47,
-                            "Glasses": "No"
-                            }
-                        ],
-                    "visiblity_info": [
-                        {
-                            "end_frame": 5666,
-                            "start_frame": 633
-                            },
-                        {
-                            "end_frame": 8366,
-                            "start_frame": 5733
-                            }
-                        ],
-                    "track_id": 0
-                    },
-                {
-                    "faces": [
-                        {
-                            "Genderconfidence": 255,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_1_1.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "e0b4d4acbf962226fb78b94dcc6ec0de",
-                            "GlassesConfidence": 36,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 31,
-                            "DarkGlassesConfidence": 255,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 59.0595,
-                            "face_id": 0,
-                            "Blink": "yes",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 100,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 25,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_1_2.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "91535fe780fb30e1a7ee71df3922d885",
-                            "GlassesConfidence": 75,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 54,
-                            "DarkGlassesConfidence": 35,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 76.1929,
-                            "face_id": 1,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 100,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 50,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_1_3.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "3ddc10d58070ead9639de9cc486b6ba4",
-                            "GlassesConfidence": 80,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 81,
-                            "DarkGlassesConfidence": 46,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 71.3377,
-                            "face_id": 2,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 56,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 48,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_1_4.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "34e05fed65ed8ea7db592d78aa43529e",
-                            "GlassesConfidence": 70,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 67,
-                            "DarkGlassesConfidence": 30,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 67.2394,
-                            "face_id": 3,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 83,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 74,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_1_5.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "06a38b5f10954e68d345a66de8b4057c",
-                            "GlassesConfidence": 70,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 72,
-                            "DarkGlassesConfidence": 23,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 68.1247,
-                            "face_id": 4,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 85,
-                            "Glasses": "No"
-                            }
-                        ],
-                    "visiblity_info": [
-                        {
-                            "end_frame": 15533,
-                            "start_frame": 833
-                            },
-                        {
-                            "end_frame": 37066,
-                            "start_frame": 36433
-                            },
-                        {
-                            "end_frame": 48600,
-                            "start_frame": 20000
-                            },
-                        {
-                            "end_frame": 48733,
-                            "start_frame": 48666
-                            },
-                        {
-                            "end_frame": 61600,
-                            "start_frame": 40533
-                            },
-                        {
-                            "end_frame": 64933,
-                            "start_frame": 62000
-                            },
-                        {
-                            "end_frame": 65100,
-                            "start_frame": 65000
-                            },
-                        {
-                            "end_frame": 66933,
-                            "start_frame": 65333
-                            },
-                        {
-                            "end_frame": 73866,
-                            "start_frame": 73500
-                            },
-                        {
-                            "end_frame": 74100,
-                            "start_frame": 74000
-                            },
-                        {
-                            "end_frame": 75500,
-                            "start_frame": 75333
-                            },
-                        {
-                            "end_frame": 76500,
-                            "start_frame": 75666
-                            },
-                        {
-                            "end_frame": 76700,
-                            "start_frame": 76666
-                            }
-                        ],
-                    "track_id": 1
-                    },
-                {
-                    "faces": [
-                        {
-                            "Genderconfidence": 20,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_2_1.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "c87428eda6e41e4760a1517b8402731c",
-                            "GlassesConfidence": 43,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 66,
-                            "DarkGlassesConfidence": 46,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 62.4248,
-                            "face_id": 0,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 90,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 62,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_2_2.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "6ad0dab4710e89335f902ca739d6af35",
-                            "GlassesConfidence": 53,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 66,
-                            "DarkGlassesConfidence": 23,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 65.7695,
-                            "face_id": 1,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 45,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 255,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_2_3.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "9ccb02d540f10c67141a55644c660242",
-                            "GlassesConfidence": 43,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 62,
-                            "DarkGlassesConfidence": 48,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 60.3161,
-                            "face_id": 2,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 71,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 255,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_2_4.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "029ffe1ead992e0d8bb0eaae94253b8d",
-                            "GlassesConfidence": 52,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 39,
-                            "DarkGlassesConfidence": 27,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 66.6435,
-                            "face_id": 3,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 88,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 53,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_2_5.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "a6a2b37a7371bec479a361a3ec27c5e9",
-                            "GlassesConfidence": 48,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 79,
-                            "DarkGlassesConfidence": 35,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 68.2131,
-                            "face_id": 4,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 100,
-                            "Glasses": "No"
-                            }
-                        ],
-                    "visiblity_info": [
-                        {
-                            "end_frame": 34266,
-                            "start_frame": 19433
-                            },
-                        {
-                            "end_frame": 37600,
-                            "start_frame": 26033
-                            },
-                        {
-                            "end_frame": 92566,
-                            "start_frame": 37833
-                            },
-                        {
-                            "end_frame": 94000,
-                            "start_frame": 92600
-                            },
-                        {
-                            "end_frame": 100366,
-                            "start_frame": 94266
-                            }
-                        ],
-                    "track_id": 2
-                    },
-                {
-                    "faces": [
-                        {
-                            "Genderconfidence": 255,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_3_1.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "451581b56c136ded16b73fa52c165845",
-                            "GlassesConfidence": 48,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 30,
-                            "DarkGlassesConfidence": 255,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 59.6994,
-                            "face_id": 0,
-                            "Blink": "yes",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 61,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 43,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_3_2.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "d46150e213c82235339c9444799d59cb",
-                            "GlassesConfidence": 46,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 7,
-                            "DarkGlassesConfidence": 29,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 66.2533,
-                            "face_id": 1,
-                            "Blink": "yes",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 88,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 32,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_3_3.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "bf47c110aff46390e31641f5cc623a80",
-                            "GlassesConfidence": 59,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 77,
-                            "DarkGlassesConfidence": 19,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 66.9296,
-                            "face_id": 2,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 65,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 42,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_3_4.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "b38f4182c2fdbe8e9a50ab335e0cdb87",
-                            "GlassesConfidence": 55,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 70,
-                            "DarkGlassesConfidence": 44,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 65.6005,
-                            "face_id": 3,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 82,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 255,
-                            "width": 65,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_3_5.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "ece97a5dfb3562bd72118e9cafbe04d2",
-                            "GlassesConfidence": 60,
-                            "height": 65,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 90,
-                            "DarkGlassesConfidence": 27,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 69.3573,
-                            "face_id": 4,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 95,
-                            "Glasses": "No"
-                            }
-                        ],
-                    "visiblity_info": [
-                        {
-                            "end_frame": 95733,
-                            "start_frame": 83933
-                            },
-                        {
-                            "end_frame": 96733,
-                            "start_frame": 96600
-                            }
-                        ],
-                    "track_id": 3
-                    },
-                {
-                    "faces": [
-                        {
-                            "Genderconfidence": 21,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_4_2.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "94c946a9e6a387401cdf30ef57f681e2",
-                            "GlassesConfidence": 21,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 26,
-                            "DarkGlassesConfidence": 9,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 53.7607,
-                            "face_id": 1,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 9,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 40,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_4_3.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "0da080c8095dc64224a72cfa9e351aa0",
-                            "GlassesConfidence": 26,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 16,
-                            "DarkGlassesConfidence": 59,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 57.9286,
-                            "face_id": 2,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 24,
-                            "Glasses": "No"
-                            },
-                        {
-                            "Genderconfidence": 255,
-                            "width": 64,
-                            "s3_key": "12a66e50-3497-11e3-85db-d3cef39baf91/12a66e50-3497-11e3-85db-d3cef39baf91_face_4_4.jpg",
-                            "face_rotation_yaw": 0,
-                            "s3_bucket": "viblio-uploaded-files",
-                            "md5sum": "5696d510136b19f9d86eb961ed97c0de",
-                            "GlassesConfidence": 80,
-                            "height": 64,
-                            "face_rotation_pitch": 0,
-                            "DarkGlasses": "No",
-                            "Blinkconfidence": 17,
-                            "DarkGlassesConfidence": 45,
-                            "Gender": "female",
-                            "face_rotation_roll": 0,
-                            "face_confidence": 53.6297,
-                            "face_id": 3,
-                            "Blink": "no",
-                            "MouthOpen": "Yes",
-                            "MouthOpenConfidence": 85,
-                            "Glasses": "No"
-                            }
-                        ],
-                    "visiblity_info": [
-                        {
-                            "end_frame": 100366,
-                            "start_frame": 94033
-                            }
-                        ],
-                    "track_id": 4
-                    }
-                ],
-            "user_uuid": "C209A678-03AF-11E3-8D79-41BD85EDDE05"
-            }
