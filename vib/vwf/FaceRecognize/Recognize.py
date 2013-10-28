@@ -95,7 +95,7 @@ class Recognize( VWorker ):
                 #
                 # We achieve this by sleeping until the timeout for
                 # this task would have expired, and then exiting.
-                time.sleep( 1.5 * int( VPW[task_name].get( 'default_task_heartbeat_timeout', '300' ) ) )
+                time.sleep( 1.5 * int( VPW[self.task_name].get( 'default_task_heartbeat_timeout', '300' ) ) )
                 # Attempting a heartbeat now results in an exception
                 # being thrown.
                 message = "media_uuid: %s, user_uuid %s committed suicide after failing to get lock" % ( media_uuid, user_uuid )
