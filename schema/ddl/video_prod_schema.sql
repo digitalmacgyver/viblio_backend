@@ -35,7 +35,6 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`users` (
   PRIMARY KEY (`id`) ,
   INDEX `fk_users_providers1` (`provider` ASC) ,
   UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
-  UNIQUE INDEX `email_UNIQUE` (`email` ASC) ,
   CONSTRAINT `fk_users_providers`
     FOREIGN KEY (`provider` )
     REFERENCES `video_dev`.`providers` (`provider` )

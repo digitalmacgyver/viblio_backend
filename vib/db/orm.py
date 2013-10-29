@@ -15,6 +15,22 @@ engine = create_engine( conn, pool_recycle=3600 )
 SessionFactory = db_map( engine )
 Session = scoped_session( SessionFactory )
 
-def get_session():
-    return Session()
+def valid_session( sess ):
+    try:
+        q = sess.execute( 'select 1;' )
+        if q.rowcount:
+            return True
+        else:
+            raise Exception( "DB Connection Error." )
+    except Exception as e:
+        return False
 
+def get_session():
+    sess = Session()
+    if valid_session( sess ):
+        print "Session is valid"
+        return sess
+    else:
+        print "Invalid session, issuing rollback"
+        sess.rollback()
+        return sess
