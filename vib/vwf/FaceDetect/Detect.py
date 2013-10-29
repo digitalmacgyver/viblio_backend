@@ -3,12 +3,14 @@
 import json
 import logging
 import pprint
-from sqlalchemy import and_
+import boto
+from boto.s3.key import Key
+import hashlib
+
 
 from vib.vwf.VWorker import VWorker
 
-import vib.db.orm
-from vib.db.models import *
+import vib.vwf.FaceDetect.db_utils as db_utils
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -30,6 +32,41 @@ class Detect( VWorker ):
         
         media_uuid = options['media_uuid']
         user_uuid = options['user_uuid']
+        s3_bucket = options['s3_bucket']
+        
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+        bucket = s3.get_bucket(s3_bucket)
+        bucket_contents = Key(bucket)
+        
+        file_name = config.faces_dir + media_uuid + '/' + media_uuid + '.json'
+        file_handle = open(file_name)
+        faces_info = json.load(file_handle)
+        faces_info['user_uuid'] = user_uuid
+        faces_info['media_uuid'] = media_uuid
+        for i,track_id in enumerate(faces_info['tracks']):
+            track = faces_info['tracks'][i]
+            for j,face_id in enumerate(track['faces']):
+                face = track['faces'][j]
+                face['s3_bucket'] = 'viblio-uploaded-files'    
+                file_name = config.faces_dir + face['s3_key']
+                file_handle = open(file_name)
+                data = file_handle.read()    
+                md5sum = hashlib.md5(data).hexdigest()
+                face['md5sum'] = md5sum
+                try:
+                    bucket_contents.key = face['s3_key']
+                    byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
+                    if bucket_contents.md5 != md5sum:
+                        print ('md5 match failed')
+                        raise
+                    db_utils.add_media_asset_face(user_uuid, media_uuid, face['s3_key'], byte_size, track_id['track_id'], face)
+                except Exception as e:
+                    print ( 'Failed to upload to s3: %s' % str( e ) )
+                    raise
+                print face
+        json_string = json.dumps(faces_info)
+        return(json_string)
+        
         
         # Logging is set up to log to syslog in the parent VWorker class.
         # 
@@ -55,16 +92,6 @@ class Detect( VWorker ):
         pp.pprint( options )
         print "Doing face detection stuff!"
 
-        print "Config defined in vib/config/viblio.config."
-
-        print "DB Stuff in vib.db.orm"
-        orm = vib.db.orm.get_session()
-        # Example ORM query - we use the SQLAlchemy and_ construct
-        # here to test two things.
-        users = orm.query( Users ).filter( and_( Users.email == 'bidyut@viblio.com', Users.displayname != None ) )
-        if users.count() == 1:
-            print "Bidyut's user id/uuid are %s/%s" % ( users[0].id, users[0].uuid )
-        
         recoverable_error = False
         catastrophic_error = False
         if catastrophic_error:
