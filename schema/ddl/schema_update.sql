@@ -2,6 +2,9 @@ alter table media_asset_features add column track_id INTEGER NULL DEFAULT NULL a
 
 alter table media_asset_features add column recognition_result VARCHAR(32) NULL DEFAULT NULL after track_id;
 
+insert into share_types ( type ) values 'potential';
+
+
 
 
 =====

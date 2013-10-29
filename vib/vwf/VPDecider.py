@@ -20,7 +20,7 @@ log = logging.getLogger( 'vib.vwf.VPDecider' )
 log.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
-sys_formatter = logging.Formatter('vwf: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "activity_log" : %(message)s }' )
+sys_formatter = logging.Formatter('vwf: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "%s", "activity_log" : %(message)s }' % config.VPWSuffix )
 syslog.setFormatter( sys_formatter )
 syslog.setLevel( logging.INFO )
 

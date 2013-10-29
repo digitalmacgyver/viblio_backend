@@ -8,11 +8,14 @@ from logging import handlers
 import mixpanel
 import time
 
+import vib.config.AppConfig
+config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
+
 logger = logging.getLogger( 'vib.vwf' )
 logger.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
-sys_formatter = logging.Formatter('vwf: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "activity_log" : %(message)s }' )
+sys_formatter = logging.Formatter('vwf: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "%s", "activity_log" : %(message)s }' % config.VPWSuffix )
 syslog.setFormatter( sys_formatter )
 syslog.setLevel( logging.INFO )
 
@@ -21,9 +24,6 @@ consolelog.setLevel( logging.DEBUG )
 
 logger.addHandler( syslog )
 logger.addHandler( consolelog )
-
-import vib.config.AppConfig
-config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 mp = mixpanel.Mixpanel( config.mp_token )
 
