@@ -1,0 +1,1 @@
+0 */2 * * * export PYTHONPATH=/deploy/staging/; /deploy/staging/vib/utils/notify_mturk_workers.py >> /tmp/notify_mturk_workers-$(/bin/date +"\%F").log 2>&1
