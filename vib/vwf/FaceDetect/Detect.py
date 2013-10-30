@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
+import boto
+import hashlib
 import json
 import logging
 import pprint
-import boto
+import os
+
 from boto.s3.key import Key
-import hashlib
-
-
 from vib.vwf.VWorker import VWorker
-
 import vib.vwf.FaceDetect.db_utils as db_utils
 
 import vib.config.AppConfig
@@ -33,21 +32,78 @@ class Detect( VWorker ):
         media_uuid = options['media_uuid']
         user_uuid = options['user_uuid']
         s3_bucket = options['s3_bucket']
-        
-        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
-        bucket = s3.get_bucket(s3_bucket)
-        bucket_contents = Key(bucket)
-        
-        file_name = config.faces_dir + media_uuid + '/' + media_uuid + '.json'
-        file_handle = open(file_name)
-        faces_info = json.load(file_handle)
+
+        log.info( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Starting Face Detection on media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+        # Open connection to S3
+        try:
+            s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+            bucket = s3.get_bucket(s3_bucket)
+            bucket_contents = Key(bucket)
+        except Exception as e:
+            log.error( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Connection to S3 failed for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            raise
+        # Get the media file from S3 for Face Detector
+        try:
+            s3_key = media_uuid + '/' + media_uuid + '.mp4'
+            file_name = os.path.abspath( config.faces_dir + s3_key )           
+            key = bucket.get_key(s3_key)
+            key.get_contents_to_filename(file_name)
+        except Exception as e:
+            log.error( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Failed to get mp4 file from S3 for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            raise   
+        # Run Viblio Face Detection and Tracking Program
+        try:
+            working_dir = os.path.abspath( config.faces_dir + media_uuid + '/' )
+            working_dir = ( config.faces_dir + media_uuid + '/' )
+            cmd = 'LD_LIBRARY_PATH=/deploy/vatools/lib /deploy/vatools/bin/viblio_video_analyzer'
+            opts = ' -f %s --analyzers FaceAnalysis --face_thumbnail_path %s  --filename_prefix %s' %(file_name, working_dir, media_uuid)
+            os.system( cmd + opts )
+            log.info( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid'  : user_uuid,
+                    'FD command' : cmd + opts,
+                    'message' : "Face Detect Program successful for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            raise
+        except Exception as e:
+            log.error( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'Face Detect Command' : cmd,
+                    'message' : "Face Detect Program failed for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            raise
+        # Process output json file from Face Detection program
+        try:
+            file_name = os.path.abspath( config.faces_dir + media_uuid + '/' + media_uuid + '.json')
+            file_handle = open(file_name)
+            faces_info = json.load(file_handle)
+        except Exception as e:
+            log.error( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Output of Face Detect not found or invalid for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            raise        
         faces_info['user_uuid'] = user_uuid
         faces_info['media_uuid'] = media_uuid
         for i,track_id in enumerate(faces_info['tracks']):
             track = faces_info['tracks'][i]
             for j,face_id in enumerate(track['faces']):
                 face = track['faces'][j]
-                face['s3_bucket'] = 'viblio-uploaded-files'    
+                face['s3_bucket'] = s3_bucket
                 file_name = config.faces_dir + face['s3_key']
                 file_handle = open(file_name)
                 data = file_handle.read()    
@@ -57,15 +113,32 @@ class Detect( VWorker ):
                     bucket_contents.key = face['s3_key']
                     byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
                     if bucket_contents.md5 != md5sum:
-                        print ('md5 match failed')
+                        log.error( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'message' : "MD5 mismatch for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                                } ) )
                         raise
                     db_utils.add_media_asset_face(user_uuid, media_uuid, face['s3_key'], byte_size, track_id['track_id'], face)
                 except Exception as e:
-                    print ( 'Failed to upload to s3: %s' % str( e ) )
+                    log.error( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "MD5 mismatch for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                            } ) )
                     raise
                 print face
         json_string = json.dumps(faces_info)
-        return(json_string)
+        # Check to make sure returned json string is smaller than 32K characters
+        if len(json_string) > 32000:
+            log.error( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Face Detect output too large for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            raise
+        else:
+            return(json_string)
         
         
         # Logging is set up to log to syslog in the parent VWorker class.
