@@ -78,7 +78,6 @@ class Detect( VWorker ):
                     'FD command' : cmd + opts,
                     'message' : "Face Detect Program successful for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                     } ) )
-            raise
         except Exception as e:
             log.error( json.dumps( { 
                     'media_uuid' : media_uuid,
