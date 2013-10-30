@@ -25,9 +25,6 @@ def add_media_asset_face( user_uuid, media_uuid, s3_key, byte_size, track_id, fa
             location     = 'us',
             view_count   = 0 )
         media.assets.append( face_asset )
-        print face['face_confidence']
-        print track_id
-
         face_feature = MediaAssetFeatures( feature_type           = 'face',
                                             coordinates            = json.dumps( face ),
                                             detection_confidence   = face['face_confidence'],
