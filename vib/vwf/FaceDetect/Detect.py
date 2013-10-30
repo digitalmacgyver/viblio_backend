@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import pprint
+import shutil
 import os
 
 from boto.s3.key import Key
@@ -52,6 +53,9 @@ class Detect( VWorker ):
             raise
         # Get the media file from S3 for Face Detector
         try:
+            working_dir = os.path.abspath( config.faces_dir + media_uuid )
+            if not os.path.exists(working_dir):
+                os.mkdir(working_dir)
             s3_key = media_uuid + '/' + media_uuid + '.mp4'
             file_name = os.path.abspath( config.faces_dir + s3_key )           
             key = bucket.get_key(s3_key)
@@ -65,8 +69,6 @@ class Detect( VWorker ):
             raise   
         # Run Viblio Face Detection and Tracking Program
         try:
-            working_dir = os.path.abspath( config.faces_dir + media_uuid + '/' )
-            working_dir = ( config.faces_dir + media_uuid + '/' )
             cmd = 'LD_LIBRARY_PATH=/deploy/vatools/lib /deploy/vatools/bin/viblio_video_analyzer'
             opts = ' -f %s --analyzers FaceAnalysis --face_thumbnail_path %s  --filename_prefix %s' %(file_name, working_dir, media_uuid)
             os.system( cmd + opts )
@@ -87,7 +89,7 @@ class Detect( VWorker ):
             raise
         # Process output json file from Face Detection program
         try:
-            file_name = os.path.abspath( config.faces_dir + media_uuid + '/' + media_uuid + '.json')
+            file_name = os.path.abspath( working_dir + '/' + media_uuid + '.json')
             file_handle = open(file_name)
             faces_info = json.load(file_handle)
         except Exception as e:
@@ -128,6 +130,10 @@ class Detect( VWorker ):
                             } ) )
                     raise
                 print face
+        # Done processing tracks and faces
+        # Save the output in S3
+        file_name = os.path.abspath( working_dir + '/' + media_uuid + '_faces.json')
+        shutil.rmtree(working_dir)
         json_string = json.dumps(faces_info)
         # Check to make sure returned json string is smaller than 32K characters
         if len(json_string) > 32000:
