@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from vib.vwf.FaceDetect.Detect import Detect
 
 media_uuid = '36cf0d30-3494-11e3-8d11-3da8fd0aefbe'

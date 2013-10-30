@@ -75,7 +75,7 @@ if __name__ == '__main__':
     workers = [
         'A3NNF2DM3T5FFQ', # Matt Hayward
         #'AT57TTIBIJBYY', # Andy Peebles - personal
-        #'ANT1E8VYCK300', # Bidyut Parruck
+        'ANT1E8VYCK300', # Bidyut Parruck
         'A2UAN9XAD1587R', # video-analytics-inc.com
         ]
 
