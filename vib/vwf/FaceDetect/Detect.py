@@ -132,11 +132,26 @@ class Detect( VWorker ):
                 print face
         # Done processing tracks and faces
         # Save the output in S3
-        file_name = os.path.abspath( working_dir + '/' + media_uuid + '_faces.json')
+        try:
+            file_name = os.path.abspath( working_dir + '/' + media_uuid + '_faces.json')
+            file_handle = open(file_name, 'w')
+            json.dump( faces_info, file_handle )
+            s3_key = media_uuid + '/' + media_uuid + '_faces.json'
+            bucket_contents.key = face['s3_key']
+            byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
+        except Exception as e:
+            log.error( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Uploading faces file failed for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            raise
+        
+
         shutil.rmtree(working_dir)
-        json_string = json.dumps(faces_info)
+        faces_string = json.dumps(faces_info)
         # Check to make sure returned json string is smaller than 32K characters
-        if len(json_string) > 32000:
+        if len(faces_string) > 32000:
             log.error( json.dumps( { 
                     'media_uuid' : media_uuid,
                     'user_uuid' : user_uuid,
@@ -144,7 +159,7 @@ class Detect( VWorker ):
                     } ) )
             raise
         else:
-            return(json_string)
+            return(faces_string)
         
         
         # Logging is set up to log to syslog in the parent VWorker class.
