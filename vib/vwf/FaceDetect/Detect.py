@@ -146,8 +146,10 @@ class Detect( VWorker ):
                     } ) )
             raise
         
-
-        shutil.rmtree(working_dir)
+        # Control whether we delete the temp data.
+        if True:
+            shutil.rmtree(working_dir)
+            
         faces_string = json.dumps(faces_info)
         # Check to make sure returned json string is smaller than 32K characters
         if len(faces_string) > 32000:
@@ -158,7 +160,7 @@ class Detect( VWorker ):
                     } ) )
             raise
         else:
-            return(faces_string)
+            return faces_info
         
         
         # Logging is set up to log to syslog in the parent VWorker class.

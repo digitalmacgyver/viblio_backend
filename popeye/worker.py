@@ -255,11 +255,16 @@ class Worker( Background ):
                     self.popeye_logging_handler = None
                 raise
 
+            ##################################
+            # REMOVED DUE TO NEW PIPELINE
+            #################################
+            '''
             # Create an AVI for intellivision.
             log.info( 'Transcode %s to %s' % ( files['intellivision']['ifile'], files['intellivision']['ofile'] ) )
             video_processing.transcode_avi( files['intellivision'], log, self.data )
 
             self.mp_log( '040_transcode_avi_completed' )
+            '''
 
             # Create a poster.
             log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
@@ -354,6 +359,10 @@ class Worker( Background ):
                 view_count   = 0 )
             media.assets.append( main_asset )
 
+            #########################################
+            # REMOVED FOR NEW PIPELINE
+            #########################################
+            '''
             # Intellivision media_asset
             log.info( 'Generating row for intellivision media_asset' )
             avi_asset = MediaAssets( uuid       = str(uuid.uuid4()),
@@ -364,6 +373,7 @@ class Worker( Background ):
                                      location   = 'us',
                                      view_count = 0)
             media.assets.append( avi_asset )
+            '''
 
             # Thumbnail media_asset
             log.info( 'Generating row for thumbnail media_asset' )
@@ -420,6 +430,39 @@ class Worker( Background ):
             # DEBUG - Pending dependent work elsewhere.
             # Handle intellivision faces, which relate to the media row.
 
+
+            ################################
+            # NEW PIPELINE CALLOUT
+            ################################
+            try:
+                log.info( 'Making call to Video Processing Workflow external to Popeye' )
+
+                execution = swf.WorkflowType( 
+                    name = 'VideoProcessing' + config.VPWSuffix, 
+                    domain = 'Viblio', version = '1.0.6' 
+                    ).start( 
+                    task_list = 'VPDecider' + config.VPWSuffix, 
+                    input = json.dumps( 
+                            { 
+                                'media_uuid' : self.uuid, 
+                                'user_uuid'  : self.data['info']['uid'],
+                                's3_bucket'  : config.bucket_name
+                                }
+                            ), 
+                    workflow_id=self.uuid 
+                    )
+
+                log.info( 'External Video Processing Workflow %s initiated' % execution.workflowId )
+            except Exception as e:
+                log.warning( "Failed to launch External Video Processing Workflow, error was: %s" % e )
+            ### END CALLOUT TO NEW PIPELINE ###
+
+            self.mp_log( '090_new_pipeline_callout' )
+
+            ############################################
+            # REMOVED FOR NEW PIPELINE
+            ###########################################
+            '''
             self.faces_lock = Serialize.Serialize( app         = 'popeye',
                                                    object_name = self.data['info']['uid'], 
                                                    owner_id    = self.uuid,
@@ -476,6 +519,7 @@ class Worker( Background ):
             self.faces_lock.release()
 
             self.mp_log( '120_face_lock_released' )
+            '''
         except Exception as e:
             try:
                 if hasattr( self, 'faces_lock' ) and self.faces_lock:
@@ -915,12 +959,18 @@ class Worker( Background ):
                 ofile = abs_basename+'_output_exif.json', 
                 key   = None )
 
+            #########################
+            # REMOVED FOR NEW PIPELINE
+            #########################
+
             # The 'intellivision' media file, by convention an AVI.
+            '''
             self.add_file( 
                 label = 'intellivision',
                 ifile = abs_basename+'_output.mp4', 
                 ofile = abs_basename+'.avi', 
                 key   = self.uuid + '/' + self.uuid + '.avi' )
+            '''
 
             # Self log file.
             self.add_file( 

@@ -1,3 +1,61 @@
+BUGS:
+
+==
+
+You are supposed to return a python dictionary, not a JSON string.
+
+I FIXED THIS.
+
+==
+
+You don't remove your files on error.
+
+==
+
+Images are frequently truncated, e.g. the contents in S3 are missing /
+invalid.
+
+This seems to happen a lot for the very last image that would be
+uploaded - perhaps there is an off by one error, or a race condition.
+
+I noticed this because in this video the last track (usually - the
+detector seems nondetermininstic) has one face, and that face is
+frequently missing:
+
+/tmp/example.tar.gz
+
+==
+
+P1: Faces page is creating new contacts when it finds a MAF of type
+face that doesn't have a contact, it has to stop doing this.
+
+==
+
+0) Finish timing on Mona's beach movie.
+
+Finished, timing was:
+1258.91user 10.12system 32:12.11elapsed 65%CPU (0avgtext+0avgdata 5355088maxresident)k
+81784inputs+200outputs (0major+345808minor)pagefaults 0swaps
+
+for a 2 minute video - 16x expansion.
+
+0) Put 
+
+/wintmp/ptest/s1.avi
+
+Through the pipeline, check:
+* Contents of coordinates
+* If it doesn't work, check the intermediate JSON
+
+Check that the stuff is in RDS.
+Check that track_id is set.
+Sanity check the values.
+
+
+
+
+
+
 DEBUG:
 
 TOP LEVEL TODO:

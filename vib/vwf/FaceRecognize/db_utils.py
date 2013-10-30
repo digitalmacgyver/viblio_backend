@@ -72,6 +72,11 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
         for bad_track in bad_tracks:
             bad_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == bad_track['track_id'] ) )
             for bad_feature in bad_features:
+                log.info( json.dumps( {
+                            'user_uuid' : user_uuid,
+                            'media_uuid' : media_uuid,
+                            'message' : "Labeling media_asset_feature.id %d of track %d as a bad track." % ( bad_feature.id, bad_track['track_id'] )
+                            } ) )
                 bad_feature.recognition_result = 'bad_track'
 
         # Handle new contacts
@@ -102,7 +107,7 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
         # Handle existing contacts
         for uuid, tracks in recognized_faces.items():
-            existing_contact = orm.query( Contacts ).filter( and_( Contacts.uuid == uuid ) )
+            existing_contact = orm.query( Contacts ).filter( Contacts.uuid == uuid )
             if existing_contact.count() == 0:
                 log.warning( json.dumps( {
                             'user_uuid' : user_uuid,

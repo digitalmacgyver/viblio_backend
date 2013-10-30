@@ -36,8 +36,8 @@ class Recognize( VWorker ):
             
             self.lock_acquired = False
 
-            user_uuid  = options['FaceDetect']['user_uuid']
-            media_uuid = options['FaceDetect']['media_uuid']
+            user_uuid  = options['user_uuid']
+            media_uuid = options['media_uuid']
             tracks     = options['FaceDetect']['tracks']
 
             self.user_uuid = user_uuid
