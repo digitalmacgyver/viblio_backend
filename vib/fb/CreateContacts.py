@@ -426,8 +426,16 @@ def run():
         if message == None:
             time.sleep( 10 )
             return True
+
+        body = message.get_body()
         
-        options = json.loads( message.get_body() )
+        log.debug( json.dumps( {
+                    'user_uuid' : user_uuid,
+                    'message' : "Starting CreateContacts, message body was %s: " % body
+                    } ) )
+
+
+        options = json.loads( body )
         
         fb_access_token = options['fb_access_token']
         fb_user_id      = options['facebook_id']
