@@ -14,7 +14,7 @@ PYPKGS=\
 	pytz \
 	mixpanel-py \
 	supervisor \
-	PIL
+	pillow
 
 install_deps:
 	apt-get -y install python-pip
