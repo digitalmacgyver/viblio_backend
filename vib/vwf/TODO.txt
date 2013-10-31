@@ -2,12 +2,12 @@ ssh matt@ec2-50-112-50-4.us-west-2.compute.amazonaws.com
 
 
 PIPELINE STUFF:
-3) Get face detection working on staging
-4) Get face detection working on a different machine than staging
-5) Get face detection working on 2 or moreprod machines
+5) Get face detection working on 2 or more prod machines
+6) Get license server somewhere reliable and not a single point of failure
 
 RECOGNIZE STUFF:
 6) Install notify MTurk cron on a production box
+DONE - it is the staging duplicate machine.
 
 FB STUFF:
 1) Get web GUI firing messages into our thing.

@@ -414,9 +414,8 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
 def __get_sqs():
     return boto.sqs.connect_to_region( config.sqs_region, aws_access_key_id = config.awsAccess, aws_secret_access_key = config.awsSecret )
 
-# DEBUG - TODO
+# DEBUG
 # 4. Delete temporary files
-# 6. Deploy it and test adding to the queue manually.
 
 sqs = __get_sqs().get_queue( config.fb_link_queue )
 
@@ -431,12 +430,12 @@ def run():
         options = json.loads( message.get_body() )
         
         fb_access_token = options['fb_access_token']
-        fb_user_id      = options['fb_user_id']
+        fb_user_id      = options['facebook_id']
         user_uuid       = options['user_uuid']
 
         # DEBUG
-        #if fb_recent_link_request( user_uuid ):
-        if True:
+        if fb_recent_link_request( user_uuid ):
+        #if True:
             friends = get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token )
             log.debug( json.dumps( {
                         'user_uuid' : user_uuid,
