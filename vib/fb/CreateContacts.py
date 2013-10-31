@@ -43,7 +43,7 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-def get_fb_friends_for_user( user_uuid, fb_user_id ):
+def get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token ):
     '''Given a FB user ID, returns an array of { 'id':...,
     'name':... } pairs.'''
 
@@ -60,8 +60,6 @@ def get_fb_friends_for_user( user_uuid, fb_user_id ):
         if 'friends' in rdict and 'data' in rdict['friends']:
             friends = r.json()['friends']['data']
 
-        print "Returning friends array: %s" % friends
-
         return friends
 
     except Exception as e:
@@ -71,7 +69,7 @@ def get_fb_friends_for_user( user_uuid, fb_user_id ):
                     } ) )
         raise
 
-def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends ):
+def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_token ):
     '''Crawls Facebook for the user and their friends downloading
     tagged face images into ReKognition.
 
@@ -83,22 +81,21 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends ):
     '''
 
     try:
-        # DEBUG
-        print "CRAWLING results"
-
         # Crawl facebook for images of the friends.
         crawl_results = rekog.crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, fb_friends )
 
-        # DEBUG
-        print crawl_results
-        print "TRAINING results"
+        log.debug( json.dumps( {
+                    'user_uuid' : user_uuid,
+                    'message' : "ReKognition FaceCrawl results: %s" % crawl_results
+                    } ) )
 
         # Train on those people (and anyone else present)
         train_results = rekog.train_for_user( user_uuid )
     
-        # DEBUG
-        print train_results
-        print "VISUALIZING results"
+        log.debug( json.dumps( {
+                    'user_uuid' : user_uuid,
+                    'message' : "ReKognition FaceTrain results: %s" % train_results
+                    } ) )
 
         # Get a list of all the people in { tag, url, index : [#,
         # #...] } format
@@ -107,8 +104,10 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends ):
         # where name has spaces replace with underscores
         tagged_people = rekog.visualize_for_user( user_uuid )
     
-        # DEBUG
-        print tagged_people
+        log.debug( json.dumps( {
+                    'user_uuid' : user_uuid,
+                    'message' : "ReKognition FaceVisualize results: %s" % tagged_people
+                    } ) )
 
         results = []
 
@@ -130,7 +129,10 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends ):
 
             rename_result = rekog.rename_tag_for_user( user_uuid, old_tag, facebook_id )
 
-            print "Adding name: %s, fbid: %s, URL: %s" % ( name, facebook_id, person['url'] )
+            log.debug( json.dumps( {
+                        'user_uuid' : user_uuid,
+                        'message' : "Found name: %s, facebook_id: %s, url: %s" % ( name, facebook_id, person['url'] )
+                        } ) )
 
             results.append( { 'name' : name, 'facebook_id' : facebook_id, 'rekog_url' : person['url'] } )
 
@@ -256,7 +258,10 @@ def add_contacts_for_user( user_uuid, people ):
             else:
                 existing_contacts[ contact.provider_id ] = contact
 
-        print "Existing contacts keys are: %s" % existing_contacts.keys()
+        log.debug( json.dumps( {
+                    'user_uuid' : user_uuid,
+                    'message' : "Existing contacts keys are: %s" % existing_contacts.keys()
+                    } ) )
 
         created_contacts = []
 
@@ -264,10 +269,14 @@ def add_contacts_for_user( user_uuid, people ):
         # Maybe that's for the best.
         # For the time being just add a picture URI and forget the rest.
         
-                
         for friend in people:
             if friend['facebook_id'] not in existing_contacts:
-                print "Inserting new contact on %s: " % friend['facebook_id']
+
+                log.debug( json.dumps( {
+                            'user_uuid' : user_uuid,
+                            'message' : "Inserting new contact for id/uuid %s/%s on %s: " % ( user.id, user.uuid, friend['facebook_id'] )
+                            } ) )
+
                 media_uuid = str( uuid.uuid4() )
                 s3_key = "%s/%s_fb_face.png" % ( media_uuid, media_uuid )
                 upload_file_to_s3( friend['file'], s3_key )
@@ -281,6 +290,7 @@ def add_contacts_for_user( user_uuid, people ):
                     picture_uri  = s3_key
                     )
 
+                orm.add( contact )
                 #media = Media( 
                 #    uuid       = media_uuid,
                 #    media_type = 'fb_face'
@@ -309,9 +319,8 @@ def add_contacts_for_user( user_uuid, people ):
             else:
                 log.debug( json.dumps( {
                             'user_uuid' : user_uuid,
-                            'message' : "Contact for facebook friend %s / %s already exists, skipping." % ( friend['name'], friend['tag'] )
+                            'message' : "Contact for facebook friend %s / %s already exists, skipping." % ( friend['name'], friend['facebook_id'] )
                             } ) )
-
 
         orm.commit()
         return created_contacts
@@ -327,21 +336,8 @@ def add_contacts_for_user( user_uuid, people ):
 def __get_sqs():
     return boto.sqs.connect_to_region( config.sqs_region, aws_access_key_id = config.awsAccess, aws_secret_access_key = config.awsSecret )
 
-# Main logic.
-
-fb_access_token = 'CAAGwcWaZA3SsBANSdWla6CVeIJ5NeFI4ai3OQeZAwQHV2aVCzZC4HkZAZACC3yLj1is6816LkiQTLKfTkP2rlXwcTOdHigAwt6GcppIA7NzWFu4qIkVkQQkzjxMYX6xzEWWplp63EomqtWWbVaDyzjVxzNSymKselb1RXbOTZCZA5sMkgtyDcZBlFURo4dRdz5wZD'
-
-fb_user_id = '100006092460819'
-
-#user_uuid = '08CC5BC0-3856-11E3-BF24-4155F9A9DC36'
-user_uuid = '08CC5BC0-3856-11E3-BF24-4155F9A9DC35'
-
 # DEBUG - TODO
-# 1. Get the hello world version working
-# 2. In another file hello world the queue poll.
-# 3. Test adding stuff to the queue manually.
 # 4. Delete temporary files
-# 5. Wrap it in a while loop and make a supervisor config.
 # 6. Deploy it and test adding to the queue manually.
 
 sqs = __get_sqs().get_queue( config.fb_link_queue )
@@ -349,6 +345,10 @@ sqs = __get_sqs().get_queue( config.fb_link_queue )
 def run():
     try:
         message = sqs.read( wait_time_seconds = 20 )
+        
+        if message == None:
+            time.sleep( 10 )
+            return True
         
         options = json.loads( message.get_body() )
         
@@ -359,26 +359,31 @@ def run():
         # DEBUG
         #if fb_recent_link_request( user_uuid ):
         if True:
-            print "Getting FB friends"
-            friends = get_fb_friends_for_user( user_uuid, fb_user_id )
-            import pprint
-            pp = pprint.PrettyPrinter( indent=4 )
-            pp.pprint( friends )
+            friends = get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token )
+            log.debug( json.dumps( {
+                        'user_uuid' : user_uuid,
+                        'message' : "Facebook friends for user %s/%s were %s" % ( user_uuid, fb_user_id, friends ) 
+                        } ) )
 
-            print "Getting ReKognition People"
-            people = update_rekognition_for_user( user_uuid, fb_user_id, friends )
+            people = update_rekognition_for_user( user_uuid, fb_user_id, friends, fb_access_token )
             # DEBUG - keep our API limits low for testing.
-            #fb_user_id = '621782016'
             #people = update_rekognition_for_user( user_uuid, fb_user_id, [] )
-            pp.pprint( people )
+            log.debug( json.dumps( {
+                        'user_uuid' : user_uuid,
+                        'message' : "People from ReKognition for user %s/%s were %s" % ( user_uuid, fb_user_id, people ) 
+                        } ) )
     
-            print "Getting Downloaded Files"
             people_files = download_faces_for_user( user_uuid, people )
-            pp.pprint( people_files )
+            log.debug( json.dumps( {
+                        'user_uuid' : user_uuid,
+                        'message' : "Downloaded files for user %s/%s were %s" % ( user_uuid, fb_user_id, people_files ) 
+                        } ) )
             
-            print "Adding contacts to database."
             added_contacts = add_contacts_for_user( user_uuid, people_files )
-            pp.pprint( added_contacts )
+            log.debug( json.dumps( {
+                        'user_uuid' : user_uuid,
+                        'message' : "For user %s/%s added contacts %s" % ( user_uuid, fb_user_id, added_contacts ) 
+                        } ) )
 
         sqs.delete_message( message )
 

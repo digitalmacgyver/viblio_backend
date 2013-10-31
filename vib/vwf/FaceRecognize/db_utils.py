@@ -119,6 +119,7 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
                 return False
             else:
                 existing_contact = existing_contact[0]
+                existing_contact.picture_uri = _get_best_picture_uri( tracks )
                 for track in tracks:
                     log.info( json.dumps( {
                                 'user_uuid' : user_uuid,
@@ -141,7 +142,6 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
         raise
 
     return True
-
 
 def _get_best_picture_uri( tracks ):
     '''Helper function, run through tracks and return the URI with the

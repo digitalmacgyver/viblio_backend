@@ -1,13 +1,25 @@
-0) Add fb_face types to production, model.
-
-1) Update production DB size, multi AZ
-2) Disable video_dev_1, video_dev
+PIPELINE STUFF:
 3) Get face detection working on staging
 4) Get face detection working on a different machine than staging
 5) Get face detection working on 2 or moreprod machines
+
+RECOGNIZE STUFF:
 6) Install notify MTurk cron on a production box
 
-7) Install PIL with pip install PIL on the machines where we will run the FB sync dealy.
+FB STUFF:
+1) Get web GUI firing messages into our thing.
+2) Get it installed on staging / prod
+3) Install PIL with pip install PIL on the machines where we will run the FB sync dealy.
+4) Create CreateContacts.conf in config/*/*
+5) Add CreateContacts to supervisor-*.conf
+
+2) Discuss with Andy the data model - OK to just have picture URI and
+nothing else? (Server crashes when I started making contacts that
+weren't faces)
+
+DB STUFF:
+2) Disable video_dev_1, video_dev
+
 
 ORPHAN FACES:
 
