@@ -97,38 +97,50 @@ class Detect( VWorker ):
                     'user_uuid' : user_uuid,
                     'message' : "Output of Face Detect not found or invalid for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                     } ) )
-            raise        
+            raise
+        # Add user_uuid in the return json dict        
         faces_info['user_uuid'] = user_uuid
         faces_info['media_uuid'] = media_uuid
-        for i,track_id in enumerate(faces_info['tracks']):
-            track = faces_info['tracks'][i]
-            for j,face_id in enumerate(track['faces']):
-                face = track['faces'][j]
-                face['s3_bucket'] = s3_bucket
-                file_name = config.faces_dir + face['s3_key']
-                file_handle = open(file_name)
-                data = file_handle.read()    
-                md5sum = hashlib.md5(data).hexdigest()
-                face['md5sum'] = md5sum
-                try:
-                    bucket_contents.key = face['s3_key']
-                    byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
-                    if bucket_contents.md5 != md5sum:
+        # Check to see if no faces are returned
+        tracks = faces_info['tracks']
+        if str(tracks) == '[]':
+            log.info( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid'  : user_uuid,
+                    'message' : "Face Detect didn't find faces for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            return faces_info
+        else:
+            # Process faces
+            for i,track_id in enumerate(faces_info['tracks']):
+                track = faces_info['tracks'][i]
+                for j,face_id in enumerate(track['faces']):
+                    face = track['faces'][j]
+                    face['s3_bucket'] = s3_bucket
+                    file_name = config.faces_dir + face['s3_key']
+                    file_handle = open(file_name)
+                    data = file_handle.read()    
+                    md5sum = hashlib.md5(data).hexdigest()
+                    face['md5sum'] = md5sum
+                    try:
+                        bucket_contents.key = face['s3_key']
+                        byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
+                        if bucket_contents.md5 != md5sum:
+                            log.error( json.dumps( { 
+                                    'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : "MD5 mismatch for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                                    } ) )
+                            raise
+                        db_utils.add_media_asset_face(user_uuid, media_uuid, face['s3_key'], byte_size, track_id['track_id'], face)
+                    except Exception as e:
                         log.error( json.dumps( { 
                                 'media_uuid' : media_uuid,
                                 'user_uuid' : user_uuid,
                                 'message' : "MD5 mismatch for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                                 } ) )
-                        raise
-                    db_utils.add_media_asset_face(user_uuid, media_uuid, face['s3_key'], byte_size, track_id['track_id'], face)
-                except Exception as e:
-                    log.error( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : "MD5 mismatch for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
-                            } ) )
-                    raise
-                print face
+                        raise Exception( "Md5 mismatch" )
+                    print face
         # Done processing tracks and faces
         # Save the output in S3
         try:
@@ -158,7 +170,7 @@ class Detect( VWorker ):
                     'user_uuid' : user_uuid,
                     'message' : "Face Detect output too large for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                     } ) )
-            raise
+            raise Exception( "Output too large" )
         else:
             return faces_info
         
