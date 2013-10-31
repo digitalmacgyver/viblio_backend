@@ -1,34 +1,3 @@
-BUGS:
-
-==
-
-You are supposed to return a python dictionary, not a JSON string.
-
-I FIXED THIS.
-
-==
-
-You don't remove your files on error.
-
-==
-
-Images are frequently truncated, e.g. the contents in S3 are missing /
-invalid.
-
-This seems to happen a lot for the very last image that would be
-uploaded - perhaps there is an off by one error, or a race condition.
-
-I noticed this because in this video the last track (usually - the
-detector seems nondetermininstic) has one face, and that face is
-frequently missing:
-
-/tmp/example.tar.gz
-
-==
-
-P1: Faces page is creating new contacts when it finds a MAF of type
-face that doesn't have a contact, it has to stop doing this.
-
 ==
 
 0) Finish timing on Mona's beach movie.
