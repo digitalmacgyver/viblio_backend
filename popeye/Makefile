@@ -13,7 +13,8 @@ PYPKGS=\
 	qtfaststart \
 	pytz \
 	mixpanel-py \
-	supervisor
+	supervisor \
+	PIL
 
 install_deps:
 	apt-get -y install python-pip

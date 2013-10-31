@@ -23,6 +23,9 @@ class MediaAssets(BaseModel, Serializer):
     __private__ = ['id', 'media_id']
     pass
 
+class Links( BaseModel, Serializer ):
+    pass
+
 class MediaTypes(BaseModel, Serializer):
     pass
 

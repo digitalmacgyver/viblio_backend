@@ -90,6 +90,7 @@ def reflect( engine, models ):
         'asset_types' : True,
         'contacts' : True,
         'feature_types' : True,
+        'links' : True,
         'media' : True,
         'media_asset_features' : True,
         'media_assets' : True,

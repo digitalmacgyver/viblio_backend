@@ -1,31 +1,47 @@
-==
+0) Add fb_face types to production, model.
 
-0) Finish timing on Mona's beach movie.
+1) Update production DB size, multi AZ
+2) Disable video_dev_1, video_dev
+3) Get face detection working on staging
+4) Get face detection working on a different machine than staging
+5) Get face detection working on 2 or moreprod machines
+6) Install notify MTurk cron on a production box
 
-Finished, timing was:
-1258.91user 10.12system 32:12.11elapsed 65%CPU (0avgtext+0avgdata 5355088maxresident)k
-81784inputs+200outputs (0major+345808minor)pagefaults 0swaps
+7) Install PIL with pip install PIL on the machines where we will run the FB sync dealy.
 
-for a 2 minute video - 16x expansion.
+ORPHAN FACES:
 
-0) Put 
+Wrapper that runs it once every 6 hours
+Supervisor that owns it
 
-/wintmp/ptest/s1.avi
+Logic:
+  Similar to MTurk notify
+  select * from MAF where recognition_result is null and contact_id is null and created_date > 2 days old
+  create new contacts
+  make link
 
-Through the pipeline, check:
-* Contents of coordinates
-* If it doesn't work, check the intermediate JSON
+FACEBOOK INTEGRATION:
 
-Check that the stuff is in RDS.
-Check that track_id is set.
-Sanity check the values.
+vib.fb.CreateContacts.py
 
+run from supervisor
 
+Objectives:
 
+1) Create in Viblio a contact for each Facebook friend.
 
+* Make query to Facebook, get friendlist.
+* Check if this user already has any contacts with FBID - if so bail this is a one time operation at present
+* For each friend, insert a contact with provider and FBID set.
 
+2) Set an initial photo of each Facebook friend via rekognition.
 
-DEBUG:
+Rekognition Tags are of form:
+Name_With_Underscorres-FBID
+
+* Execute Rekognition crawl
+* Rename Recognized faces with just the FBID.
+* For each tagged contact see if I can pull a face image out and store it is a new media type etc.
 
 TOP LEVEL TODO:
 
