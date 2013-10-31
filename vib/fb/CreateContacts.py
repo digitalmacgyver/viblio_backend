@@ -2,6 +2,9 @@
 
 import boto
 from boto.s3.key import Key
+import boto.sqs
+import boto.sqs.connection
+from boto.sqs.connection import Message
 import datetime
 import json
 import logging
@@ -123,7 +126,7 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends ):
             old_tag = person['tag']
             facebook_id = old_tag.rpartition( '-' )[-1]
             name = old_tag.rpartition( '-' )[0]
-            name.replace( '_', ' ' )
+            name = name.replace( '_', ' ' )
 
             rename_result = rekog.rename_tag_for_user( user_uuid, old_tag, facebook_id )
 
@@ -169,7 +172,6 @@ def download_faces_for_user( user_uuid, people, directory='/tmp/fb_faces' ):
                     'message' : "Exception was: %s" % e
                     } ) )
         raise
-        
 
 def fb_recent_link_request( user_uuid, hours=2 ):
     '''Returns true if the user_uuid has had a FB link created within
@@ -238,7 +240,6 @@ def add_contacts_for_user( user_uuid, people ):
     '''
 
     try:
-
         orm = vib.db.orm.get_session()
 
         user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
@@ -255,10 +256,18 @@ def add_contacts_for_user( user_uuid, people ):
             else:
                 existing_contacts[ contact.provider_id ] = contact
 
+        print "Existing contacts keys are: %s" % existing_contacts.keys()
+
         created_contacts = []
+
+        # Okay... Adding MAFs for this causes GUI server exceptions.
+        # Maybe that's for the best.
+        # For the time being just add a picture URI and forget the rest.
+        
                 
         for friend in people:
             if friend['facebook_id'] not in existing_contacts:
+                print "Inserting new contact on %s: " % friend['facebook_id']
                 media_uuid = str( uuid.uuid4() )
                 s3_key = "%s/%s_fb_face.png" % ( media_uuid, media_uuid )
                 upload_file_to_s3( friend['file'], s3_key )
@@ -272,29 +281,29 @@ def add_contacts_for_user( user_uuid, people ):
                     picture_uri  = s3_key
                     )
 
-                media = Media( 
-                    uuid       = media_uuid,
-                    media_type = 'fb_face'
-                    )
+                #media = Media( 
+                #    uuid       = media_uuid,
+                #    media_type = 'fb_face'
+                #    )
 
-                user.media.append( media )
+                #user.media.append( media )
 
-                media_asset = MediaAssets(
-                    uuid       = str( uuid.uuid4() ),
-                    asset_type = 'fb_face',
-                    mimetype   = 'image/png',
-                    butes      = os.path.getsize( friend['file'] ),
-                    uri        = s3_key,
-                    location   = 'us'
-                    )
-                media.assets.append( media_asset )
+                #media_asset = MediaAssets(
+                #    uuid       = str( uuid.uuid4() ),
+                #    asset_type = 'fb_face',
+                #    mimetype   = 'image/png',
+                #    bytes      = os.path.getsize( friend['file'] ),
+                #    uri        = s3_key,
+                #    location   = 'us'
+                #    )
+                #media.assets.append( media_asset )
 
-                media_asset_feature = MediaAssetFeatures(
-                    feature_type = 'fb_face',
-                    )
+                #media_asset_feature = MediaAssetFeatures(
+                #    feature_type = 'fb_face',
+                #    )
                 
-                media_asset.media_asset_features.append( media_asset_feature )
-                contact.media_asset_features.append( media_asset_feature )
+                #media_asset.media_asset_features.append( media_asset_feature )
+                #contact.media_asset_features.append( media_asset_feature )
                 
                 created_contacts.append( friend )
             else:
@@ -315,6 +324,8 @@ def add_contacts_for_user( user_uuid, people ):
                     } ) )
         raise
 
+def __get_sqs():
+    return boto.sqs.connect_to_region( config.sqs_region, aws_access_key_id = config.awsAccess, aws_secret_access_key = config.awsSecret )
 
 # Main logic.
 
@@ -333,28 +344,49 @@ user_uuid = '08CC5BC0-3856-11E3-BF24-4155F9A9DC35'
 # 5. Wrap it in a while loop and make a supervisor config.
 # 6. Deploy it and test adding to the queue manually.
 
+sqs = __get_sqs().get_queue( config.fb_link_queue )
 
-# DEBUG
-#if fb_recent_link_request( user_uuid ):
-if True:
-    print "Getting FB friends"
-    friends = get_fb_friends_for_user( user_uuid, fb_user_id )
-    import pprint
-    pp = pprint.PrettyPrinter( indent=4 )
-    pp.pprint( friends )
+def run():
+    try:
+        message = sqs.read( wait_time_seconds = 20 )
+        
+        options = json.loads( message.get_body() )
+        
+        fb_access_token = options['fb_access_token']
+        fb_user_id      = options['fb_user_id']
+        user_uuid       = options['user_uuid']
 
-    print "Getting ReKognition People"
-    # DEBUG - keep our API limits low for testing.
-    # people = update_rekognition_for_user( user_uuid, fb_user_id, friends )
-    # DEBUG
-    fb_user_id = '621782016'
-    people = update_rekognition_for_user( user_uuid, fb_user_id, [] )
-    pp.pprint( people )
+        # DEBUG
+        #if fb_recent_link_request( user_uuid ):
+        if True:
+            print "Getting FB friends"
+            friends = get_fb_friends_for_user( user_uuid, fb_user_id )
+            import pprint
+            pp = pprint.PrettyPrinter( indent=4 )
+            pp.pprint( friends )
+
+            print "Getting ReKognition People"
+            people = update_rekognition_for_user( user_uuid, fb_user_id, friends )
+            # DEBUG - keep our API limits low for testing.
+            #fb_user_id = '621782016'
+            #people = update_rekognition_for_user( user_uuid, fb_user_id, [] )
+            pp.pprint( people )
     
-    print "Getting Downloaded Files"
-    people_files = download_faces_for_user( user_uuid, people )
-    pp.pprint( people_files )
+            print "Getting Downloaded Files"
+            people_files = download_faces_for_user( user_uuid, people )
+            pp.pprint( people_files )
+            
+            print "Adding contacts to database."
+            added_contacts = add_contacts_for_user( user_uuid, people_files )
+            pp.pprint( added_contacts )
 
-    added_contacts = add_contacts_for_user( user_uuid, people_files )
-    pp.pprint( added_contacts )
+        sqs.delete_message( message )
+
+        return True
+
+    except Exception as e:
+        log.exception( json.dumps( {
+                    'message' : "Exception was: %s" % e
+                    } ) )
+        raise
 
