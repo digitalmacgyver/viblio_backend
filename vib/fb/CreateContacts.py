@@ -263,7 +263,7 @@ def get_existing_fb_contacts_for_user( user_uuid ):
             if contact.provider_id is None:
                 log.error( json.dumps( {
                             'user_uuid' : user_uuid,
-                            'message' : "Found contact id %s for user_uuid %s with provier of facebook but no provider_id" % ( contact.id, user_uuid )
+                            'message' : "Found contact id %s for user_uuid %s with provider of facebook but no provider_id" % ( contact.id, user_uuid )
                             } ) )
             else:
                 existing_contacts[ contact.provider_id ] = contact
@@ -279,18 +279,24 @@ def get_existing_fb_contacts_for_user( user_uuid ):
                     } ) )
         raise
 
-def add_contacts_for_user( user_uuid, people ):
-    '''Takes in a user_uuid and an array of { tag, name, file }
-    elements.
+def add_contacts_for_user( user_uuid, people, fb_friends ):
+    '''Takes in a user_uuid and an array of { facebook_id, name, file
+    } elements, and an array of { id, name } elements
 
-    For each id present in the attay, if no such contact exists for
-    that user with a provider/provider_id of facebook/id:
+    For each id present in the first array, if no such contact exists
+    for that user with a provider/provider_id of facebook/id:
+
     * The file is uploaded to s3
 
     * A media/media_asset/media_asset_feature with 'fb_face' types are
       created.
 
     * The picture URI is set to the S3 location.
+
+    For each id present in the second array, if it was not in the
+    first array and no such contact exists for that user with a
+    provider/provider_id of facebook/id a contact is created with no
+    picture.
 
     Returns an array of the people for whom contacts where created.
     '''
@@ -307,20 +313,21 @@ def add_contacts_for_user( user_uuid, people ):
                     'message' : "Existing contacts keys are: %s" % existing_contacts.keys()
                     } ) )
 
-        created_contacts = []
-
+        created_picture_contacts = []
+        picture_created = {}
+        
         # Okay... Adding MAFs for this causes GUI server exceptions.
         # Maybe that's for the best.
         # For the time being just add a picture URI and forget the rest.
-        
         for friend in people:
             if friend['facebook_id'] not in existing_contacts:
 
                 log.debug( json.dumps( {
                             'user_uuid' : user_uuid,
-                            'message' : "Inserting new contact for id/uuid %s/%s on %s: " % ( user.id, user.uuid, friend['facebook_id'] )
+                            'message' : "Inserting new picture contact for id/uuid %s/%s on %s: " % ( user.id, user.uuid, friend['facebook_id'] )
                             } ) )
 
+                picture_created[ friend['facebook_id'] ] = True
                 media_uuid = str( uuid.uuid4() )
                 s3_key = "%s/%s_fb_face.png" % ( media_uuid, media_uuid )
                 upload_file_to_s3( friend['file'], s3_key )
@@ -359,15 +366,42 @@ def add_contacts_for_user( user_uuid, people ):
                 #media_asset.media_asset_features.append( media_asset_feature )
                 #contact.media_asset_features.append( media_asset_feature )
                 
-                created_contacts.append( friend )
+                created_picture_contacts.append( friend )
             else:
                 log.debug( json.dumps( {
                             'user_uuid' : user_uuid,
                             'message' : "Contact for facebook friend %s / %s already exists, skipping." % ( friend['name'], friend['facebook_id'] )
                             } ) )
 
+        created_empty_contacts = []
+
+        for friend in fb_friends:
+            if friend['id'] not in existing_contacts and friend['id'] not in picture_created:
+
+                log.debug( json.dumps( {
+                            'user_uuid' : user_uuid,
+                            'message' : "Inserting new empty contact for id/uuid %s/%s on %s: " % ( user.id, user.uuid, friend['id'] )
+                            } ) )
+
+                contact = Contacts(
+                    uuid         = str( uuid.uuid4() ),
+                    user_id      = user.id,
+                    contact_name = friend['name'],
+                    provider     = 'facebook',
+                    provider_id  = friend['id']
+                    )
+
+                orm.add( contact )
+                
+                created_empty_contacts.append( friend )
+            else:
+                log.debug( json.dumps( {
+                            'user_uuid' : user_uuid,
+                            'message' : "Contact for facebook friend %s / %s already exists, skipping." % ( friend['name'], friend['id'] )
+                            } ) )
+
         orm.commit()
-        return created_contacts
+        return created_picture_contacts, created_empty_contacts
     
     except Exception as e:
         orm.rollback()
@@ -423,10 +457,10 @@ def run():
                         'message' : "Downloaded files for user %s/%s were %s" % ( user_uuid, fb_user_id, people_files ) 
                         } ) )
             
-            added_contacts = add_contacts_for_user( user_uuid, people_files )
+            ( added_picture_contacts, added_empty_contacts ) = add_contacts_for_user( user_uuid, people_files, friends )
             log.debug( json.dumps( {
                         'user_uuid' : user_uuid,
-                        'message' : "For user %s/%s added contacts %s" % ( user_uuid, fb_user_id, added_contacts ) 
+                        'message' : "For user %s/%s added picture contacts %s and non-picture contacts %s" % ( user_uuid, fb_user_id, added_picture_contacts, added_empty_contacts ) 
                         } ) )
 
         sqs.delete_message( message )
