@@ -211,6 +211,8 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_asset_features` (
   `contact_id` INT(11) NULL DEFAULT NULL ,
   `detection_confidence` DECIMAL(9,6) NULL DEFAULT NULL ,
   `recognition_confidence` DECIMAL(9,6) NULL DEFAULT NULL ,
+  `track_id` INT(11) NULL DEFAULT NULL ,
+  `recognition_result` VARCHAR(32) NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
   INDEX `fk_media_asset_features_feature_types1` (`feature_type` ASC) ,
@@ -533,6 +535,34 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`email_users` (
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
   PRIMARY KEY (`id`) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`media_share_messages`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_share_messages` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `uuid` VARCHAR(36) NOT NULL ,
+  `media_share_id` INT(11) NOT NULL ,
+  `contact_id` INT(11) NOT NULL ,
+  `message` TEXT NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
+  INDEX `fk_media_share_messages_media_shares1` (`media_share_id` ASC) ,
+  INDEX `fk_media_share_messages_contacts1` (`contact_id` ASC) ,
+  CONSTRAINT `fk_media_share_messages_media_shares1`
+    FOREIGN KEY (`media_share_id` )
+    REFERENCES `video_dev_1`.`media_shares` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_media_share_messages_contacts1`
+    FOREIGN KEY (`contact_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 USE `video_dev_1`;
@@ -1089,6 +1119,30 @@ $$
 
 DELIMITER ;
 
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER media_share_message_created BEFORE INSERT ON media_share_messages FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER media_share_message_updated BEFORE UPDATE ON media_share_messages FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
 CREATE USER `video_dev_1` IDENTIFIED BY 'video_dev_1';
 
 
@@ -1145,6 +1199,7 @@ USE `video_dev_1`;
 INSERT INTO `video_dev_1`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('private', NULL, NULL);
 INSERT INTO `video_dev_1`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('hidden', NULL, NULL);
 INSERT INTO `video_dev_1`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('public', NULL, NULL);
+INSERT INTO `video_dev_1`.`share_types` (`type`, `created_date`, `updated_date`) VALUES ('potential', NULL, NULL);
 
 COMMIT;
 
