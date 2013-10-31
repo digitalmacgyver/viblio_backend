@@ -32,6 +32,7 @@ deploy_utils:
 
 deploy_vib:
 	mkdir -p /deploy/$(LVL)
+	mkdir -p /mnt/faces; chmod oug+rw /mnt/faces
 	-rm -rf /deploy/$(LVL)/vib.prev
 	-mv /deploy/$(LVL)/vib /deploy/$(LVL)/vib.prev
 	tar --exclude node_modules --exclude '*.pyc' -zcf - vib | \

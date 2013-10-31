@@ -1,3 +1,6 @@
+ssh matt@ec2-50-112-50-4.us-west-2.compute.amazonaws.com
+
+
 PIPELINE STUFF:
 3) Get face detection working on staging
 4) Get face detection working on a different machine than staging
@@ -25,6 +28,9 @@ ORPHAN FACES:
 
 Wrapper that runs it once every 6 hours
 Supervisor that owns it
+
+
+
 
 Logic:
   Similar to MTurk notify
