@@ -103,7 +103,7 @@ class Detect( VWorker ):
         faces_info['media_uuid'] = media_uuid
         # Check to see if no faces are returned
         tracks = faces_info['tracks']
-        if str(tracks) == '[]':
+        if str(tracks).find('faces') < 0:
             log.info( json.dumps( { 
                     'media_uuid' : media_uuid,
                     'user_uuid'  : user_uuid,
