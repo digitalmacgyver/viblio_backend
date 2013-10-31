@@ -430,7 +430,6 @@ def run():
         body = message.get_body()
         
         log.debug( json.dumps( {
-                    'user_uuid' : user_uuid,
                     'message' : "Starting CreateContacts, message body was %s: " % body
                     } ) )
 
