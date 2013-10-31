@@ -421,6 +421,7 @@ sqs = __get_sqs().get_queue( config.fb_link_queue )
 
 def run():
     try:
+        message = None
         message = sqs.read( wait_time_seconds = 20 )
         
         if message == None:
@@ -471,4 +472,7 @@ def run():
                     'message' : "Exception was: %s" % e
                     } ) )
         raise
+    finally:
+        if message != None:
+            sqs.delete_message( message )
 
