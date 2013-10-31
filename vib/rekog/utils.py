@@ -11,7 +11,7 @@ rekog_api_secret = config.rekog_api_secret
 
 default_namespace = config.rekog_namespace
 
-def crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, fb_friends, namespace=None ):
+def crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, fb_friends, namespace=None, skip_self=False ):
     '''For a given Facebook ID and a list of friends with { id, name }
     elements, execute the crawl faces ReKognition task.
 
@@ -24,14 +24,11 @@ def crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, fb_friends, na
 
     results = []
 
-    # DEBUG
-    print "Working in namespace %s: " % namespace
-
     # Compose the list of faces to crawl, no more than 20 at a time.
     max_friends_per_call = 19
     for idx in range( 0, max( len( fb_friends ), 1 ), max_friends_per_call ):
         jobs = ''
-        if idx == 0:
+        if idx == 0 and not skip_self:
             jobs = 'face_crawl_[' + fb_user_id + ';'
         else:
             jobs = 'face_crawl_['

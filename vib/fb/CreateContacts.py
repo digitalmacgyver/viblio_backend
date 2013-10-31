@@ -63,7 +63,7 @@ def get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token ):
         return friends
 
     except Exception as e:
-        log.exception( json.dumps( {
+        log.error( json.dumps( {
                     'user_uuid' : user_uuid,
                     'message' : "Exception was: %s" % e
                     } ) )
@@ -82,7 +82,32 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
 
     try:
         # Crawl facebook for images of the friends.
-        crawl_results = rekog.crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, fb_friends )
+
+
+        crawl_friends = []
+
+        existing_contacts = get_existing_fb_contacts_for_user( user_uuid )
+        skip_self = False
+
+        if fb_user_id in existing_contacts:
+            skip_self = True
+            log.warning( json.dumps( {
+                        'user_uuid' : user_uuid,
+                        'message' : "Found self %s in contact list, skipping." % fb_user_id
+                        } ) )
+
+
+        for friend in fb_friends:
+            if friend['id'] in existing_contacts:
+                log.warning( json.dumps( {
+                            'user_uuid' : user_uuid,
+                            'message' : "Found existing contact %s in friend list, skipping." % friend['id']
+                            } ) )
+            else:
+                crawl_friends.append( friend )
+
+                
+        crawl_results = rekog.crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, crawl_friends, skip_self=skip_self )
 
         log.debug( json.dumps( {
                     'user_uuid' : user_uuid,
@@ -139,7 +164,7 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
         return results
     
     except Exception as e:
-        log.exception( json.dumps( {
+        log.error( json.dumps( {
                     'user_uuid' : user_uuid,
                     'message' : "Exception was: %s" % e
                     } ) )
@@ -169,7 +194,7 @@ def download_faces_for_user( user_uuid, people, directory='/tmp/fb_faces' ):
         return people
 
     except Exception as e:
-        log.exception( json.dumps( {
+        log.error( json.dumps( {
                     'user_uuid' : user_uuid,
                     'message' : "Exception was: %s" % e
                     } ) )
@@ -191,7 +216,7 @@ def fb_recent_link_request( user_uuid, hours=2 ):
         return result.count() == 1
 
     except Exception as e:
-        log.exception( json.dumps( {
+        log.error( json.dumps( {
                     'user_uuid' : user_uuid,
                     'message' : "Exception was: %s" % e
                     } ) )
@@ -225,6 +250,35 @@ def upload_file_to_s3( filename, s3_key ):
                     } ) )
         raise
 
+def get_existing_fb_contacts_for_user( user_uuid ):
+    try:
+        orm = vib.db.orm.get_session()
+
+        user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
+
+        contacts = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.provider == 'facebook' ) )
+
+        existing_contacts = {}
+        for contact in contacts:
+            if contact.provider_id is None:
+                log.error( json.dumps( {
+                            'user_uuid' : user_uuid,
+                            'message' : "Found contact id %s for user_uuid %s with provier of facebook but no provider_id" % ( contact.id, user_uuid )
+                            } ) )
+            else:
+                existing_contacts[ contact.provider_id ] = contact
+
+        orm.commit()
+
+        return existing_contacts
+    except Exception as e:
+        orm.rollback()
+        log.error( json.dumps( {
+                    'user_uuid' : user_uuid,
+                    'message' : "Exception was: %s" % e
+                    } ) )
+        raise
+
 def add_contacts_for_user( user_uuid, people ):
     '''Takes in a user_uuid and an array of { tag, name, file }
     elements.
@@ -242,21 +296,11 @@ def add_contacts_for_user( user_uuid, people ):
     '''
 
     try:
+        existing_contacts = get_existing_fb_contacts_for_user( user_uuid )
+
         orm = vib.db.orm.get_session()
 
         user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
-
-        contacts = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.provider == 'facebook' ) )
-
-        existing_contacts = {}
-        for contact in contacts:
-            if contact.provider_id is None:
-                log.exception( json.dumps( {
-                            'user_uuid' : user_uuid,
-                            'message' : "Found contact id %s for user_uuid %s with provier of facebook but no provider_id" % ( contact.id, user_uuid )
-                            } ) )
-            else:
-                existing_contacts[ contact.provider_id ] = contact
 
         log.debug( json.dumps( {
                     'user_uuid' : user_uuid,
@@ -327,7 +371,7 @@ def add_contacts_for_user( user_uuid, people ):
     
     except Exception as e:
         orm.rollback()
-        log.exception( json.dumps( {
+        log.error( json.dumps( {
                     'user_uuid' : user_uuid,
                     'message' : "Exception was: %s" % e
                     } ) )
@@ -390,7 +434,7 @@ def run():
         return True
 
     except Exception as e:
-        log.exception( json.dumps( {
+        log.error( json.dumps( {
                     'message' : "Exception was: %s" % e
                     } ) )
         raise
