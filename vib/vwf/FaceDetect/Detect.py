@@ -148,7 +148,7 @@ class Detect( VWorker ):
             file_handle = open(file_name, 'w')
             json.dump( faces_info, file_handle )
             s3_key = media_uuid + '/' + media_uuid + '_faces.json'
-            bucket_contents.key = face['s3_key']
+            bucket_contents.key = s3_key
             byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
         except Exception as e:
             log.error( json.dumps( { 
