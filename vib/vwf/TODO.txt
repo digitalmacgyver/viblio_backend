@@ -1,31 +1,77 @@
+select id from media_asset_features where updated_date > ( NOW() - INTERVAL 10 MINUTE );
+
+
+mysql> select id, media_asset_id, user_id, media_id, track_id, created_date from media_asset_features where contact_id is NULL and feature_type = 'face'
+    -> ;
++------+----------------+---------+----------+----------+---------------------+
+| id   | media_asset_id | user_id | media_id | track_id | created_date        |
++------+----------------+---------+----------+----------+---------------------+
+| 3226 |          13448 |     114 |     2890 |        0 | 2013-10-30 08:02:57 |
+| 3227 |          13449 |     114 |     2890 |        0 | 2013-10-30 08:02:57 |
+| 3228 |          13450 |     114 |     2890 |        0 | 2013-10-30 08:02:58 |
+| 3229 |          13451 |     114 |     2890 |        0 | 2013-10-30 08:02:58 |
+| 3230 |          13452 |     114 |     2890 |        0 | 2013-10-30 08:02:58 |
+| 3231 |          13456 |     114 |     2891 |        0 | 2013-10-30 08:11:04 |
+| 3232 |          13457 |     114 |     2891 |        0 | 2013-10-30 08:11:04 |
+| 3233 |          13458 |     114 |     2891 |        0 | 2013-10-30 08:11:05 |
+| 3234 |          13459 |     114 |     2891 |        0 | 2013-10-30 08:11:05 |
+| 3235 |          13460 |     114 |     2891 |        0 | 2013-10-30 08:11:06 |
+| 3487 |          13920 |     176 |     2961 |        0 | 2013-10-31 20:22:43 |
+| 3488 |          13921 |     176 |     2961 |        1 | 2013-10-31 20:22:43 |
+| 3489 |          13922 |     176 |     2961 |        1 | 2013-10-31 20:22:44 |
+| 3490 |          13923 |     176 |     2961 |        2 | 2013-10-31 20:22:44 |
+| 3491 |          13924 |     176 |     2961 |        4 | 2013-10-31 20:22:45 |
+| 3492 |          13925 |     176 |     2961 |        5 | 2013-10-31 20:22:45 |
++------+----------------+---------+----------+----------+---------------------+
+
+
+mysql> select media_asset_features.id, media_asset_id, media_asset_features.user_id, media_asset_features.media_id, track_id, uri, media_asset_features.updated_date, contact_id from media_assets, media_asset_features where media_assets.id = media_asset_features.media_id and contact_id is NULL and feature_type = 'face' group by media_id, track_id;
++------+----------------+---------+----------+----------+-----------------------------------------------------------------------------------------+--------------+------------+
+| id   | media_asset_id | user_id | media_id | track_id | uri                                                                                     | updated_date | contact_id |
++------+----------------+---------+----------+----------+-----------------------------------------------------------------------------------------+--------------+------------+
+| 3226 |          13448 |     114 |     2890 |        0 | 791bd070-21b5-11e3-bc01-3d1a23fbe307/791bd070-21b5-11e3-bc01-3d1a23fbe307_face0.jpg     | NULL         |       NULL |
+| 3231 |          13456 |     114 |     2891 |        0 | 5d1aee10-21b5-11e3-bc01-3d1a23fbe307/5d1aee10-21b5-11e3-bc01-3d1a23fbe307.mp4           | NULL         |       NULL |
+| 3487 |          13920 |     176 |     2961 |        0 | 4f6b6820-221a-11e3-8411-0ff2ca87e344/4f6b6820-221a-11e3-8411-0ff2ca87e344_thumbnail.jpg | NULL         |       NULL |
+| 3488 |          13921 |     176 |     2961 |        1 | 4f6b6820-221a-11e3-8411-0ff2ca87e344/4f6b6820-221a-11e3-8411-0ff2ca87e344_thumbnail.jpg | NULL         |       NULL |
+| 3490 |          13923 |     176 |     2961 |        2 | 4f6b6820-221a-11e3-8411-0ff2ca87e344/4f6b6820-221a-11e3-8411-0ff2ca87e344_thumbnail.jpg | NULL         |       NULL |
+| 3491 |          13924 |     176 |     2961 |        4 | 4f6b6820-221a-11e3-8411-0ff2ca87e344/4f6b6820-221a-11e3-8411-0ff2ca87e344_thumbnail.jpg | NULL         |       NULL |
+| 3492 |          13925 |     176 |     2961 |        5 | 4f6b6820-221a-11e3-8411-0ff2ca87e344/4f6b6820-221a-11e3-8411-0ff2ca87e344_thumbnail.jpg | NULL         |       NULL |
++------+----------------+---------+----------+----------+-----------------------------------------------------------------------------------------+--------------+------------+
+
+
+---
+
+Staging vwf server:
+
 ssh matt@ec2-50-112-50-4.us-west-2.compute.amazonaws.com
+
+TODO:
+
+0) Orphan faces
+
+0) Job description of back end generalist
+
+1) Document the architecture of the VWF pipeline.
+
+2) Document how to deploy a VWF server.
 
 PIPELINE STUFF:
 5) Get face detection working on 2 or more prod machines
 6) Get license server somewhere reliable and not a single point of failure
 
-RECOGNIZE STUFF:
-6) Install notify MTurk cron on a production box
-DONE - it is the staging duplicate machine.
-
 FB STUFF:
-2) Get it installed on  prod
-3) Install pillow with pip install PIL on the machines where we will run the FB sync dealy.
+2) Get it installed on prod
 
-2) Discuss with Andy the data model - OK to just have picture URI and
-nothing else? (Server crashes when I started making contacts that
-weren't faces)
+3) Install pillow with pip install PIL on the machines where we will
+run the FB sync dealy.
 
 DB STUFF:
-2) Disable video_dev_1, video_dev
+2) In prod, disable video_dev, video_dev_1
 
 ORPHAN FACES:
 
 Wrapper that runs it once every 6 hours
 Supervisor that owns it
-
-
-
 
 Logic:
   Similar to MTurk notify
@@ -33,64 +79,12 @@ Logic:
   create new contacts
   make link
 
-FACEBOOK INTEGRATION:
-
-vib.fb.CreateContacts.py
-
-run from supervisor
-
-Objectives:
-
-1) Create in Viblio a contact for each Facebook friend.
-
-* Make query to Facebook, get friendlist.
-* Check if this user already has any contacts with FBID - if so bail this is a one time operation at present
-* For each friend, insert a contact with provider and FBID set.
-
-2) Set an initial photo of each Facebook friend via rekognition.
-
-Rekognition Tags are of form:
-Name_With_Underscorres-FBID
-
-* Execute Rekognition crawl
-* Rename Recognized faces with just the FBID.
-* For each tagged contact see if I can pull a face image out and store it is a new media type etc.
-
-TOP LEVEL TODO:
-
-1) Scalability: 
-
-* Get 2 servers running Popeye in staging
-* Get 2 servers running the rest of the pipeline in staging
-
 On prod:
-
 0) Upgrade boto on staging / prod
 0) Install supervisor with easy_install
 
-6) Add loggly logging.
 
-7) We must manually set long timeouts on Face Recognition jobs that
-are manual - we've set machine default type speeds in the pipeline
-currently.
-
-8) Extend logic: there are task fatal errors, and workflow fatal
-errors.  We can decide to bail on a task (and everything after it), or
-we can mark the dependent tree as completed?  Maybe it is better for
-us to just have our application logic work such that this isn't
-necessary.
-
-9) Scale transcoder - does it become it's own service?  If so then
-upload becomes it's own service.  Can we just scale popeye in some
-stupid way for the time being?
-
-9) Document the failure details = JSON with retry : true or false.  -
-you can call self.fail with a reason (256 chars), and a details
-(stringified JSON with a mandatory "retry" value which must be True or
-False)
-
-10) Use the best face confidence as the picture_uri.
-
+OLD DATA BELOW:
 --
 
 Window 1:
@@ -127,7 +121,7 @@ http://docs.aws.amazon.com/amazonswf/latest/apireference/API_Decision.html
 
 --
 
-BUGS: 
+BOTO SWF BUGS: 
 
 1) Should pass KWargs from Layer2 constructor to Layer1?  Looks
 like it might simply be a forgetful bug? 
@@ -149,7 +143,7 @@ same unix.time() - this can actually happen.
 
 5) The simple demo assumes your decider is running before you start the task - otherwise the most recent task will be like DecisionTaskScheduled or something.
 
-6) Docks say poll in activity task returns '' for taskToken when there
+6) Docs say poll in activity task returns '' for taskToken when there
 is nothing, but it doesn't, we get an empty dictionary.
 
 7) Document that VPDecider assumes that each activity task is only run
@@ -199,29 +193,6 @@ This can happen if you try to reschedule something with the same activityId:
                                                                              'version': '1.0.4'},
                                                          'cause': 'ACTIVITY_ID_ALREADY_IN_USE',
                                                          'decisionTaskCompletedEventId': 10}},
-
---
-
-Possible management tools: Chef, Puppet.
-
---
-
-Logging and Metrics:
-
-* In a queue model this is harder because the processing is distributed.
-
-Groupon uses Splunk, but there is an open source alternative logstash.
-
-There could also be third party solitions:
-
-* Logly - log verbosely, times, durations, user_ids.  Push the
-  complexity of analysis onto the logging solution.
-
--- 
-
-For a queue based model, have a way to manually inject tasks into the
-workflow for testing.
-
 
 ==== SAMPLE HISTORY WITH A DECISION TIMEOUT ==
 
