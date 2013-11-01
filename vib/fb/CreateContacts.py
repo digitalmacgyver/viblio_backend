@@ -212,7 +212,7 @@ def fb_recent_link_request( user_uuid, hours=2 ):
         from_when = datetime.datetime.utcnow() - datetime.timedelta( hours=hours )
 
         result = orm.query( Links ).filter( and_( Links.user_id == user.id, Links.created_date > from_when ) )
-        
+
         return result.count() == 1
 
     except Exception as e:
@@ -430,12 +430,25 @@ def run():
 
         body = message.get_body()
         
-        log.debug( json.dumps( {
-                    'message' : "Starting CreateContacts, message body was %s: " % body
-                    } ) )
-
+        try:
+            log.debug( json.dumps( {
+                        'message' : "Starting CreateContacts, message body was %s: " % body
+                        } ) )
+        except Exception as e:
+            log.debug( json.dumps( {
+                        'message' : "Error converting body to string, error was: %s" % e
+                        } ) )
 
         options = json.loads( body )
+
+        try:
+            log.debug( json.dumps( {
+                        'message' : "Options are %s: " % options
+                        } ) )
+        except Exception as e:
+            log.debug( json.dumps( {
+                        'message' : "Error converting options to string: %e" % e
+                        } ) )
         
         fb_access_token = options['fb_access_token']
         fb_user_id      = options['facebook_id']
