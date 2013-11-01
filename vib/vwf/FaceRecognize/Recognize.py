@@ -498,8 +498,7 @@ class Recognize( VWorker ):
             # our reviewers?
             recognized_faces = {}
             new_faces = {}
-            for track in hit_tracks:
-                person_tracks = hit_track['merged_tracks']
+            for person_tracks in merged_tracks:
                 contact_uuid = str( uuid.uuid4() )
                 new_faces[contact_uuid] = person_tracks
             
