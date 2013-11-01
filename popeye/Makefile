@@ -17,7 +17,7 @@ PYPKGS=\
 	pillow
 
 install_deps:
-	apt-get -y install python-pip
+	apt-get -y install python-pip python-dev
 	easy_install $(PYPKGS)
 	apt-get -y install python-mysqldb
 	apt-get -y install apache2
