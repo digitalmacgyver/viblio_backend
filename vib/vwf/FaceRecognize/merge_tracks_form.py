@@ -53,7 +53,7 @@ def _get_question_html_for_track( track, max_faces ):
         for i in range( face_count ):
             face = track['faces'][i]
 
-            html += '<td rowspan="4" style="border-bottom: 1px solid #000;"><img src="%s%s" height="50" width="50" alt="Img. %s" /></td>' % ( server, face['s3_key'] , i )
+            html += '<td rowspan="4" style="border-bottom: 1px solid #000;"><img src="%s%s" height="65" width="65" alt="Img. %s" /></td>' % ( server, face['s3_key'] , i )
 
 
         for i in range( face_count, max_faces ):
@@ -105,7 +105,7 @@ def get_question( tracks ):
         html += _get_question_html_for_track( track, max_faces )
     html += '</table>'
     html += form_back
-    html += html_back % ( 150*len( tracks ) + 100 ) 
+    html += html_back % ( 165*len( tracks ) + 100 ) 
     
     return html
 
