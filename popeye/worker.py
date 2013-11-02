@@ -549,6 +549,9 @@ class Worker( Background ):
         #######################################################################
         # Send notification to CAT server.
         #######################################################################
+
+        ###### HANDLED IN THE NEW PIPELINE #######
+        '''
         try:
             log.info( 'Notifying Cat server at %s' %  config.viblio_server_url )
             site_token = hmac.new( config.site_secret, self.data['info']['uid'] ).hexdigest()
@@ -577,6 +580,8 @@ class Worker( Background ):
                 self.popeye_log.removeHandler( self.popeye_logging_handler )
                 self.popeye_logging_handler = None
             raise
+        '''
+        ###### END HANDLED IN NEW PIPELINE #####
 
         ######################################################################
         # Cleanup files on success.
