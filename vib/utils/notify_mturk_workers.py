@@ -51,7 +51,7 @@ def notify_workers( workers, assignments ):
     for idx in range( 0, len( workers ), max_workers_per_notification ):
         worker_list = workers[idx:idx+max_workers_per_notification]
 
-        task_url = 'https://workersandbox.mturk.com/mturk/searchbar?selectedSearchType=hitgroups&searchWords=Viblio&minReward=0.00&x=15&y=17'
+        task_url = 'https://workersandbox.mturk.com/mturk/searchbar?selectedSearchType=hitgroups&searchWords=oilbiv&minReward=0.00&x=15&y=17'
 
         options = { 
             'Subject' : 'Pending Face Recognition Tasks', 
