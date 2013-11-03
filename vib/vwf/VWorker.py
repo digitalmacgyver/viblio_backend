@@ -68,7 +68,7 @@ class VWorker( swf.ActivityWorker ):
                             'message' : 'Starting task.' 
                             } ) )
                 
-                _mp_log( self.task_name + " Started", media_uuid, user_uuid, { 'activity' : self.task_name } )
+                #_mp_log( self.task_name + " Started", media_uuid, user_uuid, { 'activity' : self.task_name } )
                 result = self.run_task( input_opts )
 
                 if 'ACTIVITY_ERROR' in result:
@@ -76,7 +76,7 @@ class VWorker( swf.ActivityWorker ):
                                 'media_uuid' : media_uuid,
                                 'user_uuid' : user_uuid,
                                 'message' : "Task had an error, failing the task with retry: %s" % result.get( 'retry', False ) } ) ) 
-                    _mp_log( self.task_name + " Failed", media_uuid, user_uuid, { 'activity' : self.task_name } )
+                    #_mp_log( self.task_name + " Failed", media_uuid, user_uuid, { 'activity' : self.task_name } )
                     self.fail( details = json.dumps( { 'retry' : result.get( 'retry', False ) } ) )
                 else:
                     log.info( json.dumps( { 

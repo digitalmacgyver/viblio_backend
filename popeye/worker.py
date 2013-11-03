@@ -179,7 +179,7 @@ class Worker( Background ):
         self.__initialize_metadata( files['metadata']['ifile'] )
         log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
 
-        self.mp_log( '010_input_validated' )
+        #self.mp_log( '010_input_validated' )
 
         # Generate _exif.json and load it into self.data['exif']
         log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
@@ -224,7 +224,7 @@ class Worker( Background ):
                 self.popeye_logging_handler = None
             raise
 
-        self.mp_log( '020_mimetype_completed' )
+        #self.mp_log( '020_mimetype_completed' )
 
         try: 
             # Transcode into mp4 and rotate as needed.
@@ -235,7 +235,7 @@ class Worker( Background ):
             log.info( 'Transcoded mime type is ' + self.data['mimetype'] )
             log.info( 'After transcoding file %s is %s bytes.' % ( files['main']['ofile'], str( os.path.getsize( files['main']['ofile'] ) ) ) )
 
-            self.mp_log( '030_transcode_mp4_completed' )
+            #self.mp_log( '030_transcode_mp4_completed' )
 
             # Move the atom to the front of the file.
             log.info( 'Move atom for: ' + files['main']['ofile'] )
@@ -270,7 +270,7 @@ class Worker( Background ):
             log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
             video_processing.generate_poster( files['poster'], log, self.data )
             
-            self.mp_log( '050_poster_completed' )
+            #self.mp_log( '050_poster_completed' )
 
             # Create a thumbnail.
             log.info( 'Generate thumbnail from %s to %s' % ( files['thumbnail']['ifile'], files['thumbnail']['ofile'] ) )
@@ -602,7 +602,7 @@ class Worker( Background ):
 
         log.info( 'DONE WITH %s' % self.uuid )
 
-        self.mp_log( '140_popeye_completed' )
+        #self.mp_log( '140_popeye_completed' )
 
         if self.popeye_logging_handler:
             self.popeye_log.removeHandler( self.popeye_logging_handler )

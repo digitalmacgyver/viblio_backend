@@ -156,7 +156,7 @@ class VPDecider( swf.Decider ):
                         for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
                             task_input[prerequisite] = input_opts
 
-                        _mp_log( task+" Retry", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity' : task } )
+                        #_mp_log( task+" Retry", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity' : task } )
 
                         decisions.schedule_activity_task( 
                             task + '-' + workflow_input['media_uuid'],
@@ -217,7 +217,7 @@ class VPDecider( swf.Decider ):
                         if VPW[task]['default_task_heartbeat_timeout']         != 'NONE':
                             heartbeat_timeout         = str( timeout_factor * int( VPW[task]['default_task_heartbeat_timeout'] ) )
 
-                        _mp_log( task + " Retry", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
+                        #_mp_log( task + " Retry", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.schedule_activity_task( 
                             task + '-' + workflow_input['media_uuid'],
                             task + config.VPWSuffix,
@@ -244,7 +244,7 @@ class VPDecider( swf.Decider ):
                     for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
                         task_input[prerequisite] = input_opts
 
-                    _mp_log( task + " Scheduled", media_uuid, user_uuid, { 'activity' : task } )
+                    #_mp_log( task + " Scheduled", media_uuid, user_uuid, { 'activity' : task } )
                     decisions.schedule_activity_task( 
                         task + '-' + workflow_input['media_uuid'],
                         task + config.VPWSuffix,
