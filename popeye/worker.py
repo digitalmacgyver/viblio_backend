@@ -18,7 +18,6 @@ import time
 import uuid
 import web
 
-
 # Viblio libraries
 from appconfig import AppConfig
 from background import Background
@@ -30,6 +29,12 @@ import video_processing
 
 # Popeye configuration object.
 config = AppConfig( 'popeye' ).config()
+
+### DEBUG
+###
+### Refactor so that we store S3 and to RDS the original file (with
+### extension?) and call the new pipeline.
+
 
 # Base class for Worker.
 class Worker( Background ):
@@ -183,6 +188,7 @@ class Worker( Background ):
         #self.mp_log( '010_input_validated' )
 
         # Generate _exif.json and load it into self.data['exif']
+        '''
         log.info( 'Getting exif data from file %s and storing it to %s' % ( files['exif']['ifile'], files['exif']['ofile'] ) )
         try:
             self.data['exif'] = helpers.get_exif( files['exif'], log, self.data )
@@ -195,8 +201,10 @@ class Worker( Background ):
                 self.popeye_log.removeHandler( self.popeye_logging_handler )
                 self.popeye_logging_handler = None
             raise
+        '''
 
         # Give the input file an extension.
+        '''
         log.info( 'Renaming input file %s with lower cased file extension based on uploader information' % files['main']['ifile'] )
         try:
             new_filename = helpers.rename_upload_with_extension( files['main'], log, self.data )
@@ -210,8 +218,10 @@ class Worker( Background ):
                 self.popeye_log.removeHandler( self.popeye_logging_handler )
                 self.popeye_logging_handler = None
             raise
+        '''
 
         # Extract the mimetype and store it in self.data['mimetype']
+        '''
         log.info( 'Getting mime type of input video.' )
         try:
             self.data['mimetype'] = str( mimetypes.guess_type( files['main']['ifile'] )[0] )
@@ -224,11 +234,12 @@ class Worker( Background ):
                 self.popeye_log.removeHandler( self.popeye_logging_handler )
                 self.popeye_logging_handler = None
             raise
-
         #self.mp_log( '020_mimetype_completed' )
+        '''
 
         try: 
             # Transcode into mp4 and rotate as needed.
+            '''
             log.info( 'Transcode %s to %s' % ( files['main']['ifile'], files['main']['ofile'] ) )
             log.info( 'Before transcoding file %s is %s bytes.' % ( files['main']['ifile'], str( os.path.getsize( files['main']['ifile'] ) ) ) )
             video_processing.transcode_main( files['main'], log, self.data )
@@ -255,6 +266,7 @@ class Worker( Background ):
                     self.popeye_log.removeHandler( self.popeye_logging_handler )
                     self.popeye_logging_handler = None
                 raise
+            '''
 
             ##################################
             # REMOVED DUE TO NEW PIPELINE
@@ -268,6 +280,7 @@ class Worker( Background ):
             '''
 
             # Create a poster.
+            '''
             log.info( 'Generate poster from %s to %s' % ( files['poster']['ifile'], files['poster']['ofile'] ) )
             video_processing.generate_poster( files['poster'], log, self.data )
             
@@ -278,6 +291,7 @@ class Worker( Background ):
             video_processing.generate_thumbnail( files['thumbnail'], log, self.data )
 
             self.mp_log( '060_thumbnail_completed' )
+            '''
 
         except Exception as e:
             self.__safe_log( self.popeye_log.exception, str( e ) )
@@ -964,19 +978,6 @@ class Worker( Background ):
                 ifile = abs_basename+'_output.mp4',
                 ofile = abs_basename+'_output_exif.json', 
                 key   = None )
-
-            #########################
-            # REMOVED FOR NEW PIPELINE
-            #########################
-
-            # The 'intellivision' media file, by convention an AVI.
-            '''
-            self.add_file( 
-                label = 'intellivision',
-                ifile = abs_basename+'_output.mp4', 
-                ofile = abs_basename+'.avi', 
-                key   = self.uuid + '/' + self.uuid + '.avi' )
-            '''
 
             # Self log file.
             self.add_file( 
