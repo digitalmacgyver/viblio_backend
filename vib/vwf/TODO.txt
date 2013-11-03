@@ -1,6 +1,10 @@
 Prod VWF server:
 
-ssh matt@ec2-54-201-5-57.us-west-2.compute.amazonaws.com
+ssh matt@ec2-54-200-237-233.us-west-2.compute.amazonaws.com
+ssh matt@ec2-54-200-228-29.us-west-2.compute.amazonaws.com
+
+
+ssh matt@ssh matt@ec2-54-201-5-57.us-west-2.compute.amazonaws.com
 ssh matt@ec2-54-201-6-12.us-west-2.compute.amazonaws.com
 
 Staging vwf server:
