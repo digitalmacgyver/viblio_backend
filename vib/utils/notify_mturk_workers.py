@@ -74,9 +74,10 @@ if __name__ == '__main__':
     # least one task for us.
     workers = [
         'A3NNF2DM3T5FFQ', # Matt Hayward
-        #'AT57TTIBIJBYY', # Andy Peebles - personal
+        'AT57TTIBIJBYY', # Andy Peebles - personal
         'ANT1E8VYCK300', # Bidyut Parruck
         'A2UAN9XAD1587R', # video-analytics-inc.com
+        'A3T5PC3TPU8MXW', # Mona?
         ]
 
     print "Checking if there are pending notifications."
