@@ -19,7 +19,7 @@ import vib.vwf.Transcode.transcode_utils as tutils
 
 log = logging.getLogger( __name__ )
 
-class Notify( VWorker ):
+class Transcode( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
     task_name = 'Transcode'
