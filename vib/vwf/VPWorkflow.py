@@ -42,7 +42,9 @@ VPW = {
         'domain'          : domain,
         'version'         : version,
         'task_list'       : 'TranscodeTask',
-        'prerequisites'   : [ 'Upload' ],
+        # Someday this will be true.
+        # 'prerequisites'   : [ 'Upload' ],
+        'prerequisites'   : [],
         'failure_retries' : 1,
         'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
@@ -59,7 +61,7 @@ VPW = {
         # For the time being, everything above FaceDetect happens out
         # of this workflow, so FaceDetect is an entry point into the
         # existing workflow.
-        'prerequisites'   : [] ,
+        'prerequisites'   : [ 'Transcode' ],
         'failure_retries' : 1,
         'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
