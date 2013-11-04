@@ -266,14 +266,45 @@ class Worker( Background ):
                 domain = 'Viblio', version = '1.0.6' 
                 ).start( 
                 task_list = 'VPDecider' + config.VPWSuffix, 
-                input = json.dumps( 
-                        { 
+                input = json.dumps( { 
                             'media_uuid' : self.uuid, 
                             'user_uuid'  : self.data['info']['uid'],
-                            's3_bucket'  : config.bucket_name
-                            # DEBUG fix this to be the right format.
-                            }
-                        ), 
+                            'input_file' : {
+                                's3_bucket'  : config.bucket_name,
+                                's3_key' : files['main']['key']
+                                },
+                            'metadata_uri' : files['metadata']['key'],
+                            'outputs' : [ { 
+                                    'output_file' : {
+                                        's3_bucket' : config.bucket_name,
+                                        's3_key' : "%s_output.mp4" % ( files['main']['key'] ),
+                                        },
+                                    'format' : 'mp4',
+                                    'max_video_bitrate' : 1500,
+                                    'audio_bitrate' : 160,
+                                    'asset_type' : 'main',
+                                    'thumbnails' : [ {
+                                            'times' : [ 0.5 ],
+                                            'size': "320x180",
+                                            'label' : 'poster',
+                                            'format' : 'png',
+                                            'output_file' : {
+                                                's3_bucket' : config.bucket_name,
+                                                's3_key' : "%s_poster.png" % ( files['main']['key'] )
+                                                }
+                                            },
+                                                     {
+                                            'times' : [ 0.5 ],
+                                            'size': "128x128",
+                                            'label' : 'thumbnail',
+                                            'format' : 'png',
+                                            'output_file' : {
+                                                's3_bucket' : config.bucket_name,
+                                                's3_key' : "%s_thumbnail.png" % ( files['main']['key'] )
+                                                }
+                                            } ]
+                                    } ]
+                            } ),
                 workflow_id=self.uuid 
                 )
                 
