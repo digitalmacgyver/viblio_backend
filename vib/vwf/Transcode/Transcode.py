@@ -10,6 +10,10 @@ from vib.vwf.VWorker import VWorker
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
+import vib.utils.s3 as s3
+import vib.db.orm
+from vib.db.models import *
+
 log = logging.getLogger( __name__ )
 
 class Notify( VWorker ):
@@ -19,13 +23,22 @@ class Notify( VWorker ):
     
     def run_task( self, options ):
         '''Transcode a video.  Input options are:
-        { media_uuid, user_uuid, original_file : { s3_bucket, s3_key },
-          transcode : [ { format : "mp4", options: "", resolution: "AxB",
-                          bitrate : "1500k" }, ... ] }
+        { media_uuid, user_uuid, input_file : { s3_bucket, s3_key },
+          outputs : [ { output_file : { s3_bucket, s3_key},
+                      format : "mp4", 
+                      max_video_bitrate: 1500,
+                      audio_bitrate : 160,
+                      size: "640x360",
+                      thumbnails : [ {
+                        times : [0.5], size: "320x180", label: "poster",
+                        output_file: { s3_bucket, s3_key } } ]
+                     } ] }
         '''
         try:
             media_uuid = options['media_uuid']
             user_uuid = options['user_uuid']
+            input_file = options['input_file']
+            outputs = options['outputs']
 
             log.info( json.dumps( {
                         'media_uuid' : media_uuid,
@@ -38,79 +51,29 @@ class Notify( VWorker ):
             # 3. For each: transcode / genereate
             # 4. Update original media with recording date, lat/lng, 
 
-            # DEBUG what are the transcode targets here?
-            self.__initialize_files( media_uuid )
+            # Download to our local disk.
+            original_file = config.transcode_dir + "/"  + media_uuid
+            s3.download_file( original_file, input_file['s3_bucket'], input_file['s3_key'] )
 
-            files = self.files
-            self.download_original_from_s3( files['main'] )
+            original_exif = tutils.get_exif( media_uuid, original_file )
 
+            try:
+                tutils.move_atom( media_uuid, original_file )
+            except:
+                pass
+            
+            # Process files into S3
+            for output in outputs:
+                tutils.transcode( original_file, outputs, original_exif )
+
+            # Store stuff in DB
+
+            # Clean up
+
+            
         except Exception as e:
             # DEBUG go something
             pass
-
-        def __initialize_files( self, input_filename ):
-        '''Private method: Populate the files data structure for the
-        worker class.  Files is a dictionary where:
-
-        * Each key corresponds to a type of file in the video
-          processing pipeline (e.g. original, mp4, thumbnail, etc.)
-
-        * Each value is itself a dictionary, with the following keys
-          as appropriate:
-          + ifile - the full file system path of the input to this
-            stage of the pipeline
-
-          + ofile - the full file system path of the output of this
-            stage of the pipeline
-
-          + key - the key that the output resource will be associated
-            with in persistent storage (currently S3)
-          '''
-        try:
-            self.files = {}
-
-            # DEBUG - handle a variety of outputs on input.
-
-            # The 'main' media file, an mp4.
-            self.add_file( 
-                label = 'main',
-                ifile = input_filename, 
-                ofile = input_filename + '_output.mp4', 
-                key   = self.uuid + '/' + self.uuid + '.mp4' )
-            
-            # The 'thumbnail' media file, a jpg.
-            self.add_file( 
-                label = 'thumbnail',
-                ifile = input_filename+'_output.mp4', 
-                ofile = input_filename+'_thumbnail.jpg', 
-                key   = self.uuid + '/' + self.uuid + '_thumbnail.jpg' )
-            
-            # The 'poster' media file, a jpg.
-            self.add_file( 
-                label = 'poster',
-                ifile = input_filename+'_output.mp4', 
-                ofile = input_filename+'_poster.jpg', 
-                key   = self.uuid + '/' + self.uuid + '_poster.jpg' )
-            
-            # The 'exif' media file, json
-            self.add_file( 
-                label = 'exif',
-                ifile = input_filename, 
-                ofile = input_filename+'_exif.json', 
-                key   = self.uuid + '/' + self.uuid + '_exif.json' )
-
-            # The 'transcoded_exif' media file, json
-            self.add_file( 
-                label = 'transcoded_exif',
-                ifile = input_filename+'_output.mp4',
-                ofile = input_filename+'_output_exif.json', 
-                key   = None )
-
-        except Exception as e:
-            # DEBUG do something
-            pass
-    
-    
 
 
 '''
