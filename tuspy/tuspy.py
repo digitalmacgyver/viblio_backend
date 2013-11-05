@@ -11,6 +11,7 @@ import requests
 import pycurl
 
 import json
+import Cookie
 
 #exponential backoff
 initial_delay = 10 # 10 seconds
@@ -24,54 +25,53 @@ def die(msg, exit_code=0):
     print msg
     sys.exit(exit_code)
 
-def upload(location, filename, offset=0, upload_speed=None):
-    c = None
+def parse_cookies(hdr):
+    C = Cookie.SimpleCookie()
+    C.load( hdr )
+    return C
+
+def aws_cookie( cookies ):
+    return "AWSELB=%s" % cookies['AWSELB'].value
+
+chunk_size = 256 * 1024;
+def upload(location, filename, offset=0, upload_speed=None, cookie=None):
     content_type = "application/offset+octet-stream"
-    try:
-        c = pycurl.Curl()
-        #c.setopt(pycurl.VERBOSE, 1)
-        c.setopt(pycurl.URL, str(location))
-        bout = StringIO.StringIO()
-        hout = StringIO.StringIO()
-
-        c.setopt(pycurl.HEADERFUNCTION, hout.write)
-        c.setopt(pycurl.WRITEFUNCTION, bout.write)
-        c.setopt(pycurl.UPLOAD, 1)
-        c.setopt(pycurl.CUSTOMREQUEST, 'PATCH')
-
-        f = open(filename, 'rb')
-        if offset > 0: 
-            f.seek(offset)
-        c.setopt(pycurl.READFUNCTION, f.read)
-        filesize = os.path.getsize(filename)
-        if upload_speed:
-            c.setopt(pycurl.MAX_SEND_SPEED_LARGE, upload_speed)
-        c.setopt(pycurl.INFILESIZE, filesize - offset)
-        c.setopt(pycurl.HTTPHEADER, ["Expect:", "Content-Type: %s" % content_type, "Offset: %d" % offset])
-        c.perform()
-
-        response_code = c.getinfo(pycurl.RESPONSE_CODE)
-        response_data = bout.getvalue()
-        response_hdr = hout.getvalue()
-        #print "DATA", response_data
-        #print response_hdr
-        #print "patch->", response_code
-        return response_code == 200
-    finally:
-        if c: c.close()
+    filesize = os.path.getsize(filename)
+    f = open(filename, 'rb')
+    if offset > 0: 
+        f.seek(offset)
+    to_read = chunk_size
+    if ( (filesize - offset) < to_read ):
+        to_read = filesize - offset
+    fdata = f.read( to_read );
+    f.close();
+    print "PATCH %s offset=%d, len=%d" % ( location, offset, len(fdata) )
+    headers = {"Expect": None, 
+               "Content-Type": content_type, 
+               "Content-Length": len(fdata), 
+               "Offset": offset}
+    if ( cookie ):
+        headers["Cookie"] = cookie
+    c = requests.patch( location, verify=False, data=fdata, headers=headers )
+        
+    return c.status_code == 200
 
 cdb = {
     'local': {
-        'auth': 'http://localhost/services/na/authenticate',
-        'server': 'http://localhost:8080/files'
+        'auth': 'https://localhost/services/na/authenticate',
+        'server': 'https://localhost/files'
         },
     'staging': {
-        'auth': 'http://staging.viblio.com/services/na/authenticate',
-        'server': 'http://staging.viblio.com:8080/files'
+        'auth': 'https://staging.viblio.com/services/na/authenticate',
+        'server': 'https://staging.viblio.com/files'
         },
     'prod': {
-        'auth': 'http://prod.viblio.com/services/na/authenticate',
-        'server': 'http://upload.viblio.com:8080/files'
+        'auth': 'https://prod.viblio.com/services/na/authenticate',
+        'server': 'https://upload.viblio.com/files'
+        },
+    'uploader': {
+        'auth': 'https://prod.viblio.com/services/na/authenticate',
+        'server': 'https://uploader.viblio.com/files'
         }
     }
 
@@ -87,7 +87,7 @@ parser.add_option("-a", "--auth",
                   help="auth server: local, staging or prod")
 parser.add_option("-s", "--server",
                   dest="server",
-                  help="upload server: local, staging or prod")
+                  help="upload server: local, staging, prod or uploader")
 parser.add_option("-S", "--Server",
                   dest="manual",
                   help="upload server: IP address or hostname")
@@ -128,7 +128,7 @@ if not options.server and not options.manual:
 
 if options.manual:
     cdb[options.manual] = {}
-    cdb[options.manual]['server'] = 'http://' + options.manual + ':8080/files'
+    cdb[options.manual]['server'] = options.manual
     options.server = options.manual
     
 upload_speed = None
@@ -166,35 +166,52 @@ payload = json.dumps(md)
 
 print "posting to: " + cdb[options.server]['server']
 
-c  = requests.post(cdb[options.server]['server'], headers={"Final-Length": filesize}, data=payload)
+c = requests.post(cdb[options.server]['server'], verify=False, headers={"Final-Length": filesize}, data=payload)
 
 if c.status_code != 201:
     die("create failure. reason: %s"  % c.reason)
 
 location = c.headers["Location"]
+
+# If the actual brewtus server is behind a https proxy,
+# the location header will be http://, but we need to
+# access it through https:// if that is our server
+if ( cdb[options.server]['server'].startswith('https:') and
+     location.startswith('http:') ):
+    location = location.replace('http:', 'https:')
+
 print "Location header is: " + location
+if ( 'Set-Cookie' in c.headers ):
+    cookie = c.headers["Set-Cookie"]
+    print "Cookie header is: " + cookie
+    cookies = parse_cookies( cookie )
+    cval = aws_cookie( cookies )
+    print "Cookie return is: " + cval
+else:
+    cval = None
 
 def get_offset(location):
-    h = requests.head(location)
-    print h.headers
-    offset = int(h.headers["Offset"])
-    print "Offset: ", offset
+    if ( cval ):
+        h = requests.head(location,verify=False,headers={"Cookie": cval})
+    else:
+        h = requests.head(location,verify=False)
+    # print h.headers
+    if ( 'Offset' in h.headers ):
+        offset = int(h.headers["Offset"])
+    else:
+        offset = 0
+    # print "Offset: ", offset
     return offset 
-
 
 status = "upload failure"
 offset = 0
-for i in attempts():
-    try:
-        offset = get_offset(location)
-        if offset == filesize:
-            status = "upload success"
+while( offset < filesize ):
+    for i in attempts():
+        if ( upload(location, filename, offset=offset, upload_speed=upload_speed, cookie=cval) ):
             break
-        upload(location, filename, offset=offset, upload_speed=upload_speed)
-        offset = get_offset(location)
-        if offset == filesize:
-            status = "upload success"
-            break
-    except:
-        traceback.print_exc()
+    offset = get_offset(location)
+    if offset == filesize:
+        status = "upload success"
+        break 
 die(status)
+
