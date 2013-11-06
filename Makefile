@@ -51,12 +51,12 @@ development: exiftool
 	( cd popeye; make install_deps )
 	mkdir -p /mnt/uploaded_files; chmod oug+rw /mnt/uploaded_files
 	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
-	mkdir -p /deploy/local
+	mkdir -p /deploy/$(LVL)
 	chmod -R oug+rw /deploy
 	make LVL=local deploy
-	ln -s /deploy/local/brewtus/brewtus-local.init.d /etc/init.d/brewtus
-	ln -s /deploy/local/popeye/deployment/init.d/popeye-local /etc/init.d/popeye
-	ln -s /deploy/local/popeye/deployment/init.d/supervisor-$(LVL) /etc/init.d/supervisor
+	ln -s /deploy/$(LVL)/brewtus/brewtus-local.init.d /etc/init.d/brewtus
+	ln -s /deploy/$(LVL)/popeye/deployment/init.d/popeye-local /etc/init.d/popeye
+	ln -s /deploy/$(LVL)/popeye/deployment/init.d/supervisor-$(LVL) /etc/init.d/supervisor
 	( cd /etc/init.d; update-rc.d brewtus defaults; update-rc.d popeye defaults; update-rc.d supervisor defaults )
 	/etc/init.d/brewtus start
 	/etc/init.d/popeye start
