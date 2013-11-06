@@ -19,13 +19,6 @@ import vib.vwf.Transcode.transcode_utils as tutils
 
 log = logging.getLogger( __name__ )
 
-# DEBUG 
-# 4) Test each rotation, > 16:9, 16:9, <16:9
-
-# 6) Configure supervisor processes (change face detector count while we're at it)
-
-# 7) Add "original" asset type to database stuff, regen scripts.
-
 class Transcode( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
