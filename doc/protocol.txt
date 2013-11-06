@@ -97,11 +97,104 @@ against another server in order to obtain a user UUID which is required as
 part of the meta data sent on a new file upload.  The brewtus server needs
 this user UUID in order to associate an uploaded file with a user account.
 
+User management, including authentication and new account creation is 
+covered in another document.  For the initial POST to initial a file 
+upload, you will need the authenticated user's "uuid".
+
 Detailed Request/Response Descriptions
 --------------------------------------
 
 POST
 ----
 
-To begin a file upload, the client will send a POST request to /files.
+To begin a file upload, the client will send a POST request to /files.  First
+prepare the meta data you will send.  The meta data should be formatted as
+a JSON string, and must include at a minimum:
+
+{ 
+  uuid: authenticated-user-uuid,
+  file: { 
+    Path: original-file-path-on-client-filesystem
+  }
+}
+
+NOTE: 'Path' is capitalized!
+
+The tuspy client generates a lot more metadata.  It runs ffmpeg and captures
+meta data like this:
+
+  ffprobe -v quiet -print_format json=c=1 -show_format -show_streams FILENAME
+
+and then adds the 'uuid' and 'file' entries to the JSON returned by
+ffprobe.  This meta data is saved into the database on the server side.
+
+Then you can issue the POST request to /files.  The header 'Final-Length'
+must be present and set to the uploaded file's total length in bytes.  The
+body of the POST should be the meta data in JSON format.  'Content-Length'
+should be set to the size in bytes of the meta data.  The 'Content-Type'
+for this request (and all other requests) should be set to 
+"application/offset+octet-stream".
+
+A successful POST will return a 200, and a header called 'Location' that
+is set to the endpoint you should use for subsequent PATCH, HEAD and DELETE
+requests.  If your POST was to:
+
+  https://uploader.viblio.com/files
+
+then Location will look something like:
+
+  https://uploader.viblio.com/files/6d7e4260-463c-11e3-9f1e-5b82aae08307
+
+NOTE:  The brewtus server may be running in HTTP mode behind a HTTPS proxy,
+in which case Location might start with http:// even though you POSTed to
+https://.  IT MAY BE ADVISABLE to parse Location to obtain the fileId portion
+and tack that onto your programmed brewtus endpoint.
+
+The POST will also return a Set-Cookie header if brewtus is running behind
+a load balancer.  The client should look for a Set-Cookie header and if
+present, parse the cookies found in that header and keep them around,
+associated with the fileId (or Location) for this file.  You will need to
+return these cookies in a Cookie header on subsequent PATCH, HEAD and
+DELETE requests.
+
+PATCH
+-----
+
+The PATCH request is used to send chunks of bytes to the brewtus server
+to actually upload the file.  It looks like:
+
+PATCH /files/6d7e4260-463c-11e3-9f1e-5b82aae08307
+Content-Type: application/offset+octet-stream
+Cookie: (cookies)
+Content-Length: 204800
+Offset: 409600
+
+
+(bytes)
+
+The Offset header is the offset into the file that Content-Length bytes
+should be written.  The actual bytes are in the body of the PATCH request.
+The Cookie header should be set to the cookies you received from the original
+POST for this fileId.
+
+HEAD
+----
+
+A HEAD request can be made to ask the server what its current offset is for
+a particular fileId:
+
+HEAD /files/6d7e4260-463c-11e3-9f1e-5b82aae08307
+Content-Type: application/offset+octet-stream
+Cookie: (cookies)
+
+It will return the current offset in a Offset header.
+
+DELETE
+------
+
+A DELETE request can be made to cancel an upload, telling the server to
+delete any persistent information about the file, and the file itself:
+
+DELETE /files/6d7e4260-463c-11e3-9f1e-5b82aae08307
+Content-Type: application/offset+octet-stream
 

@@ -1,0 +1,17 @@
+User Management
+---------------
+
+A file upload client in the Viblio system must be able to authenticate
+a user and obtain a user "uuid" before uploading a file associated with
+that user.
+
+Some types of client may also need to create new users.  Both of these
+activities are described in this document.
+
+Authentication
+--------------
+
+
+New Account Creation
+--------------------
+
