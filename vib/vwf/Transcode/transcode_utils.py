@@ -63,6 +63,7 @@ def move_atom( media_uuid, filename ):
     cmd = '/usr/local/bin/qtfaststart %s' % filename
     log.info( cmd )
     ( status, output ) = commands.getstatusoutput( cmd )
+    output = output.decode( 'utf-8' )
     if status != 0 or not os.path.isfile( filename ):
         log.warning( json.dumps( {
                     'media_uuid' : media_uuid,
@@ -125,6 +126,8 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                 'message' : "Running FFMPEG command %s" % cmd
                 } ) )
     ( status, output ) = commands.getstatusoutput( cmd )
+    output = output.decode( 'utf-8' )
+
     log.debug( json.dumps( {
                 'media_uuid' : media_uuid,
                 'message' : "FFMPEG command output was: %s" % output
@@ -206,8 +209,8 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
                     'message' : "Running command %s to generate thumbnail for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs )
                     } ) )
 
-        log.info( 'Executing poster generation command: '+ cmd )
         ( status, output ) = commands.getstatusoutput( cmd )
+        output = output.decode( 'utf-8' )
 
         log.debug( json.dumps( {
                     'media_uuid' : media_uuid,
@@ -228,6 +231,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
                         } ) )
 
             ( status, output ) = commands.getstatusoutput( cmd )
+            output = output.decode( 'utf-8' )
 
             log.debug( json.dumps( {
                         'media_uuid' : media_uuid,
