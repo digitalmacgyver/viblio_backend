@@ -20,12 +20,13 @@ import vib.vwf.Transcode.transcode_utils as tutils
 log = logging.getLogger( __name__ )
 
 # DEBUG 
-# 1) Add logging
-# 2) Remove temporary files / rename them to errors
-# 2) Add 'original' MA target to worker for original file
 # 3) Test two different targets (med / low)
 # 4) Test each rotation, > 16:9, 16:9, <16:9
 # 5) Test additional poster targets
+
+# 6) Configure supervisor processes (change face detector count while we're at it)
+
+# 7) Add "original" asset type to database stuff, regen scripts.
 
 class Transcode( VWorker ):
     # This line controls how we interact with SWF, and changes here
@@ -35,7 +36,8 @@ class Transcode( VWorker ):
     def run_task( self, options ):
         '''Transcode a video.  Input options are:
         { media_uuid, user_uuid, input_file : { s3_bucket, s3_key },
-          metadata_uri, 
+          metadata_uri,
+          original_uuid,
           outputs : [ { output_file : { s3_bucket, s3_key},
                       format : "mp4", 
                       max_video_bitrate: 1500,
@@ -57,37 +59,58 @@ class Transcode( VWorker ):
             log.info( json.dumps( {
                         'media_uuid' : media_uuid,
                         'user_uuid' : user_uuid,
+                        'message' : "Starting transcode for user %s media %s" % ( user_uuid, media_uuid )
                     } ) )
-
-            # LOGIC:
-            # 1. Download file
-            # 2. Generate exif
-            # 3. For each: transcode / genereate
-            # 4. Update original media with recording date, lat/lng, 
 
             # Download to our local disk.
             original_file = config.transcode_dir + "/"  + media_uuid
+            log.debug( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Downloading original file from s3 for user %s media %s" % ( user_uuid, media_uuid )
+                    } ) )
+
             s3.download_file( original_file, input_file['s3_bucket'], input_file['s3_key'] )
 
+            log.debug( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Generating exif for original file for user %s media %s" % ( user_uuid, media_uuid )
+                    } ) )
             exif = tutils.get_exif( media_uuid, original_file )
 
             try:
+                log.debug( json.dumps( {
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "Running qt-faststart for user %s media %s" % ( user_uuid, media_uuid )
+                    } ) )
                 tutils.move_atom( media_uuid, original_file )
-            except:
-                pass
+            except Exception as e:
+                log.warning( json.dumps( {
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "Exception thrown while running qt-faststart for user %s media %s : %s" % ( user_uuid, media_uuid, e )
+                    } ) )
+                # Explicitly do nothing upon error in this case.
             
             # Process files into S3
+            log.debug( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Transcoding and storing the result in S3 for user %s media %s : " % ( user_uuid, media_uuid )
+                        } ) )
             outputs = tutils.transcode_and_store( media_uuid, original_file, outputs, exif )
 
             orm = vib.db.orm.get_session()
 
-            log.info( 'Getting the current user from the database for uid: %s' % user_uuid )
-
+            # Get the media object to which all our subordinate files relate.
             media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
 
             media.lat = exif['lat']
             media.lng = exif['lng']
 
+            # Calculate the recording date for video versions.
             recording_date = datetime.datetime.now()
             if exif['create_date'] and exif['create_date'] != '' and exif['create_date'] != '0000:00:00 00:00:00':
                 recording_date = exif['create_date']
@@ -95,21 +118,33 @@ class Transcode( VWorker ):
             log.debug( 'Exif data for create was ' + exif['create_date'] )    
             media.recording_date = recording_date
 
+            original = orm.query( MediaAssets ).filter( MediaAssets.uuid == options['original_uuid'] ).one()
+            original.mimetype = 'video/%s' % exif.get( 'format', 'mp4' )
+
+            # We will return to the next stage the key/bucket of the
+            # "main" asset_type.
             return_bucket = None
             return_key = None
 
             for output in outputs:
-                # Main media_asset
-                log.info( 'Generating row for %s media_asset' % output['asset_type'] )
+                output_uuid = str( uuid.uuid4() )
+
+                log.info( json.dumps( {
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'asset_type' : output['asset_type'],
+                            'output_uuid' : output_uuid,
+                            'message' : "Creating video database row of uuid %s for user %s, media %s of asset_type %s and uri %s" % ( output_uuid, user_uuid, media_uuid, output['asset_type'], output['output_file']['s3_key'] )
+                    } ) )
+
                 if output['asset_type'] == 'main':
                     return_bucket = output['output_file']['s3_bucket']
                     return_key = output['output_file']['s3_key']
+
                 video_asset = MediaAssets( 
-                    uuid         = str( uuid.uuid4() ),
+                    uuid         = output_uuid,
                     asset_type   = output['asset_type'],
                     mimetype     = 'video/%s' % exif.get( 'format', 'mp4' ),
-                    # DEBUG - we don't have this here, it is in Brewtus?!?!?
-                    # DEBUG - does this even make sense for any asset type other than main?
                     metadata_uri = options['metadata_uri'],
                     bytes        = os.path.getsize( output['output_file_fs'] ),
                     uri          = output['output_file']['s3_key'],
@@ -118,11 +153,19 @@ class Transcode( VWorker ):
                 media.assets.append( video_asset )
 
                 for thumbnail in output['thumbnails']:
-                    # Thumbnail media_asset
-                    log.info( 'Generating row for thumbnail media_asset' )
+                    thumbnail_uuid = str( uuid.uuid4() )
+
+                    log.info( json.dumps( {
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'asset_type' : thumbnail['label'],
+                                'output_uuid' : thumbnail_uuid,
+                                'message' : "Creating image database row of uuid %s for user %s, media %s of asset_type %s and uri %s" % ( thumbnail_uuid, user_uuid, media_uuid, thumbnail['label'], thumbnail['output_file']['s3_key'] )
+                                } ) )
+
                     thumbnail_size = thumbnail.get( 'size', "320x180" )
                     thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
-                    thumbnail_asset = MediaAssets( uuid       = str(uuid.uuid4()),
+                    thumbnail_asset = MediaAssets( uuid       = thumbnail_uuid,
                                                    asset_type = thumbnail['label'],
                                                    mimetype   = 'image/%s' % thumbnail.get( 'format', 'png' ),
                                                    bytes      = os.path.getsize( thumbnail['output_file_fs'] ),
@@ -133,11 +176,16 @@ class Transcode( VWorker ):
                                                    view_count = 0 )
                     media.assets.append( thumbnail_asset )
 
+            log.info( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Committing rows to database for user %s, media %s" % ( user_uuid, media_uuid )
+                        } ) )
             orm.commit()
 
-            # DEBUG - delete everything.
+            self.cleanup_files( media_uuid, user_uuid, original_file, outputs )
             
-            return { 
+            return_value = { 
                 'media_uuid' : media_uuid,
                 'user_uuid' : user_uuid,
                 'output_file' : {
@@ -146,7 +194,76 @@ class Transcode( VWorker ):
                     }
                 }
 
+            return return_value
+
         except Exception as e:
-            log.exception( "OOps: %s" % e )
+            log.error( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Exception while transcoding video for user %s, media %s, error was: %s" % ( user_uuid, media_uuid, e )
+                        } ) )
+            self.cleanup_files( media_uuid, user_uuid, original_file, outputs )
             raise
 
+    def cleanup_files( self, media_uuid, user_uuid, original_file, outputs ):
+        return True
+        try:
+            # Delete the original file
+            if os.path.exists( original_file ):
+                log.debug( json.dumps( {
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "Deleting temporary file %s for user %s, media %s" % ( original_file, user_uuid, media_uuid )
+                            } ) )
+                os.remove( original_file )
+
+                exif_file = os.path.splitext( original_file )[0] + '_exif.json'
+                
+                if os.path.exists( exif_file ):
+                    log.debug( json.dumps( {
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'message' : "Deleting temporary file %s for user %s, media %s" % ( exif_file, user_uuid, media_uuid )
+                                } ) )
+                    os.remove( exif_file )
+                    
+            # Delete file files created and stored in the outputs data
+            # structure.
+            for output in outputs:
+                if 'output_file_fs' in output:
+                    if os.path.exists( output['output_file_fs'] ):
+                        log.debug( json.dumps( {
+                                    'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : "Deleting temporary file %s for user %s, media %s" % ( output['output_file_fs'], user_uuid, media_uuid )
+                                } ) )
+                        os.remove( output['output_file_fs'] )
+
+                        exif_file = os.path.splitext( output['output_file_fs'] )[0] + '_exif.json'
+                
+                        if os.path.exists( exif_file ):
+                            log.debug( json.dumps( {
+                                        'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : "Deleting temporary file %s for user %s, media %s" % ( output['output_file_fs'], user_uuid, media_uuid )
+                                        } ) )
+                            os.remove( exif_file )
+
+                for thumbnail in output['thumbnails']:
+                    if 'output_file_fs' in thumbnail:
+                        if os.path.exists( thumbnail['output_file_fs'] ):
+                            log.debug( json.dumps( {
+                                        'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : "Deleting temporary file %s for user %s, media %s" % ( thumbnail['output_file_fs'], user_uuid, media_uuid )
+                                        } ) )
+                            os.remove( thumbnail['output_file_fs'] )
+
+        except Exception as e:
+            log.error( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'user_uuid' : user_uuid,
+                        'message' : "Exception while cleaning up temporary files for user %s, media %s, error was: %s" % ( user_uuid, media_uuid, e )
+                        } ) )
+            raise
+            

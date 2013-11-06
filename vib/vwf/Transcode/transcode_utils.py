@@ -10,12 +10,12 @@ log = logging.getLogger( __name__)
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-
 def get_exif( media_uuid, filename ):   
     try:
         exif_file = os.path.splitext( filename )[0] + '_exif.json'
         command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + filename
         log.info( json.dumps( {
+                    'media_uuid' : media_uuid,
                     'message' : 'Running exif extraction command: %s' % command
                     } ) )
         os.system( command )
@@ -52,7 +52,8 @@ def get_exif( media_uuid, filename ):
 
     except Exception as e:
         log.error( json.dumps( {
-                    'EXIF extraction failed, error was: %s' % e
+                    'media_uuid' : media_uuid,
+                    'message' : 'EXIF extraction failed, error was: %s' % e
                     } ) )
         raise
 
@@ -86,8 +87,6 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     rotation = exif['rotation']
     mimetype = exif['mime_type']
 
-    # DEBUG - Presently we ignore the size directive.
-    
     ffopts = ' -c:a libfdk_aac '
     
     log_message = ''
@@ -104,7 +103,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     else:
         log_message = 'Video is not rotated.'
 
-    log.info( json.dumps( {
+    log.debug( json.dumps( {
                 'media_uuid' : media_uuid,
                 'message' : log_message
                 } ) )
@@ -145,11 +144,19 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
 
     # Generage posters and upload to S3
     for idx, output in enumerate( outputs ):
+        log.info( json.dumps( {
+                    'media_uuid' : media_uuid,
+                    'message' : "Uploading video for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, output_files_fs[idx], output['output_file']['s3_bucket'], output['output_file']['s3_key'] )
+                    } ) )
         s3.upload_file( output_files_fs[idx], output['output_file']['s3_bucket'], output['output_file']['s3_key'] )
 
         thumbnails = generate_thumbnails( media_uuid, output_files_fs[idx], output['thumbnails'] )
         output['thumbnails'] = thumbnails
         for idx, thumbnail in enumerate( output['thumbnails'] ):
+            log.info( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'message' : "Uploading thumbnail for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
+                        } ) )
             s3.upload_file( thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
 
     return outputs
@@ -170,7 +177,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
     # DEBUG - for the time being we support only the first element of
     # the "times" key of the thumbnails data structure.
 
-    for thumbnail in thumbnails:
+    for inx, thumbnail in enumerate( thumbnails ):
         time = thumbnail['times'][0]
 
         ffmpeg_opts = ' -vframes 1 '
@@ -178,7 +185,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
         thumbnail_size = thumbnail.get( 'size', "320x180" )
         thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
         thumbnail_x = int( thumbnail_x )
-        thumbanil_y = int( thumbnail_y )
+        thumbnail_y = int( thumbnail_y )
         thumbnail_aspect_ratio = float( thumbnail_x ) / float( thumbnail_y )
 
         if video_x and video_y:
@@ -191,23 +198,51 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
         else:
             ffmpeg_opts += ' -vf scale=%s:%s ' % ( thumbnail_x, thumbnail_y )
 
-        thumbnail_file_fs = config.transcode_dir + "/" + media_uuid + "_%s.%s" % ( thumbnail['label'], thumbnail.get( 'format', 'png' ) )
+        thumbnail_file_fs = config.transcode_dir + "/" + media_uuid + "_%s_%s.%s" % ( thumbnail['label'], idx, thumbnail.get( 'format', 'png' ) )
         cmd = '/usr/local/bin/ffmpeg -y -ss %s -i %s %s %s' %( time, input_file_fs, ffmpeg_opts, thumbnail_file_fs )
-        thumbnail['output_file_fs'] = thumbnail_file_fs 
+
+        log.info( json.dumps( {
+                    'media_uuid' : media_uuid,
+                    'message' : "Running command %s to generate thumbnail for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs )
+                    } ) )
 
         log.info( 'Executing poster generation command: '+ cmd )
         ( status, output ) = commands.getstatusoutput( cmd )
-        log.debug( 'Command output was: ' + output )
+
+        log.debug( json.dumps( {
+                    'media_uuid' : media_uuid,
+                    'message' : "Thumbnail command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, output )
+                    } ) )
+
         if status != 0 or not os.path.isfile( thumbnail_file_fs ):
-            log.warning( 'Failed to generate poster with command: %s' % cmd )
+            log.warning( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'message' : "Failed to generate scaled thumbnail for media_uuid %s, video file %s with command %s" % ( media_uuid, input_file_fs, cmd )
+                        } ) )
 
             cmd = '/usr/local/bin/ffmpeg -y -ss %s -i %s -vframes 1 -vf scale=%s:%s %s' %( time, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_file_fs )
-            log.info( 'Executing safer poster generation command: '+ cmd )
+
+            log.info( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'message' : "Running safer command %s to generate thumbnail for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs )
+                        } ) )
+
             ( status, output ) = commands.getstatusoutput( cmd )
-            log.debug( 'Command output was: ' + output )            
+
+            log.debug( json.dumps( {
+                        'media_uuid' : media_uuid,
+                        'message' : "Thumbnail command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, output )
+                        } ) )
+
             if status != 0 or not os.path.isfile( thumbnail_file_fs ):
+                log.error( json.dumps( {
+                            'media_uuid' : media_uuid,
+                            'message' : "Failed to generate thumbnail for media_uuid %s, video file %s with command %s" % ( media_uuid, input_file_fs, cmd )
+                            } ) )
                 raise Exception( 'Failed to generate poster with command: %s' % cmd )
             else:
-                log.debug( 'ffmpeg command returned successful completion status.' )        
-        
+                thumbnail['output_file_fs'] = thumbnail_file_fs 
+        else:
+            thumbnail['output_file_fs'] = thumbnail_file_fs 
+
     return thumbnails
