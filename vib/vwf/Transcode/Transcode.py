@@ -204,7 +204,6 @@ class Transcode( VWorker ):
             raise
 
     def cleanup_files( self, media_uuid, user_uuid, original_file, outputs ):
-        return True
         try:
             # Delete the original file
             if os.path.exists( original_file ):
