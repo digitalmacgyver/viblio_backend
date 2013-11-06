@@ -13,7 +13,7 @@ config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 def get_exif( media_uuid, filename ):   
     try:
-        exif_file = filename + '_exif.json'
+        exif_file = os.path.splitext( filename )[0] + '_exif.json'
         command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + filename
         log.info( json.dumps( {
                     'message' : 'Running exif extraction command: %s' % command
@@ -39,7 +39,7 @@ def get_exif( media_uuid, filename ):
         image_width  = exif_data.get( 'ImageWidth', None)
         image_height = exif_data.get( 'ImageHeight', None)
 
-        return { 'file_ext'    : file_ext, 
+        return {  'file_ext'    : file_ext, 
                   'mime_type'   : mime_type, 
                   'lat'         : lat, 
                   'lng'         : lng, 
@@ -84,7 +84,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     '''
 
     rotation = exif['rotation']
-    mimetype = exif['mimetype']
+    mimetype = exif['mime_type']
 
     # DEBUG - Presently we ignore the size directive.
     
@@ -101,6 +101,8 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     elif rotation == '270':
         log_message = 'Video is rotated 270 degrees, rotating.'
         ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
+    else:
+        log_message = 'Video is not rotated.'
 
     log.info( json.dumps( {
                 'media_uuid' : media_uuid,
@@ -113,7 +115,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
         output_cmd += ffopts
         video_bit_rate = " -b:v %sk " % output.get( 'max_video_bitrate', 1500 )
         audio_bit_rate = " -b:a %sk " % output.get( 'audio_bitrate', 160 )
-        output_file_fs = " %s/%s_%s.%s " % ( config.transcode_dir, media_uuid, idx, output.get( 'format', 'mp4' ) )
+        output_file_fs = "%s/%s_%s.%s" % ( config.transcode_dir, media_uuid, idx, output.get( 'format', 'mp4' ) )
         output_cmd += video_bit_rate + audio_bit_rate + output_file_fs
         output_files_fs.append( output_file_fs )
         output['output_file_fs'] = output_file_fs
@@ -121,7 +123,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s' % ( input_filename, output_cmd )
     log.info( json.dumps( {
                 'media_uuid' : media_uuid,
-                'message' : "Running FFMPEG command %s" % output_cmd
+                'message' : "Running FFMPEG command %s" % cmd
                 } ) )
     ( status, output ) = commands.getstatusoutput( cmd )
     log.debug( json.dumps( {
@@ -160,10 +162,10 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
     thumbnails data structure that includes output_file_fs elements
     for each thumbnail.'''
 
-    exif = get_exif( input_file_fs )
+    exif = get_exif( media_uuid, input_file_fs )
 
-    video_x = exif['width']
-    video_y = exif['height']
+    video_x = int( exif['width'] )
+    video_y = int( exif['height'] )
 
     # DEBUG - for the time being we support only the first element of
     # the "times" key of the thumbnails data structure.
@@ -171,11 +173,13 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
     for thumbnail in thumbnails:
         time = thumbnail['times'][0]
 
-        ffmpeg_opts = ' -vframes 1 ' % time
+        ffmpeg_opts = ' -vframes 1 '
 
-        thumbnail_size = thumbnails.get( 'size', "320x180" )
+        thumbnail_size = thumbnail.get( 'size', "320x180" )
         thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
-        thumbnail_aspect_ratio = thumbnail_x / float( thumbnail_y )
+        thumbnail_x = int( thumbnail_x )
+        thumbanil_y = int( thumbnail_y )
+        thumbnail_aspect_ratio = float( thumbnail_x ) / float( thumbnail_y )
 
         if video_x and video_y:
             video_aspect_ratio = video_x / float( video_y )

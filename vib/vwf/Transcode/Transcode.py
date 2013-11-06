@@ -75,7 +75,7 @@ class Transcode( VWorker ):
 
             log.info( 'Getting the current user from the database for uid: %s' % user_uuid )
 
-            media = orm.query( Media ).filter_by( Media.uuid == media_uuid ).one()
+            media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
 
             media.lat = exif['lat']
             media.lng = exif['lng']
@@ -87,16 +87,22 @@ class Transcode( VWorker ):
             log.debug( 'Exif data for create was ' + exif['create_date'] )    
             media.recording_date = recording_date
 
+            return_bucket = None
+            return_key = None
+
             for output in outputs:
                 # Main media_asset
                 log.info( 'Generating row for %s media_asset' % output['asset_type'] )
+                if output['asset_type'] == 'main':
+                    return_bucket = output['output_file']['s3_bucket']
+                    return_key = output['output_file']['s3_key']
                 video_asset = MediaAssets( 
                     uuid         = str( uuid.uuid4() ),
                     asset_type   = output['asset_type'],
                     mimetype     = 'video/%s' % exif.get( 'format', 'mp4' ),
                     # DEBUG - we don't have this here, it is in Brewtus?!?!?
                     # DEBUG - does this even make sense for any asset type other than main?
-                    metadata_uri = outputs['metadata_uri'],
+                    metadata_uri = options['metadata_uri'],
                     bytes        = os.path.getsize( output['output_file_fs'] ),
                     uri          = output['output_file']['s3_key'],
                     location     = 'us',
@@ -112,8 +118,8 @@ class Transcode( VWorker ):
                                                    asset_type = thumbnail['label'],
                                                    mimetype   = 'image/%s' % thumbnail.get( 'format', 'png' ),
                                                    bytes      = os.path.getsize( thumbnail['output_file_fs'] ),
-                                                   width      = thumbnail_x, 
-                                                   height     = thumbnail_y,
+                                                   width      = int( thumbnail_x ), 
+                                                   height     = int( thumbnail_y ),
                                                    uri        = thumbnail['output_file']['s3_key'],
                                                    location   = 'us',
                                                    view_count = 0 )
@@ -123,7 +129,16 @@ class Transcode( VWorker ):
 
             # DEBUG - delete everything.
             
+            return { 
+                'media_uuid' : media_uuid,
+                'user_uuid' : user_uuid,
+                'output_file' : {
+                    's3_bucket' : return_bucket,
+                    's3_key' : return_key
+                    }
+                }
+
         except Exception as e:
-            # DEBUG go something
-            pass
+            log.exception( "OOps: %s" % e )
+            raise
 

@@ -1,5 +1,6 @@
 import boto
 from boto.s3.key import Key
+import json
 import logging
 from logging import handlers
 
@@ -26,6 +27,7 @@ log.addHandler( consolelog )
 def upload_file( filename, bucket, key ):
     '''Upload the file at filename to s3 in bucket/key'''
     try:
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
         bucket = s3.get_bucket( bucket )
         k = Key( bucket )
 
@@ -46,6 +48,7 @@ def upload_file( filename, bucket, key ):
 def download_file( filename, bucket, key ):
     '''Download to the file at filename the contents of s3 in bucket/key'''
     try:
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
         bucket = s3.get_bucket( bucket )
         k = Key( bucket )
 
@@ -55,7 +58,7 @@ def download_file( filename, bucket, key ):
 
         k.key = key
 
-        k.get_contents_from_filename( filename )
+        k.get_contents_to_filename( filename )
 
     except Exception as e:
         log.error( json.dumps( { 

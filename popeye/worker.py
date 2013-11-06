@@ -25,7 +25,6 @@ import helpers
 from models import *
 sys.path.append("../utils")
 import Serialize
-import video_processing
 
 # Popeye configuration object.
 config = AppConfig( 'popeye' ).config()

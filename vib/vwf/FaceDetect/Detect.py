@@ -32,7 +32,8 @@ class Detect( VWorker ):
         
         media_uuid = options['media_uuid']
         user_uuid = options['user_uuid']
-        s3_bucket = options['s3_bucket']
+        s3_key = options['Transcode']['output_file']['s3_key']
+        s3_bucket = options['Transcode']['output_file']['s3_bucket']
 
         log.info( json.dumps( { 
                     'media_uuid' : media_uuid,
@@ -56,10 +57,10 @@ class Detect( VWorker ):
             working_dir = os.path.abspath( config.faces_dir + media_uuid )
             if not os.path.exists(working_dir):
                 os.mkdir(working_dir)
-            s3_key = media_uuid + '/' + media_uuid + '.mp4'
-            file_name = os.path.abspath( config.faces_dir + s3_key )           
-            key = bucket.get_key(s3_key)
-            key.get_contents_to_filename(file_name)
+            short_name = media_uuid + '/' + media_uuid + '.mp4'
+            file_name = os.path.abspath( config.faces_dir + short_name )           
+            key = bucket.get_key( s3_key )
+            key.get_contents_to_filename( file_name )
         except Exception as e:
             log.error( json.dumps( { 
                     'media_uuid' : media_uuid,
