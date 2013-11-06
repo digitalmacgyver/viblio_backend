@@ -19,6 +19,14 @@ import vib.vwf.Transcode.transcode_utils as tutils
 
 log = logging.getLogger( __name__ )
 
+# DEBUG 
+# 1) Add logging
+# 2) Remove temporary files / rename them to errors
+# 2) Add 'original' MA target to worker for original file
+# 3) Test two different targets (med / low)
+# 4) Test each rotation, > 16:9, 16:9, <16:9
+# 5) Test additional poster targets
+
 class Transcode( VWorker ):
     # This line controls how we interact with SWF, and changes here
     # must be made in coordination with VPWorkflow.py
