@@ -1,0 +1,107 @@
+Viblio File Upload Protocol
+---------------------------
+
+The Viblio file upload protocol is based on the "tus" protocol, described
+in its original form here: http://tus.io/protocols/resumable-upload.html.
+We have made various modifications to better suit our environment and 
+requirements.
+
+The server side of the protocol is implemented with NodeJS in the form
+of a server called "brewtus".  That code started with 
+https://github.com/vayam/brewtus and has been modified in ways described
+in this document.
+
+We have a command line, reference implementation of a client that can upload
+files to brewtus called "tuspy", which started out as 
+https://github.com/vayam/tuspy and has been modified to match our changes
+to brewtus.
+
+High Level Flow
+---------------
+
+A client initiates an upload by doing a POST to /files, with some meta data
+in the headers of the request and more meta data in the post body.  The
+server returns a "fileId" which must be used in subsequent operations.
+
+The client then does a series of PATCH requests to /files/fileId with a file
+offset and a length specified in the header, and the file data in the body.
+The length is arbitrary, and indeed offset can be zero and length equal to
+the total size in bytes of the file, and the entire file transmitted in the
+body of a single PATCH.  In practice however, one would choose a chunk size
+that takes network utilization into account, or allows one to transfer multiple
+files at the same time.
+
+The client can optionally make a HEAD request to /files/fileId to get the
+server's notion of the current offset of the file.  If such a HEAD request
+returns an offset equal to the length of the file transmmitted, then you
+know you are done.
+
+The client can make a DELETE request to /files/fileId to delete a file in
+progress.  This can and should be used in response to a user cancelling
+an upload in progress.
+
+Resumability
+------------
+
+The TUS protocol is designed to be resumable.  If a client retains sufficient 
+state such that it can be rebooted and know that uploads were in progress,
+it can query the server with HEAD requests to determine where to resume sending
+data from a particular file.  The server will retain its idea of where it is
+in a file indefinitey, so long as its local file system remains intact.
+
+The server may become unavailable for whatever reason.  The client can 
+continue to periodically ping the server until connectivity resumes, and
+can query the server with HEAD requests to determine where to pick up.  Such
+a HEAD request might return a 404 response, in which case a file may need to
+be retransmitted from the beginning.
+
+Cookies
+-------
+
+One thing we have added to the TUS protocol are session cookies to facilitate
+load balancing and scaling of multiple brewtus servers behind a single URL.
+Because brewtus writes file chunks into a local file system, any file upload
+must start and complete on the same brewtus instance.  The fileId might have
+been used to identify unqiue sessions, however our load balancing solution
+requires the use of cookies.  
+
+On the initial POST to /files, the client should not send any cookies.  This
+actually tells the load balancer that this is the start of a new session.
+The response from the server will include Set-Cookie header(s) that the
+client should retain, associated with the fileId that also comes back.  Then
+on every subsequent PATCH, HEAD or DELETE for a particular fileId, the client
+must include the Cookie header with the cookies received for that fileId in
+the original POST.  
+
+For a client to be able to resume uploading files after a reboot, the client
+must persistantly retain the (filename - fileId - cookies) relation across
+reboots (or sleeps, hibernation, etc).
+
+HTTP/HTTPS
+----------
+
+The brewtus server may be behind HTTP or HTTPS.  On development machines, the
+HTTPS certs may be self signed, and the client should still operate.  Cookies
+will have the Secure flag set when being returned from HTTPS.
+
+For testability, the brewtus server endpoint should be changable by the
+development team, and may point to HTTP or HTTPS and SSL certs may or may
+not be strictly valid (self signed or mismatching domains).
+
+AUTHENTICATION
+--------------
+
+While not stricly part of the TUS protocol, nor part of the client <=> brewtus
+communication path, a client in the Viblio environment must authenticate
+against another server in order to obtain a user UUID which is required as
+part of the meta data sent on a new file upload.  The brewtus server needs
+this user UUID in order to associate an uploaded file with a user account.
+
+Detailed Request/Response Descriptions
+--------------------------------------
+
+POST
+----
+
+To begin a file upload, the client will send a POST request to /files.
+
