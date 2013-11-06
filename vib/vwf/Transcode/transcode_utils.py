@@ -76,11 +76,11 @@ def move_atom( media_uuid, filename ):
     return
 
 def transcode_and_store( media_uuid, input_filename, outputs, exif ):
-    '''Takes in a media_id, intput filename on the filesystem, the
+    '''Takes in a media_id, input filename on the filesystem, the
     outputs data structure sent to a Transcode job, and the exif data
     associated with the input filename.
 
-    Returns the outputs data structure agumented with _fs locations
+    Returns the outputs data structure augmented with _fs locations
     for the generated files.
     '''
 
@@ -112,7 +112,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     output_files_fs = []
     for idx, output in enumerate( outputs ):
         output_cmd += ffopts
-        video_bit_rate = " -b:v %sk " % output.get( 'max_video_bitrate', 1500 )
+        video_bit_rate = " -crf 22 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
         audio_bit_rate = " -b:a %sk " % output.get( 'audio_bitrate', 160 )
         output_file_fs = "%s/%s_%s.%s" % ( config.transcode_dir, media_uuid, idx, output.get( 'format', 'mp4' ) )
         output_cmd += video_bit_rate + audio_bit_rate + output_file_fs
@@ -142,7 +142,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                     } ) )
         raise Exception( 'Failed to generate transcoded video with: %s' % cmd )
 
-    # Generage posters and upload to S3
+    # Generate posters and upload to S3
     for idx, output in enumerate( outputs ):
         log.info( json.dumps( {
                     'media_uuid' : media_uuid,
@@ -177,7 +177,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
     # DEBUG - for the time being we support only the first element of
     # the "times" key of the thumbnails data structure.
 
-    for inx, thumbnail in enumerate( thumbnails ):
+    for idx, thumbnail in enumerate( thumbnails ):
         time = thumbnail['times'][0]
 
         ffmpeg_opts = ' -vframes 1 '

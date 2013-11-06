@@ -315,47 +315,6 @@ class Worker( Background ):
                                                 's3_key' : "%s_thumbnail.png" % ( files['main']['key'] )
                                                 }
                                             } ]
-                                    },
-                                          { 
-                                    'output_file' : {
-                                        's3_bucket' : config.bucket_name,
-                                        's3_key' : "%s_output_small.mp4" % ( files['main']['key'] ),
-                                        },
-                                    'format' : 'mp4',
-                                    'max_video_bitrate' : 150,
-                                    'audio_bitrate' : 44,
-                                    'asset_type' : 'video',
-                                    'thumbnails' : [ {
-                                            'times' : [ 0.5 ],
-                                            'size': "320x180",
-                                            'label' : 'image',
-                                            'format' : 'png',
-                                            'output_file' : {
-                                                's3_bucket' : config.bucket_name,
-                                                's3_key' : "%s_poster.png" % ( files['main']['key'] )
-                                                }
-                                            },
-                                                     {
-                                            'times' : [ 0.5 ],
-                                            'size': "128x128",
-                                            'label' : 'image',
-                                            'format' : 'png',
-                                            'output_file' : {
-                                                's3_bucket' : config.bucket_name,
-                                                's3_key' : "%s_thumbnail.png" % ( files['main']['key'] )
-                                                }
-                                            },
-                                                     {
-                                            'times' : [ 0.5 ],
-                                            'size': "600x200",
-                                            'label' : 'image',
-                                            'format' : 'jpeg',
-                                            'output_file' : {
-                                                's3_bucket' : config.bucket_name,
-                                                's3_key' : "%s_image.jpg" % ( files['main']['key'] )
-                                                }
-                                            }
-                                          ]
                                     }
                                           ]
                             } ),

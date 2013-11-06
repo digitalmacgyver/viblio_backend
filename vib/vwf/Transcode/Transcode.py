@@ -20,9 +20,7 @@ import vib.vwf.Transcode.transcode_utils as tutils
 log = logging.getLogger( __name__ )
 
 # DEBUG 
-# 3) Test two different targets (med / low)
 # 4) Test each rotation, > 16:9, 16:9, <16:9
-# 5) Test additional poster targets
 
 # 6) Configure supervisor processes (change face detector count while we're at it)
 
