@@ -1,3 +1,6 @@
+alter table media add column status VARCHAR(32) NULL DEFAULT NULL after lng;
+
+update media set status = 'FaceRecognizeComplete' where id in ( select media_id from media_assets where asset_type = 'main' );
 
 ===
 

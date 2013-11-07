@@ -100,6 +100,7 @@ class Transcode( VWorker ):
 
             media.lat = exif['lat']
             media.lng = exif['lng']
+            media.status = self.task_name + 'Complete'
 
             # Calculate the recording date for video versions.
             recording_date = datetime.datetime.now()

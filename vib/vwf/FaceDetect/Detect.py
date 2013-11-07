@@ -110,6 +110,7 @@ class Detect( VWorker ):
                     'user_uuid'  : user_uuid,
                     'message' : "Face Detect didn't find faces for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                     } ) )
+            db_utils.update_media_status( media_uuid, self.task_name + 'Complete' ) 
             return faces_info
         else:
             # Process faces
@@ -173,41 +174,8 @@ class Detect( VWorker ):
                     } ) )
             raise Exception( "Output too large" )
         else:
+            db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )         
             return faces_info
-        
-        
-        # Logging is set up to log to syslog in the parent VWorker class.
-        # 
-        # In turn syslog is set up to go to our Loggly cloud logging
-        # server on our servers.
-        #
-        # Loggly likes JSON formatted log messages for parsability.
-        #
-        # Example of how to log, send in a JSON to the logger.  Always
-        # include media_uuid and user_uuid if they are in scope /
-        # sensible, and always include a message.  Include other keys
-        # you'd like to search on when dealing with that message
-        # (e.g. s3_key, track_id, whatever)
-        log.info( json.dumps( {
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'message' : 'A log message from the face detector.'
-                    } ) )
 
-
-        print "Face detection inputs are:"
-        pp = pprint.PrettyPrinter( indent=4 )
-        pp.pprint( options )
-        print "Doing face detection stuff!"
-
-        recoverable_error = False
-        catastrophic_error = False
-        if catastrophic_error:
-            return { 'ACTIVITY_ERROR' : True, 'retry' : False }
-        elif recoverable_error:
-            return { 'ACTIVITY_ERROR' : True, 'retry' : True }
-        else: 
-            # As a placeholder, just pass our input back out.
-            return options
 
 

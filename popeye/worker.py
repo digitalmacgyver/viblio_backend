@@ -226,7 +226,8 @@ class Worker( Background ):
                            media_type     = 'original',
                            filename       = client_filename,
                            title          = media_title,
-                           view_count     = 0 )
+                           view_count     = 0,
+                           status         = 'PopeyeComplete' )
 
             # Associate media with user.
             user.media.append( media )
