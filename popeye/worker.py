@@ -271,13 +271,13 @@ class Worker( Background ):
         # NEW PIPELINE CALLOUT
         ################################
         try:
-            log.info( 'Making call to Video Processing Workflow external to Popeye' )
+            log.info( 'Making call to Video Processing Workflow external to Popeye, task list: %s' % ( 'VPDecider' + config.VPWSuffix + config.UniqueTaskList ) )
 
             execution = swf.WorkflowType( 
                 name = 'VideoProcessing' + config.VPWSuffix, 
                 domain = 'Viblio', version = '1.0.7' 
                 ).start( 
-                task_list = 'VPDecider' + config.VPWSuffix, 
+                task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList, 
                 input = json.dumps( { 
                             'media_uuid' : self.uuid, 
                             'user_uuid'  : self.data['info']['uid'],
