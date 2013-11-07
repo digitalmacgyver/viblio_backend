@@ -42,3 +42,14 @@ def add_media_asset_face( user_uuid, media_uuid, s3_key, byte_size, track_id, fa
         raise
     
     return True
+
+
+def update_media_status( media_uuid, status ):
+    '''Update the status of the media_uuid in question'''
+    orm = vib.db.orm.get_session()
+
+    media = orm.query( Media ).filter( Media.uuid == media_uuid )[0]
+    media.status = status
+
+    orm.commit()
+    return

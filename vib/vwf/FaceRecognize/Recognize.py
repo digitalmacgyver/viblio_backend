@@ -62,6 +62,7 @@ class Recognize( VWorker ):
                             'user_uuid' : user_uuid,
                             'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
                             } ) )
+                db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
 
             # Ensure we're the only one working on this particular
@@ -159,6 +160,7 @@ class Recognize( VWorker ):
                             'user_uuid' : user_uuid,
                             'message' : "Returning successfully"
                             } ) )
+                db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
             
         except Exception as e:

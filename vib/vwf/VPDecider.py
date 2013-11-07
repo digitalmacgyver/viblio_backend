@@ -54,11 +54,11 @@ class VPDecider( swf.Decider ):
                     } ) )
 
         # Listen for decisions in this task list.
-        history = self.poll( task_list = 'VPDecider' + config.VPWSuffix )
+        history = self.poll( task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList )
         history_events = history.get( 'events', [] )
         while 'nextPageToken' in history:
             print "Getting next page of history."
-            history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VPDecider' + config.VPWSuffix )
+            history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList )
             history_events += history.get( 'events', [] )
 
         if len( history_events ) == 0:
@@ -69,7 +69,7 @@ class VPDecider( swf.Decider ):
 
         pprint.PrettyPrinter( indent=4 ).pprint( history_events )
 
-        tasks = [ 'FaceDetect', 'FaceRecognize', 'NotifyComplete' ]
+        tasks = [ 'Transcode', 'FaceDetect', 'FaceRecognize', 'NotifyComplete' ]
 
         workflow_input = _get_workflow_input( history_events )
         media_uuid = workflow_input['media_uuid']
@@ -162,7 +162,7 @@ class VPDecider( swf.Decider ):
                             task + '-' + workflow_input['media_uuid'],
                             task + config.VPWSuffix,
                             VPW[task]['version'],
-                            task_list = VPW[task]['task_list'] + config.VPWSuffix,
+                            task_list = VPW[task]['task_list'] + config.VPWSuffix + config.UniqueTaskList,
                             input = json.dumps( task_input )
                             )
 
@@ -222,7 +222,7 @@ class VPDecider( swf.Decider ):
                             task + '-' + workflow_input['media_uuid'],
                             task + config.VPWSuffix,
                             VPW[task]['version'],
-                            task_list = VPW[task]['task_list'] + config.VPWSuffix,
+                            task_list = VPW[task]['task_list'] + config.VPWSuffix + config.UniqueTaskList,
                             input = json.dumps( task_input ),
                             schedule_to_close_timeout = schedule_to_close_timeout,
                             schedule_to_start_timeout = schedule_to_start_timeout,
@@ -249,7 +249,7 @@ class VPDecider( swf.Decider ):
                         task + '-' + workflow_input['media_uuid'],
                         task + config.VPWSuffix,
                         VPW[task]['version'],
-                        task_list = VPW[task]['task_list'] + config.VPWSuffix,
+                        task_list = VPW[task]['task_list'] + config.VPWSuffix + config.UniqueTaskList,
                         input = json.dumps( task_input )
                         )
                 else:

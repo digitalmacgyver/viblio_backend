@@ -33,6 +33,16 @@ def get_picture_contacts_for_user_uuid( user_uuid ):
 
     return result
 
+def update_media_status( media_uuid, status ):
+    '''Update the status of the media_uuid in question'''
+    orm = vib.db.orm.get_session()
+
+    media = orm.query( Media ).filter( Media.uuid == media_uuid )[0]
+    media.status = status
+
+    orm.commit()
+    return
+
 def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tracks ):
     '''For the given user_uuid, media_uuid:
     

@@ -69,6 +69,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media` (
   `view_count` INT NULL DEFAULT NULL ,
   `lat` DECIMAL(11,8) NULL DEFAULT NULL ,
   `lng` DECIMAL(11,8) NULL DEFAULT NULL ,
+  `status` VARCHAR(32) NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
   PRIMARY KEY (`id`, `user_id`) ,
@@ -1188,6 +1189,7 @@ INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`)
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('thumbnail', NULL, NULL);
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('video', NULL, NULL);
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('image', NULL, NULL);
+INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('original', NULL, NULL);
 
 COMMIT;
 

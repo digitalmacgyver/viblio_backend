@@ -38,7 +38,7 @@ class VWorker( swf.ActivityWorker ):
 
     def __init__( self, **kwargs ):
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
-        self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix
+        self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix + config.UniqueTaskList
         self.version   = VPW[self.task_name].get( 'version'  , None )
 
         super( VWorker, self ).__init__( **kwargs )
