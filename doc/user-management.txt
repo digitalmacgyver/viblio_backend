@@ -8,10 +8,136 @@ that user.
 Some types of client may also need to create new users.  Both of these
 activities are described in this document.
 
+Endpoint
+--------
+
+Presently there are two servers in our environment that are possible to
+authenticate with; our staging server at https://staging.viblio.com and our
+production server at https://viblio.com.
+
 Authentication
 --------------
 
+The user can authenticate in one of two ways, either using an email and a 
+password, or via Facebook.  Email/password:
+
+    GET /services/na/authenticate?email=email&password=password&realm=db
+
+or Facebook:
+
+    GET /services/na/authenticate?access_token=access_token&realm=facebook
+
+where for Facebook, access_token is the token you would have received from
+a client-side Facebook OAuth exchange.
+
+A successful authentication will return 200 and a JSON string in the response
+body that looks like this:
+
+    {
+       "user" : {
+          "provider" : "facebook",
+          "active" : "2013-11-03 19:50:01",
+          "provider_id" : null,
+          "accepted_terms" : null,
+          "created_date" : "2013-08-15 15:57:37",
+          "uuid" : "682DC812-05C3-11E3-839F-54DE3DA5649D",
+          "email" : "aqpeeb@gmail.com",
+          "confirmed" : null,
+          "displayname" : "Andrew Peebles",
+          "updated_date" : "2013-11-03 19:50:00"
+       }
+    }
+
+The fields you would care the most about are uuid, email and displayname.  The
+uuid field is the user's unqiue ID and is what you would exchange with the
+server on most other endpoint calls when refering to this user.
+
+The authentication session is maintained with a cookie called "va_session"
+returned to the client in the Set-Cookie header.  You should retain this
+session cookie and return it on subsequent requests to the server.
+
+Ping
+----
+
+At any time, you may determine if the session represented by your saved
+va_session cookie is still valid by calling:
+
+    GET /services/user/me
+
+If successful this request should return 200 and the same JSON struct shown
+above when authenticating.
+
+If your session is expired, you will get a 200 response, and the JSON body
+will look like:
+
+    {
+       "current_view" : "JSON",
+       "detail" : "No session or session expired.",
+       "error" : 1,
+       "message" : "Authentication Failure",
+       "code" : 401
+    }
+
+ERRORS
+------
+
+Server errors are communicated back to the client as HTTP responses that have a
+200 code!  You must examine the JSON struct in the body of the response to
+determine if there is an error and what the error was.  An error will always
+take the form of:
+
+    {
+      "error": 1,
+      "message": "error summary",
+      "detail": "this is optional and not always present",
+      "code": 401
+    }
+
+The "code" field would usually contain the HTTP standard error code that an
+error of this type would have generated, 404, 403, 500, etc.  
+
+Authentication and account creation errors specifically will look like:
+
+    { 
+      "error: 1,
+      "code": ( 400 | 401 | 403 ),
+      "message": (a string, possibly not in english, displayable to the user, but not safe to parse in your program code),
+      "detail": (a parsable string indicating the cause of the failure)
+    } 
+
+The detail string will always start with "NOLOGIN_".  The possible detail 
+strings and the corresponding english version of the message string are as 
+follows:
+
+    "NOLOGIN_NOT_IN_BETA" => "Login failed: Not registered in the beta program.",
+    "NOLOGIN_BLACKLISTED" => "Login failed: This account has been black listed.",
+    "NOLOGIN_EMAIL_NOT_FOUND" => "Login failed: Email address is not registered.",
+    "NOLOGIN_PASSWORD_MISMATCH" => "Login failed: Password does not match for email address.",
+    "NOLOGIN_MISSING_EMAIL" => "Login failed: Missing email address.",
+    "NOLOGIN_MISSING_PASSWORD" => "Login failed: Missing password.",
+    "NOLOGIN_EMAIL_TAKEN" => "Login failed: Email address already taken.",
+    "NOLOGIN_DB_FAILED" => "Login failed: Server could not create account.",
+    "NOLOGIN_XCHECK" => "Login failed: If you created your account with Facebook, please log in with Facebook.",
+    "NOLOGIN_OAUTH_FAILURE" => "Login failed: Authentication failure against social network.",
+    "NOLOGIN_UNKNOWN" => "Login failed", 
 
 New Account Creation
 --------------------
 
+The new account creation endpoint is
+
+    GET /services/na/new_user?email=email&password=password&displayname=displayname&realm=db
+
+for creating a user based on email/password credencials, and for Facebook:
+
+    GET /services/na/new_user?access_token=access_token&realm=facebook
+
+The "displayname" field is required and is usually the user's full name, but can be any string they want to be
+displayed as in the UI.  It should be validated for reasonable length, character set, etc.  The server
+does not validate it.  A successful account creation will return the same JSON struct shown above for
+a successful authentication.  A successful account creation will have already authenticated the user and
+will return a valid va_session session cookie, so you do not have to follow an account creation with
+an authentication.
+
+An unsuccessful account creation will return an error JSON struct as described above in the ERRORS section
+of this document.
