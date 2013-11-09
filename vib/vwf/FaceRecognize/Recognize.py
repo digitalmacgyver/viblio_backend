@@ -336,9 +336,19 @@ class Recognize( VWorker ):
                                 'user_uuid' : user_uuid,
                                 'track_id' : track_id,
                                 'error_code' : 'not_face',
-                                'message' : "Bad not face track %d" % track_id
+                                'message' : "Not face track %d" % track_id
                                 } ) )
-                    bad_tracks.append( track_disposition[track_id]['track'] )
+                    bad_tracks.append( { 'reason' : 'not_face', 'track' : track_disposition[track_id]['track'] } )
+
+                elif disposition == 'badface':
+                    log.warning( json.dumps( { 
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'track_id' : track_id,
+                                'error_code' : 'bad_face',
+                                'message' : "Bad face track %d" % track_id
+                                } ) )
+                    bad_tracks.append( { 'reason' : 'bad_face', 'track' : track_disposition[track_id]['track'] } )
 
                 elif disposition == 'twoface':
                     log.warning( json.dumps( { 
@@ -346,9 +356,9 @@ class Recognize( VWorker ):
                                 'user_uuid' : user_uuid,
                                 'track_id' : track_id,
                                 'error_code' : 'two_face',
-                                'message' : "Bad two face track %d" % track_id
+                                'message' : "Two face track %d" % track_id
                                 } ) )
-                    bad_tracks.append( track_disposition[track_id]['track'] )
+                    bad_tracks.append( { 'reason' : 'two_face', 'track' : track_disposition[track_id]['track'] } )
 
             elif label.startswith( 'merge_' ):
                 if value:
