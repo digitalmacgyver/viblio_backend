@@ -60,7 +60,7 @@ def _get_question_html_for_track( track, max_faces ):
             html += '<td rowspan="5" style="border-bottom: 1px solid #000;"></td>'
 
         html += '<td><input type="radio" name="answer_%d" value="%d_notface" /></td>' % ( track_id, track_id )
-        html += '<td>1. One of the images for Group %d is not a face, or is unrecognized, very blurry, or otherwise deformed</td>' % track_id
+        html += '<td>1. One of the images for Group %d is not a face</td>' % track_id
 
         html += "</tr>"
 
@@ -110,7 +110,7 @@ def get_question( tracks ):
         html += _get_question_html_for_track( track, max_faces )
     html += '</table>'
     html += form_back
-    html += html_back % ( 150*len( tracks ) + 100 ) 
+    html += html_back % ( 165*len( tracks ) + 100 ) 
     
     return html
 
