@@ -19,7 +19,7 @@ bad_images = orm.query( MediaAssets.uri,
                         ).filter( and_(
         MediaAssets.id == MediaAssetFeatures.media_asset_id,
         MediaAssetFeatures.feature_type == 'face',
-        MediaAssetFeatures.recognition_result == 'bad_track' ) )
+        MediaAssetFeatures.recognition_result == None ) )
 
 with open( 'output.csv', 'wb' ) as csvfile:
     out = csv.writer( csvfile, quoting=csv.QUOTE_MINIMAL )
