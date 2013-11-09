@@ -14,6 +14,7 @@ install:
 	-rm -rf $(ROOT)/$(LVL)/$(APP).prev
 	-mv $(ROOT)/$(LVL)/$(APP) $(ROOT)/$(LVL)/$(APP).prev
 	mkdir -p $(ROOT)/$(LVL)/$(APP)
+	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
 	tar zxf package.tar.gz -C $(ROOT)/$(LVL)/$(APP)
 	( cd $(ROOT)/$(LVL)/$(APP); npm install )
 	( cd $(ROOT)/$(LVL); chown -R www-data:www-data $(APP) )
