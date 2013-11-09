@@ -46,18 +46,18 @@ def _get_question_html_for_track( track, max_faces ):
 
     if face_count: 
         html = '<tr>'
-        html += '<td rowspan="4" style="border-bottom: 1px solid #000;">Group %d</td>' % ( track_id )
+        html += '<td rowspan="5" style="border-bottom: 1px solid #000;">Group %d</td>' % ( track_id )
 
         server = config.ImageServer
 
         for i in range( face_count ):
             face = track['faces'][i]
 
-            html += '<td rowspan="4" style="border-bottom: 1px solid #000;"><img src="%s%s" height="65" width="65" alt="Img. %s" /></td>' % ( server, face['s3_key'] , i )
+            html += '<td rowspan="5" style="border-bottom: 1px solid #000;"><img src="%s%s" height="65" width="65" alt="Img. %s" /></td>' % ( server, face['s3_key'] , i )
 
 
         for i in range( face_count, max_faces ):
-            html += '<td rowspan="4" style="border-bottom: 1px solid #000;"></td>'
+            html += '<td rowspan="5" style="border-bottom: 1px solid #000;"></td>'
 
         html += '<td><input type="radio" name="answer_%d" value="%d_notface" /></td>' % ( track_id, track_id )
         html += '<td>1. One of the images for Group %d is not a face</td>' % track_id
@@ -65,13 +65,18 @@ def _get_question_html_for_track( track, max_faces ):
         html += "</tr>"
 
         html += '<tr>'
+        html += '<td><input type="radio" name="answer_%d" value="%d_badface" /></td>' % ( track_id, track_id )
+        html += '<td>2. One of the images for Group %d is unrecognizable, very blurry, or deformed</td>' % track_id
+        html += '</tr>'
+
+        html += '<tr>'
         html += '<td><input type="radio" name="answer_%d" value="%d_twoface" /></td>' % ( track_id, track_id )
-        html += '<td>2. The faces for Group %d include two or more different people</td>' % track_id
+        html += '<td>3. The faces for Group %d include two or more different people</td>' % track_id
         html += '</tr>'
 
         html += '<tr>'
         html += '<td><input type="radio" name="answer_%d" value="%d_new" /></td>' % ( track_id, track_id )
-        html += '<td>3. Ignoring any groups that had non-faces, or multiple different people, this is the lowest numbered Group that the pictured person appears in.</td>'
+        html += '<td>4. Ignoring any groups that had non-faces, or multiple different people, this is the lowest numbered Group that the pictured person appears in.</td>'
         html += '</tr>'
 
         html += '<tr>'
@@ -79,7 +84,7 @@ def _get_question_html_for_track( track, max_faces ):
             html += '<td style="border-bottom: 1px solid #000;"></td><td style="border-bottom: 1px solid #000;"></td>'
         else:
             html += '<td style="border-bottom: 1px solid #000;"><input type="number" name="merge_%d" min="0" max="%d" step="1" style="width:30px;" /></td>' % ( track_id, track_id - 1 )
-            html += '<td style="border-bottom: 1px solid #000;">4. If none of the above were true, enter the lowest numbered Group that also has this person to the left (Ignore any groups that had non-faces, or multiple different people)</td>'
+            html += '<td style="border-bottom: 1px solid #000;">5. If none of the above were true, enter the lowest numbered Group that also has this person to the left (Ignore any groups that had non-faces, or multiple different people)</td>'
         html += '</tr>'
 
     return html
@@ -105,7 +110,7 @@ def get_question( tracks ):
         html += _get_question_html_for_track( track, max_faces )
     html += '</table>'
     html += form_back
-    html += html_back % ( 150*len( tracks ) + 100 ) 
+    html += html_back % ( 165*len( tracks ) + 100 ) 
     
     return html
 
