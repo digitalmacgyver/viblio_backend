@@ -1,0 +1,72 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: popeye
+# Required-Start: $local_fs $network $named
+# Required-Stop: $local_fs $network $named
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Popeye Startup
+### END INIT INFO 
+. /lib/lsb/init-functions
+
+SERVICE_TYPE=prod
+APPNAME=popeye
+
+_check_sw() {
+    if [ -x /usr/local/bin/check-and-install-software.pl ]; then
+	/usr/local/bin/check-and-install-software.pl \
+	    -db $SERVICE_TYPE -app $APPNAME \
+	    $*
+    else
+	return 0
+    fi
+}
+
+check_sw() {
+    # Just check if we need to upgrade and return status
+    _check_sw -check $*
+}
+
+_start() {
+    _check_sw -quiet
+    /usr/sbin/apache2ctl start
+}
+
+start() {
+    _start
+}
+
+_stop() {
+    /usr/sbin/apache2ctl stop
+}
+
+stop() {
+    _stop
+}
+
+restart() {
+    /usr/sbin/apache2ctl restart
+}
+
+# See how we were called.
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|force-reload)
+        restart
+        ;;
+    check)
+        check_sw
+	;;
+    check_quiet)
+        check_sw -quiet
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|check|check_quiet}"
+        exit 1
+esac
+exit $?
