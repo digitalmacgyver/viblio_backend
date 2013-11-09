@@ -17,12 +17,20 @@ install:
 	tar zxf package.tar.gz -C $(ROOT)/$(LVL)/$(APP)
 	( cd $(ROOT)/$(LVL)/$(APP); npm install )
 	( cd $(ROOT)/$(LVL); chown -R www-data:www-data $(APP) )
-	/etc/init.d/$(APP) restart
 
 # bump:
 # This will actually run upgrade.pl to initiate a software upgrade.  You must
 # indicate which domain to upgrade: LVL=staging or LVL=prod.  If LVL is set to
 # prod, you must be on a machine in the VPC that has access to the production
 # database.
+#
+# You can downgrade to a previous version by:
+#   upgrade.pl -db $(LVL) -app $(APP) -downgrade <older-version>
+#
 bump:
 	upgrade.pl -db $(LVL) -app $(APP) -bump -f package.tar.gz
+
+# list:
+# List our versions
+versions:
+	upgrade.pl -db $(LVL) -app $(APP) -check

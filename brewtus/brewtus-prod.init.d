@@ -33,11 +33,27 @@ fi
 
 PIDFILE=$PIDDIR/$UNIXNAME${PIDSUFFIX:+"-$PIDSUFFIX"}.pid
 
+_check_sw() {
+    if [ -x /usr/local/bin/check-and-install-software.pl ]; then
+	/usr/local/bin/check-and-install-software.pl \
+	    -db $SERVICE_TYPE -app $APPNAME \
+	    $*
+    else
+	return 0
+    fi
+}
+
+check_sw() {
+    # Just check if we need to upgrade and return status
+    _check_sw -check $*
+}
+
 check_running() {
     [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1
 }
 
 _start() {
+    _check_sw -quiet
     start-stop-daemon --start --make-pidfile --pidfile $PIDFILE \
     --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP --background \
@@ -107,11 +123,14 @@ case "$1" in
     restart|force-reload)
         restart
         ;;
-    check|check-compile)
-        check_compile
+    check)
+        check_sw
+	;;
+    check_quiet)
+        check_sw -quiet
         ;;
     *)
-        echo $"Usage: $0 {start|stop|restart|check}"
+        echo $"Usage: $0 {start|stop|restart|check|check_quiet}"
         exit 1
 esac
 exit $?
