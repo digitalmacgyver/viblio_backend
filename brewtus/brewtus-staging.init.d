@@ -48,6 +48,11 @@ check_sw() {
     _check_sw -check $*
 }
 
+check_and_install() {
+    # Check if we need to install, and if so, install and restart
+    _check_sw -check -quiet || restart
+}
+
 check_running() {
     [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1
 }
@@ -129,8 +134,11 @@ case "$1" in
     check_quiet)
         check_sw -quiet
         ;;
+    check_and_install)
+        check_and_install
+        ;;
     *)
-        echo $"Usage: $0 {start|stop|restart|check|check_quiet}"
+        echo $"Usage: $0 {start|stop|restart|check|check_quiet|check_and_install}"
         exit 1
 esac
 exit $?
