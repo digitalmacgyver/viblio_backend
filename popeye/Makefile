@@ -38,12 +38,13 @@ package:
 # This target is called by the sw installer on the target machine.  Does
 # what is required to install the new software and activate it.
 install:
+	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
+	mkdir -p $(ROOT)/$(LVL)/$(APP).next
+	tar zxf package.tar.gz -C $(ROOT)/$(LVL)/$(APP).next
+	( cd $(ROOT)/$(LVL)/$(APP).next; make install_deps )
 	-rm -rf $(ROOT)/$(LVL)/$(APP).prev
 	-mv $(ROOT)/$(LVL)/$(APP) $(ROOT)/$(LVL)/$(APP).prev
-	mkdir -p $(ROOT)/$(LVL)/$(APP)
-	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
-	tar zxf package.tar.gz -C $(ROOT)/$(LVL)/$(APP)
-	( cd $(ROOT)/$(LVL)/$(APP); make install_deps )
+	-mv $(ROOT)/$(LVL)/$(APP).next $(ROOT)/$(LVL)/$(APP)
 	( cd $(ROOT)/$(LVL); chown -R www-data:www-data $(APP) )
 
 # bump:
