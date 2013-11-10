@@ -29,7 +29,7 @@ check_sw() {
 
 check_and_install() {
     # Check if we need to install, and if so, install and restart
-    _check_sw -check -quiet || restart
+    _check_sw -check -quiet || (stop && start)
 }
 
 _start() {
