@@ -1,5 +1,5 @@
 ROOT ?= /deploy
-LVL  ?= local
+LVL  ?= staging
 APP   = popeye
 
 FILES = $(shell git ls-tree -r master --name-only)
