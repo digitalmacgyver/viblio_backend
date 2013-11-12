@@ -187,6 +187,26 @@ To create a new Activity:
 6. Create a wrapper script to run your task
 7. Create supervisor configurations for your wrapper script in vib/config/DEPLOYMENT/ and edit the supervisor-DEPLOYMENT.conf files in vib/config to include them
 
-Existing Activities
+Activities
 -------------------
+
+* [Transcode](./Transcode/README.md):
+  * Prerequisites: None
+  * Notes: 
+    * Very CPU intensive, long running.  Creates database and S3 elements for transcoded videos, posters, and thumbnails.
+    * Videos will be displayed in the UI once this phase is complete, faces will be added later
+* [FaceDetect](./FaceDetect/README.md):
+  * Prerequisites: Transcode
+  * Notes: 
+    * Very CPU intensive, long running.  Relies on external ```/deploy/vatools``` directory being installed.
+    * Faces detected here are not visible in the UI until FaceRecognize is complete, or until a sufficiently long time has passed (as defined by [rescue_orphan_faces.py](../utils/rescue_orphan_faces.py))
+* [FaceRecognize](./FaceRecognize/README.md):
+  * Prerequisites: FaceDetect
+  * Notes: 
+     * Very long running, relies on human classification via Amazon Mechanical Turk.  
+     * [Serializes](https://github.com/viblio/video_processor/wiki/Global-serialize-module) FaceRecognize activities globally on a per Viblio user basis to ensure we don't miss opportunities to recognize similar faces in videos that are being processed simultaneously
+     * Can be restarted / terminated at any time and will pick up where it left off due in part to MTurk behavior
+* [NotifyComplete](./NofifyComplete/README.md):
+  * Prerequisites: FaceRecognize
+  * Notes: Causes email to be sent and browser popup notifications
 
