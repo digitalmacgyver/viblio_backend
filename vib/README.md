@@ -37,8 +37,8 @@ Minor Modules
 Adding New Programs
 ===================
 
-There are some conventions for applications added to the vib
-repository.
+There are some configuration, logging, and documentation conventions
+for applications added to the vib repository.
 
 Configuration
 -------------
@@ -128,8 +128,10 @@ log.error( json.dumps( {
 	   } ) )
 ```
 
+Documentation
+-------------
 
-
-
+New packages should have README.md placed at their top level that
+describe the package.
 
 

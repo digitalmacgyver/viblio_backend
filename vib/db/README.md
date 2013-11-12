@@ -20,5 +20,5 @@ Examples
 --------
 
 A good example of how to interact with the database via the ORM can be
-found in (vib/vwf/FaceRecognize/db_utils.py)[../vwf/FaceRecognize/db_utils.py]
+found in [vib/vwf/FaceRecognize/db_utils.py](../vwf/FaceRecognize/db_utils.py)
 
