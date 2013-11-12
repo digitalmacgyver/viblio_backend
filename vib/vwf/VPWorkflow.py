@@ -58,9 +58,6 @@ VPW = {
         'domain'          : domain,
         'version'         : version,
         'task_list'       : 'FaceDetectTask',
-        # For the time being, everything above FaceDetect happens out
-        # of this workflow, so FaceDetect is an entry point into the
-        # existing workflow.
         'prerequisites'   : [ 'Transcode' ],
         'failure_retries' : 1,
         'timeout_retries' : [1, 2, 4],
