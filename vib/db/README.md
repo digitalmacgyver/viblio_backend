@@ -16,9 +16,9 @@ Generally our code uses the ORM method, as it simplifies managing the
 foreign keys of our system, and that is the only method provided via
 this module.
 
-*** NOTE: *** We use MySQL InnoDB as our database back end.  InnoDB uses [consistent reads](http://dev.mysql.com/doc/refman/5.0/en/innodb-consistent-read.html).  This coupled with the SQLAlchemy session behavior of always being in a transaction has this important consequence:
+***NOTE:*** We use MySQL InnoDB as our database back end.  InnoDB uses [consistent reads](http://dev.mysql.com/doc/refman/5.0/en/innodb-consistent-read.html).  This coupled with the SQLAlchemy session behavior of always being in a transaction has this important consequence:
 
-** Your queries against the database will reflect the contents of the database as of the completion of your prior transaction, or the call to vib.db.orm.get_session().  This means, for example, if you are waiting for a new row to appear and simply loop while querying the database, your row will never show up.**
+**Your queries against the database will reflect the contents of the database as of the completion of your prior transaction, or the call to vib.db.orm.get_session().  This means, for example, if you are waiting for a new row to appear and simply loop while querying the database, your row will never show up.**
 
 To view the contents of the database "as of now" issue a commit()
 (which preserves all changes made in your session so far) or a
