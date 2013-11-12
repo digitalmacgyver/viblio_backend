@@ -21,6 +21,7 @@ SWF itself provides a reliable message bus and queues between the programs that 
 All messages passed between Deciders and Activity workers are passed via "task lists" - which are essentially a named queue.
 
 The essential flow is:
+
 1. A new workflow execution is submitted, which causes a message to be sent to the Decider with the input provided in the submission
 2. The Decider determines what, if any, activities should be initiated, and sends messages to those task lists, specifying the input they recieve
 3. Activity workers poll their task lists waiting for activities, when a new activity arises they perform their task, and return their output, which is sent via a message back to the Decider
