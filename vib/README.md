@@ -23,7 +23,7 @@ Main Modules
 * [config](./config/README.md) - Holds the configuration module, and configuration files, used by the various utilities and programs in vib
 * [db](./db/README.md) - The [SQLAlchemy](http://www.sqlalchemy.org/) based database interaction module for interacting with [our database](../schema/README.md)
 * [vwf](./vwf/README.md) - The Video Workflow pipeline that processes our videos once [Popeye](../popeye/README.md) initiates the workflow
-  * There are several subcomponents of vwf
+  * There are several subcomponents of [vwf](./vwf/README.md)
 
 
 Minor Modules
