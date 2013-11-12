@@ -176,8 +176,7 @@ will be Python dictionary and will include:
 Wrapper Scripts and Supervisor
 ------------------------------
 
-All the Activities are wrapped by simple scripts named by convention
-```ActivityName-wrapper.py```.
+All the Activities are wrapped by simple scripts named by convention ```ActivityName-wrapper.py```.
 
 These scripts simply call ```ActivityName.run()``` in a loop - the
 ```run()``` method is defined in the base ```VWorker.py``` module and
