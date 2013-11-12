@@ -106,7 +106,7 @@ lists ActivityABC as a prerequisite will include:
 ```
 {
 ...
-   "ActivityABC" : { 'abc' : True, 'def' : False }
+   'ActivityABC' : { 'abc' : True, 'def' : False }
 ...
 ```
 
@@ -122,14 +122,41 @@ local deployments to allow different developers to only see events for
 the workflows they are working on, it is not set in staging or prod
 deployments.
 
-VPWorker
+VPWorkers
 ----------------------------------------
 
-The [VPWorker](./VPWorker.py) module defines an abstract base class that must be overridden by
+In our video processing workflow we will have one program for each
+Activity invoked by VPDecider.  Each of these will inherit from the
+abstract [VPWorker](./VPWorker.py) module which handles several
+elements of bookeeping such as:
+
+* Catching exceptions and sending back events that SWF understands on error
+* Setting up Loggly logging so the derived classes can instantiate their logs with one line
+* Sending instrumentation messages to Mixpanel
+* Decoding the input from JSON to a Python dictionary, and encoding the output from a Python dictionary to JSON
+
+Each Activity worker simply inherits from VWorker.py, and overrides
+the definition of ```run_task( self, opts )```.  The options provided
+will be Python dictionary and will include:
+* In the case of an Activity with no prerequisites:
+  ```{
+    'media_uuid' : ...,
+    'user_uuid' : ...,
+    # Whatever inputs the caller of the workflow provided
+  ```
+* In the case of an Activity with prerequisites:
+  ```{
+    'media_uuid' : ...,
+    'user_uuid' : ...,
+    'PrerequisiteOneName' : ...output of PrerequisiteOne...,
+    'PrerequisiteTwoName' : ...output of PrerequisiteTwo...,
+    ...
+  ```
 
 ----------
 
 * Each thing needs media_uuid and user_uuid
+* Exception behavior / retries
 
 Creating a New Stage
 --------------------
