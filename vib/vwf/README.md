@@ -139,13 +139,17 @@ elements of bookeeping such as:
 Each Activity worker simply inherits from VWorker.py, and overrides
 the definition of ```run_task( self, opts )```.  The options provided
 will be Python dictionary and will include:
+
 * In the case of an Activity with no prerequisites:
+
   ```{
     'media_uuid' : ...,
     'user_uuid' : ...,
     # Whatever inputs the caller of the workflow provided
   ```
+
 * In the case of an Activity with prerequisites:
+
   ```{
     'media_uuid' : ...,
     'user_uuid' : ...,
@@ -153,6 +157,7 @@ will be Python dictionary and will include:
     'PrerequisiteTwoName' : ...output of PrerequisiteTwo...,
     ...
   ```
+
 
 ----------
 
