@@ -43,7 +43,7 @@ repository.
 Configuration
 -------------
 
-Ensure your application loads and uses the configuration as descibed
+Ensure your application loads and uses the configuration as described
 in the Deployment Conventions section of the [configuration
 documentation](./config/README.md)
 
@@ -64,16 +64,20 @@ wget -q -O - https://www.loggly.com/install/configure-syslog.py | sudo python - 
 sudo /etc/init.d/rsyslog restart
 ```
 
-Then prepend this to the beginning of your program:
+Then prepend this to the beginning of your program to log to both
+Loggly and the console:
 
 ```
+import json
 import logging
 
-log = logging.getLogger( 'vib.your.module' ) ***# FILL IN YOUR MODULE NAME ***
+log = logging.getLogger( 'vib.your.module' ) # FILL IN YOUR MODULE NAME
 log.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
 
+# THIS LINE REQUIRES YOU TO HAVE PREVIOUSLY SET UP THE config VARIABLE
+#  AS DESCRIBED IN THE PRIOR CONFIGURATION SECTION
 format_string = 'rescue_orphan_faces: { "name" : "%(name)s", "module" : "%(modul
 e)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(leveln
 ame)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s 
@@ -88,8 +92,42 @@ consolelog.setLevel( logging.DEBUG )
 
 log.addHandler( syslog )
 log.addHandler( consolelog )
-
 ```
+
+***NOTE:*** 
+By convention, our log messages are formatted as JSON, this allows
+Loggly to do much better searching and organization of our log files.
+
+Whenever possible, if the user_uuid, or media_uuid is a relevant
+concept for the log message, it should be provided as a element of the
+message.
+
+Then log messages by calling:
+```
+log.debug( json.dumps( {
+	   'user_uuid' : user_uuid,
+	   'message'   : "debug message"
+	   } ) )
+
+log.info( json.dumps( {
+	  'media_uuid' : media_uuid,
+	  'message' : "informational message"
+	  } ) )
+
+log.warning( json.dumps( {
+           'arbitrary_field_of_interest' : field.data,
+	   'message' : "warning message"
+	   } ) )
+
+log.error( json.dumps( {
+           'arbitrary_structure' : { 
+               'with_nested_fields' : 'blah',
+               'or_arrays' : [ 1, 2, 'foo' ]
+           },
+	   'message' : "error message"
+	   } ) )
+```
+
 
 
 
