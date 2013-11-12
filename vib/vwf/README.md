@@ -13,7 +13,7 @@ task list names being driven by configuration and our standard local,
 staging, and prod deployment concepts.
 
 SWF workflows operate in this manner:
-* A workflow is a set of predefined Activities, activities are performed by programs that reiceve an Activity taks, perform them, and provide a result back
+* A workflow is a set of predefined Activities, activities are performed by programs that receive an Activity task, perform them, and provide a result back
 * Coordination logic for a workflow (e.g. what activities are performed, in what order, how many times) are performed by a program called a "Decider"
 
 SWF itself provides a reliable message bus and queues between the programs that perform Activities and the Decider program.  
@@ -23,9 +23,11 @@ All messages passed between Deciders and Activity workers are passed via "task l
 The essential flow is:
 
 1. A new workflow execution is submitted, which causes a message to be sent to the Decider with the input provided in the submission
-2. The Decider determines what, if any, activities should be initiated, and sends messages to those task lists, specifying the input they recieve
+2. The Decider determines what, if any, activities should be initiated, and sends messages to those task lists, specifying the input they receive
 3. Activity workers poll their task lists waiting for activities, when a new activity arises they perform their task, and return their output, which is sent via a message back to the Decider
 4. The Decider again determines what further activities should be initiated, and steps 2-4 are run until the Decider decides the workflow is complete, or it should be failed
+
+***NOTE:*** The architecture of SWF allows Activities to be run multiple times, for instance an activity may complete, however its server could be dropped off the network just as it was sending its message of completion.  You must always design your Activities so that nothing catastrophic happens if they are run multiple times for the same input.
 
 To ensure reliability of a distributed workflow, tasks and decisions have timeouts associated with them.
 
@@ -33,7 +35,7 @@ The workflow itself has a start to close timeout - any workflow not completed wi
 
 Decision tasks have a start to close timeout, if a decision is started but not completed in this time period (perhaps the server where the decision was being made crashed) a DecisionTaskTimedOut is added to the workflow history, which has the side effect of triggering a new decision
 
-Acitivies have the following timeouts:
+Activities have the following timeouts:
 * A schedule to start timeout
 * A schedule to close timeout
 * A start to close timeout
@@ -41,6 +43,17 @@ Acitivies have the following timeouts:
 
 A diagram of our workflow:
 ![Workflow image](./docs/workflow.png)
+
+Running the Pipeline in Your Local Deployment
+---------------------------------------------
+
+To test development in your local deployment, edit
+[vib/config/local.conf](../config/local.conf) and set the
+```UniqueTaskList``` value to something only you will use
+
+The scripts in this directory require the BOTO_CONFIG and PYTHONPATH
+variables to be set correctly, run ```source setup-env.sh``` from
+within vib/vwf to do so.
 
 Video Processing Workflow Configuration
 ---------------------------------------
@@ -67,10 +80,10 @@ and whose values specifies for each pipeline stage:
 ```
 
 Some details on the above configuration fields:
-* task_list is a prefix, the task list will be modified depending on the deployment enviornment we are in
+* task_list is a prefix, the task list will be modified depending on the deployment environment we are in
 * prerequisites is an array of prerequisite stages defined in VPW, an empty array means there are no prerequisites
 * failure_retries - the number of times to retry if a non-timeout failure occurs, note that this does not count the initial attempt: a failure_retry of N means the task may be attempted N+1 times in total
-* timeout_retries - the length of this array controls how many times this task will be retried if it failes due to timeout, and a number in the i'th position is the multiple that the default timeouts will be multiplied by on the i'th retry
+* timeout_retries - the length of this array controls how many times this task will be retried if it fails due to timeout, and a number in the i'th position is the multiple that the default timeouts will be multiplied by on the i'th retry
 * The timeouts are specified in seconds, and must be strings due to Amazon's API
 
 Message Format
@@ -91,7 +104,7 @@ VPDecider
 ---------------------------------------
 
 The [VPDecider](./VPDecider.py) module listens for workflow
-execituions and events occuring on existing workflows.  It interprets
+invocations and events occurring on existing workflows.  It interprets
 the contents of the VPWorkflow data structure and starts stages when
 all their prerequisites are met, and completes workflows when all the
 tasks in it's run_helper.tasks array are competed, or fails them if a
@@ -129,7 +142,7 @@ VPWorkers
 In our video processing workflow we will have one program for each
 Activity invoked by VPDecider.  Each of these will inherit from the
 abstract [VPWorker](./VPWorker.py) module which handles several
-elements of bookeeping such as:
+elements of bookkeeping such as:
 
 * Catching exceptions and sending back events that SWF understands on error
 * Setting up Loggly logging so the derived classes can instantiate their logs with one line
@@ -160,44 +173,20 @@ will be Python dictionary and will include:
     ...
   ```
 
+Creating a New Activity
+-----------------------
 
-----------
+To create a new Activity:
 
-* Each thing needs media_uuid and user_uuid
-* Exception behavior / retries
+1. Add its definition to VPWorkflow.py, and increment the version at the top of the file
+2. Register the new Activity type by running the [register.py](./register.py) utility
+3. Create a new subdirectory of vib/vwf/NewStageName
+4. Create a new module in vib/vwf/NewStageName/WorkerModule.py
+  1. This new module inherits from vib/vwf/VWorker.py and implements a ```run_task( self, opts )``` method.
+5. Add the Activity to the ```tasks``` array in VPDecider's ```run_helper``` function
+6. Create a wrapper script to run your task
+7. Create supervisor configurations for your wrapper script in vib/config/DEPLOYMENT/ and edit the supervisor-DEPLOYMENT.conf files in vib/config to include them
 
-Creating a New Stage
---------------------
-
-Each worker class follows a similar pattern of boilerplate similar to
-FaceDetect.py to interact with boto/SWF.  All that must be done is:
-1) Create a new class derived from VWorker
-
-2) Assign a member variable of that class to the relevant activity
-type in VPWorkflow
-
-3) Implement the run_task method.  run_task takes in a Python
-dictionary of arguments on input, and returns a Python dictionary of
-arguments for the next stage.  run_task can notify the pipeline of an
-error by returning a Python dictionary that contains the
-ACTIVITY_ERROR key.  If it does this, the truth value of the "retry"
-key in the return will specify if this task should be tried again or
-if the error is fatal.
-
-It is recommended to create a subdirectory in vib/vwf for each worker
-which will have multiple implementation files.
-
-CONFIGURATION
-======================================================================
-The scripts in this directory require the BOTO_CONFIG environment
-variable to point at this directory, and that the vib directory by in
-the PYTHONPATH.
-
-Run:
-
-source setup-env.sh
-
-In Bourne/Korn/Bash shells to do this.
-
-
+Existing Activities
+-------------------
 
