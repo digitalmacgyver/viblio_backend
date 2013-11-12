@@ -13,4 +13,4 @@ schema/ddl/video_*schema.sql
 Additional descriptive notes about the organization of the schema is
 available in our sharepoint repository at: [https://viblio.sharepoint.com/SitePages/Video%20Schema.aspx]
 
-[Schema Diagram](./ddl/schema-current.png)
+![Schema Diagram](./ddl/schema-current.png)
