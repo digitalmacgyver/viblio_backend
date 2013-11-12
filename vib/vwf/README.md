@@ -63,7 +63,7 @@ Running the Pipeline in Your Local Deployment
 ---------------------------------------------
 
 To test development in your local deployment, edit
-[vib/config/local.conf](../config/local.conf) and set the
+[vib/config/local.config](../config/local.config) and set the
 ```UniqueTaskList``` value to something only you will use
 
 The scripts in this directory require the BOTO_CONFIG and PYTHONPATH
@@ -156,7 +156,7 @@ VPWorkers
 
 In our video processing workflow we will have one program for each
 Activity invoked by VPDecider.  Each of these will inherit from the
-abstract [VPWorker](./VPWorker.py) module which handles several
+abstract [VWorker](./VWorker.py) module which handles several
 elements of bookkeeping such as:
 
 * Catching exceptions and sending back events that SWF understands on error
@@ -244,7 +244,7 @@ Activities
      * [Serializes](https://github.com/viblio/video_processor/wiki/Global-serialize-module) FaceRecognize activities globally on a per Viblio user basis to ensure we don't miss opportunities to recognize similar faces in videos that are being processed simultaneously
      * Can be restarted / terminated at any time and will pick up where it left off due in part to MTurk behavior
      * Due to the serialization behavior, and the very long running nature of these tasks, we run large numbers of these processes so that we can have many Amazon Mechanical Turk jobs in progress (up to 1 per Viblio user who has a pending Face Recognition task)
-* [NotifyComplete](./NofifyComplete/README.md):
+* [NotifyComplete](./NotifyComplete/README.md):
   * Prerequisites: FaceRecognize
   * Notes: Causes email to be sent and browser popup notifications
 

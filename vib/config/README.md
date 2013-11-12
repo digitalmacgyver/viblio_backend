@@ -45,7 +45,7 @@ These are:
 
 * boto.config - The [boto.swf](http://docs.pythonboto.org/en/latest/ref/swf.html) interface we are using doesn't have a good way to specify the AWS region to use in code when using the Layer2 interface, so we use this configuration file
 * [Supervisor](http://supervisord.org/) - Process control configuration:
-  * For more details read the overview documentation for (vwf)[../vwf/README.md]
+  * For more details read the overview documentation for [vwf](../vwf/README.md)
   * We use supervisor to manage the execution of various applications, supervisor:
     * Restarts processes when they terminate
     * Controls the number of process of each application type that we run
