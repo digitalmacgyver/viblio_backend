@@ -6,10 +6,10 @@ This package holds code for interacting with Facebook.
 Contact Creation
 ----------------
 
-The [CreateContacts](./CreateContacts.py) module is responsible for synchronising a Viblio user's contact list with their Facebook freind list, and collecting face images of those freinds for both machine vision recognition, and display with the contacts.
+The [CreateContacts](./CreateContacts.py) module is responsible for synchronizing a Viblio user's contact list with their Facebook friend list, and collecting face images of those friends for both machine vision recognition, and display with the contacts.
 
 * Reads from Amazon [SQS](http://aws.amazon.com/sqs/) queue via [boto.sqs](http://boto.readthedocs.org/en/latest/ref/sqs.html) - the queue name is control ed via configuration and differs in local, staging, and production
-  * Receives messages sent to this queue by the CAT webserver, which include a JSON dictionary with keys including:
+  * Receives messages sent to this queue by the CAT web server, which include a JSON dictionary with keys including:
     * facebook_id - The Facebook ID of a user who has linked their Viblio account with Facebook
     * fb_access_token - an OAUTH token for the Facebook id in question with the requisite user_photos and friends_photos permissions
     * user_uuid - The Viblio user_uuid of the user
@@ -33,4 +33,6 @@ Wrapper Script and Deployment
 -----------------------------
 
 The simple CreateContacts-wrapper.py is managed via supervisor in our
-[configuration](../config/README.md).  
+[configuration](../config/README.md).
+
+***NOTE:*** Because CreateContacts runs on several machines, and they use a common queue, testing can be confusing - as requests to update contacts can be handled by a CreateContact on someone elses computer.  If you are doing major development, you will want to define your own queue name and use that queue for testing so you are the only person processing those messages.
