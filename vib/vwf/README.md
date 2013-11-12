@@ -41,8 +41,23 @@ Activities have the following timeouts:
 * A start to close timeout
 * An optional heartbeat timeout
 
+Viblio Video Processing Workflow
+---------------------------------------------
+
 A diagram of our workflow:
 ![Workflow image](./docs/workflow.png)
+
+The various timeouts for each stage are:
+
+| Activity     | Category          | Timeout   |
+|--------------|-------------------|-----------|
+|              | Total workflow    |   36 hours|
+|Decision Task | Start to Close    |  5 minutes|
+|Transcode     | Schedule to Close |   15 hours|
+|FaceDetect    | Schedule to Close |   15 hours|
+|FaceRecognize | Schedule to Close |   36 hours|
+|FaceRecognize | Heartbeat Timeout |  5 minutes|
+|NotifyComplete| Schedule to Close | 15 minutes|
 
 Running the Pipeline in Your Local Deployment
 ---------------------------------------------

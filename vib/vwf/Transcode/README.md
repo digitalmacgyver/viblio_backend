@@ -41,6 +41,28 @@ Required inputs
 Outputs
 -------
 
+```
+{ 
+    'media_uuid' : media_uuid,
+    'user_uuid' : user_uuid,
+    # The 'main' media file's S3 location
+    'output_file' : {
+                    's3_bucket' : return_bucket,
+                    's3_key' : return_key
+                    }
+                }
+```
 
-External Dependenceies
+Side Effects
+------------
+
+Creates database rows:
+
+* media_assets table:
+  * One row per item in the "outputs" input array with an asset_type corresponding to the asset_type value of input
+  * One row per thumbnail item in the "outputs" input array with asset_types corresponding to the label value of the thumbnail
+
+External Dependencies
 ----------------------
+
+Relies on FFMPEG and related libraries being installed.
