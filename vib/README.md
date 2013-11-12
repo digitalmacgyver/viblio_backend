@@ -17,22 +17,22 @@ cd video_processor/vib
 source setup-env.sh
 ```
 
-Main Modules
-------------
-
-* [config](./config/README.md) - Holds the configuration module, and configuration files, used by the various utilities and programs in vib
-* [db](./db/README.md) - The [SQLAlchemy](http://www.sqlalchemy.org/) based database interaction module for interacting with [our database](../schema/README.md)
-* [vwf](./vwf/README.md) - The Video Workflow pipeline that processes our videos once [Popeye](../popeye/README.md) initiates the workflow
-  * There are several subcomponents of [vwf](./vwf/README.md)
-
-
-Minor Modules
+Main Packages
 -------------
 
-* [fb](./fb/README.md) - Module for Facebook interaction, presently only used to import Facebook contacts and tagged photos of a user and their friends
-* [rekog](./rekog/README.md) - Module for interaction with [ReKognition](http://www.rekognition.com/), a web service that performs face recognition
-* [thirdParty](./thirdParty/README.md) - Module for installing third party code and tools
-* [utils](./utils/README.md) - Module for utility scripts and code used by multiple applications (e.g. S3 interaction code, our Serialization module)
+* [config](./config/README.md) - Holds the AppConfig configuration module, and configuration files, used by the various utilities and programs in vib
+* [db](./db/README.md) - Holds the [SQLAlchemy](http://www.sqlalchemy.org/) based database interaction module for interacting with [our database](../schema/README.md)
+* [vwf](./vwf/README.md) - The Video Workflow pipeline that processes our videos once [Popeye](../popeye/README.md) initiates the workflow
+  * There are several subpackages and modules of [vwf](./vwf/README.md)
+
+
+Minor Packages
+--------------
+
+* [fb](./fb/README.md) - Package for Facebook interaction, presently only used to import Facebook contacts and tagged photos of a user and their friends
+* [rekog](./rekog/README.md) - Package for interaction with [ReKognition](http://www.rekognition.com/), a web service that performs face recognition
+* [thirdParty](./thirdParty/README.md) - Package for installing third party code and tools
+* [utils](./utils/README.md) - Package for utility scripts and modules used by multiple applications (e.g. S3 interaction code, our Serialization module)
 
 Adding New Programs
 ===================

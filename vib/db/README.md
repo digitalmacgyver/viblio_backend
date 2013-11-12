@@ -1,7 +1,7 @@
 Database Connectivity
 =====================
 
-This module provides simplified access to our [MySQL
+This packace provides simplified access to our [MySQL
 database](../../schema/README.md) via the
 [SQLAlchemy](http://www.sqlalchemy.org/) package.
 
@@ -14,7 +14,7 @@ SQLAlchemy provides two ways to interact with the database:
 
 Generally our code uses the ORM method, as it simplifies managing the
 foreign keys of our system, and that is the only method provided via
-this module.
+this package.
 
 ***NOTE:*** We use MySQL InnoDB as our database back end.  InnoDB uses [consistent reads](http://dev.mysql.com/doc/refman/5.0/en/innodb-consistent-read.html).  This coupled with the SQLAlchemy session behavior of always being in a transaction has this important consequence:
 
@@ -32,7 +32,7 @@ found in
 [vib/vwf/FaceRecognize/db_utils.py](../vwf/FaceRecognize/db_utils.py)
 
 An example of how to interact with the database without the ORM (and
-without this module) can be found in
+without this package) can be found in
 [vib/utils/Serialize.py](../utils/Serialize.py)
 
 Usage
@@ -70,7 +70,7 @@ Package Contents
 
 ### Interface Modules
 
-* [orm.py] - Provides the get_session method which returns an session that ORM operations can be performed upon.
+* [orm.py](./orm.py) - Provides the get_session method which returns an session that ORM operations can be performed upon.
   * Get session also validates that the session returned has a valid DB connection before returning it
 * [models.py](./models.py) - Provides class names for the ORM tables of interest, e.g. Media, MediaAssets, Users, Contacts
   * Also describes how tables relate to one another via the db_map engine

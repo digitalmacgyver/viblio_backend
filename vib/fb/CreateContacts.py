@@ -82,8 +82,6 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
 
     try:
         # Crawl facebook for images of the friends.
-
-
         crawl_friends = []
 
         existing_contacts = get_existing_fb_contacts_for_user( user_uuid )
