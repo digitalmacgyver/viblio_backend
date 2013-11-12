@@ -145,7 +145,7 @@ abstract [VPWorker](./VPWorker.py) module which handles several
 elements of bookkeeping such as:
 
 * Catching exceptions and sending back events that SWF understands on error
-* Setting up Loggly logging so the derived classes can instantiate their logs with one line
+* Setting up Loggly logging so the derived classes can instantiate their logs with one line: ```log = logging.getLogger( __name__ )```
 * Sending instrumentation messages to Mixpanel
 * Decoding the input from JSON to a Python dictionary, and encoding the output from a Python dictionary to JSON
 
@@ -173,6 +173,27 @@ will be Python dictionary and will include:
     ...
   ```
 
+Wrapper Scripts and Supervisor
+------------------------------
+
+All the Activities are wrapped by simple scripts named by convention
+```ActivityName-wrapper.py```.
+
+These scripts simply call ```ActivityName.run()``` in a loop - the
+```run()``` method is defined in the base ```VWorker.py``` module and
+performs a long poll looking for an activity to perform, and if it
+finds one invokes ```ActivityName.run_task()```.
+
+These wrapper scripts are in turn managed the
+[Supervisor](http://supervisord.org/) process control system.  We use
+only a very small amount of all Supervisor features.  The usage is
+like this:
+
+* For each DEPLOYMENT of local, staging, or prod, we define a
+  supervisor-DEPLOYMENT.conf file in vib/config
+* At the end of these files, they include a file located under vib/config/DEPLOYMENT/ActivityName.conf for each activity (there will be other configuration files in these directories as well not related to Activities)
+* Each ActivityName.conf file will define a number of processes to run at a time per host
+
 Creating a New Activity
 -----------------------
 
@@ -183,6 +204,8 @@ To create a new Activity:
 3. Create a new subdirectory of vib/vwf/NewStageName
 4. Create a new module in vib/vwf/NewStageName/WorkerModule.py
   1. This new module inherits from vib/vwf/VWorker.py and implements a ```run_task( self, opts )``` method.
+     1. If this module wishes to terminate execution with a fatal error it should ```return { 'ACTIVITY_ERROR' : True, 'retry' : False }``` - raising an exception will lead to the Activity being retried depending on its failure_retries configuration set in VPWorkflow.py
+  2. This new must must set a ```task_name = 'ActivityName'``` member
 5. Add the Activity to the ```tasks``` array in VPDecider's ```run_helper``` function
 6. Create a wrapper script to run your task
 7. Create supervisor configurations for your wrapper script in vib/config/DEPLOYMENT/ and edit the supervisor-DEPLOYMENT.conf files in vib/config to include them
@@ -206,6 +229,7 @@ Activities
      * Very long running, relies on human classification via Amazon Mechanical Turk.  
      * [Serializes](https://github.com/viblio/video_processor/wiki/Global-serialize-module) FaceRecognize activities globally on a per Viblio user basis to ensure we don't miss opportunities to recognize similar faces in videos that are being processed simultaneously
      * Can be restarted / terminated at any time and will pick up where it left off due in part to MTurk behavior
+     * Due to the serialization behavior, and the very long running nature of these tasks, we run large numbers of these processes so that we can have many Amazon Mechanical Turk jobs in progress (up to 1 per Viblio user who has a pending Face Recognition task)
 * [NotifyComplete](./NofifyComplete/README.md):
   * Prerequisites: FaceRecognize
   * Notes: Causes email to be sent and browser popup notifications
