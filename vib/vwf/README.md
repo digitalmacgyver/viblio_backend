@@ -142,7 +142,8 @@ will be Python dictionary and will include:
 
 * In the case of an Activity with no prerequisites:
 
-  ```{
+  ```
+  {
     'media_uuid' : ...,
     'user_uuid' : ...,
     # Whatever inputs the caller of the workflow provided
@@ -150,7 +151,8 @@ will be Python dictionary and will include:
 
 * In the case of an Activity with prerequisites:
 
-  ```{
+  ```
+  {
     'media_uuid' : ...,
     'user_uuid' : ...,
     'PrerequisiteOneName' : ...output of PrerequisiteOne...,
