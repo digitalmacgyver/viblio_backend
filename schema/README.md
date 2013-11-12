@@ -11,6 +11,6 @@ DDL for populating the schema are present in
 schema/ddl/video_*schema.sql
 
 Additional descriptive notes about the organization of the schema is
-available in our sharepoint repository at: [https://viblio.sharepoint.com/SitePages/Video%20Schema.aspx]
+available in our sharepoint repository at: (https://viblio.sharepoint.com/SitePages/Video%20Schema.aspx)
 
 ![Schema Diagram](./ddl/schema.png)
