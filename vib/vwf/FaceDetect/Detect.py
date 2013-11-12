@@ -32,8 +32,7 @@ class Detect( VWorker ):
         
         media_uuid = options['media_uuid']
         user_uuid = options['user_uuid']
-        s3_key = options['Transcode']['output_file']['s3_key']
-        s3_bucket = options['Transcode']['output_file']['s3_bucket']
+        s3_bucket = options['s3_bucket']
 
         log.info( json.dumps( { 
                     'media_uuid' : media_uuid,
@@ -57,10 +56,10 @@ class Detect( VWorker ):
             working_dir = os.path.abspath( config.faces_dir + media_uuid )
             if not os.path.exists(working_dir):
                 os.mkdir(working_dir)
-            short_name = media_uuid + '/' + media_uuid + '.mp4'
-            file_name = os.path.abspath( config.faces_dir + short_name )           
-            key = bucket.get_key( s3_key )
-            key.get_contents_to_filename( file_name )
+            s3_key = media_uuid + '/' + media_uuid + '.mp4'
+            file_name = os.path.abspath( config.faces_dir + s3_key )           
+            key = bucket.get_key(s3_key)
+            key.get_contents_to_filename(file_name)
         except Exception as e:
             log.error( json.dumps( { 
                     'media_uuid' : media_uuid,
@@ -110,7 +109,6 @@ class Detect( VWorker ):
                     'user_uuid'  : user_uuid,
                     'message' : "Face Detect didn't find faces for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                     } ) )
-            db_utils.update_media_status( media_uuid, self.task_name + 'Complete' ) 
             return faces_info
         else:
             # Process faces
@@ -160,7 +158,7 @@ class Detect( VWorker ):
                     } ) )
             raise
         
-        # Control whether we delete the temp data.
+        # Control whether we delete the temporary data.
         if True:
             shutil.rmtree(working_dir)
             
@@ -174,8 +172,82 @@ class Detect( VWorker ):
                     } ) )
             raise Exception( "Output too large" )
         else:
-            db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )         
             return faces_info
+        
+        
+        # Logging is set up to log to syslog in the parent VWorker class.
+        # 
+        # In turn syslog is set up to go to our Loggly cloud logging
+        # server on our servers.
+        #
+        # Loggly likes JSON formatted log messages for parsability.
+        #
+        # Example of how to log, send in a JSON to the logger.  Always
+        # include media_uuid and user_uuid if they are in scope /
+        # sensible, and always include a message.  Include other keys
+        # you'd like to search on when dealing with that message
+        # (e.g. s3_key, track_id, whatever)
+        log.info( json.dumps( {
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : 'A log message from the face detector.'
+                    } ) )
 
 
+        print "Face detection inputs are:"
+        pp = pprint.PrettyPrinter( indent=4 )
+        pp.pprint( options )
+        print "Doing face detection stuff!"
 
+        recoverable_error = False
+        catastrophic_error = False
+        if catastrophic_error:
+            return { 'ACTIVITY_ERROR' : True, 'retry' : False }
+        elif recoverable_error:
+            return { 'ACTIVITY_ERROR' : True, 'retry' : True }
+        else: 
+            # As a placeholder, just pass our input back out.
+            return options
+
+    def run_cleanup_files(self, options):
+        media_uuid = options['media_uuid']
+        user_uuid = options['user_uuid']
+        log.info( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "Cleaning up files for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+        # Get the media file from S3 for Face Detector
+        try:
+            working_dir = os.path.abspath( config.faces_dir + media_uuid )
+            json_file_name = os.path.abspath( working_dir + '/' + media_uuid + '.json')
+            if os.path.isfile(json_file_name):
+                file_handle = open(json_file_name)
+                faces_info = json.load(file_handle)
+                tracks = faces_info['tracks']
+                if str(tracks).find('faces') <= 0:
+                    if os.path.isfile(json_file_name):
+                        os.remove(json_file_name)
+                        os.rmdir(working_dir)
+                    return
+                else:
+                    # Process faces
+                    for i,track_id in enumerate(faces_info['tracks']):
+                        track = faces_info['tracks'][i]
+                        for j,face_id in enumerate(track['faces']):
+                            face = track['faces'][j]
+                            file_name = config.faces_dir + face['s3_key']
+                            if os.path.isfile(file_name):
+                                os.remove(file_name)
+                    if os.path.isfile(json_file_name):
+                        os.remove(json_file_name)
+                        os.rmdir(working_dir)
+                    return
+        except Exception as e:
+            log.error( json.dumps( { 
+                    'media_uuid' : media_uuid,
+                    'user_uuid' : user_uuid,
+                    'message' : "File cleanup failed for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
+                    } ) )
+            raise Exception( "Cleanup failed" )
+        

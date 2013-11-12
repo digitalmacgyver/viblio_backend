@@ -1,35 +1,8 @@
 ROOT ?= /deploy
 LVL  ?= staging
-APP   = popeye
+APP   = brewtus
 
 FILES = $(shell git ls-tree -r master --name-only)
-
-# Install the dependencies required for Popeye
-#
-# This target should be run as root, ie.:
-#   sudo make install_deps
-#
-PYPKGS=\
-	boto \
-	web.py \
-	wsgilog \
-	config \
-	sqlalchemy \
-	requests \
-	qtfaststart \
-	pytz \
-	mixpanel-py \
-	supervisor \
-	pillow
-
-install_deps:
-	apt-get -y install python-pip python-dev
-	easy_install $(PYPKGS)
-	apt-get -y install python-mysqldb
-	apt-get -y install apache2
-	apt-get -y install libapache2-mod-wsgi
-	apt-get -y install python-bs4
-	pip install xmltodict
 
 # Build the image suitable for software upgrade
 package:
@@ -41,7 +14,7 @@ install:
 	mkdir -p /mnt/uploaded_files/errors; chmod oug+rw /mnt/uploaded_files/errors
 	mkdir -p $(ROOT)/$(LVL)/$(APP).next
 	tar zxf package.tar.gz -C $(ROOT)/$(LVL)/$(APP).next
-	( cd $(ROOT)/$(LVL)/$(APP).next; make install_deps )
+	( cd $(ROOT)/$(LVL)/$(APP).next; /usr/local/bin/npm install )
 	-rm -rf $(ROOT)/$(LVL)/$(APP).prev
 	-mv $(ROOT)/$(LVL)/$(APP) $(ROOT)/$(LVL)/$(APP).prev
 	-mv $(ROOT)/$(LVL)/$(APP).next $(ROOT)/$(LVL)/$(APP)
