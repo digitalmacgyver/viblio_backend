@@ -79,6 +79,7 @@ if __name__ == '__main__':
         'A2UAN9XAD1587R', # video-analytics-inc.com
         'A3T5PC3TPU8MXW', # Mona?
         'A340CISQI4UAJQ', # Ramsri
+        'A1NQ1J6ZCVSP7P', # Jason
         ]
 
     print "Checking if there are pending notifications."
