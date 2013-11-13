@@ -9,6 +9,8 @@
 ### END INIT INFO 
 . /lib/lsb/init-functions
 
+PATH=$PATH:/sbin
+
 SERVICE_TYPE=local
 
 APPNAME=brewtus
