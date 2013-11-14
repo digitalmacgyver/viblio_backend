@@ -47,12 +47,12 @@ _check_sw() {
 
 check_sw() {
     # Just check if we need to upgrade and return status
-    _check_sw -check $*
+    _check_sw $*
 }
 
 check_and_install() {
     # Check if we need to install, and if so, install and restart
-    _check_sw -check -quiet || restart
+    _check_sw -quiet || restart
 }
 
 check_running() {
@@ -131,10 +131,10 @@ case "$1" in
         restart
         ;;
     check)
-        check_sw
+        check_sw -check
 	;;
     check_quiet)
-        check_sw -quiet
+        check_sw -check -quiet
         ;;
     check_and_install)
         check_and_install
