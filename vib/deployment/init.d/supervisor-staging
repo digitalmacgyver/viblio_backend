@@ -14,6 +14,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 SERVICE_TYPE=staging
 
 APPNAME=supervisord
+VIBLIO_PACKAGE=vib
 APPDIR=/deploy/$SERVICE_TYPE/vib/config
 
 DEPLOYMENT=$SERVICE_TYPE
@@ -34,6 +35,26 @@ else
 fi
 
 PIDFILE=$PIDDIR/$UNIXNAME${PIDSUFFIX:+"-$PIDSUFFIX"}.pid
+
+_check_sw() {
+    if [ -x /usr/local/bin/check-and-install-software.pl ]; then
+	/usr/local/bin/check-and-install-software.pl \
+	    -db $SERVICE_TYPE -app $VIBLIO_PACKAGE \
+	    $*
+    else
+	return 0
+    fi
+}
+
+check_sw() {
+    # Just check if we need to upgrade and return status
+    _check_sw $*
+}
+
+check_and_install() {
+    # Check if we need to install, and if so, install and restart
+    _check_sw -quiet || (stop && start)
+}
 
 running_pid()
 {
@@ -60,6 +81,8 @@ check_running()
 }
 
 _start() {
+    _check_sw -quiet
+
     start-stop-daemon --verbose --start --pidfile $PIDFILE \
     --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP \
@@ -125,11 +148,17 @@ case "$1" in
     restart|force-reload)
         restart
         ;;
-    check|check-compile)
-        check_compile
-        ;;
+    check)
+	check_sw -check
+	;;
+    check_quiet)
+	check_sw -check -quiet
+	;;
+    check_and_install)
+	check_and_install
+	;;
     *)
-        echo $"Usage: $0 {start|stop|restart|check}"
+        echo $"Usage: $0 {start|stop|restart|check|check_quiet|check_and_install}"
         exit 1
 esac
 exit $?
