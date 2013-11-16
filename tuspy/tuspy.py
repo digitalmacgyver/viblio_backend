@@ -90,7 +90,7 @@ parser.add_option("-s", "--server",
                   help="upload server: local, staging, prod or uploader")
 parser.add_option("-S", "--Server",
                   dest="manual",
-                  help="upload server: IP address or hostname")
+                  help="upload server: ex: https://192.168.1.65/files")
 
 parser.add_option("-e", "--email",
                   dest="email",
