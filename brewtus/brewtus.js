@@ -143,7 +143,9 @@
 	    }
 	    mixpanel.track( 'upload_started', {
 		distinct_id: meta.fileId,
-		uuid: meta.uid
+		user_uuid: meta.uid,
+		activity: 'brewtus',
+		deployment: process.env.NODE_ENV || 'local'
 	    });
 	    res.setHeader("Location", "http://" + req.headers.host + "/files/" + fileId);
 	    return httpStatus(res, 201, "Created", null, meta);
@@ -251,7 +253,10 @@
 	    return u.save( function() {
 		mixpanel.track( 'upload_completed', {
 		    distinct_id: info.fileId,
-		    uuid: info.uid });
+		    user_uuid: info.uid,
+		    activity: 'brewtus',
+		    deployment: process.env.NODE_ENV || 'local'
+		});
 		if ( config.popeye != "none" ) {
 		    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
 		    request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
