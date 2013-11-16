@@ -59,6 +59,21 @@ The various timeouts for each stage are:
 |FaceRecognize | Heartbeat Timeout |  5 minutes|
 |NotifyComplete| Schedule to Close | 15 minutes|
 
+
+Monitoring and Managing the Workflow Through the Web Console
+------------------------------------------------------------
+
+Amazon AWS provides a [https://console.aws.amazon.com/swf/home?region=us-west-2#](web console for SWF).
+
+Select "Viblio" as the domain in the dashboard.
+
+You can use this console to:
+
+* Review any running and completed tasks, and the inputs to each stage.
+* Cancel running workflows
+* Re-start failed workflows
+* Register, view, and deprecate activity task lists 
+
 Running the Pipeline in Your Local Deployment
 ---------------------------------------------
 
