@@ -9,7 +9,9 @@
         "node-uuid": "latest",
         "winston": "latest",
 	"request": "latest",
-	"konphyg": "1.2.x"
+	"konphyg": "1.2.x",
+	"node-syslog": "latest",
+	"mixpanel": "latest"
      },
     "keywords": [
         "upload",
