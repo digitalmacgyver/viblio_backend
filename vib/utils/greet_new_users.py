@@ -38,15 +38,14 @@ log.addHandler( consolelog )
 
 
 # Logic:
-# Review test user create to see how to do some of this.
-# Copy from stored S3 to desired S3
-# Store media, media_asset in DB
-# Set title
-# Set description
-# Set date
-# Set location
+# Add face image to video-external
+# Add supervisor config
+# Add local
+# Roll to staging
+# Test manual staging message add
+# Test Andy's mechanism.
 
-def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, **options ):
+def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, face_file, **options ):
     '''Adds the video, thumbnail, and poster for the user_uuid.
     
     Each of the _file arguments is a dictionary with:
@@ -58,15 +57,19 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
 
     Optional keyword arguments exist with the following defaults: 
  
-    * description        - 'Safe, secure video sharing'
+    * contact_name       - 'Viblio Feedback'
+    * contact_email      - 'feedback@viblio.com'
+    * description        - 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.'
+    * face_mimetype      - 'image/png'
+    * face_size          - '128x128'
     * filename           - ''
-    * lat                - None
-    * lng                - None
-    * poster_mimetype    - 'image/jpg'
+    * lat                - 37.442174
+    * lng                - -122.143199
+    * poster_mimetype    - 'image/png'
     * poster_size        - '320x180'
     * recording_date     - The current time
-    * title              - 'Welcome to Viblio'
-    * thumbnail_mimetype - 'image/jpg'
+    * title              - 'Viblio: Your Memories in Motion'
+    * thumbnail_mimetype - 'image/png'
     * thumnail_size      - '128x128'
     * video_mimetype     - 'video/mp4'
     '''
@@ -74,46 +77,58 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
     orm = None
 
     try:
-        description         = options.get( 'description', 'Safe, secure video sharing' )
+        contact_name        = options.get( 'contact_name', 'Viblio Feedback' )
+        contact_email       = options.get( 'contact_email', 'feedback@viblio.com' )
+        description         = options.get( 'description', 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.' )
+        face_mimetype       = options.get( 'face_mimetype', 'image/png' )
+        face_size           = options.get( 'face_size', '128x128' )
         filename            = options.get( 'filename', '' )
-        lat                 = options.get( 'lat', None )
-        lng                 = options.get( 'lat', None )
+        lat                 = options.get( 'lat', 37.442174 )
+        lng                 = options.get( 'lat', -122.143199 )
         poster_mimetype     = options.get( 'poster_mimetype', 'image/png' )
         poster_size         = options.get( 'poster_size', '320x180' )
         recording_date      = options.get( 'recording_date', datetime.datetime.now() )
-        title               = options.get( 'title', 'Welcome to Viblio' )
+        title               = options.get( 'title', 'Viblio: Your Memories in Motion' )
         thumbnail_mimetype  = options.get( 'thumbnail_mimetype', 'image/png' )
         thumbnail_size      = options.get( 'thumbnail_size', '128x128' )
         video_mimetype      = options.get( 'video_mimetype', 'video/mp4' )
 
+        face_x,      face_y      = face_size.split( 'x' )
         poster_x   , poster_y    = poster_size.split( 'x' )
         thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
 
         media_uuid = str( uuid.uuid4() )
 
+        log.info( json.dumps( {
+                    'user_uuid' : user_uuid,
+                    'media_uuid' : media_uuid,
+                    'message' : "Creating welcome video %s for user %s." % ( media_uuid, user_uuid )
+                    } ) )
+
         # Copy video file to S3 location for this user.
         video_uri = '%s/%s_output.%s' % ( media_uuid, media_uuid, video_file['format'] )
         poster_uri = '%s/%s_poster.%s' % ( media_uuid, media_uuid, poster_file['format'] )
         thumbnail_uri = '%s/%s_thumbnail.%s' % ( media_uuid, media_uuid, thumbnail_file['format'] )
+        face_uri = '%s/%s_face_0_0.%s' % ( media_uuid, media_uuid, face_file['format'] )
 
         vib.utils.s3.copy_s3_file( video_file['s3_bucket'], video_file['s3_key'], config.bucket_name, video_uri )
         vib.utils.s3.copy_s3_file( poster_file['s3_bucket'], poster_file['s3_key'], config.bucket_name, poster_uri )
         vib.utils.s3.copy_s3_file( thumbnail_file['s3_bucket'], thumbnail_file['s3_key'], config.bucket_name, thumbnail_uri )
+        vib.utils.s3.copy_s3_file( face_file['s3_bucket'], face_file['s3_key'], config.bucket_name, face_uri )
 
         orm = vib.db.orm.get_session()
 
         user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
 
-        #contact = Contacts(
-        #    uuid         = str( uuid.uuid4() ),
-        #    user_id      = user.id,
-        #    contact_name = friend['name'],
-        #    provider     = 'facebook',
-        #    provider_id  = friend['facebook_id'],
-        #    picture_uri  = s3_key
-        #    )
+        contact = Contacts(
+            uuid          = str( uuid.uuid4() ),
+            user_id       = user.id,
+            contact_name  = contact_name,
+            contact_email = contact_email,
+            picture_uri   = face_uri
+            )
 
-        #orm.add( contact )
+        orm.add( contact )
         
         media = Media( 
             uuid        = media_uuid,
@@ -125,7 +140,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
             lat         = lat,
             lng         = lng,
             recording_date = recording_date,
-            status      = 'TranscodeComplete'
+            status      = 'FaceRecognizeComplete'
             )
 
         user.media.append( media )
@@ -165,32 +180,24 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
                                     view_count = 0 )
         media.assets.append( poster_asset )
 
-                #media_asset = MediaAssets(
-                #    uuid       = str( uuid.uuid4() ),
-                #    asset_type = 'fb_face',
-                #    mimetype   = 'image/png',
-                #    bytes      = os.path.getsize( friend['file'] ),
-                #    uri        = s3_key,
-                #    location   = 'us'
-                #    )
-                #media.assets.append( media_asset )
+        face_uuid = str( uuid.uuid4() )
+        face_asset = MediaAssets( uuid       = face_uuid,
+                                  asset_type = 'face',
+                                  mimetype   = face_mimetype,
+                                  bytes      = face_file['bytes'],
+                                  width      = int( face_x ), 
+                                  height     = int( face_y ),
+                                  uri        = face_uri,
+                                  location   = 'us',
+                                  view_count = 0 )
+        media.assets.append( face_asset )
 
-                #media_asset_feature = MediaAssetFeatures(
-                #    feature_type = 'fb_face',
-                #    )
+        media_asset_feature = MediaAssetFeatures(
+            feature_type = 'face'
+            )
                 
-                #media_asset.media_asset_features.append( media_asset_feature )
-                #contact.media_asset_features.append( media_asset_feature )
-                
-        #contact = Contacts(
-        #    uuid         = str( uuid.uuid4() ),
-        #    user_id      = user.id,
-        #    contact_name = friend['name'],
-        #    provider     = 'facebook',
-        #    provider_id  = friend['id']
-        #    )
-
-        #orm.add( contact )
+        face_asset.media_asset_features.append( media_asset_feature )
+        contact.media_asset_features.append( media_asset_feature )
         
         orm.commit()
     
@@ -220,8 +227,8 @@ def run():
         body = message.get_body()
         
         try:
-            log.debug( json.dumps( {
-                        'message' : "Starting greet_new_users, message body was %s: " % body
+            log.info( json.dumps( {
+                        'message' : "Reviewing candidate message with body was %s: " % body
                         } ) )
         except Exception as e:
             log.debug( json.dumps( {
@@ -244,29 +251,36 @@ def run():
 
         if action == 'welcome_video' and user_uuid != None:
             # Process message
+            log.info( json.dumps( {
+                        'message' : "Starting greet_new_users, message body was %s: " % body
+                        } ) )
+
             welcome_video_for_user(
                 user_uuid = user_uuid,
                 video_file = { 
-                    's3_bucket' : 'viblio-uploaded-files',
-                    's3_key'    : 'test_data/videos/test-01.mp4', 
-                    'bytes'     : 48511420,
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-001/video.mp4', 
+                    'bytes'     : 3695399,
                     'format'    : 'mp4'
                     },
                 thumbnail_file = {
-                    's3_bucket' : 'viblio-uploaded-files',
-                    's3_key'    : 'test_data/videos/test-01_thumbnail.jpg',
-                    'bytes'     : 2025,
-                    'format'    : 'jpg'
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-001/thumbnail.png',
+                    'bytes'     : 21361,
+                    'format'    : 'png'
                     },
                 poster_file = {
-                    's3_bucket' : 'viblio-uploaded-files',
-                    's3_key'    : 'test_data/videos/test-01_poster.jpg',
-                    'bytes'     : 4353,
-                    'format'    : 'jpg'
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-001/poster.png',
+                    'bytes'     : 114244,
+                    'format'    : 'png'
                     },
-                video_mimetype = 'video/mp4',
-                thumbnail_mimetype = 'image/jpg',
-                poster_mimetype = 'image/jpg',
+                face_file = {
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-001/thumbnail.png',
+                    'bytes'     : 21361,
+                    'format'    : 'png'
+                    }
                 )
             sqs.delete_message( message )
             return True
