@@ -1,0 +1,23 @@
+# Crontab for the staging server class
+#
+# Check for and install new brewtus, popeye, and video workflow
+#
+*/5 * * * * /etc/init.d/brewtus check_and_install
+*/5 * * * * /etc/init.d/popeye  check_and_install
+*/5 * * * * /etc/init.d/supervisor check_and_install
+#
+# Check for vatools
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app vatools
+#
+# Check for viblio-server and webgui
+#
+*/5 * * * * /etc/init.d/viblio-staging check_and_install
+#
+# Check for tools upgrade
+#
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app tools -quiet
+#
+# Daily, Weekly upload emails
+#
+0 8 * * * /etc/init.d/viblio-staging send_daily_upload_emails
+0 8 * * 7 /etc/init.d/viblio-staging send_weekly_upload_emails

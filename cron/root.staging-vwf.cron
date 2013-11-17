@@ -1,0 +1,12 @@
+# Crontab for the staging server class
+#
+# Check for and install new video workflow
+#
+*/5 * * * * /etc/init.d/supervisor check_and_install
+#
+# Check for vatools
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app vatools
+#
+# Check for tools upgrade
+#
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app tools -quiet
