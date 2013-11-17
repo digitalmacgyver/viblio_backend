@@ -53,7 +53,6 @@ install:
 	( cp $(ROOT)/$(LVL)/$(APP)/config/boto.config ~www-data/.boto ; chown www-data:www-data ~www-data/.boto )
 	ln -sf $(ROOT)/$(LVL)/$(APP)/deployment/init.d/supervisor-$(LVL) /etc/init.d/supervisor
 	( cd /etc/init.d ; update-rc.d supervisor defaults )
-	/etc/init.d/supervisor start
 
 # bump:
 # This will actually run upgrade.pl to initiate a software upgrade.  You must
