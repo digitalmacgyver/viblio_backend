@@ -65,3 +65,25 @@ def download_file( filename, bucket, key ):
                     'message' : 'Failed to download %s from s3: %s/%s' % ( filename, bucket, key )
                               } ) )
         raise
+
+def copy_s3_file( source_bucket, source_key, target_bucket, target_key ):
+    '''Copy the source file in S3 to the target file'''
+    try:
+        log.info( json.dumps( { 
+                    'message' : 'Copying S3 file from: %s/%s to: %s/%s' % ( source_bucket, source_key, target_bucket, target_key )
+                              } ) )
+
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+
+        if source_bucket == target_bucket:
+            bucket = s3.get_bucket( source_bucket )
+            bucket.copy_key( target_key, source_bucket, source_key )
+        else:
+            k = Key( s3.get_bucket( source_bucket ), source_key )
+            k.copy( s3.get_bucket( target_bucket ), target_key )
+
+    except Exception as e:
+        log.error( json.dumps( { 
+                    'message' : 'Failed to copy S3 file from: %s/%s to: %s/%s, error: %s' % ( source_bucket, source_key, target_bucket, target_key, e )
+                    } ) )
+        raise
