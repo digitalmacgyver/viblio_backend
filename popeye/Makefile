@@ -28,7 +28,7 @@ PIP_PYPKGS=\
 install_deps:
 	apt-get -y install python-pip python-dev
 	easy_install $(PYPKGS)
-	pip $(PIP_PYPKGS)
+	pip install $(PIP_PYPKGS)
 	apt-get -y install python-mysqldb
 	apt-get -y install apache2
 	apt-get -y install libapache2-mod-wsgi

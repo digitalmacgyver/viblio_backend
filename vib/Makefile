@@ -1,6 +1,6 @@
 ROOT ?= /deploy
 LVL  ?= staging
-APP   = vwf
+APP   = vib
 
 FILES = $(shell git ls-tree -r master --name-only)
 

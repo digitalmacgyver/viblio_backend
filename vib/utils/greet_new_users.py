@@ -39,8 +39,6 @@ log.addHandler( consolelog )
 
 # Logic:
 # Add face image to video-external
-# Roll to staging
-# Test manual staging message add
 # Test Andy's mechanism.
 
 def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, face_file, **options ):
