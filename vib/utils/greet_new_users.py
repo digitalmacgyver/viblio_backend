@@ -36,11 +36,6 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-
-# Logic:
-# Add face image to video-external
-# Test Andy's mechanism.
-
 def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, face_file, **options ):
     '''Adds the video, thumbnail, and poster for the user_uuid.
     
@@ -273,10 +268,11 @@ def run():
                     },
                 face_file = {
                     's3_bucket' : 'viblio-external',
-                    's3_key'    : 'media/video-001/thumbnail.png',
-                    'bytes'     : 21361,
+                    's3_key'    : 'media/video-001/face.png',
+                    'bytes'     : 13153,
                     'format'    : 'png'
-                    }
+                    },
+                face_size = '800x800'
                 )
             sqs.delete_message( message )
             return True
