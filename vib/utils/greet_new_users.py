@@ -39,8 +39,6 @@ log.addHandler( consolelog )
 
 # Logic:
 # Add face image to video-external
-# Add supervisor config
-# Add local
 # Roll to staging
 # Test manual staging message add
 # Test Andy's mechanism.
