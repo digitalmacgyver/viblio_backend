@@ -15,7 +15,6 @@ PYPKGS=\
 	wsgilog \
 	sqlalchemy \
 	requests \
-	qtfaststart \
 	pytz \
 	mixpanel-py \
 	supervisor \
