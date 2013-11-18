@@ -16,7 +16,6 @@ PYPKGS=\
 	config \
 	sqlalchemy \
 	requests \
-	qtfaststart \
 	pytz \
 	mixpanel-py \
 	supervisor \
