@@ -106,7 +106,7 @@ class VWorker( swf.ActivityWorker ):
 
 def _mp_log( event, media_uuid, user_uuid, properties = {} ):
     try:
-        properties['$time'] = time.strftime( "%Y-%m-%dT%H:%M:%S", time.gmtime() )
+        #properties['$time'] = time.strftime( "%Y-%m-%dT%H:%M:%S", time.gmtime() )
         properties['user_uuid'] = user_uuid
         properties['deployment'] = config.mp_deployment
 
