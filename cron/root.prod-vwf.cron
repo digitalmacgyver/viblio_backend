@@ -5,8 +5,8 @@
 */5 * * * * /etc/init.d/supervisor check_and_install
 #
 # Check for vatools
-*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app vatools
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db prod -app vatools
 #
 # Check for tools upgrade
 #
-*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app tools -quiet
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db prod -app tools -quiet
