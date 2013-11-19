@@ -98,7 +98,7 @@ class Worker( Background ):
 
     def mp_log( self, event, properties = {} ):
         try:
-            properties['$time'] = time.strftime( "%Y-%m-%dT%H:%M:%S", time.gmtime() )
+            # properties['$time'] = time.strftime( "%Y-%m-%dT%H:%M:%S", time.gmtime() )
             # properties['$time'] = str( datetime.datetime.now() )
             if hasattr( self, 'data' ) and 'info' in self.data and 'uid' in self.data['info']:
                 properties['user_uuid'] = self.data['info']['uid']  
