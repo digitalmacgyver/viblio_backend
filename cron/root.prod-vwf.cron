@@ -1,4 +1,4 @@
-# Crontab for the staging video workflow server class
+# Crontab for the prod video workflow server class
 #
 # Check for and install new video workflow
 #
