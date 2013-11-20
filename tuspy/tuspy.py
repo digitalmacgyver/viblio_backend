@@ -66,11 +66,11 @@ cdb = {
         'server': 'https://staging.viblio.com/files'
         },
     'prod': {
-        'auth': 'https://prod.viblio.com/services/na/authenticate',
-        'server': 'https://upload.viblio.com/files'
+        'auth': 'https://viblio.com/services/na/authenticate',
+        'server': 'https://viblio.com/files'
         },
     'uploader': {
-        'auth': 'https://prod.viblio.com/services/na/authenticate',
+        'auth': 'https://viblio.com/services/na/authenticate',
         'server': 'https://uploader.viblio.com/files'
         }
     }
