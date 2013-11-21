@@ -143,6 +143,7 @@
 	    }
 	    mixpanel.track( 'upload_started', {
 		distinct_id: meta.fileId,
+		media_uuid: meta.fileId,
 		user_uuid: meta.uid,
 		activity: 'brewtus',
 		deployment: process.env.NODE_ENV || 'local'
@@ -253,6 +254,7 @@
 	    return u.save( function() {
 		mixpanel.track( 'upload_completed', {
 		    distinct_id: info.fileId,
+		    media_uuid: info.fileId,
 		    user_uuid: info.uid,
 		    activity: 'brewtus',
 		    deployment: process.env.NODE_ENV || 'local'
@@ -430,7 +432,7 @@
 	logDir = config.logDir || path.join(__dirname, "logs");
 	logFileName = path.join(logDir, "" + fileNamePrefix + ".log");
 	setupLogger(logDir, logFileName, config.logRotateSize);
-	mixpanel = Mixpanel.init('404b9a0b96b8147b5050c165dfc809b3');
+	mixpanel = Mixpanel.init('aaeab0c46192750b89eecddefd0331f4');
 	try {
 	    fs.mkdirSync(config.files);
 	} catch (error) {
