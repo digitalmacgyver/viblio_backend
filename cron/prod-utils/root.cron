@@ -7,4 +7,8 @@
 # Check for tools upgrade
 #
 */5 * * * * /usr/local/bin/check-and-install-software.pl -db prod -app tools -quiet
+#
+# Daily backups
+#
+0 0 * * * /root/backup/ec2-automate-backup.sh -r us-west-2 -s tag -t "Backup=true" -c /root/backup/cron-primer.sh -k 14 -p -u -n >> /tmp/ec2-automate-backup-$(/bin/date +"%F").log 2>&1
 
