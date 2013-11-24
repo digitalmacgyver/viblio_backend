@@ -295,6 +295,10 @@
     };
 
     httpStatus = function(res, statusCode, reason, body, meta ) {
+
+	if (res.headersSent)
+	    return res.end();
+
 	if ( statusCode > 205 ) {
 	    winston.error( 'bad request: ' + statusCode + ': ' + reason, meta );
 	}
