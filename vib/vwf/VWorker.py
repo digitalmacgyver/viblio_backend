@@ -30,6 +30,7 @@ logger.addHandler( syslog )
 logger.addHandler( consolelog )
 
 mp = mixpanel.Mixpanel( config.mp_token )
+mp_web = mixpanel.Mixpanel( config.mp_web_token )
 
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
@@ -111,6 +112,10 @@ def _mp_log( event, media_uuid, user_uuid, properties = {} ):
         properties['deployment'] = config.mp_deployment
 
         mp.track( media_uuid, event, properties )
+
+        if 'user_uuid' in properties:
+            mp_web.track( properties['user_uuid'], event, properties )
+
     except Exception as e:
         logger.warning( json.dumps( { 
                     'media_uuid' : media_uuid,

@@ -44,7 +44,7 @@ class Monitor( swf.Domain ):
 
     def print_queue_depths( self ):
         for stage in sorted( VPW.keys() ):
-            print "%s had %s outstanding tasks." % ( stage, self.count_pending_activity_tasks( VPW[stage]['task_list'] + config.VPWSuffix + config.UniqueTaskList )['count'] )
+            print "%s (%s) had %s outstanding tasks." % ( stage, VPW[stage]['task_list'] + config.VPWSuffix + config.UniqueTaskList, self.count_pending_activity_tasks( VPW[stage]['task_list'] + config.VPWSuffix + config.UniqueTaskList )['count'] )
 
 
         

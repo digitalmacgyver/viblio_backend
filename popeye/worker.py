@@ -89,6 +89,7 @@ class Worker( Background ):
             self.mp_stage = '03'
             try:
                 self.mp = mixpanel.Mixpanel( config.mp_token )
+                self.mp_web = mixpanel.Mixpanel( config.mp_web_token )
             except Exception as e:
                 self.__safe_log( self.popeye_log.warning, "Couldn't instantiate mixpanel instrumentation." )
 
@@ -114,6 +115,9 @@ class Worker( Background ):
             event = self.mp_stage + '_' + event
             
             self.mp.track( self.uuid, event, properties )
+            if 'user_uuid' in properties:
+                self.mp_web.track( properties['user_uuid'], event, properties )
+
         except Exception as e:
             self.__safe_log( self.popeye_log.warning, "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( self.uuid, event, properties, e ) )
 
