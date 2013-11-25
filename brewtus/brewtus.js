@@ -151,6 +151,8 @@
 	    var proto = 'http';
 	    if ( req.headers.port && req.headers.port == 443 )
 		proto = 'https';
+	    if ( config.force_https ) 
+		proto = 'https';
 	    res.setHeader("Location", proto + "://" + req.headers.host + "/files/" + fileId);
 	    return httpStatus(res, 201, "Created", null, meta);
 	});

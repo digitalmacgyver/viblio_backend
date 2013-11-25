@@ -1,5 +1,6 @@
 {
 	"port":8080, 
+	"force_https":1,
 	"server": "BrewTUS/0.1",
 	"files":"/mnt/uploaded_files",
 	"logDir": "logs",

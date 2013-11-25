@@ -172,6 +172,7 @@ if c.status_code != 201:
     die("create failure. reason: %s"  % c.reason)
 
 location = c.headers["Location"]
+print "ORIGINAL Location header is: " + location
 
 # If the actual brewtus server is behind a https proxy,
 # the location header will be http://, but we need to
@@ -180,7 +181,7 @@ if ( cdb[options.server]['server'].startswith('https:') and
      location.startswith('http:') ):
     location = location.replace('http:', 'https:')
 
-print "Location header is: " + location
+print "MODIFIED Location header is: " + location
 if ( 'Set-Cookie' in c.headers ):
     cookie = c.headers["Set-Cookie"]
     print "Cookie header is: " + cookie
