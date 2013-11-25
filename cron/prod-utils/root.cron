@@ -10,6 +10,4 @@
 #
 # Daily backups
 #
-09 6 * * * /root/backup/ec2-automate-backup.sh -r us-west-2 -s tag -t "Backup=true" -c /root/backup/cron-primer.sh -k 14 -p -u -n >> /tmp/ec2-automate-backup-$(/bin/date +"\%F").log 2>&1
-
-
+0 10 * * * /root/backup/ec2-automate-backup.sh -r us-west-2 -s tag -t "Backup=true" -c /root/backup/cron-primer.sh -k 14 -p -u -n >> /tmp/ec2-automate-backup-$(/bin/date +"\%F").log 2>&1

@@ -148,7 +148,10 @@
 		activity: 'brewtus',
 		deployment: process.env.NODE_ENV || 'local'
 	    });
-	    res.setHeader("Location", "http://" + req.headers.host + "/files/" + fileId);
+	    var proto = 'http';
+	    if ( req.headers.port && req.headers.port == 443 )
+		proto = 'https';
+	    res.setHeader("Location", proto + "://" + req.headers.host + "/files/" + fileId);
 	    return httpStatus(res, 201, "Created", null, meta);
 	});
     };
@@ -295,6 +298,10 @@
     };
 
     httpStatus = function(res, statusCode, reason, body, meta ) {
+
+	if (res.headersSent)
+	    return res.end();
+
 	if ( statusCode > 205 ) {
 	    winston.error( 'bad request: ' + statusCode + ': ' + reason, meta );
 	}
