@@ -36,23 +36,29 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, face_file, **options ):
+def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, face_files, **options ):
     '''Adds the video, thumbnail, and poster for the user_uuid.
     
-    Each of the _file arguments is a dictionary with:
+    Each of the video, poster, and thumbanil _file arguments is a dictionary with:
     * s3_bucket
     * s3_key
     * bytes
     * format
     keys
 
-    Optional keyword arguments exist with the following defaults: 
- 
-    * contact_name       - 'Viblio Feedback'
-    * contact_email      - 'feedback@viblio.com'
-    * description        - 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.'
+    The face_files argument is a list, each element is a dictionary with:
+    * s3_bucket
+    * s3_key
+    * bytes
+    * format
     * face_mimetype      - 'image/png'
     * face_size          - '128x128'
+    * contact_name       - 'Viblio Feedback'
+    * contact_email      - 'feedback@viblio.com'
+
+    Optional keyword arguments exist with the following defaults: 
+ 
+    * description        - 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.'
     * filename           - ''
     * lat                - 37.442174
     * lng                - -122.143199
@@ -68,11 +74,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
     orm = None
 
     try:
-        contact_name        = options.get( 'contact_name', 'Viblio Feedback' )
-        contact_email       = options.get( 'contact_email', 'feedback@viblio.com' )
         description         = options.get( 'description', 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.' )
-        face_mimetype       = options.get( 'face_mimetype', 'image/png' )
-        face_size           = options.get( 'face_size', '128x128' )
         filename            = options.get( 'filename', '' )
         lat                 = options.get( 'lat', 37.442174 )
         lng                 = options.get( 'lat', -122.143199 )
@@ -84,7 +86,6 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
         thumbnail_size      = options.get( 'thumbnail_size', '128x128' )
         video_mimetype      = options.get( 'video_mimetype', 'video/mp4' )
 
-        face_x,      face_y      = face_size.split( 'x' )
         poster_x   , poster_y    = poster_size.split( 'x' )
         thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
 
@@ -100,27 +101,15 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
         video_uri = '%s/%s_output.%s' % ( media_uuid, media_uuid, video_file['format'] )
         poster_uri = '%s/%s_poster.%s' % ( media_uuid, media_uuid, poster_file['format'] )
         thumbnail_uri = '%s/%s_thumbnail.%s' % ( media_uuid, media_uuid, thumbnail_file['format'] )
-        face_uri = '%s/%s_face_0_0.%s' % ( media_uuid, media_uuid, face_file['format'] )
 
         vib.utils.s3.copy_s3_file( video_file['s3_bucket'], video_file['s3_key'], config.bucket_name, video_uri )
         vib.utils.s3.copy_s3_file( poster_file['s3_bucket'], poster_file['s3_key'], config.bucket_name, poster_uri )
         vib.utils.s3.copy_s3_file( thumbnail_file['s3_bucket'], thumbnail_file['s3_key'], config.bucket_name, thumbnail_uri )
-        vib.utils.s3.copy_s3_file( face_file['s3_bucket'], face_file['s3_key'], config.bucket_name, face_uri )
 
         orm = vib.db.orm.get_session()
 
         user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
 
-        contact = Contacts(
-            uuid          = str( uuid.uuid4() ),
-            user_id       = user.id,
-            contact_name  = contact_name,
-            contact_email = contact_email,
-            picture_uri   = face_uri
-            )
-
-        orm.add( contact )
-        
         media = Media( 
             uuid        = media_uuid,
             media_type  = 'original',
@@ -171,24 +160,44 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
                                     view_count = 0 )
         media.assets.append( poster_asset )
 
-        face_uuid = str( uuid.uuid4() )
-        face_asset = MediaAssets( uuid       = face_uuid,
-                                  asset_type = 'face',
-                                  mimetype   = face_mimetype,
-                                  bytes      = face_file['bytes'],
-                                  width      = int( face_x ), 
-                                  height     = int( face_y ),
-                                  uri        = face_uri,
-                                  location   = 'us',
-                                  view_count = 0 )
-        media.assets.append( face_asset )
+        for idx, face in enumerate( face_files ):
+            contact_name        = face.get( 'contact_name', 'Viblio Feedback' )
+            contact_email       = face.get( 'contact_email', 'feedback@viblio.com' )
 
-        media_asset_feature = MediaAssetFeatures(
-            feature_type = 'face'
-            )
+            face_mimetype       = face.get( 'face_mimetype', 'image/png' )
+            face_size           = face.get( 'face_size', '128x128' )
+            face_x,      face_y      = face_size.split( 'x' )
+            face_uri = '%s/%s_face_0_%s.%s' % ( media_uuid, media_uuid, idx, face['format'] )
+            vib.utils.s3.copy_s3_file( face['s3_bucket'], face['s3_key'], config.bucket_name, face_uri )
+
+            contact = Contacts(
+                uuid          = str( uuid.uuid4() ),
+                user_id       = user.id,
+                contact_name  = contact_name,
+                contact_email = contact_email,
+                picture_uri   = face_uri
+                )
+
+            orm.add( contact )
+
+            face_uuid = str( uuid.uuid4() )
+            face_asset = MediaAssets( uuid       = face_uuid,
+                                      asset_type = 'face',
+                                      mimetype   = face_mimetype,
+                                      bytes      = face['bytes'],
+                                      width      = int( face_x ), 
+                                      height     = int( face_y ),
+                                      uri        = face_uri,
+                                      location   = 'us',
+                                      view_count = 0 )
+            media.assets.append( face_asset )
+
+            media_asset_feature = MediaAssetFeatures(
+                feature_type = 'face'
+                )
                 
-        face_asset.media_asset_features.append( media_asset_feature )
-        contact.media_asset_features.append( media_asset_feature )
+            face_asset.media_asset_features.append( media_asset_feature )
+            contact.media_asset_features.append( media_asset_feature )
         
         orm.commit()
     
@@ -266,14 +275,65 @@ def run():
                     'bytes'     : 114244,
                     'format'    : 'png'
                     },
-                face_file = {
+                face_files = [ {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-001/face.png',
+                        'bytes'     : 13153,
+                        'format'    : 'png',
+                        'face_size' : '800x800'
+                        } ]
+                )
+
+            welcome_video_for_user(
+                title = 'Watch What Matters',
+                description = 'Rediscover your favorite family videos with Viblio and watch what matters. Reserve your spot now for the revolutionary video-storing and sharing platform at https://viblio.com/signup/',
+                user_uuid = user_uuid,
+                video_file = { 
                     's3_bucket' : 'viblio-external',
-                    's3_key'    : 'media/video-001/face.png',
-                    'bytes'     : 13153,
+                    's3_key'    : 'media/video-002/video.mp4', 
+                    'bytes'     : 6538113,
+                    'format'    : 'mp4'
+                    },
+                thumbnail_file = {
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-002/thumbnail.png',
+                    'bytes'     : 19632,
                     'format'    : 'png'
                     },
-                face_size = '800x800'
+                poster_file = {
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-002/poster.png',
+                    'bytes'     : 95497,
+                    'format'    : 'png'
+                    },
+                face_files = [ 
+                    {
+                        'contact_name' : 'Isabella',
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-002/face_00.png',
+                        'bytes'     : 3828,
+                        'format'    : 'png',
+                        'face_size' : '168x168'
+                        }, 
+                    {
+                        'contact_name' : 'Emily',
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-002/face_01.png',
+                        'bytes'     : 3731,
+                        'format'    : 'png',
+                        'face_size' : '147x147'
+                        },
+                    {
+                        'contact_name' : 'James',
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-002/face_02.png',
+                        'bytes'     : 4491,
+                        'format'    : 'png',
+                        'face_size' : '148x148'
+                        } 
+                    ]
                 )
+
             sqs.delete_message( message )
             return True
         else:
