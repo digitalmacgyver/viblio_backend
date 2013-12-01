@@ -139,7 +139,7 @@ except:
     parser.print_help()
     sys.exit(0)
 
-c = requests.get( cdb[options.auth]['auth'], params={'email': options.email, 'password': options.password, 'realm': options.realm } )
+c = requests.get( cdb[options.auth]['auth'], verify=False, params={'email': options.email, 'password': options.password, 'realm': options.realm } )
 if c.status_code != 200:
     die("failure to connect to %s: %s" % cdb[options.auth]['auth'], c.reason )
 r = json.loads( c.content )
