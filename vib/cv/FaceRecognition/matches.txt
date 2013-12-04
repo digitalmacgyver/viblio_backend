@@ -1,0 +1,856 @@
+Checking match for bidyut, /wintmp/f/b/1313_1_4372.jpg
+{u'url': u'base64_NpecQE.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 15.38, u'x': 25.38}, u'size': {u'width': 111.54, u'height': 111.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.52'}, {u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.97, u'pose': {u'yaw': -1.05, u'roll': 3.29, u'pitch': 14.08}, u'name': u'bidyut:0.52,mona:0.05,ramsri:0.00,'}], u'ori_img_size': {u'width': 151, u'height': 151}, u'usage': {u'status': u'Succeed.', u'quota': 15771, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/1313_1_4373.jpg
+{u'url': u'base64_73o4gK.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 24.62}, u'size': {u'width': 136.92, u'height': 136.92}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.81'}, {u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'ramsri', u'score': u'0.03'}], u'confidence': 1, u'pose': {u'yaw': 15.79, u'roll': 12.94, u'pitch': 1.74}, u'name': u'bidyut:0.81,mona:0.04,ramsri:0.03,'}], u'ori_img_size': {u'width': 173, u'height': 173}, u'usage': {u'status': u'Succeed.', u'quota': 15770, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/1313_1_4374.jpg
+{u'url': u'base64_iBKoZ6.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 10.77, u'x': 27.69}, u'size': {u'width': 123.08, u'height': 123.08}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.88'}, {u'tag': u'ramsri', u'score': u'0.06'}, {u'tag': u'mona', u'score': u'0.04'}], u'confidence': 1, u'pose': {u'yaw': 1.65, u'roll': 2.47, u'pitch': 0.82}, u'name': u'bidyut:0.88,ramsri:0.06,mona:0.04,'}], u'ori_img_size': {u'width': 163, u'height': 163}, u'usage': {u'status': u'Succeed.', u'quota': 15769, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/1313_1_4375.jpg
+{u'url': u'base64_oUBwBl.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 20}, u'size': {u'width': 130.77, u'height': 130.77}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.96'}, {u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'ramsri', u'score': u'0.04'}], u'confidence': 1, u'pose': {u'yaw': 4.36, u'roll': 3.47, u'pitch': -5.38}, u'name': u'bidyut:0.96,mona:0.05,ramsri:0.04,'}], u'ori_img_size': {u'width': 163, u'height': 163}, u'usage': {u'status': u'Succeed.', u'quota': 15768, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/1313_1_4376.jpg
+{u'url': u'base64_K0agSt.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 17.69}, u'size': {u'width': 136.92, u'height': 136.92}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.94'}, {u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'ramsri', u'score': u'0.02'}], u'confidence': 1, u'pose': {u'yaw': -10.43, u'roll': -0.98, u'pitch': -4.95}, u'name': u'bidyut:0.94,mona:0.04,ramsri:0.02,'}], u'ori_img_size': {u'width': 163, u'height': 163}, u'usage': {u'status': u'Succeed.', u'quota': 15767, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2147_0_3392.jpg
+{u'url': u'base64_R9AwJc.jpg', u'face_detection': [], u'ori_img_size': {u'width': 358, u'height': 358}, u'usage': {u'status': u'Succeed.', u'quota': 15766, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2147_0_3393.jpg
+{u'url': u'base64_cSGdzB.jpg', u'face_detection': [], u'ori_img_size': {u'width': 359, u'height': 359}, u'usage': {u'status': u'Succeed.', u'quota': 15765, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2147_0_3394.jpg
+{u'url': u'base64_sjJL4l.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 13.85, u'x': 33.85}, u'size': {u'width': 296.15, u'height': 296.15}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.53'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 15.69, u'roll': 25.21, u'pitch': 7.25}, u'name': u'bidyut:0.53,mona:0.01,ramsri:0.01,'}], u'ori_img_size': {u'width': 357, u'height': 357}, u'usage': {u'status': u'Succeed.', u'quota': 15764, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2147_0_3395.jpg
+{u'url': u'base64_vdsQSf.jpg', u'face_detection': [], u'ori_img_size': {u'width': 357, u'height': 357}, u'usage': {u'status': u'Succeed.', u'quota': 15763, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2147_0_3396.jpg
+{u'url': u'base64_Avyjsz.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 13.85, u'x': 33.85}, u'size': {u'width': 296.15, u'height': 296.15}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.48'}, {u'tag': u'mona', u'score': u'0.07'}, {u'tag': u'ramsri', u'score': u'0.03'}], u'confidence': 1, u'pose': {u'yaw': 18.71, u'roll': 22.5, u'pitch': 12.89}, u'name': u'bidyut:0.48,mona:0.07,ramsri:0.03,'}], u'ori_img_size': {u'width': 357, u'height': 357}, u'usage': {u'status': u'Succeed.', u'quota': 15762, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2898_0_3283.jpg
+{u'url': u'base64_xsQNwP.jpg', u'face_detection': [], u'ori_img_size': {u'width': 126, u'height': 126}, u'usage': {u'status': u'Succeed.', u'quota': 15761, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2898_0_3284.jpg
+{u'url': u'base64_A94j1m.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 13.85, u'x': 4.62}, u'size': {u'width': 91.54, u'height': 91.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.08'}, {u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': -24.56, u'roll': -1.37, u'pitch': 14.15}, u'name': u'bidyut:0.08,mona:0.03,ramsri:0.01,'}], u'ori_img_size': {u'width': 105, u'height': 120}, u'usage': {u'status': u'Succeed.', u'quota': 15760, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2898_0_3285.jpg
+{u'url': u'base64_67twKD.jpg', u'face_detection': [], u'ori_img_size': {u'width': 126, u'height': 126}, u'usage': {u'status': u'Succeed.', u'quota': 15759, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2898_0_3286.jpg
+{u'url': u'base64_OOusdi.jpg', u'face_detection': [], u'ori_img_size': {u'width': 126, u'height': 126}, u'usage': {u'status': u'Succeed.', u'quota': 15758, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/2898_0_3287.jpg
+{u'url': u'base64_e86nRt.jpg', u'face_detection': [], u'ori_img_size': {u'width': 126, u'height': 126}, u'usage': {u'status': u'Succeed.', u'quota': 15757, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/3536_4_3967.jpg
+{u'url': u'base64_zYyypg.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 22.31}, u'size': {u'width': 119.23, u'height': 119.23}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.24'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 2.34, u'roll': 3.87, u'pitch': 11.78}, u'name': u'bidyut:0.24,ramsri:0.01,mona:0.01,'}], u'ori_img_size': {u'width': 152, u'height': 152}, u'usage': {u'status': u'Succeed.', u'quota': 15756, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/3536_4_3968.jpg
+{u'url': u'base64_64mtws.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 15.38}, u'size': {u'width': 123.08, u'height': 123.08}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.72'}, {u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.03'}], u'confidence': 1, u'pose': {u'yaw': 18.57, u'roll': 9.62, u'pitch': 5.09}, u'name': u'bidyut:0.72,mona:0.03,ramsri:0.03,'}], u'ori_img_size': {u'width': 154, u'height': 154}, u'usage': {u'status': u'Succeed.', u'quota': 15755, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for bidyut, /wintmp/f/b/3536_4_3969.jpg
+{u'url': u'base64_v9P88J.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 18.46, u'x': 25.38}, u'size': {u'width': 101.54, u'height': 101.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.80'}, {u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'ramsri', u'score': u'0.02'}], u'confidence': 1, u'pose': {u'yaw': -1.79, u'roll': 1.29, u'pitch': 1.86}, u'name': u'bidyut:0.80,mona:0.05,ramsri:0.02,'}], u'ori_img_size': {u'width': 154, u'height': 154}, u'usage': {u'status': u'Succeed.', u'quota': 15754, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for mona, /wintmp/f/m/3053_1_3570.jpg
+{u'url': u'base64_7k7qUE.jpg', u'face_detection': [], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15753, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for mona, /wintmp/f/m/3055_1_3578.jpg
+{u'url': u'base64_IMr0hJ.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 7.69}, u'size': {u'width': 70, u'height': 70}}, u'matches': [{u'tag': u'mona', u'score': u'0.13'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -13.45, u'roll': -0.29, u'pitch': 14.03}, u'name': u'mona:0.13,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15752, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for mona, /wintmp/f/m/3055_1_3579.jpg
+{u'url': u'base64_9fHOYZ.jpg', u'face_detection': [], u'ori_img_size': {u'width': 89, u'height': 80}, u'usage': {u'status': u'Succeed.', u'quota': 15751, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for mona, /wintmp/f/m/3070_0_3587.jpg
+{u'url': u'base64_4i0G6V.jpg', u'face_detection': [], u'ori_img_size': {u'width': 140, u'height': 140}, u'usage': {u'status': u'Succeed.', u'quota': 15750, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for mona, /wintmp/f/m/3102_0_3652.jpg
+{u'url': u'base64_I5J4XW.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 6.92}, u'size': {u'width': 70, u'height': 70}}, u'matches': [{u'tag': u'mona', u'score': u'0.06'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -5.48, u'roll': -2.75, u'pitch': 15.4}, u'name': u'mona:0.06,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15749, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for ramsri, /wintmp/f/r/2147_1_3397.jpg
+{u'url': u'base64_SQCXFe.jpg', u'face_detection': [], u'ori_img_size': {u'width': 313, u'height': 366}, u'usage': {u'status': u'Succeed.', u'quota': 15748, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for ramsri, /wintmp/f/r/2147_1_3398.jpg
+{u'url': u'base64_8qwdR5.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 35.38, u'x': 43.08}, u'size': {u'width': 249.23, u'height': 249.23}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.90'}, {u'tag': u'bidyut', u'score': u'0.04'}, {u'tag': u'mona', u'score': u'0.01'}], u'confidence': 0.98, u'pose': {u'yaw': 16.21, u'roll': -3.61, u'pitch': 6.16}, u'name': u'ramsri:0.90,bidyut:0.04,mona:0.01,'}], u'ori_img_size': {u'width': 309, u'height': 362}, u'usage': {u'status': u'Succeed.', u'quota': 15747, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for ramsri, /wintmp/f/r/2147_1_3399.jpg
+{u'url': u'base64_TIsoQ9.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 14.62, u'x': 26.15}, u'size': {u'width': 318.46, u'height': 318.46}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.99'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': -8.52, u'roll': -8.74, u'pitch': 4.36}, u'name': u'ramsri:0.99,bidyut:0.01,mona:0.01,'}], u'ori_img_size': {u'width': 408, u'height': 408}, u'usage': {u'status': u'Succeed.', u'quota': 15746, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for ramsri, /wintmp/f/r/2147_1_3400.jpg
+{u'url': u'base64_vRTWVA.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 34.62, u'x': 42.31}, u'size': {u'width': 246.92, u'height': 246.92}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.16'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.97, u'pose': {u'yaw': 26.73, u'roll': -3.11, u'pitch': 6.52}, u'name': u'ramsri:0.16,mona:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 308, u'height': 361}, u'usage': {u'status': u'Succeed.', u'quota': 15745, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for ramsri, /wintmp/f/r/3009_0_3537.jpg
+{u'url': u'base64_89cb58.jpg', u'face_detection': [], u'ori_img_size': {u'width': 222, u'height': 222}, u'usage': {u'status': u'Succeed.', u'quota': 15744, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for ramsri, /wintmp/f/r/3009_0_3538.jpg
+{u'url': u'base64_VMqORE.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.15, u'x': 35.38}, u'size': {u'width': 172.31, u'height': 172.31}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.57'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 0.28, u'roll': 3.49, u'pitch': 1.96}, u'name': u'ramsri:0.57,bidyut:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 225, u'height': 225}, u'usage': {u'status': u'Succeed.', u'quota': 15743, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for ramsri, /wintmp/f/r/3009_0_3539.jpg
+{u'url': u'base64_IebiK7.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 8.46, u'x': 37.69}, u'size': {u'width': 164.62, u'height': 164.62}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.39'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 5.9, u'roll': 0.92, u'pitch': -6.18}, u'name': u'ramsri:0.39,bidyut:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 222, u'height': 222}, u'usage': {u'status': u'Succeed.', u'quota': 15742, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3259.jpg
+{u'url': u'base64_AwIWOH.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 12.31}, u'size': {u'width': 87.69, u'height': 87.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.02'}], u'confidence': 1, u'pose': {u'yaw': 12.22, u'roll': 2.62, u'pitch': 28.66}, u'name': u'mona:0.02,ramsri:0.02,bidyut:0.02,'}], u'ori_img_size': {u'width': 110, u'height': 110}, u'usage': {u'status': u'Succeed.', u'quota': 15741, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3259.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_w4Oyg8.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15741', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3260.jpg
+{u'url': u'base64_wpQhcg.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.15, u'x': 15.38}, u'size': {u'width': 86.92, u'height': 86.92}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.02'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 5.97, u'roll': 3.06, u'pitch': 26.4}, u'name': u'ramsri:0.02,mona:0.01,bidyut:0.01,'}], u'ori_img_size': {u'width': 112, u'height': 112}, u'usage': {u'status': u'Succeed.', u'quota': 15740, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3260.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_IXvMC8.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15740', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3261.jpg
+{u'url': u'base64_b1jeHj.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 15.38}, u'size': {u'width': 85.38, u'height': 85.38}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.02'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 6.61, u'roll': 2.4, u'pitch': 22.87}, u'name': u'ramsri:0.02,mona:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 112, u'height': 112}, u'usage': {u'status': u'Succeed.', u'quota': 15739, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3261.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_FbjdcA.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15739', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3262.jpg
+{u'url': u'base64_iohON5.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 11.54}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 7.39, u'roll': 1.55, u'pitch': 21.8}, u'name': u'ramsri:0.01,mona:0.01,bidyut:0.01,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15738, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3262.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_q2TY6U.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15738', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3263.jpg
+{u'url': u'base64_mRgP1i.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 13.08}, u'size': {u'width': 82.31, u'height': 82.31}}, u'matches': [{u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 8.84, u'roll': 1.36, u'pitch': 24.12}, u'name': u'mona:0.00,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 107, u'height': 107}, u'usage': {u'status': u'Succeed.', u'quota': 15737, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_0_3263.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_CVY5nG.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15737', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_1_3264.jpg
+{u'url': u'base64_uWOs5j.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 6.15}, u'size': {u'width': 79.23, u'height': 79.23}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 7.77, u'roll': 3.52, u'pitch': 26.56}, u'name': u'mona:0.02,ramsri:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15736, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_1_3264.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_DQH2CR.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15736', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3265.jpg
+{u'url': u'base64_wbPCr9.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 7.69}, u'size': {u'width': 150.77, u'height': 150.77}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.04'}, {u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 0.99, u'pose': {u'yaw': -27.15, u'roll': -5.26, u'pitch': 12.68}, u'name': u'ramsri:0.04,mona:0.04,bidyut:0.01,'}], u'ori_img_size': {u'width': 184, u'height': 184}, u'usage': {u'status': u'Succeed.', u'quota': 15735, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3265.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_ZmG5tF.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15735', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3266.jpg
+{u'url': u'base64_2RtQdI.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 8.46}, u'size': {u'width': 137.69, u'height': 137.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'ramsri', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 0.62, u'pose': {u'yaw': -24.44, u'roll': -3.88, u'pitch': 7.54}, u'name': u'mona:0.05,ramsri:0.03,bidyut:0.01,'}], u'ori_img_size': {u'width': 179, u'height': 179}, u'usage': {u'status': u'Succeed.', u'quota': 15734, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3266.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_SjUo6q.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15734', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3267.jpg
+{u'url': u'base64_AQMBLJ.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 8.46}, u'size': {u'width': 143.85, u'height': 143.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.12'}, {u'tag': u'ramsri', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 0.97, u'pose': {u'yaw': -32.46, u'roll': -4.65, u'pitch': 15.61}, u'name': u'mona:0.12,ramsri:0.02,bidyut:0.01,'}], u'ori_img_size': {u'width': 182, u'height': 182}, u'usage': {u'status': u'Succeed.', u'quota': 15733, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3267.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_i891Xl.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15733', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3268.jpg
+{u'url': u'base64_uy55Vu.jpg', u'face_detection': [], u'ori_img_size': {u'width': 179, u'height': 179}, u'usage': {u'status': u'Succeed.', u'quota': 15732, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3268.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Ola54P.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15732', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3269.jpg
+{u'url': u'base64_fjmXcI.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 6.92}, u'size': {u'width': 141.54, u'height': 141.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.20'}, {u'tag': u'ramsri', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.02'}], u'confidence': 0.56, u'pose': {u'yaw': -5.57, u'roll': -4.35, u'pitch': 19.68}, u'name': u'mona:0.20,ramsri:0.03,bidyut:0.02,'}], u'ori_img_size': {u'width': 183, u'height': 183}, u'usage': {u'status': u'Succeed.', u'quota': 15731, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2895_3_3269.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_gBWnYu.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15731', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2902_0_3330.jpg
+{u'url': u'base64_bwm2jR.jpg', u'face_detection': [], u'ori_img_size': {u'width': 229, u'height': 229}, u'usage': {u'status': u'Succeed.', u'quota': 15730, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2902_0_3330.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_gRss18.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15730', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2902_0_3331.jpg
+{u'url': u'base64_Cifpyy.jpg', u'face_detection': [], u'ori_img_size': {u'width': 225, u'height': 225}, u'usage': {u'status': u'Succeed.', u'quota': 15729, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2902_0_3331.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_sshjyp.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15729', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2902_0_3332.jpg
+{u'url': u'base64_5tnViE.jpg', u'face_detection': [], u'ori_img_size': {u'width': 219, u'height': 226}, u'usage': {u'status': u'Succeed.', u'quota': 15728, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2902_0_3332.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_BtIxDg.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15728', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2902_0_3333.jpg
+{u'url': u'base64_zYEM0T.jpg', u'face_detection': [], u'ori_img_size': {u'width': 220, u'height': 229}, u'usage': {u'status': u'Succeed.', u'quota': 15727, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2902_0_3333.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_6x3UCz.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15727', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3367.jpg
+{u'url': u'base64_CUuEes.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 18.5, u'x': 60.56}, u'size': {u'width': 623.26, u'height': 623.26}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 14.8, u'roll': -3.74, u'pitch': -1.84}, u'name': u'bidyut:0.00,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 757, u'height': 757}, u'usage': {u'status': u'Succeed.', u'quota': 15726, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3367.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_mr4Lk9.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15726', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3368.jpg
+{u'url': u'base64_o506h0.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 11.98, u'x': 62.46}, u'size': {u'width': 615.14, u'height': 615.14}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 4.29, u'roll': -6.05, u'pitch': -2.7}, u'name': u'bidyut:0.01,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 770, u'height': 770}, u'usage': {u'status': u'Succeed.', u'quota': 15725, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3368.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_EBQvj9.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15725', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3369.jpg
+{u'url': u'base64_bTNKD2.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 18.6, u'x': 60.88}, u'size': {u'width': 626.56, u'height': 626.56}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 15.26, u'roll': -3.89, u'pitch': -0.04}, u'name': u'bidyut:0.01,ramsri:0.01,mona:0.00,'}], u'ori_img_size': {u'width': 761, u'height': 761}, u'usage': {u'status': u'Succeed.', u'quota': 15724, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3369.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_xQAqXG.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15724', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3370.jpg
+{u'url': u'base64_akduwb.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 18.6, u'x': 60.88}, u'size': {u'width': 626.56, u'height': 626.56}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 14.46, u'roll': -2.65, u'pitch': -1.69}, u'name': u'bidyut:0.01,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 761, u'height': 761}, u'usage': {u'status': u'Succeed.', u'quota': 15723, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3370.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_rdxvta.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15723', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3371.jpg
+{u'url': u'base64_1hHQgz.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 19.35, u'x': 63.92}, u'size': {u'width': 608.96, u'height': 608.96}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 17.76, u'roll': -4.68, u'pitch': -2.55}, u'name': u'bidyut:0.01,ramsri:0.01,mona:0.00,'}], u'ori_img_size': {u'width': 757, u'height': 757}, u'usage': {u'status': u'Succeed.', u'quota': 15722, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_0_3371.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_4fXUNX.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15722', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_1_3372.jpg
+{u'url': u'base64_mPBSHM.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 12.8, u'x': 77.65}, u'size': {u'width': 592.21, u'height': 592.21}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.85, u'pose': {u'yaw': 19.27, u'roll': -5.2, u'pitch': -3.1}, u'name': u'bidyut:0.01,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 768, u'height': 768}, u'usage': {u'status': u'Succeed.', u'quota': 15721, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_1_3372.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Sy2aBY.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15721', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_5_3373.jpg
+{u'url': u'base64_qBUJyd.jpg', u'face_detection': [], u'ori_img_size': {u'width': 565, u'height': 565}, u'usage': {u'status': u'Succeed.', u'quota': 15720, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2909_5_3373.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_tcAy8L.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15720', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3375.jpg
+{u'url': u'base64_927Rhu.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 12.31}, u'size': {u'width': 87.69, u'height': 87.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.02'}], u'confidence': 1, u'pose': {u'yaw': 12.22, u'roll': 2.62, u'pitch': 28.66}, u'name': u'mona:0.02,ramsri:0.02,bidyut:0.02,'}], u'ori_img_size': {u'width': 110, u'height': 110}, u'usage': {u'status': u'Succeed.', u'quota': 15719, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3375.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_JexKhO.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15719', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3376.jpg
+{u'url': u'base64_Idvyvu.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.15, u'x': 15.38}, u'size': {u'width': 86.92, u'height': 86.92}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.02'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 5.97, u'roll': 3.06, u'pitch': 26.4}, u'name': u'ramsri:0.02,mona:0.01,bidyut:0.01,'}], u'ori_img_size': {u'width': 112, u'height': 112}, u'usage': {u'status': u'Succeed.', u'quota': 15718, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3376.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_X26mvD.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15718', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3377.jpg
+{u'url': u'base64_ij2oio.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 15.38}, u'size': {u'width': 85.38, u'height': 85.38}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.02'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 6.61, u'roll': 2.4, u'pitch': 22.87}, u'name': u'ramsri:0.02,mona:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 112, u'height': 112}, u'usage': {u'status': u'Succeed.', u'quota': 15717, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3377.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_UgORqC.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15717', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3378.jpg
+{u'url': u'base64_w50Apv.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 11.54}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 7.39, u'roll': 1.55, u'pitch': 21.8}, u'name': u'ramsri:0.01,mona:0.01,bidyut:0.01,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15716, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3378.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_g7L6Xg.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15716', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3379.jpg
+{u'url': u'base64_SvOdYX.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 13.08}, u'size': {u'width': 82.31, u'height': 82.31}}, u'matches': [{u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 8.84, u'roll': 1.36, u'pitch': 24.12}, u'name': u'mona:0.00,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 107, u'height': 107}, u'usage': {u'status': u'Succeed.', u'quota': 15715, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_0_3379.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_UwF9vi.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15715', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_1_3380.jpg
+{u'url': u'base64_4nzMAa.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 6.15}, u'size': {u'width': 79.23, u'height': 79.23}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 7.77, u'roll': 3.52, u'pitch': 26.56}, u'name': u'mona:0.02,ramsri:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15714, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_1_3380.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_plL2dd.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15714', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3381.jpg
+{u'url': u'base64_9VTrXU.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 7.69}, u'size': {u'width': 150.77, u'height': 150.77}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.04'}, {u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 0.99, u'pose': {u'yaw': -27.15, u'roll': -5.26, u'pitch': 12.68}, u'name': u'ramsri:0.04,mona:0.04,bidyut:0.01,'}], u'ori_img_size': {u'width': 184, u'height': 184}, u'usage': {u'status': u'Succeed.', u'quota': 15713, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3381.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_yHWXwz.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15713', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3382.jpg
+{u'url': u'base64_ttMIba.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 8.46}, u'size': {u'width': 137.69, u'height': 137.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'ramsri', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 0.62, u'pose': {u'yaw': -24.44, u'roll': -3.88, u'pitch': 7.54}, u'name': u'mona:0.05,ramsri:0.03,bidyut:0.01,'}], u'ori_img_size': {u'width': 179, u'height': 179}, u'usage': {u'status': u'Succeed.', u'quota': 15712, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3382.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_rHCeUT.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15712', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3383.jpg
+{u'url': u'base64_pVL5gd.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 8.46}, u'size': {u'width': 143.85, u'height': 143.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.12'}, {u'tag': u'ramsri', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 0.97, u'pose': {u'yaw': -32.46, u'roll': -4.65, u'pitch': 15.61}, u'name': u'mona:0.12,ramsri:0.02,bidyut:0.01,'}], u'ori_img_size': {u'width': 182, u'height': 182}, u'usage': {u'status': u'Succeed.', u'quota': 15711, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3383.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_edDLRN.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15711', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3384.jpg
+{u'url': u'base64_2rnjWi.jpg', u'face_detection': [], u'ori_img_size': {u'width': 179, u'height': 179}, u'usage': {u'status': u'Succeed.', u'quota': 15710, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3384.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_bW1VHm.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15710', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3385.jpg
+{u'url': u'base64_w0IO8s.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 6.92}, u'size': {u'width': 141.54, u'height': 141.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.20'}, {u'tag': u'ramsri', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.02'}], u'confidence': 0.56, u'pose': {u'yaw': -5.57, u'roll': -4.35, u'pitch': 19.68}, u'name': u'mona:0.20,ramsri:0.03,bidyut:0.02,'}], u'ori_img_size': {u'width': 183, u'height': 183}, u'usage': {u'status': u'Succeed.', u'quota': 15709, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2933_3_3385.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_ItknLr.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15709', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2943_0_3387.jpg
+{u'url': u'base64_I3UIi8.jpg', u'face_detection': [], u'ori_img_size': {u'width': 228, u'height': 228}, u'usage': {u'status': u'Succeed.', u'quota': 15708, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2943_0_3387.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_zgX6oO.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15708', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2943_0_3388.jpg
+{u'url': u'base64_qISxPE.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 13.08}, u'size': {u'width': 190.77, u'height': 190.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.98, u'pose': {u'yaw': -1.83, u'roll': 4.23, u'pitch': 1.09}, u'name': u'mona:0.04,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 224, u'height': 224}, u'usage': {u'status': u'Succeed.', u'quota': 15707, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2943_0_3388.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_BicquF.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15707', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2943_0_3389.jpg
+{u'url': u'base64_8jYx6s.jpg', u'face_detection': [], u'ori_img_size': {u'width': 239, u'height': 239}, u'usage': {u'status': u'Succeed.', u'quota': 15706, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2943_0_3389.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_AIHp0U.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15706', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2943_0_3390.jpg
+{u'url': u'base64_kfvCbJ.jpg', u'face_detection': [], u'ori_img_size': {u'width': 233, u'height': 233}, u'usage': {u'status': u'Succeed.', u'quota': 15705, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2943_0_3390.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_19ggTX.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15705', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2946_0_3402.jpg
+{u'url': u'base64_nPq4rP.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 10.77}, u'size': {u'width': 63.08, u'height': 63.08}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.11'}, {u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -20.44, u'roll': -6.51, u'pitch': 13.98}, u'name': u'bidyut:0.11,mona:0.02,ramsri:0.00,'}], u'ori_img_size': {u'width': 81, u'height': 81}, u'usage': {u'status': u'Succeed.', u'quota': 15704, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2946_0_3402.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_zJPBRS.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15704', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2946_0_3403.jpg
+{u'url': u'base64_dH2TT4.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 8.46, u'x': 12.31}, u'size': {u'width': 74.62, u'height': 74.62}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'ramsri', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.03'}], u'confidence': 0.97, u'pose': {u'yaw': 20.2, u'roll': 1.22, u'pitch': 8.91}, u'name': u'mona:0.05,ramsri:0.03,bidyut:0.03,'}], u'ori_img_size': {u'width': 99, u'height': 99}, u'usage': {u'status': u'Succeed.', u'quota': 15703, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2946_0_3403.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_EPR4aa.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15703', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2946_0_3404.jpg
+{u'url': u'base64_a9uOSr.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 15.38}, u'size': {u'width': 60, u'height': 60}}, u'matches': [{u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': -11.96, u'roll': -4.23, u'pitch': 10.08}, u'name': u'mona:0.04,bidyut:0.02,ramsri:0.00,'}], u'ori_img_size': {u'width': 82, u'height': 82}, u'usage': {u'status': u'Succeed.', u'quota': 15702, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2946_0_3404.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_EO5FaF.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15702', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2946_0_3405.jpg
+{u'url': u'base64_nCF7HA.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 19.23}, u'size': {u'width': 74.62, u'height': 74.62}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.94, u'pose': {u'yaw': -27.19, u'roll': 1.18, u'pitch': 4.2}, u'name': u'mona:0.01,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 102, u'height': 102}, u'usage': {u'status': u'Succeed.', u'quota': 15701, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2946_0_3405.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_m5OkST.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15701', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2970_0_3517.jpg
+{u'url': u'base64_KxIsOf.jpg', u'face_detection': [], u'ori_img_size': {u'width': 219, u'height': 226}, u'usage': {u'status': u'Succeed.', u'quota': 15700, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2970_0_3517.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_MsL3mM.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15700', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2988_0_3518.jpg
+{u'url': u'base64_Yq4JW5.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 10}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 5.85, u'roll': -7.78, u'pitch': -9}, u'name': u'bidyut:0.02,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15699, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/2988_0_3518.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_ONBSwR.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15699', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3014_0_3557.jpg
+{u'url': u'base64_VtJMro.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 4.62}, u'size': {u'width': 72.31, u'height': 72.31}}, u'matches': [{u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': -13.95, u'roll': -7.68, u'pitch': 20.82}, u'name': u'mona:0.00,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15698, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3014_0_3557.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Y5NWqF.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15698', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3023_0_3558.jpg
+{u'url': u'base64_F2FoN4.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 7.69, u'x': 5.38}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.16'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 28.41, u'roll': -6.05, u'pitch': -0.83}, u'name': u'mona:0.16,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15697, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3023_0_3558.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_HGOaQs.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15697', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3023_1_3559.jpg
+{u'url': u'base64_FaS4M0.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 13.08, u'x': 15.38}, u'size': {u'width': 83.85, u'height': 83.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.32'}, {u'tag': u'bidyut', u'score': u'0.05'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 0.98, u'pose': {u'yaw': -27.54, u'roll': 11.06, u'pitch': 7.36}, u'name': u'mona:0.32,bidyut:0.05,ramsri:0.01,'}], u'ori_img_size': {u'width': 112, u'height': 112}, u'usage': {u'status': u'Succeed.', u'quota': 15696, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3023_1_3559.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_qIwJ63.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15696', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3560.jpg
+{u'url': u'base64_LjnSQJ.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 14.62}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.09'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.96, u'pose': {u'yaw': 11.06, u'roll': -1.29, u'pitch': 20.59}, u'name': u'mona:0.09,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15695, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3560.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_vsRCkH.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15695', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3561.jpg
+{u'url': u'base64_x3xjxp.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 5.38}, u'size': {u'width': 74.62, u'height': 74.62}}, u'matches': [{u'tag': u'mona', u'score': u'0.06'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 4.25, u'roll': -3.61, u'pitch': 21.58}, u'name': u'mona:0.06,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15694, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3561.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_t7yNW9.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15694', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3562.jpg
+{u'url': u'base64_ISypf3.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.92, u'x': 7.69}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.95, u'pose': {u'yaw': 10.31, u'roll': -0.83, u'pitch': 21.48}, u'name': u'mona:0.01,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 79, u'height': 79}, u'usage': {u'status': u'Succeed.', u'quota': 15693, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3562.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_CTtpIg.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15693', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3563.jpg
+{u'url': u'base64_fW2ehV.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 8.46}, u'size': {u'width': 63.08, u'height': 63.08}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.98, u'pose': {u'yaw': 1.13, u'roll': -4.28, u'pitch': 15.46}, u'name': u'mona:0.02,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 81, u'height': 81}, u'usage': {u'status': u'Succeed.', u'quota': 15692, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3563.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_jJ0P6M.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15692', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3564.jpg
+{u'url': u'base64_S2yYvY.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 10}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.08'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.95, u'pose': {u'yaw': 5.1, u'roll': -4.31, u'pitch': 19.93}, u'name': u'mona:0.08,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 82, u'height': 82}, u'usage': {u'status': u'Succeed.', u'quota': 15691, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3051_0_3564.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Jl6FTy.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15691', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3573.jpg
+{u'url': u'base64_6W2aQ7.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 8.46, u'x': 8.46}, u'size': {u'width': 63.85, u'height': 63.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 27.19, u'roll': 0.01, u'pitch': -1.04}, u'name': u'mona:0.02,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 85, u'height': 85}, u'usage': {u'status': u'Succeed.', u'quota': 15690, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3573.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_udFOUQ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15690', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3574.jpg
+{u'url': u'base64_foQSls.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 0, u'x': 11.54}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 34.36, u'roll': -8.89, u'pitch': -9.97}, u'name': u'mona:0.04,ramsri:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 86, u'height': 86}, u'usage': {u'status': u'Succeed.', u'quota': 15689, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3574.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_CgIjf8.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15689', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3575.jpg
+{u'url': u'base64_yTnlLj.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 10}, u'size': {u'width': 63.08, u'height': 63.08}}, u'matches': [{u'tag': u'mona', u'score': u'0.13'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 17.92, u'roll': -1.36, u'pitch': -7.43}, u'name': u'mona:0.13,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 88, u'height': 88}, u'usage': {u'status': u'Succeed.', u'quota': 15688, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3575.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Au4P8m.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15688', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3576.jpg
+{u'url': u'base64_qFI2Ul.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.15, u'x': 6.92}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 19.7, u'roll': 2.31, u'pitch': -1.23}, u'name': u'mona:0.05,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15687, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3576.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_5hNZIA.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15687', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3577.jpg
+{u'url': u'base64_VFoCeq.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 13.08}, u'size': {u'width': 60, u'height': 60}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -2.96, u'roll': 4.12, u'pitch': 2.45}, u'name': u'mona:0.02,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 95, u'height': 95}, u'usage': {u'status': u'Succeed.', u'quota': 15686, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_0_3577.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_jB9aOY.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15686', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3580.jpg
+{u'url': u'base64_37AnVD.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 7.69, u'x': 9.23}, u'size': {u'width': 64.62, u'height': 64.62}}, u'matches': [{u'tag': u'mona', u'score': u'0.09'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -4.51, u'roll': 1.07, u'pitch': 8.76}, u'name': u'mona:0.09,ramsri:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 84, u'height': 84}, u'usage': {u'status': u'Succeed.', u'quota': 15685, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3580.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_SQklo3.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15685', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3581.jpg
+{u'url': u'base64_DDq6gS.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 8.46}, u'size': {u'width': 71.54, u'height': 71.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.06'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 1.76, u'roll': -7.37, u'pitch': -2.88}, u'name': u'mona:0.06,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15684, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3581.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_BW0YKT.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15684', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3582.jpg
+{u'url': u'base64_3xMdbC.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 10}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 5.66, u'roll': -4.89, u'pitch': -3.89}, u'name': u'mona:0.03,ramsri:0.01,bidyut:0.01,'}], u'ori_img_size': {u'width': 91, u'height': 91}, u'usage': {u'status': u'Succeed.', u'quota': 15683, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3582.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_xqnFol.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15683', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3583.jpg
+{u'url': u'base64_ENlEmx.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 13.08}, u'size': {u'width': 65.38, u'height': 65.38}}, u'matches': [{u'tag': u'mona', u'score': u'0.06'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -5.49, u'roll': -6.28, u'pitch': -2.56}, u'name': u'mona:0.06,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15682, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3583.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_WpE25y.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15682', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3584.jpg
+{u'url': u'base64_V1xv6O.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 12.31, u'x': 15.38}, u'size': {u'width': 63.85, u'height': 63.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.07'}, {u'tag': u'bidyut', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -2.51, u'roll': 2.61, u'pitch': -1.31}, u'name': u'mona:0.07,bidyut:0.03,ramsri:0.00,'}], u'ori_img_size': {u'width': 85, u'height': 85}, u'usage': {u'status': u'Succeed.', u'quota': 15681, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_2_3584.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_FbO2vN.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15681', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_4_3585.jpg
+{u'url': u'base64_yuLMHg.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 18.46}, u'size': {u'width': 69.23, u'height': 69.23}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -13.69, u'roll': 4.33, u'pitch': 5}, u'name': u'mona:0.05,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 105, u'height': 105}, u'usage': {u'status': u'Succeed.', u'quota': 15680, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_4_3585.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_qdI5tc.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15680', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_4_3586.jpg
+{u'url': u'base64_zF2Ag7.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.92, u'x': 20}, u'size': {u'width': 71.54, u'height': 71.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.21'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': -13.59, u'roll': 11.48, u'pitch': 5.91}, u'name': u'mona:0.21,bidyut:0.01,ramsri:0.01,'}], u'ori_img_size': {u'width': 103, u'height': 103}, u'usage': {u'status': u'Succeed.', u'quota': 15679, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3055_4_3586.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_OrRoQP.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15679', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3066_0_3589.jpg
+{u'url': u'base64_9CmbNT.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.92, u'x': 6.92}, u'size': {u'width': 61.54, u'height': 61.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -0.29, u'roll': 1.01, u'pitch': 3.22}, u'name': u'bidyut:0.02,mona:0.02,ramsri:0.00,'}], u'ori_img_size': {u'width': 86, u'height': 86}, u'usage': {u'status': u'Succeed.', u'quota': 15678, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3066_0_3589.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_gMt7Kb.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15678', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3067_0_3591.jpg
+{u'url': u'base64_7SQNou.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 6.15}, u'size': {u'width': 63.08, u'height': 63.08}}, u'matches': [{u'tag': u'mona', u'score': u'0.11'}, {u'tag': u'bidyut', u'score': u'0.06'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 2.35, u'roll': 0.99, u'pitch': 2.45}, u'name': u'mona:0.11,bidyut:0.06,ramsri:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15677, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3067_0_3591.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_5oSluY.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15677', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3069_0_3590.jpg
+{u'url': u'base64_Kxbwtz.jpg', u'face_detection': [], u'ori_img_size': {u'width': 73, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15676, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3069_0_3590.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_eOW02w.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15676', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3593.jpg
+{u'url': u'base64_FsEiQ2.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 26.92}, u'size': {u'width': 61.54, u'height': 61.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 1.03, u'roll': -0.4, u'pitch': 19.56}, u'name': u'mona:0.00,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 98, u'height': 98}, u'usage': {u'status': u'Succeed.', u'quota': 15675, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3593.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_sFHDe0.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15675', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3594.jpg
+{u'url': u'base64_bxHVpc.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 30.77, u'x': 60}, u'size': {u'width': 80.77, u'height': 80.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 2.74, u'roll': -16.86, u'pitch': 16.91}, u'name': u'mona:0.05,bidyut:0.02,ramsri:0.00,'}], u'ori_img_size': {u'width': 149, u'height': 149}, u'usage': {u'status': u'Succeed.', u'quota': 15674, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3594.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_eysjRv.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15674', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3595.jpg
+{u'url': u'base64_KP2Dwv.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 13.85, u'x': 51.54}, u'size': {u'width': 61.54, u'height': 61.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.97, u'pose': {u'yaw': 15.3, u'roll': -1.86, u'pitch': 22.55}, u'name': u'mona:0.01,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 119, u'height': 119}, u'usage': {u'status': u'Succeed.', u'quota': 15673, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3595.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_qkBwYC.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15673', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3596.jpg
+{u'url': u'base64_mKVfI4.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 19.23, u'x': 51.54}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -1.54, u'roll': 3.49, u'pitch': 17.92}, u'name': u'bidyut:0.01,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 126, u'height': 126}, u'usage': {u'status': u'Succeed.', u'quota': 15672, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3596.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_zyVrsb.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15672', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3597.jpg
+{u'url': u'base64_wYP8fz.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 31.54, u'x': 60}, u'size': {u'width': 88.46, u'height': 88.46}}, u'matches': [{u'tag': u'mona', u'score': u'0.13'}, {u'tag': u'bidyut', u'score': u'0.04'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -0.44, u'roll': -9.35, u'pitch': 17.51}, u'name': u'mona:0.13,bidyut:0.04,ramsri:0.00,'}], u'ori_img_size': {u'width': 165, u'height': 165}, u'usage': {u'status': u'Succeed.', u'quota': 15671, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_0_3597.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_UTQq16.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15671', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3598.jpg
+{u'url': u'base64_pgPBOP.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 17.69}, u'size': {u'width': 80, u'height': 80}}, u'matches': [{u'tag': u'mona', u'score': u'0.10'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 4.55, u'roll': -4.77, u'pitch': 15.13}, u'name': u'mona:0.10,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 117, u'height': 117}, u'usage': {u'status': u'Succeed.', u'quota': 15670, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3598.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_IEyL0M.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15670', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3599.jpg
+{u'url': u'base64_C1Vhmn.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 10.77}, u'size': {u'width': 86.15, u'height': 86.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.07'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 2.68, u'roll': -11.47, u'pitch': 18.09}, u'name': u'mona:0.07,bidyut:0.02,ramsri:0.00,'}], u'ori_img_size': {u'width': 113, u'height': 113}, u'usage': {u'status': u'Succeed.', u'quota': 15669, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3599.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_aFrHgy.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15669', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3600.jpg
+{u'url': u'base64_JVtJuY.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 9.23, u'x': 10.77}, u'size': {u'width': 86.15, u'height': 86.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.10'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 0.06, u'roll': -14.53, u'pitch': 12.04}, u'name': u'mona:0.10,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 116, u'height': 116}, u'usage': {u'status': u'Succeed.', u'quota': 15668, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3600.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_9AOKpJ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15668', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3601.jpg
+{u'url': u'base64_heymJL.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 6.92}, u'size': {u'width': 73.85, u'height': 73.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -3.56, u'roll': -2.3, u'pitch': 22.23}, u'name': u'mona:0.03,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15667, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3601.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_s4IIQL.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15667', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3602.jpg
+{u'url': u'base64_AZAEKk.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 11.54}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.09'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 5.94, u'roll': -3.13, u'pitch': 18.65}, u'name': u'mona:0.09,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15666, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3076_1_3602.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_kjtam9.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15666', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3078_0_3592.jpg
+{u'url': u'base64_6masE3.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 15.38}, u'size': {u'width': 123.08, u'height': 123.08}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.08'}, {u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.02'}], u'confidence': 0.89, u'pose': {u'yaw': -27.6, u'roll': 3.34, u'pitch': 14.39}, u'name': u'bidyut:0.08,mona:0.02,ramsri:0.02,'}], u'ori_img_size': {u'width': 165, u'height': 165}, u'usage': {u'status': u'Succeed.', u'quota': 15665, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3078_0_3592.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_3MO03c.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15665', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_0_3603.jpg
+{u'url': u'base64_G7IVWa.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 8.46}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 26.27, u'roll': -5.52, u'pitch': -12.48}, u'name': u'mona:0.01,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 88, u'height': 88}, u'usage': {u'status': u'Succeed.', u'quota': 15664, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_0_3603.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_qAGbnw.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15664', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_1_3604.jpg
+{u'url': u'base64_E0M0Es.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 8.46}, u'size': {u'width': 71.54, u'height': 71.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.05'}, {u'tag': u'ramsri', u'score': u'0.04'}, {u'tag': u'mona', u'score': u'0.01'}], u'confidence': 0.99, u'pose': {u'yaw': -38.28, u'roll': -13.24, u'pitch': 12.5}, u'name': u'bidyut:0.05,ramsri:0.04,mona:0.01,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15663, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_1_3604.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_RrRj97.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15663', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_1_3605.jpg
+{u'url': u'base64_I4HkTC.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 6.92}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.87, u'pose': {u'yaw': -42.53, u'roll': -3.61, u'pitch': 16.74}, u'name': u'ramsri:0.01,bidyut:0.01,mona:0.00,'}], u'ori_img_size': {u'width': 88, u'height': 88}, u'usage': {u'status': u'Succeed.', u'quota': 15662, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_1_3605.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_IGiDeG.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15662', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_1_3606.jpg
+{u'url': u'base64_PKrSMO.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 21.54}, u'size': {u'width': 77.69, u'height': 77.69}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.98, u'pose': {u'yaw': 4.21, u'roll': -2.56, u'pitch': 9.2}, u'name': u'bidyut:0.00,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 110, u'height': 110}, u'usage': {u'status': u'Succeed.', u'quota': 15661, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_1_3606.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_EAs9ZE.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15661', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_1_3607.jpg
+{u'url': u'base64_c9cE1d.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 10.77}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.96, u'pose': {u'yaw': 15.47, u'roll': -0.4, u'pitch': 10.3}, u'name': u'ramsri:0.00,bidyut:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15660, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_1_3607.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_FdTqzO.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15660', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_4_3608.jpg
+{u'url': u'base64_YbqdBK.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 9.23}, u'size': {u'width': 72.31, u'height': 72.31}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.97, u'pose': {u'yaw': 0.98, u'roll': -0.97, u'pitch': 7.36}, u'name': u'bidyut:0.02,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 91, u'height': 91}, u'usage': {u'status': u'Succeed.', u'quota': 15659, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_4_3608.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_nq5Wkl.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15659', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_5_3609.jpg
+{u'url': u'base64_kBpU7n.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 6.92}, u'size': {u'width': 73.85, u'height': 73.85}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.05'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'mona', u'score': u'0.02'}], u'confidence': 0.96, u'pose': {u'yaw': 13.92, u'roll': 4.66, u'pitch': 9.35}, u'name': u'ramsri:0.05,bidyut:0.02,mona:0.02,'}], u'ori_img_size': {u'width': 89, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15658, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_5_3609.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_IexqpU.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15658', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_6_3610.jpg
+{u'url': u'base64_IBIO0u.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 10.77}, u'size': {u'width': 86.92, u'height': 86.92}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.51, u'pose': {u'yaw': -37.66, u'roll': 0.54, u'pitch': -19.21}, u'name': u'mona:0.02,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 112, u'height': 112}, u'usage': {u'status': u'Succeed.', u'quota': 15657, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_6_3610.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_COYCNb.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15657', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_8_3611.jpg
+{u'url': u'base64_VqZPD7.jpg', u'face_detection': [], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15656, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3090_8_3611.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Sbjdiq.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15656', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_0_3612.jpg
+{u'url': u'base64_0hJ9CT.jpg', u'face_detection': [], u'ori_img_size': {u'width': 110, u'height': 110}, u'usage': {u'status': u'Succeed.', u'quota': 15655, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_0_3612.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_DcZRsL.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15655', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_10_3620.jpg
+{u'url': u'base64_3SQP3o.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 6.92}, u'size': {u'width': 72.31, u'height': 72.31}}, u'matches': [{u'tag': u'mona', u'score': u'0.42'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 33.49, u'roll': 3.48, u'pitch': 10.82}, u'name': u'mona:0.42,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15654, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_10_3620.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_sYu4Kn.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15654', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_5_3613.jpg
+{u'url': u'base64_x2R7m5.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 8.46, u'x': 10.77}, u'size': {u'width': 61.54, u'height': 61.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 20.76, u'roll': 0.8, u'pitch': 9.02}, u'name': u'bidyut:0.00,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 74, u'height': 86}, u'usage': {u'status': u'Succeed.', u'quota': 15653, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_5_3613.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_8kqMKL.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15653', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_5_3614.jpg
+{u'url': u'base64_q3dG6J.jpg', u'face_detection': [], u'ori_img_size': {u'width': 75, u'height': 88}, u'usage': {u'status': u'Succeed.', u'quota': 15652, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_5_3614.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_1FKbzw.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15652', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_6_3615.jpg
+{u'url': u'base64_NNLs06.jpg', u'face_detection': [], u'ori_img_size': {u'width': 68, u'height': 85}, u'usage': {u'status': u'Succeed.', u'quota': 15651, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_6_3615.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_2WD8vb.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15651', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_6_3616.jpg
+{u'url': u'base64_WVZPRa.jpg', u'face_detection': [], u'ori_img_size': {u'width': 64, u'height': 79}, u'usage': {u'status': u'Succeed.', u'quota': 15650, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_6_3616.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_zn27In.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15650', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_7_3617.jpg
+{u'url': u'base64_01QeIz.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 10.77}, u'size': {u'width': 110.77, u'height': 110.77}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 8.26, u'roll': -8.75, u'pitch': -24.15}, u'name': u'bidyut:0.02,mona:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 142, u'height': 142}, u'usage': {u'status': u'Succeed.', u'quota': 15649, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_7_3617.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Yt5Kld.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15649', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_8_3618.jpg
+{u'url': u'base64_bz2F1S.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 10, u'x': 13.85}, u'size': {u'width': 59.23, u'height': 59.23}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -0.67, u'roll': -2.38, u'pitch': 0.58}, u'name': u'mona:0.02,ramsri:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 86, u'height': 86}, u'usage': {u'status': u'Succeed.', u'quota': 15648, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_8_3618.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_jEhgm6.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15648', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_9_3619.jpg
+{u'url': u'base64_lqfTZK.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 8.46, u'x': 26.15}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.07'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -10.9, u'roll': 11.51, u'pitch': -2.04}, u'name': u'ramsri:0.07,mona:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 106, u'height': 106}, u'usage': {u'status': u'Succeed.', u'quota': 15647, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3092_9_3619.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_n58mtf.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15647', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3095_0_3621.jpg
+{u'url': u'base64_OVFTCk.jpg', u'face_detection': [], u'ori_img_size': {u'width': 179, u'height': 179}, u'usage': {u'status': u'Succeed.', u'quota': 15646, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3095_0_3621.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_ZHf3hg.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15646', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3095_2_3622.jpg
+{u'url': u'base64_zYdcjn.jpg', u'face_detection': [], u'ori_img_size': {u'width': 179, u'height': 179}, u'usage': {u'status': u'Succeed.', u'quota': 15645, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3095_2_3622.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_MvZOe5.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15645', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3097_2_3623.jpg
+{u'url': u'base64_4hDGDF.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 4.62}, u'size': {u'width': 74.62, u'height': 74.62}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 34.12, u'roll': -9.6, u'pitch': -2.58}, u'name': u'mona:0.01,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15644, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3097_2_3623.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_jXMl80.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15644', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3098_2_3624.jpg
+{u'url': u'base64_5fa9jX.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 4.62}, u'size': {u'width': 74.62, u'height': 74.62}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 34.12, u'roll': -9.6, u'pitch': -2.58}, u'name': u'mona:0.01,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15643, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3098_2_3624.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_sydiXe.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15643', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3625.jpg
+{u'url': u'base64_NcP7hp.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 53.08, u'x': 52.31}, u'size': {u'width': 224.62, u'height': 224.62}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 40.65, u'roll': -10.58, u'pitch': 12.73}, u'name': u'bidyut:0.01,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 320, u'height': 320}, u'usage': {u'status': u'Succeed.', u'quota': 15642, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3625.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_5tT5nl.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15642', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3626.jpg
+{u'url': u'base64_hUbeZm.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 86.92, u'x': 76.15}, u'size': {u'width': 173.85, u'height': 173.85}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.95, u'pose': {u'yaw': 1.29, u'roll': -3.63, u'pitch': 19.17}, u'name': u'bidyut:0.01,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 245, u'height': 245}, u'usage': {u'status': u'Succeed.', u'quota': 15641, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3626.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_EZYh7c.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15641', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3627.jpg
+{u'url': u'base64_Qc7Ifa.jpg', u'face_detection': [], u'ori_img_size': {u'width': 211, u'height': 211}, u'usage': {u'status': u'Succeed.', u'quota': 15640, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3627.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_zhyeVc.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15640', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3628.jpg
+{u'url': u'base64_3IxqfS.jpg', u'face_detection': [], u'ori_img_size': {u'width': 217, u'height': 217}, u'usage': {u'status': u'Succeed.', u'quota': 15639, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3628.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_XhGpv2.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15639', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3629.jpg
+{u'url': u'base64_mfz21B.jpg', u'face_detection': [], u'ori_img_size': {u'width': 274, u'height': 274}, u'usage': {u'status': u'Succeed.', u'quota': 15638, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_0_3629.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_R6IJHe.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15638', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3630.jpg
+{u'url': u'base64_95jand.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 84.62, u'x': 88.46}, u'size': {u'width': 181.54, u'height': 181.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 45.2, u'roll': -2.9, u'pitch': 17.54}, u'name': u'mona:0.01,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 291, u'height': 291}, u'usage': {u'status': u'Succeed.', u'quota': 15637, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3630.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_uz1hu1.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15637', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3631.jpg
+{u'url': u'base64_piO2eS.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 41.54, u'x': 43.85}, u'size': {u'width': 173.85, u'height': 173.85}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.98, u'pose': {u'yaw': 28.71, u'roll': -5.06, u'pitch': 15.53}, u'name': u'bidyut:0.00,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 233, u'height': 233}, u'usage': {u'status': u'Succeed.', u'quota': 15636, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3631.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_i1z5S1.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15636', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3632.jpg
+{u'url': u'base64_ujoJHZ.jpg', u'face_detection': [], u'ori_img_size': {u'width': 212, u'height': 212}, u'usage': {u'status': u'Succeed.', u'quota': 15635, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3632.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Y1DY5e.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15635', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3633.jpg
+{u'url': u'base64_YCQWdK.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 113.85, u'x': 90}, u'size': {u'width': 173.85, u'height': 173.85}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.24, u'pose': {u'yaw': 30.11, u'roll': -8.25, u'pitch': 21.24}, u'name': u'bidyut:0.00,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 287, u'height': 287}, u'usage': {u'status': u'Succeed.', u'quota': 15634, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3633.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_CjYfY4.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15634', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3634.jpg
+{u'url': u'base64_ROqsU3.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 100.77, u'x': 93.85}, u'size': {u'width': 160, u'height': 160}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.9, u'pose': {u'yaw': 18.35, u'roll': -4.89, u'pitch': 22.74}, u'name': u'bidyut:0.00,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 278, u'height': 278}, u'usage': {u'status': u'Succeed.', u'quota': 15633, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_1_3634.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_hSPLcQ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15633', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3635.jpg
+{u'url': u'base64_YWe21d.jpg', u'face_detection': [], u'ori_img_size': {u'width': 225, u'height': 225}, u'usage': {u'status': u'Succeed.', u'quota': 15632, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3635.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_ZGSFbP.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15632', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3636.jpg
+{u'url': u'base64_PNK254.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.15, u'x': 22.31}, u'size': {u'width': 183.85, u'height': 183.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 43.09, u'roll': -2.57, u'pitch': 21.24}, u'name': u'mona:0.01,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 226, u'height': 226}, u'usage': {u'status': u'Succeed.', u'quota': 15631, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3636.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_wYoCxb.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15631', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3637.jpg
+{u'url': u'base64_UW9HaU.jpg', u'face_detection': [], u'ori_img_size': {u'width': 231, u'height': 231}, u'usage': {u'status': u'Succeed.', u'quota': 15630, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3637.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_jQKfxh.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15630', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3638.jpg
+{u'url': u'base64_olqBin.jpg', u'face_detection': [], u'ori_img_size': {u'width': 204, u'height': 204}, u'usage': {u'status': u'Succeed.', u'quota': 15629, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3638.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_1iDQnj.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15629', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3639.jpg
+{u'url': u'base64_cJQDQR.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 8.46, u'x': 23.08}, u'size': {u'width': 181.54, u'height': 181.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 21.04, u'roll': -7.32, u'pitch': 18.9}, u'name': u'bidyut:0.00,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 222, u'height': 222}, u'usage': {u'status': u'Succeed.', u'quota': 15628, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_2_3639.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_skDs9y.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15628', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_3_3640.jpg
+{u'url': u'base64_jLJPsE.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 7.69}, u'size': {u'width': 87.69, u'height': 87.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.33, u'pose': {u'yaw': -14.05, u'roll': 2.07, u'pitch': 2.53}, u'name': u'mona:0.04,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 106, u'height': 106}, u'usage': {u'status': u'Succeed.', u'quota': 15627, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_3_3640.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_zrk1KV.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15627', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_4_3641.jpg
+{u'url': u'base64_MECqf2.jpg', u'face_detection': [], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15626, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_4_3641.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_OncBv6.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15626', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_4_3642.jpg
+{u'url': u'base64_nA39ul.jpg', u'face_detection': [], u'ori_img_size': {u'width': 93, u'height': 93}, u'usage': {u'status': u'Succeed.', u'quota': 15625, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_4_3642.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_6d1WGO.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15625', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_5_3643.jpg
+{u'url': u'base64_Iiub6f.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.92, u'x': 14.62}, u'size': {u'width': 120.77, u'height': 120.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.11'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.86, u'pose': {u'yaw': -12.58, u'roll': -1.11, u'pitch': 11.11}, u'name': u'mona:0.11,ramsri:0.01,bidyut:0.00,'}], u'ori_img_size': {u'width': 158, u'height': 158}, u'usage': {u'status': u'Succeed.', u'quota': 15624, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_5_3643.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_kgIX0h.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15624', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_5_3644.jpg
+{u'url': u'base64_BVMSd4.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 11.54, u'x': 15.38}, u'size': {u'width': 111.54, u'height': 111.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 0.96, u'roll': -0.91, u'pitch': 12.06}, u'name': u'mona:0.04,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 135, u'height': 149}, u'usage': {u'status': u'Succeed.', u'quota': 15623, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_5_3644.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_0scLdM.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15623', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_6_3645.jpg
+{u'url': u'base64_m9ZBeP.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 15.38, u'x': 13.85}, u'size': {u'width': 126.15, u'height': 126.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.03, u'pose': {u'yaw': -12.8, u'roll': 0.72, u'pitch': 0}, u'name': u'mona:0.02,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 169, u'height': 169}, u'usage': {u'status': u'Succeed.', u'quota': 15622, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_6_3645.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_wYsDX5.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15622', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_7_3646.jpg
+{u'url': u'base64_hYhGtn.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 8.46}, u'size': {u'width': 74.62, u'height': 74.62}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.4, u'pose': {u'yaw': -16.61, u'roll': -5.36, u'pitch': 10.07}, u'name': u'bidyut:0.00,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15621, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3100_7_3646.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_LDUUNU.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15621', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3102_1_3653.jpg
+{u'url': u'base64_tflR9m.jpg', u'face_detection': [], u'ori_img_size': {u'width': 141, u'height': 141}, u'usage': {u'status': u'Succeed.', u'quota': 15620, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3102_1_3653.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Cjd7V0.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15620', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3102_1_3654.jpg
+{u'url': u'base64_A9KHiz.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 16.92}, u'size': {u'width': 141.54, u'height': 141.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 8.34, u'roll': 1.95, u'pitch': 10.01}, u'name': u'bidyut:0.03,ramsri:0.01,mona:0.00,'}], u'ori_img_size': {u'width': 172, u'height': 172}, u'usage': {u'status': u'Succeed.', u'quota': 15619, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3102_1_3654.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Ee0MTJ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15619', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3102_1_3655.jpg
+{u'url': u'base64_twoQP6.jpg', u'face_detection': [], u'ori_img_size': {u'width': 93, u'height': 93}, u'usage': {u'status': u'Succeed.', u'quota': 15618, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3102_1_3655.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_JYF42s.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15618', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3103_1_3657.jpg
+{u'url': u'base64_CRT44h.jpg', u'face_detection': [], u'ori_img_size': {u'width': 141, u'height': 141}, u'usage': {u'status': u'Succeed.', u'quota': 15617, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3103_1_3657.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_NvPSGI.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15617', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3103_1_3658.jpg
+{u'url': u'base64_a1PTxy.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 16.92}, u'size': {u'width': 141.54, u'height': 141.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 8.34, u'roll': 1.95, u'pitch': 10.01}, u'name': u'bidyut:0.03,ramsri:0.01,mona:0.00,'}], u'ori_img_size': {u'width': 172, u'height': 172}, u'usage': {u'status': u'Succeed.', u'quota': 15616, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3103_1_3658.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_7dKco5.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15616', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3103_1_3659.jpg
+{u'url': u'base64_90TTAw.jpg', u'face_detection': [], u'ori_img_size': {u'width': 93, u'height': 93}, u'usage': {u'status': u'Succeed.', u'quota': 15615, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3103_1_3659.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_F71ITU.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15615', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_0_3674.jpg
+{u'url': u'base64_5v3Nos.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 8.46, u'x': 16.15}, u'size': {u'width': 66.92, u'height': 66.92}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 0.99, u'pose': {u'yaw': 2.92, u'roll': -9.34, u'pitch': 0.4}, u'name': u'bidyut:0.01,mona:0.01,ramsri:0.01,'}], u'ori_img_size': {u'width': 95, u'height': 95}, u'usage': {u'status': u'Succeed.', u'quota': 15614, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_0_3674.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_lRDlzo.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15614', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_0_3675.jpg
+{u'url': u'base64_s5C17j.jpg', u'face_detection': [], u'ori_img_size': {u'width': 84, u'height': 84}, u'usage': {u'status': u'Succeed.', u'quota': 15613, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_0_3675.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_eeBFBQ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15613', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3689.jpg
+{u'url': u'base64_vHFPV2.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 8.46}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.12'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 23.72, u'roll': -9.23, u'pitch': 13.66}, u'name': u'mona:0.12,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 85, u'height': 85}, u'usage': {u'status': u'Succeed.', u'quota': 15612, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3689.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_BCjh5U.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15612', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3690.jpg
+{u'url': u'base64_Q9HiZS.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 15.38}, u'size': {u'width': 68.46, u'height': 68.46}}, u'matches': [{u'tag': u'mona', u'score': u'0.55'}, {u'tag': u'bidyut', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 5.23, u'roll': 1.43, u'pitch': 17.23}, u'name': u'mona:0.55,bidyut:0.03,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15611, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3690.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_SKH7Zs.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15611', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3691.jpg
+{u'url': u'base64_Bcbqv6.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 10.77}, u'size': {u'width': 73.85, u'height': 73.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 2.2, u'roll': 12.76, u'pitch': 14.99}, u'name': u'mona:0.01,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 95, u'height': 95}, u'usage': {u'status': u'Succeed.', u'quota': 15610, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3691.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_vqvdLa.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15610', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3692.jpg
+{u'url': u'base64_NgjjZp.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 6.92}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.22'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -3.56, u'roll': -7.9, u'pitch': 13.38}, u'name': u'mona:0.22,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15609, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3692.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_BUkyPp.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15609', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3693.jpg
+{u'url': u'base64_h4UT21.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 22.31}, u'size': {u'width': 63.08, u'height': 63.08}}, u'matches': [{u'tag': u'mona', u'score': u'0.07'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 14.65, u'roll': 4.86, u'pitch': 18.79}, u'name': u'mona:0.07,bidyut:0.02,ramsri:0.00,'}], u'ori_img_size': {u'width': 91, u'height': 91}, u'usage': {u'status': u'Succeed.', u'quota': 15608, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_10_3693.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_ByLszs.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15608', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_13_3694.jpg
+{u'url': u'base64_UU3RkI.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.92, u'x': 17.69}, u'size': {u'width': 66.92, u'height': 66.92}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 14.68, u'roll': -5.08, u'pitch': 1.16}, u'name': u'mona:0.02,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 98, u'height': 98}, u'usage': {u'status': u'Succeed.', u'quota': 15607, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_13_3694.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Mv2sxe.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15607', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_13_3695.jpg
+{u'url': u'base64_9LUzA5.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 27.69, u'x': 54.62}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.19'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 0.94, u'pose': {u'yaw': 2.06, u'roll': 17.12, u'pitch': 7.2}, u'name': u'mona:0.19,bidyut:0.02,ramsri:0.01,'}], u'ori_img_size': {u'width': 147, u'height': 147}, u'usage': {u'status': u'Succeed.', u'quota': 15606, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_13_3695.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_mlkkNK.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15606', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_13_3696.jpg
+{u'url': u'base64_wYQS9O.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 12.31, u'x': 35.38}, u'size': {u'width': 70, u'height': 70}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 4.54, u'roll': -4.42, u'pitch': 5.56}, u'name': u'bidyut:0.00,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 117, u'height': 117}, u'usage': {u'status': u'Succeed.', u'quota': 15605, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_13_3696.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_TS8mtT.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15605', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_16_3697.jpg
+{u'url': u'base64_7f6Cn3.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 13.08}, u'size': {u'width': 64.62, u'height': 64.62}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.05'}, {u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 30.85, u'roll': 7.13, u'pitch': 13.85}, u'name': u'bidyut:0.05,mona:0.03,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15604, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_16_3697.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_aY02Qy.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15604', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_16_3698.jpg
+{u'url': u'base64_YStDbe.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 13.08}, u'size': {u'width': 70, u'height': 70}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 0.99, u'pose': {u'yaw': 37.76, u'roll': 7.49, u'pitch': 8.87}, u'name': u'mona:0.05,bidyut:0.02,ramsri:0.01,'}], u'ori_img_size': {u'width': 95, u'height': 95}, u'usage': {u'status': u'Succeed.', u'quota': 15603, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_16_3698.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_QPC9oV.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15603', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_16_3699.jpg
+{u'url': u'base64_FQ4GD3.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 13.85}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 17.11, u'roll': 4.76, u'pitch': 10.8}, u'name': u'mona:0.03,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15602, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_16_3699.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_LRPJZ4.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15602', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_1_3676.jpg
+{u'url': u'base64_13SYkC.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 16.15}, u'size': {u'width': 60.77, u'height': 60.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -4.43, u'roll': -1.66, u'pitch': 9.78}, u'name': u'mona:0.03,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15601, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_1_3676.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_GmGb1u.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15601', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_1_3677.jpg
+{u'url': u'base64_bNi2TZ.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 10, u'x': 19.23}, u'size': {u'width': 62.31, u'height': 62.31}}, u'matches': [{u'tag': u'mona', u'score': u'0.06'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -21.06, u'roll': 0.18, u'pitch': 11.18}, u'name': u'mona:0.06,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 96, u'height': 96}, u'usage': {u'status': u'Succeed.', u'quota': 15600, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_1_3677.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_lU17tn.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15600', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_1_3678.jpg
+{u'url': u'base64_kQCKWZ.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 12.31}, u'size': {u'width': 61.54, u'height': 61.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.97, u'pose': {u'yaw': -2.98, u'roll': -4.58, u'pitch': 3.18}, u'name': u'mona:0.01,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 88, u'height': 88}, u'usage': {u'status': u'Succeed.', u'quota': 15599, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_1_3678.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_5uRK9V.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15599', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3679.jpg
+{u'url': u'base64_H1z3jx.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': -7.69, u'x': 12.31}, u'size': {u'width': 61.54, u'height': 61.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': -9.68, u'roll': -1.51, u'pitch': 8.42}, u'name': u'mona:0.02,bidyut:0.02,ramsri:0.01,'}], u'ori_img_size': {u'width': 91, u'height': 79}, u'usage': {u'status': u'Succeed.', u'quota': 15598, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3679.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_7zBLhH.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15598', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3680.jpg
+{u'url': u'base64_c5na96.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 7.69}, u'size': {u'width': 60.77, u'height': 60.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -23.6, u'roll': -4.85, u'pitch': 12.83}, u'name': u'mona:0.02,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15597, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3680.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_E01Nrv.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15597', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3681.jpg
+{u'url': u'base64_umOjix.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 8.46}, u'size': {u'width': 60.77, u'height': 60.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -23.86, u'roll': -2.04, u'pitch': 13.37}, u'name': u'mona:0.02,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 91, u'height': 91}, u'usage': {u'status': u'Succeed.', u'quota': 15596, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3681.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_McYtiA.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15596', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3682.jpg
+{u'url': u'base64_1mnxhb.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 10.77}, u'size': {u'width': 63.08, u'height': 63.08}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -15.67, u'roll': -4.02, u'pitch': 15.43}, u'name': u'mona:0.01,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15595, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3682.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_dYGI9I.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15595', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3683.jpg
+{u'url': u'base64_ZAhtJq.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 1.54, u'x': 8.46}, u'size': {u'width': 60, u'height': 60}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -10.45, u'roll': -3.95, u'pitch': 14.37}, u'name': u'mona:0.02,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 85, u'height': 85}, u'usage': {u'status': u'Succeed.', u'quota': 15594, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_8_3683.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_nU3xhj.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15594', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3684.jpg
+{u'url': u'base64_f1iUSU.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 9.23, u'x': 6.15}, u'size': {u'width': 66.92, u'height': 66.92}}, u'matches': [{u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -8.87, u'roll': -2.22, u'pitch': 11.11}, u'name': u'mona:0.04,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 93, u'height': 93}, u'usage': {u'status': u'Succeed.', u'quota': 15593, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3684.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_7pxTl4.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15593', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3685.jpg
+{u'url': u'base64_sEoTmZ.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 20, u'x': 16.92}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.33'}, {u'tag': u'bidyut', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 4.98, u'roll': 0.54, u'pitch': 14.25}, u'name': u'mona:0.33,bidyut:0.03,ramsri:0.00,'}], u'ori_img_size': {u'width': 106, u'height': 106}, u'usage': {u'status': u'Succeed.', u'quota': 15592, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3685.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_mraOq4.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15592', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3686.jpg
+{u'url': u'base64_4mcBtJ.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.92, u'x': 9.23}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.40'}, {u'tag': u'bidyut', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 3.48, u'roll': 0.07, u'pitch': 10.89}, u'name': u'mona:0.40,bidyut:0.03,ramsri:0.01,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15591, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3686.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_EFdNdC.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15591', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3687.jpg
+{u'url': u'base64_34TiO3.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 12.31}, u'size': {u'width': 57.69, u'height': 57.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.04'}, {u'tag': u'bidyut', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -14.37, u'roll': -3, u'pitch': 9.38}, u'name': u'mona:0.04,bidyut:0.03,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15590, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3687.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_0ANmyu.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15590', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3688.jpg
+{u'url': u'base64_gq2Jct.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 12.31}, u'size': {u'width': 61.54, u'height': 61.54}}, u'matches': [{u'tag': u'mona', u'score': u'0.08'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -14.49, u'roll': -1.66, u'pitch': 10.69}, u'name': u'mona:0.08,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15589, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3113_9_3688.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_PY7vup.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15589', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3700.jpg
+{u'url': u'base64_RK4nhD.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 140.77, u'x': 103.08}, u'size': {u'width': 172.31, u'height': 172.31}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.93, u'pose': {u'yaw': 10.78, u'roll': -5.28, u'pitch': -17.95}, u'name': u'bidyut:0.00,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 298, u'height': 298}, u'usage': {u'status': u'Succeed.', u'quota': 15588, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3700.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_QukcBV.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15588', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3701.jpg
+{u'url': u'base64_YF5iGS.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 100, u'x': 103.08}, u'size': {u'width': 173.08, u'height': 173.08}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.98, u'pose': {u'yaw': 18.06, u'roll': -7.5, u'pitch': 16.95}, u'name': u'bidyut:0.01,mona:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 271, u'height': 271}, u'usage': {u'status': u'Succeed.', u'quota': 15587, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3701.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_qL1rnu.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15587', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3702.jpg
+{u'url': u'base64_cYNRaD.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 113.85, u'x': 76.15}, u'size': {u'width': 172.31, u'height': 172.31}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.98, u'pose': {u'yaw': 12.11, u'roll': 4.37, u'pitch': 16.92}, u'name': u'bidyut:0.01,mona:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 256, u'height': 256}, u'usage': {u'status': u'Succeed.', u'quota': 15586, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3702.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_in2XN7.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15586', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3703.jpg
+{u'url': u'base64_ABpJZd.jpg', u'face_detection': [], u'ori_img_size': {u'width': 203, u'height': 203}, u'usage': {u'status': u'Succeed.', u'quota': 15585, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3703.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_UzLfWB.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15585', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3704.jpg
+{u'url': u'base64_oapJ00.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 12.31}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.91, u'pose': {u'yaw': -22.25, u'roll': -0.4, u'pitch': 18.74}, u'name': u'mona:0.01,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 86, u'height': 86}, u'usage': {u'status': u'Succeed.', u'quota': 15584, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3116_0_3704.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_NhvxTJ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15584', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_10_3708.jpg
+{u'url': u'base64_NsTV6x.jpg', u'face_detection': [], u'ori_img_size': {u'width': 85, u'height': 85}, u'usage': {u'status': u'Succeed.', u'quota': 15583, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_10_3708.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_k9ES5b.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15583', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_13_3709.jpg
+{u'url': u'base64_96xNoV.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 17.69}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.06'}, {u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 18.75, u'roll': 2.94, u'pitch': 8.06}, u'name': u'bidyut:0.06,mona:0.03,ramsri:0.01,'}], u'ori_img_size': {u'width': 98, u'height': 98}, u'usage': {u'status': u'Succeed.', u'quota': 15582, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_13_3709.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_QmfdLv.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15582', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_14_3710.jpg
+{u'url': u'base64_P0jRhr.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 6.15}, u'size': {u'width': 90.77, u'height': 90.77}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.05, u'pose': {u'yaw': 11.18, u'roll': -0.85, u'pitch': 4.11}, u'name': u'bidyut:0.00,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 112, u'height': 112}, u'usage': {u'status': u'Succeed.', u'quota': 15581, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_14_3710.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_8nxfJ3.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15581', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_15_3711.jpg
+{u'url': u'base64_QmpaBa.jpg', u'face_detection': [], u'ori_img_size': {u'width': 102, u'height': 102}, u'usage': {u'status': u'Succeed.', u'quota': 15580, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_15_3711.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_47Gx9W.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15580', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_18_3712.jpg
+{u'url': u'base64_A01uPJ.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 7.69, u'x': 8.46}, u'size': {u'width': 89.23, u'height': 89.23}}, u'matches': [{u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -17.82, u'roll': -1.5, u'pitch': -7.44}, u'name': u'mona:0.00,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 110, u'height': 110}, u'usage': {u'status': u'Succeed.', u'quota': 15579, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_18_3712.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_itbVzu.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15579', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_22_3713.jpg
+{u'url': u'base64_v5nlH5.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.15, u'x': 3.85}, u'size': {u'width': 65.38, u'height': 65.38}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.64, u'pose': {u'yaw': 1.55, u'roll': 6.05, u'pitch': 5.72}, u'name': u'mona:0.01,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 83, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15578, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_22_3713.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_5VcdKC.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15578', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_24_3714.jpg
+{u'url': u'base64_3bv8j7.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 10.77}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': -11.08, u'roll': 5.28, u'pitch': 5.45}, u'name': u'mona:0.00,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15577, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_24_3714.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_n9Yg0r.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15577', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_26_3715.jpg
+{u'url': u'base64_M7GwOl.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 6.15}, u'size': {u'width': 72.31, u'height': 72.31}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.97, u'pose': {u'yaw': 15.43, u'roll': -10.43, u'pitch': 1.51}, u'name': u'bidyut:0.01,mona:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 91, u'height': 91}, u'usage': {u'status': u'Succeed.', u'quota': 15576, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_26_3715.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_GZUNfQ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15576', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_27_3716.jpg
+{u'url': u'base64_YPbV6z.jpg', u'face_detection': [], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15575, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_27_3716.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_uz7MaM.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15575', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_28_3717.jpg
+{u'url': u'base64_ZLAUha.jpg', u'face_detection': [], u'ori_img_size': {u'width': 89, u'height': 77}, u'usage': {u'status': u'Succeed.', u'quota': 15574, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_28_3717.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_UbGDkO.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15574', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_28_3718.jpg
+{u'url': u'base64_ZBE6jn.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 6.15}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': -19.12, u'roll': -13.54, u'pitch': 2.15}, u'name': u'bidyut:0.00,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15573, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_28_3718.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_AhVLAo.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15573', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_30_3719.jpg
+{u'url': u'base64_se0Xss.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': -4.62, u'x': 7.69}, u'size': {u'width': 61.54, u'height': 61.54}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 11.62, u'roll': -1.13, u'pitch': 9.24}, u'name': u'bidyut:0.00,mona:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 71}, u'usage': {u'status': u'Succeed.', u'quota': 15572, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_30_3719.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_ncqk5b.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15572', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_3_3705.jpg
+{u'url': u'base64_WvGDFf.jpg', u'face_detection': [], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15571, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_3_3705.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_lzG45o.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15571', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_6_3706.jpg
+{u'url': u'base64_UA5yn1.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 11.54}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.07'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.66, u'pose': {u'yaw': -22.77, u'roll': -5.45, u'pitch': 10.35}, u'name': u'mona:0.07,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15570, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_6_3706.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_T0XM7U.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15570', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_9_3707.jpg
+{u'url': u'base64_QSjZsd.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 11.54}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.64, u'pose': {u'yaw': 23.17, u'roll': -3.47, u'pitch': 10.08}, u'name': u'bidyut:0.01,mona:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15569, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3118_9_3707.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_dHsHZ6.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15569', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_0_3753.jpg
+{u'url': u'base64_hsy3kK.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 7.69, u'x': 4.62}, u'size': {u'width': 63.85, u'height': 63.85}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -22.7, u'roll': 3.89, u'pitch': -3.73}, u'name': u'mona:0.01,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 93, u'height': 93}, u'usage': {u'status': u'Succeed.', u'quota': 15568, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_0_3753.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_MiSgyQ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15568', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_0_3755.jpg
+{u'url': u'base64_rP8wGK.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 4.62, u'x': 2.31}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'mona', u'score': u'0.13'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 47.08, u'roll': -12.8, u'pitch': -3.91}, u'name': u'mona:0.13,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 93, u'height': 93}, u'usage': {u'status': u'Succeed.', u'quota': 15567, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_0_3755.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Fpg72N.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15567', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_0_3756.jpg
+{u'url': u'base64_IHbH6A.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 6.92}, u'size': {u'width': 68.46, u'height': 68.46}}, u'matches': [{u'tag': u'mona', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 6.97, u'roll': 0.24, u'pitch': -11.07}, u'name': u'mona:0.00,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 95, u'height': 95}, u'usage': {u'status': u'Succeed.', u'quota': 15566, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_0_3756.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_D71Sx0.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15566', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_0_3757.jpg
+{u'url': u'base64_0QiN4A.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 9.23}, u'size': {u'width': 68.46, u'height': 68.46}}, u'matches': [{u'tag': u'mona', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 9.43, u'roll': 0.28, u'pitch': -3.46}, u'name': u'mona:0.01,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 95, u'height': 95}, u'usage': {u'status': u'Succeed.', u'quota': 15565, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_0_3757.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_8Xhn3K.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15565', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3758.jpg
+{u'url': u'base64_a3E7Wu.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 8.46}, u'size': {u'width': 70, u'height': 70}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 7.53, u'roll': -4.62, u'pitch': -4.94}, u'name': u'mona:0.05,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15564, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3758.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_vKbwyS.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15564', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3759.jpg
+{u'url': u'base64_1OjEXV.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 16.92, u'x': 23.85}, u'size': {u'width': 64.62, u'height': 64.62}}, u'matches': [{u'tag': u'mona', u'score': u'0.05'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -2.73, u'roll': 5.95, u'pitch': 1.12}, u'name': u'mona:0.05,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 96, u'height': 96}, u'usage': {u'status': u'Succeed.', u'quota': 15563, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3759.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_PrySPH.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15563', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3760.jpg
+{u'url': u'base64_p6QcQs.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 9.23, u'x': 28.46}, u'size': {u'width': 75.38, u'height': 75.38}}, u'matches': [{u'tag': u'mona', u'score': u'0.10'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -3.55, u'roll': -7, u'pitch': -4.58}, u'name': u'mona:0.10,bidyut:0.01,ramsri:0.00,'}], u'ori_img_size': {u'width': 120, u'height': 120}, u'usage': {u'status': u'Succeed.', u'quota': 15562, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3760.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_OlZBYR.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15562', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3761.jpg
+{u'url': u'base64_wXoktB.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 6.92}, u'size': {u'width': 63.08, u'height': 63.08}}, u'matches': [{u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}], u'confidence': 0.99, u'pose': {u'yaw': -15.81, u'roll': -1.56, u'pitch': -1.98}, u'name': u'mona:0.03,ramsri:0.01,bidyut:0.01,'}], u'ori_img_size': {u'width': 81, u'height': 81}, u'usage': {u'status': u'Succeed.', u'quota': 15561, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3761.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_7dT7Cu.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15561', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3762.jpg
+{u'url': u'base64_kTee2z.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 10.77}, u'size': {u'width': 64.62, u'height': 64.62}}, u'matches': [{u'tag': u'mona', u'score': u'0.02'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': -24.46, u'roll': -0.79, u'pitch': -9.5}, u'name': u'mona:0.02,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15560, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3193_1_3762.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_Q0x5cW.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15560', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3274_7_3789.jpg
+{u'url': u'base64_olchH8.jpg', u'face_detection': [], u'ori_img_size': {u'width': 177, u'height': 177}, u'usage': {u'status': u'Succeed.', u'quota': 15559, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3274_7_3789.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_H2U75A.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15559', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3274_8_3790.jpg
+{u'url': u'base64_kSGpzH.jpg', u'face_detection': [], u'ori_img_size': {u'width': 179, u'height': 179}, u'usage': {u'status': u'Succeed.', u'quota': 15558, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3274_8_3790.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_sF8awv.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15558', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3280_0_3770.jpg
+{u'url': u'base64_5lEJI1.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 12.31}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.07'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}], u'confidence': 0.99, u'pose': {u'yaw': 13.96, u'roll': -3.87, u'pitch': 5.78}, u'name': u'mona:0.07,ramsri:0.00,bidyut:0.00,'}], u'ori_img_size': {u'width': 91, u'height': 91}, u'usage': {u'status': u'Succeed.', u'quota': 15557, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3280_0_3770.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_gBepWS.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15557', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_0_3791.jpg
+{u'url': u'base64_4fViIh.jpg', u'face_detection': [], u'ori_img_size': {u'width': 85, u'height': 85}, u'usage': {u'status': u'Succeed.', u'quota': 15556, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_0_3791.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_CMB1UI.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15556', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_11_3796.jpg
+{u'url': u'base64_a13AQP.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 0.77, u'x': 7.69}, u'size': {u'width': 70.77, u'height': 70.77}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.94, u'pose': {u'yaw': -1.14, u'roll': -0.53, u'pitch': 16.16}, u'name': u'bidyut:0.01,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15555, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_11_3796.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_sygdXm.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15555', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_1_3792.jpg
+{u'url': u'base64_N3Knvp.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 12.31}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'mona', u'score': u'0.17'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 0.99, u'pose': {u'yaw': 16.96, u'roll': -5.16, u'pitch': 5.1}, u'name': u'mona:0.17,bidyut:0.02,ramsri:0.01,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15554, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_1_3792.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_W7hCUZ.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15554', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_3_3793.jpg
+{u'url': u'base64_oS5yLB.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 5.38, u'x': 19.23}, u'size': {u'width': 80, u'height': 80}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.54, u'pose': {u'yaw': 6.75, u'roll': -2.41, u'pitch': -2.33}, u'name': u'ramsri:0.00,bidyut:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 109, u'height': 109}, u'usage': {u'status': u'Succeed.', u'quota': 15553, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_3_3793.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_UCBrGH.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15553', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_4_3794.jpg
+{u'url': u'base64_GrEuHR.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 6.15, u'x': 22.31}, u'size': {u'width': 82.31, u'height': 82.31}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.4, u'pose': {u'yaw': -9, u'roll': -5.85, u'pitch': 9.74}, u'name': u'ramsri:0.01,bidyut:0.01,mona:0.00,'}], u'ori_img_size': {u'width': 117, u'height': 117}, u'usage': {u'status': u'Succeed.', u'quota': 15552, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_4_3794.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_TRhXEn.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15552', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_4_3795.jpg
+{u'url': u'base64_qXCRcx.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 15.38}, u'size': {u'width': 66.15, u'height': 66.15}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.28, u'pose': {u'yaw': 12.86, u'roll': 6.59, u'pitch': 4.21}, u'name': u'ramsri:0.00,bidyut:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 91, u'height': 91}, u'usage': {u'status': u'Succeed.', u'quota': 15551, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3284_4_3795.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_R22GDt.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15551', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3290_1_3797.jpg
+{u'url': u'base64_0q3Eli.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.08, u'x': 11.54}, u'size': {u'width': 68.46, u'height': 68.46}}, u'matches': [{u'tag': u'mona', u'score': u'0.03'}, {u'tag': u'bidyut', u'score': u'0.02'}, {u'tag': u'ramsri', u'score': u'0.01'}], u'confidence': 1, u'pose': {u'yaw': 17.27, u'roll': -1.55, u'pitch': 17.11}, u'name': u'mona:0.03,bidyut:0.02,ramsri:0.01,'}], u'ori_img_size': {u'width': 91, u'height': 91}, u'usage': {u'status': u'Succeed.', u'quota': 15550, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3290_1_3797.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_TxsIKP.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15550', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3302_0_3799.jpg
+{u'url': u'base64_UldxkN.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 2.31, u'x': 8.46}, u'size': {u'width': 69.23, u'height': 69.23}}, u'matches': [{u'tag': u'mona', u'score': u'0.09'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 20.66, u'roll': 0.42, u'pitch': 4.31}, u'name': u'mona:0.09,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15549, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3302_0_3799.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_tFPFTM.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15549', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3302_1_3800.jpg
+{u'url': u'base64_u1koPS.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 3.85, u'x': 10.77}, u'size': {u'width': 67.69, u'height': 67.69}}, u'matches': [{u'tag': u'mona', u'score': u'0.21'}, {u'tag': u'bidyut', u'score': u'0.00'}, {u'tag': u'ramsri', u'score': u'0.00'}], u'confidence': 0.98, u'pose': {u'yaw': 6.56, u'roll': -4.36, u'pitch': -7.27}, u'name': u'mona:0.21,bidyut:0.00,ramsri:0.00,'}], u'ori_img_size': {u'width': 89, u'height': 89}, u'usage': {u'status': u'Succeed.', u'quota': 15548, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3302_1_3800.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_H4qX4C.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15548', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3306_0_3801.jpg
+{u'url': u'base64_f6qfe3.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 15.38, u'x': 41.54}, u'size': {u'width': 280.77, u'height': 280.77}}, u'matches': [{u'tag': u'ramsri', u'score': u'0.01'}, {u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 1, u'pose': {u'yaw': 11.39, u'roll': -3.34, u'pitch': -1.16}, u'name': u'ramsri:0.01,bidyut:0.01,mona:0.00,'}], u'ori_img_size': {u'width': 358, u'height': 358}, u'usage': {u'status': u'Succeed.', u'quota': 15547, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3306_0_3801.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_UjyTQN.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15547', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3306_1_3802.jpg
+{u'url': u'base64_6w1R5B.jpg', u'face_detection': [{u'boundingbox': {u'tl': {u'y': 9.23, u'x': 26.92}, u'size': {u'width': 263.85, u'height': 263.85}}, u'matches': [{u'tag': u'bidyut', u'score': u'0.01'}, {u'tag': u'ramsri', u'score': u'0.00'}, {u'tag': u'mona', u'score': u'0.00'}], u'confidence': 0.86, u'pose': {u'yaw': 12.15, u'roll': -6.43, u'pitch': 0.25}, u'name': u'bidyut:0.01,ramsri:0.00,mona:0.00,'}], u'ori_img_size': {u'width': 323, u'height': 323}, u'usage': {u'status': u'Succeed.', u'quota': 15546, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3306_1_3802.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_vI5bD1.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15546', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3306_3_3803.jpg
+{u'url': u'base64_Hg6YUV.jpg', u'face_detection': [], u'ori_img_size': {u'width': 292, u'height': 292}, u'usage': {u'status': u'Succeed.', u'quota': 15545, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3306_3_3803.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_s4Ya0q.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15545', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3497_1_3893.jpg
+{u'url': u'base64_NhH7pL.jpg', u'face_detection': [], u'ori_img_size': {u'width': 123, u'height': 123}, u'usage': {u'status': u'Succeed.', u'quota': 15544, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3497_1_3893.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_nK1p38.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15544', u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3497_1_3894.jpg
+{u'url': u'base64_nmzghF.jpg', u'face_detection': [], u'ori_img_size': {u'width': 92, u'height': 92}, u'usage': {u'status': u'Succeed.', u'quota': 15543, u'api_id': u'UpNFfyP7ttEhxya5'}}
+Checking match for other, /wintmp/f/o/3497_1_3894.json
+{u'url': u'/opt/lampp/htdocs/func/upload/images/base64_U0YDjF.jpg', u'usage': {u'status': u'ERROR! Image is corrupted!', u'quota': u'15543', u'api_id': u'UpNFfyP7ttEhxya5'}}

@@ -1,0 +1,179 @@
+NOTE: All values mentioned below ending in _id (such as user_id,
+contact_id) are the numeric id values from the database, not the
+string UUID values that also identify those records.
+
+NOTE: Many of the operations have race conditions where if something
+new is added (e.g. a new face is recognized in a recently uploaded
+video), or something is updated (e.g. a contact is merged) over the
+scope of one of these operations something unexpected may happen.  We
+accept this behavior explicitly to avoid having to design and
+implement a globally synchronous / transactional system to handle
+these things.
+
+==== DELETE FACE OPERATIONS =====
+
+NOTE: For all the delete actions below I specify the UI should delete
+various media_asset_feature rows.  It's an open question if we should
+also delete the associated media_asset rows and remove the images from
+S3.
+
+----------------------------------------------------------------------
+D.I Delete unidentified face from People page
+----------------------------------------------------------------------
+
+Result: All occurrences of that face, and any faces merged with that
+face anywhere in our system, are permanently deleted.
+
+Work flow:
+
+D.I.1 - Message is added to queue with:
+
+{ 
+ 'action' : 'delete_contact',
+ 'user_id' : 9, 
+ 'contact_id' : 123,  
+ 'media_asset_feature_ids' : [ 456, 789, ... ] # All MAFs associated with that contact_id
+}
+
+D.I.2 - Delete the contact with contact_id (which will delete the MAFs due
+to the foreign key on delete cascade setting).
+
+----------------------------------------------------------------------
+D.II Delete identified from People page
+----------------------------------------------------------------------
+
+Result: All images of that face, and all faces merged with that face,
+anywhere in our system are permanently deleted - however the contact
+information (e.g. name, email) is retained.
+
+Work flow:
+
+Perform the message step from D.I.1.
+
+D.II.2 - Delete all media_asset_features with contact_id = the
+contact_id of the person being deleted.  The contact record itself is
+not deleted.
+
+----------------------------------------------------------------------
+D.III Delete unidentified face from Video Viewer page
+----------------------------------------------------------------------
+
+Result: All images of that face, and any faces merged with that face
+within that single video are permanently deleted.  If this is the
+only video with that face this has the side effect of removing it from
+the People page.
+
+Work flow:
+
+D.III.1 - Check wither this video is the only video with faces for
+this contact.  
+
+If so, follow the entire work flow for D.I and ignore the rest of this
+section.
+
+If not, then there are multiple videos with faces for this contact,
+then:
+
+D.III.2 - Message is added to queue with:
+
+{ 
+ 'action' : 'delete_faces_for_contact',
+ 'user_id' : 9, 
+ 'contact_id' : 123,  
+ 'media_asset_feature_ids' : [ 456, 789, ... ] # All MAFs for this contact present for the video in question
+}
+
+D.III.3 - Check whether the picture_uri for the contact_id in question
+corresponds to one of the URIs from this video.  If it does, change it
+to another URI from another video.
+
+D.III.4 - Delete all media_asset_features for this contact_id with
+media_id = the video in question. 
+
+----------------------------------------------------------------------
+D.IV Delete identified face from Video Viewer page
+----------------------------------------------------------------------
+
+Result: All images of that face, and any faces merged with that face
+within that single video are permanently deleted.  If this is the
+only video with that face this has the side effect of removing it from
+the People page - however the contact information (e.g. name, email)
+is retained.
+
+Work flow:
+
+As D.III except if there is only one video with faces for this contact
+we perform D.II instead of D.I.
+
+==== GLOBALLY MERGE UNIDENTIFIED CONTACT U WITH IDENTIFIED CONTACT C ====
+
+Result: All images associated with U are associated with C.
+
+Work flow:
+
+M.1 - A Message is added to the queue with:
+
+{ 
+ 'action' : 'move_faces',
+ 'user_id' : 9, 
+ 'old_contact_id' : 15,
+ 'new_contact_id' : 26,
+ 'delete_old_contact' : True,
+ 'media_asset_feature_ids' : [ 456, 789, ... ] # All MAFs associated with old_contact_id
+}
+
+M.2 - All media_asset_features associated with U are updated to have a
+contact_id associated with C.  
+
+M.3 - Contact U is deleted.
+
+==== SINGLE VIDEO RENAME CONTACT A TO CONTACT B ====
+
+Result: All images of A in the video under consideration are
+associated with B, which could be an existing or new contact.
+
+Work flow:
+
+R.1 - A Message is added to the queue with:
+
+{ 
+ 'action' : 'move_faces',
+ 'user_id' : 9, 
+ 'old_contact_id' : 15,
+ 'new_contact_id' : 26,
+ 'media_asset_feature_ids' : [ 456, 789, ... ] # All MAFs for this video associated with old_contact_id
+}
+
+R.2 - All media_asset_features associated with A in the current video
+are updated to have a contact_id associated with B.
+
+==== SINGLE FACE RENAME CONTACT A TO CONTACT B ====
+
+Result: A signle face from a list of faces A is disasociated from a
+known contact to a new contact B (to eliminate a false positive).
+
+Work flow:
+
+SR.1 - A new contact B is created.
+
+SR.2 - A Message is added to the queue with:
+
+{ 
+ 'action' : 'move_faces',
+ 'user_id' : 9, 
+ 'old_contact_id' : 15,
+ 'new_contact_id' : 26,
+ 'media_asset_feature_ids' : [ 456, 789, ... ] # The MAFs being renamed
+}
+
+SR.3 - The media_asset_features being renamed associated with A are
+updated to have a contact_id associated with B.
+
+==== UNIDENTIFIED CONTACT U IS ASSIGNED A NAME / EMAIL ====
+
+No impact on face detection.
+
+
+
+
+

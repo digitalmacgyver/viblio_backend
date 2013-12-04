@@ -1,0 +1,215 @@
+1. DB Stuff.
+2. Hack up v1.
+3. Test messages and verify.
+4. Change forms, test and verify.
+5. Hassle andy about messages.
+5. Update FB import stuff
+6. Test DB import
+6. Write docs
+
+Start design of system.  
+
+1. Organize code structure, modules and seperations.
+
+Module goes in:
+vib.cv.FaceRecognize.*
+
+There are two modules:
+* One that has the functions (delete_contact, ...)
+* One that drives these functions and interacts with the queues.
+
+Has 2 DB interfaces:
+
+1) Interfaces with our standard schema, and is implemented in vib.db....
+2) Interfaces with the new schema, and is implemented under FR.R
+
+Has a dispatcher that listenes for actions.
+1) Today that thing uses a test hook / config files.
+2) In the future that will be connected to queues.
+
+Functions are:
+* delete_contact
+* delete_faces_for_contact - no error on failure (races)
+* move_faces (w/wo delete_old_contact)
+* add_faces_for_contact
+
+THESE FUNCTIONS DO AS MUCH OF THEIR WORK AS THEY CAN.  RETURN LISTS OF
+WHAT THEY WERE ABLE TO EFFECT
+
+NOTE: WE DO NOT SERIALIZE AROUND THESE FUNCTIONS, IT IS THE CALLERS
+RESPONSIBILITY TO SERIALIZE IF APPROPRIATE.
+
+QUESTION:
+
+1) Do we delete contacts from L2 without faces?
+
+* NO - THIS REQUIRES NO SPECIAL CASING IN CODE AND MAY PROVE USEFUL
+* FOR DEBUGGING.
+
+2) Do we automatically create L2 DBs when we get a request to add
+faces to a contact that doesn't exist.
+
+* YES - REKOGNITION HAS AN AUTOVIVIFY BEHAVIOR, AND DUE TO RACE
+* CONDITIONS WE MAY BE MISSING A CONTACT THAT SHOULD EXIST.
+
+3) Why delete_contact and delete_faces_for_contact then?
+delete_contact cleans up any previously failed deletes due to races.
+
+LAYER 2 CONTAINS ALL IMAGES WE FOUND FOR THAT FACE EXCLUDING BAD ONES.
+
+LAYER 2 MAY NOT CONTAIN ANY CLUSTERS, IF SO WE SIMPLY DON'T INCLUDE
+THAT FACE IN LAYER 1.
+
+2. Think of how to keep tally of success / failures:
+
+Need a distinct data structure that doesn't get things deleted from
+it.
+
+These values aren't FKs because we want to keep them if the original
+content gets deleted.
+
+each row has user_id, media_id (video), media_asset_id (face)
+
+Operations:
+
+On each call to recognize we add a row saying
+
+Properties of sets of combined tracks:
+1) Match in MTurk recognition
+
+False positive for each higher rank not selected
+Rank, confidence
+
+True positive for selected
+Rank, confidence
+
+These rows have candidate and potential fields with media_assset_ids.
+
+2) New face in MTurk recognition (e.g. rejection of all best matches)
+
+No match, scores of matches
+
+3) Unidentified to Identified merge
+
+False negative
+
+4) Single video rename
+
+False positive (could also be a false negative)
+
+5) Single face rename
+
+False positive (could also be a false negative)
+
+
+3. Define / install database schema.
+
+===== DESIGN CONSIDERATIONS =====
+
+1. Recognition changes 1 op per face to do a cluster call. 
+
+TBD - How many calls does Train cost?
+
+2. The implementation of many of our primitives look like:
+   a. Add/delete l2 images
+   b. Re-cluster
+   c. Add/delete l1 images
+   d. Re-train
+
+If this is going to be hundreds of API calls per invocation, we may
+have to think about the cost.
+
+1 cent per 1000 API calls. 
+
+HOWEVER: 1 cent per 50 API calls if we crach through 45,000 a day.
+
+3. THINK ABOUT - We only need to fix the DB for user X before we do
+recongition for user X.  Does it make sense to defer all the
+book-keeping until that time?  If so we'll have to make sure our
+things pass an ACID test / preserve ordering.
+
+
+===== BACK END PRIMITIVES ======
+
+delete_faces_for_contact - remove a list of faces for that contact -
+if contact has no faces at the end of the operation deletes it.
+
+delete_contact - remove a contact and all faces associated with that contact
+
+Add faces to contact - add a set of faces to a given contact - if
+contact is not present in the database creates it.
+
+move_faces - Move a list of faces from old contact to new contact
+
+===== RDS SCHEMA DESIGN ======
+
+2) One table with:
+
+matching results:
+
+unknown_asset_id
+unknown_asset_uri
+unknown_feature_coordinates
+candidate_1_id
+candidate_1_confidence
+candidate_1_match = true/false
+2, 3
+match_found = true/false
+
+FIRST OFF: FACES MAY NOT BE RECOGNIZED AS FACES AT ALL BY RECOGNITION.
+
+SECONDLY: THEY MAY NOT PARTICIPATE IN A CLUSTER.
+
+FIELDS AREN'T FKs AS WE DON'T WANT CASCADES
+
+id
+user_id
+media_asset_id
+media_asset_feature_id
+contact_id
+face_score
+viblio_url = /s/p or whatever
+is_face = true/false
+l1_id
+l1_tag = see below
+l2_id
+l2_tag = NULL or the name of the cluster if in a cluster
+
+l1 tag is composed this way:
+* If the l2 is in a cluster, contact_id+l2_tag
+
+==== EXPERIMENT RESULTS ====
+
+If you run cluster with some undefined tags and an existing face will
+it cluster them together?
+
+Testing in matt@ account with test_cluster name space and demo user id.
+ 
+I've uploaded 2 copies of foo_0_0.jpg that are the same.  
+
+1) Cluster.
+     RESULT - Single new cluster, plus 2 photos showing up as untagged still.
+
+2) Upload a 4th copy.  
+
+   RESULT - New copies didn't seem to be available in their web UI.
+   Perhaps they do some kind of server side de-duplication of
+   identical images.?
+
+NOTE: Clustering takes 1 API call per face in database.  NOTE:
+Clustering API's return value is good enough to know what IDX's are in
+what cluster.
+
+3) Re-cluster and untagged gets added.
+4) Add _1, _2 faces and cluster and see where they end up.
+
+This impacts the entire design, as I'll have to store the clusters in
+our system because their system only gives us one tag which is the
+clusters name.
+
+Here the name would be contact_id-cluster_id and in RDS we'd store a
+cluster_id -> MAF mapping.
+
+TBD - Can you untag something by renaming the tag to null (special
+JSON value)
+
