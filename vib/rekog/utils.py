@@ -11,7 +11,7 @@ rekog_api_secret = config.rekog_api_secret
 
 default_namespace = config.rekog_namespace
 
-def crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, fb_friends, namespace=None, skip_self=False ):
+def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, namespace=None, skip_self=False ):
     '''For a given Facebook ID and a list of friends with { id, name }
     elements, execute the crawl faces ReKognition task.
 
@@ -53,7 +53,7 @@ def crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, fb_friends, na
             'fb_id'        : fb_user_id,
             'access_token' : fb_access_token,
             'name_space'   : namespace,
-            'user_id'      : user_uuid
+            'user_id'      : user_id
             }
 
         r = requests.post( "http://rekognition.com/func/api/", data )
@@ -61,7 +61,7 @@ def crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, fb_friends, na
 
     return results
 
-def train_for_user( user_uuid, namespace = None ):
+def train_for_user( user_id, namespace = None ):
     '''Call the Rekognition training API for all faces for the
     user.
 
@@ -75,13 +75,13 @@ def train_for_user( user_uuid, namespace = None ):
         'api_secret'   : rekog_api_secret,
         'jobs'         : 'face_train',
         'name_space'   : namespace,
-        'user_id'      : user_uuid
+        'user_id'      : user_id
         }
 
     r = requests.post( "http://rekognition.com/func/api/", data )
     return r.json()
 
-def visualize_for_user( user_uuid, num_img_return_pertag=1, namespace = None ):
+def visualize_for_user( user_id, num_img_return_pertag=1, namespace = None ):
     '''Calls the ReKognition Visualize function and returns an array
     of { tag, url, index : [#, #, ...] } elements for each tagged
     person.
@@ -97,14 +97,14 @@ def visualize_for_user( user_uuid, num_img_return_pertag=1, namespace = None ):
         'jobs'         : 'face_visualize',
         'num_img_return_pertag' : num_img_return_pertag,
         'name_space'   : namespace,
-        'user_id'      : user_uuid
+        'user_id'      : user_id
         }
 
     r = requests.post( "http://rekognition.com/func/api/", data )
 
     return r.json()['visualization']
 
-def rename_tag_for_user( user_uuid, old_tag, new_tag, namespace=None ):
+def rename_tag_for_user( user_id, old_tag, new_tag, namespace=None ):
     '''Renames all occurences of old_tag to new_tag for the user.
     Returns the result of the API call in JSON format.'''
 
@@ -118,7 +118,48 @@ def rename_tag_for_user( user_uuid, old_tag, new_tag, namespace=None ):
         'tag'          : old_tag,
         'new_tag'      : new_tag,
         'name_space'   : namespace,
-        'user_id'      : user_uuid
+        'user_id'      : user_id
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    return r.json()
+
+def delete_face_for_user( user_id, tag, face_idx, namespace=None ):
+    '''Deletes the face tagged with index face_idx for user_id in
+    namespace.  The special _x_all tag can be used for untagged faces.
+
+    Optionally face_idx can be formatted as '1;2;3' to delete multiple
+    faces at once'''
+
+    if namespace == None:
+        namespace = default_namespace
+        
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_delete',
+        'name_space'   : namespace,
+        'user_id'      : user_id,
+        'tag'          : tag, 
+        'img_index'    : face_idx
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    return r.json()
+
+def delete_user( user_id, namespace=None ):
+    '''Deletes the entirety of the ReKognition system for the provider
+    user, namespace'''
+
+    if namespace == None:
+        namespace = default_namespace
+        
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_delete',
+        'name_space'   : namespace,
+        'user_id'      : user_id
         }
 
     r = requests.post( "http://rekognition.com/func/api/", data )
