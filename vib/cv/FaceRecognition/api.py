@@ -10,6 +10,9 @@ import vib.cv.FaceRecognition.db_utils as recog_db
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
+# Within the API: inbound can either be fully formed faces, or hashes
+# with a face_id.  We always return fully formed faces.
+#
 # Each function in this module takes in an array of faces to operate
 # on, the structure of a face is a dictionary like object with these
 # fields:
@@ -67,30 +70,33 @@ def delete_contact( user_id, contact_id ):
                 'message'    : 'Deleting contact %s for user %s.' % ( contact_id, user_id )
                 } )
         
+        l1_user_id = "%s_%s" % ( user_id, contact_id )
+
         faces = recog_db._get_contact_faces_for_user( user_id, contact_id )
 
         delete_tags = {}
 
         for face in faces:
-            if face.l1_id is not None:
-                if face.l1_tag is not None:
-                    tag = face.l1_tag
+            if face.is_face:
+                if face.l1_id is not None:
+                    if face.l1_tag is not None:
+                        tag = face.l1_tag
+                    else:
+                        tag = '_x_all'
+
+                log.debug( {
+                        'user_id'    : user_id,
+                        'contact_id' : contact_id,
+                        'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face.l1_id, user_id )
+                        } )
+
+                if tag in delete_tags:
+                    delete_tags[tag] += ';%s' % ( face.l1_id )
                 else:
-                    tag = '_x_all'
-
-            log.debug( {
-                    'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face.l1_id, user_id )
-                    } )
-
-            if tag in delete_tags:
-                delete_tags[tag] += ';%s' % ( face.l1_id )
-            else:
-                delete_tags[tag] = [ face.l1_id ]
+                    delete_tags[tag] = [ face.l1_id ]
                 
         for tag in sorted( delete_tags.keys() ):
-            result = rekog.delete_face_for_user( user_id, tag, delete_tags[tag], config.recog_l1_namespace )
+            result = rekog.delete_face_for_user( l1_user_id, tag, delete_tags[tag], config.recog_l1_namespace )
             log.debug( {
                     'user_id'    : user_id,
                     'contact_id' : contact_id,
@@ -98,15 +104,15 @@ def delete_contact( user_id, contact_id ):
                     'message'    : 'Deleted faces %s for user_id %s, tag %s' % ( delete_tags[tag], user_id, tag )
                     } )
 
-        result = rekog.train_for_user( user_id, config.recog_l1_namespace )
+        result = rekog.train_for_user( l1_user_id, config.recog_l1_namespace )
         log.debug( {
                 'user_id'    : user_id,
                 'contact_id' : contact_id,
                 'rekog_result' : result,
-                'message'    : 'Trained l1 database for user_id %s' % ( user_id )
+                'message'    : 'Trained l1 database %s for user_id %s' % ( l1_user_id, user_id )
                 } )
 
-        result = rekog.delete_user( face.user_id, config.recog_l2_namespace )
+        result = rekog.delete_user( user_id, config.recog_l2_namespace )
         log.debug( {
                 'user_id'    : user_id,
                 'contact_id' : contact_id,
@@ -136,17 +142,11 @@ def delete_faces_for_contact( user_id, contact_id, faces ):
     '''Given a user_id, contact_id, and array of faces, delete the
     (partial) faces data structures present in the array.
 
-    The faces array could contain data structures returned by the
-    methods of this api, however all that is required is a dictionary
-    like object with an id field that corresponds to the id field of
-    the face in question.
+    The faces array can contain either:
 
-    If the faces data structure does not contain the l1_idx, l1_tag,
-    l2_idx, and l2_tag keys this method will interact with the
-    recognition database to determine these values.  If these keys are
-    present their values are taken to be correct (e.g. matching the
-    values for the associated id in the recognition database), if
-    incorrect undefined behavior will result.'''
+    * Face data structures returned by the methods of this api, or
+    * Dictionary like objects with an id field
+    '''
 
     try:
         log.info( {
@@ -155,37 +155,62 @@ def delete_faces_for_contact( user_id, contact_id, faces ):
                 'message'    : 'Deleting faces related to contact %s for user %s.' % ( contact_id, user_id )
                 } )
 
+        deleted = []
+        ( faces, not_found, error ) = _get_faces( user_id, contact_id, faces )
+
+        l1_user_id = "%s_%s" % ( user_id, contact_id )
+
         '''
         For each thing in faces:
-        1. See if we have all the data we need.
-        2. If we do not, fetch from DB
-        3. Delete from rekognition.
-        4. Retrain l1.
-        4. Delete from DB. 
+        1. Delete all l1 faces for this contact.
+        2. Delete all faces from l2
+        3. Cluster l2
+        4. CROSS CHECK CLUSTER BETWEEN FACES AND DB.
+        4. Create new l1 faces from cluster
+        5. Retrain l1
+        6. Delete face rows from database.
         '''
         
-        deleted = []
-        not_found = []
-        error = []
+        '''
+        Need a "sync" function that sycnrhonizes state of DB from
+        state of rekognition.
+        L2:
+        * Updates cluster tags in DB
+        * Removes rows that are is_face but not in rekognition.
+        * Deletes rekog stuff that are idx but not in database.
+        * Re-clusters (and re-runs to validate)
+        L1: ...
+
+        If things have gotten out of sync, then there was either a
+        partial update or partial delete.
+
+        * Add order: Rekog then DB.
+        * Delete order: Rekog then DB.
+        
+        So, if something is in Rekog but not the DB, we know there was
+        a partial add.
+
+        If something is in the DB but not Rekog, then we know there
+        was a partial delete.
+
+        If present in Rekog but not DB, partial add.
+
+        If present in DB and not in Rekog, then partial delete, delete from DB.
+
+        
+        '''
 
         delete_tags = {}
 
+        # DEBUG - check on
+        
         for face in faces:
             try:
-                if 'id' in face:
-                    result = _get_tags( user_id, contact_id, face )
-                    if result is None:
-                        not_found.append( face )
+                if face['l1_idx'] is not None:
+                    if face['l1_tag'] is None:
+                        tag = '_x_all'
                     else:
-                        ( l1_idx, l1_tag, l2_idx, l2_tag ) = result
-                        if l1_idx is not None:
-                            if l1_tag is None:
-                                tag = '_x_all'
-                            else:
-                                tag = l1_tag
-
-### DEBUG - At l2 all user_id's are the composition of our user_id and
-### contact_id.  Fix above, then come back and rethink this.
+                        tag = face['l1_tag']
 
             log.debug( {
                     'user_id'    : user_id,
@@ -288,11 +313,32 @@ def add_faces_for_contact():
     pass
 
 
-def _get_tags( user_id, contact_id, face ):
-    '''Returns a 4-tuple containing the l1_idx, l1_tag, l2_idx, and
-    l2_tag for this face, or None if the face doesn't exist'''
+def _get_faces( user_id, contact_id, faces ):
+    '''Given an input arry of faces, returns an output array of fully
+    populated face data structures.'''
 
-    if 'l1_idx' in face and 'l1_tag' in face and 'l2_idx' in face and 'l2_tag' in face:
-        return ( face['l1_idx'], face['l1_tag'], face['l2_idx'], face['l2_tag'] )
-    else:
-        return recog_db._get_face_by_id( face['id'] )
+    result = []
+    errors = []
+    not_found = []
+
+    for face in faces:
+        # Check if this is already a face data structure
+        face_keys = [ 'id', 'user_id', 'contact_id', 'face_id', 'face_url', 'external_id', 'score', 'is_face', 'l1_id', 'l1_tag', 'l2_id', 'l2_tag' ]
+        valid_face = True
+        for key in face_keys:
+            if key not in face:
+                valid_face = False
+                break
+        if not valid_face:
+            if 'id' in face:
+                f = recog_db._get_face_by_id( face['id'] )
+                if f is not None:
+                    result.append( f )
+                else:
+                    not_found.append( face )
+            else:
+                errors.append( face )
+        else:
+            result.append( face )
+
+    return ( result, not_found, errors )

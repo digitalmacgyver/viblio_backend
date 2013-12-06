@@ -162,14 +162,14 @@ SECONDLY: THEY MAY NOT PARTICIPATE IN A CLUSTER.
 
 FIELDS AREN'T FKs AS WE DON'T WANT CASCADES
 
-id
-user_id
-media_asset_id
-media_asset_feature_id
-contact_id
-face_score
-viblio_url = /s/p or whatever
-is_face = true/false
+id - surrogate key
+user_id - 1st field of natural key, caller must ensure NK is unique
+contact_id - 2nd field of natural key
+face_id - 3rd field of natural key
+face_url 
+external_id - Optional Application defined key can be stored here.
+score - Application provides, will be used to determine the "best" face
+is_face = true/false - If we think the image at face_url is a face
 l1_id
 l1_tag = see below
 l2_id
