@@ -102,7 +102,10 @@ def delete_all_data_for_user( user_uuid, verbose=False ):
 
             if verbose:
                 print "Deleting %s %s from s3 %s/%s" % ( asset_type, asset_id, config.bucket_name, key )
-
+                
+            # DEBUG - in future change implementation to send a list
+            # to this function and use boto.s3.bucket.delete_keys to
+            # batch up delete requests.
             s3.delete_s3_file( config.bucket_name, key )
 
         if verbose:
