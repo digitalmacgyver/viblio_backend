@@ -35,9 +35,12 @@ mp_web = mixpanel.Mixpanel( config.mp_web_token )
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
 
+import pdb
+
 class VWorker( swf.ActivityWorker ):
 
     def __init__( self, **kwargs ):
+	pdb.set_trace()
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
         self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix + config.UniqueTaskList
         self.version   = VPW[self.task_name].get( 'version'  , None )
@@ -58,6 +61,9 @@ class VWorker( swf.ActivityWorker ):
                 log.debug( json.dumps( { 'message' : 'Nothing to do.' } ) )
                 return True
             else:
+                self.heartbeat_active = True
+                self.heartbeat_thread = self.start_heartbeat(self.emit_heartbeat, self.heartbeat)
+                
                 input_opts = json.loads( activity_task['input'] )
 
                 media_uuid = input_opts['media_uuid']
@@ -99,10 +105,75 @@ class VWorker( swf.ActivityWorker ):
                         'message' : "Task had an exception: %s" % error } ) )
             self.fail( reason = str( error ) )
             raise error
+        finally:
+            try:
+                self.stop_heartbeat(self.heartbeat_thread)
+            except Exception as error:
+                log.error( json.dumps( { 
+		                'media_uuid' : media_uuid,
+		                'user_uuid' : user_uuid,
+		                'message' : "Task had an exception stopping heartbeat: %s" % error } ) )
+                self.fail( reason = str( error ) )
+                raise error
+
 
     def run_task( self, opts ):
         '''Clients must override this method'''
         raise NotImplementedError()
+
+    def start_heartbeat(self, emit_heartbeat, heartbeat):
+        self.validateUserMethod(emit_heartbeat)
+        self.validateUserMethod(heartbeat)
+
+        #nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
+        nsecs = 2
+        nsecs = int(nsecs)
+        if nsecs is None or nsecs <= HeartbeatTester.HEARTBEAT_DELTA:
+            return None
+        nsecs = nsecs - HeartbeatTester.HEARTBEAT_DELTA
+        t = threading.Thread(target=emit_heartbeat, args = (nsecs, heartbeat))
+        t.setDaemon(True) # this makes thread terminate when process that created it terminates
+        t.start()
+        return t
+
+    def emit_heartbeat(self, delay_secs, heartbeat):
+        self.validateDelaySecs(delay_secs)
+        self.validateUserMethod(heartbeat)
+     
+        while self.heartbeat_active:
+            heartbeat()
+            time.sleep(delay_secs)
+        return
+
+    def heartbeat(self):
+        print 'heartbeat at %s' % (time.ctime(time.time()))
+
+    def stop_heartbeat(self, heartbeat_thread):
+        if heartbeat_thread is None:
+            return
+        self.heartbeat_active = False
+        heartbeat_thread.join()
+
+    def validateBool(self, var):
+        if var is None:
+            raise UnboundLocalError('var is None')
+        elif not isinstance(var, bool):
+            raise TypeError('var is not a bool')
+
+    def validateDelaySecs(self, delay_secs):
+        if delay_secs is None:
+            raise UnboundLocalError('delay_secs is None')
+        elif not isinstance(delay_secs, int):
+            raise TypeError('delay_secs is not an int')
+        elif delay_secs <= 0:
+            raise TypeError('delay_secs must be > 0')
+
+    def validateUserMethod(self, var):
+        if var is None:
+            raise UnboundLocalError('method variable is None')
+        elif not inspect.ismethod(var):
+            raise TypeError('method variable not a reference to a method')
+
 
 
 def _mp_log( event, media_uuid, user_uuid, properties = {} ):
