@@ -40,7 +40,7 @@ import pdb
 class VWorker( swf.ActivityWorker ):
 
     def __init__( self, **kwargs ):
-	pdb.set_trace()
+	#pdb.set_trace()
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
         self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix + config.UniqueTaskList
         self.version   = VPW[self.task_name].get( 'version'  , None )
@@ -110,8 +110,8 @@ class VWorker( swf.ActivityWorker ):
                 self.stop_heartbeat(self.heartbeat_thread)
             except Exception as error:
                 log.error( json.dumps( { 
-		                'media_uuid' : media_uuid,
-		                'user_uuid' : user_uuid,
+                            #'media_uuid' : media_uuid,
+                            #'user_uuid' : user_uuid,
 		                'message' : "Task had an exception stopping heartbeat: %s" % error } ) )
                 self.fail( reason = str( error ) )
                 raise error
