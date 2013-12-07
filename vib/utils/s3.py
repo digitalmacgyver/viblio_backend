@@ -108,3 +108,23 @@ def delete_s3_file( bucket, key ):
                     'message' : 'Failed to delete file from s3: %s/%s with error: %s' % ( bucket, key, e )
                     } ) )
         raise
+
+def delete_s3_files( bucket, keys ):
+    '''Delete all files in keys in bucket, keys must be less than 1000
+    elements'''
+    try:
+
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+        bucket = s3.get_bucket( bucket )
+
+        log.info( json.dumps( { 
+                    'message' : 'Deleting files from s3 bucket %s' % ( bucket )
+                    } ) )
+
+        bucket.delete_keys( keys[:1000], quiet=True )
+
+    except Exception as e:
+        log.error( json.dumps( { 
+                    'message' : 'Failed to delete files from s3 bucket: %s with error: %s' % ( bucket, e )
+                    } ) )
+        raise

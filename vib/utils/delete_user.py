@@ -1,21 +1,15 @@
 #!/usr/bin/env python
 
-import datetime
-import json
 import logging
 from optparse import OptionParser
-from sqlalchemy import and_, func
 import sys
-import time
-import uuid
 
 import vib.utils.s3 as s3
+import vib.db.orm
+from vib.db.models import *
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
-
-import vib.db.orm
-from vib.db.models import *
 
 log = logging.getLogger( 'vib.utils.delete_user' )
 log.setLevel( logging.DEBUG )
@@ -94,6 +88,7 @@ def delete_all_data_for_user( user_uuid, verbose=False ):
                 return 0
 
         # Note, we only get here if !verbose, or verbose and proceed.
+        delete_keys = []
         for asset in assets:
         
             asset_type = asset.asset_type
@@ -103,10 +98,13 @@ def delete_all_data_for_user( user_uuid, verbose=False ):
             if verbose:
                 print "Deleting %s %s from s3 %s/%s" % ( asset_type, asset_id, config.bucket_name, key )
                 
-            # DEBUG - in future change implementation to send a list
-            # to this function and use boto.s3.bucket.delete_keys to
-            # batch up delete requests.
-            s3.delete_s3_file( config.bucket_name, key )
+            delete_keys.append( key )
+            
+            if len( delete_keys ) == 1000:
+                s3.delete_s3_files( config.bucket_name, delete_keys )
+                delete_keys = []
+
+        s3.delete_s3_files( config.bucket_name, delete_keys )
 
         if verbose:
             print "Deleting all contacts for user %s" % ( user_uuid )
@@ -130,7 +128,8 @@ def delete_all_data_for_user( user_uuid, verbose=False ):
             orm.rollback()
 
 if __name__ == '__main__':
-    parser = OptionParser()
+    usage = "usage: DEPLOYMENT=[staging|prod] %prog [-e user@email.com]|[-u user-uuid]"
+    parser = OptionParser( usage = usage )
     parser.add_option("-e", "--email",
                   dest="email",
                   help="Print the uuid(s) associated with the email and exit." )
