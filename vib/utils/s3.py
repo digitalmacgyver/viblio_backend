@@ -87,3 +87,24 @@ def copy_s3_file( source_bucket, source_key, target_bucket, target_key ):
                     'message' : 'Failed to copy S3 file from: %s/%s to: %s/%s, error: %s' % ( source_bucket, source_key, target_bucket, target_key, e )
                     } ) )
         raise
+
+def delete_s3_file( bucket, key ):
+    '''Delete the file at bucket/key'''
+    try:
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+        bucket = s3.get_bucket( bucket )
+        k = Key( bucket )
+
+        log.info( json.dumps( { 
+                    'message' : 'Deleting file from s3: %s/%s' % ( bucket, key )
+                              } ) )
+
+        k.key = key
+
+        k.delete()
+
+    except Exception as e:
+        log.error( json.dumps( { 
+                    'message' : 'Failed to delete file from s3: %s/%s with error: %s' % ( bucket, key, e )
+                    } ) )
+        raise
