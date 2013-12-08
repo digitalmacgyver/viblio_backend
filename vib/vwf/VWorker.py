@@ -2,10 +2,12 @@
 
 import boto.swf
 import boto.swf.layer2 as swf
+import inspect
 import json
 import logging
 from logging import handlers
 import mixpanel
+import threading
 import time
 
 import vib.config.AppConfig
@@ -38,9 +40,10 @@ from vib.vwf.VPWorkflow import VPW
 import pdb
 
 class VWorker( swf.ActivityWorker ):
+    HEARTBEAT_DELTA = 1
 
     def __init__( self, **kwargs ):
-	pdb.set_trace()
+	#pdb.set_trace()
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
         self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix + config.UniqueTaskList
         self.version   = VPW[self.task_name].get( 'version'  , None )
@@ -50,6 +53,7 @@ class VWorker( swf.ActivityWorker ):
         self.logger = logger
 
     def run( self ):
+        self.heartbeat_thread = None
         try:
             log = self.logger
 
@@ -100,8 +104,8 @@ class VWorker( swf.ActivityWorker ):
 
         except Exception as error:
             log.error( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
+                        #'media_uuid' : media_uuid,
+                        #'user_uuid' : user_uuid,
                         'message' : "Task had an exception: %s" % error } ) )
             self.fail( reason = str( error ) )
             raise error
@@ -110,8 +114,8 @@ class VWorker( swf.ActivityWorker ):
                 self.stop_heartbeat(self.heartbeat_thread)
             except Exception as error:
                 log.error( json.dumps( { 
-		                'media_uuid' : media_uuid,
-		                'user_uuid' : user_uuid,
+		                #'media_uuid' : media_uuid,
+		                #'user_uuid' : user_uuid,
 		                'message' : "Task had an exception stopping heartbeat: %s" % error } ) )
                 self.fail( reason = str( error ) )
                 raise error
@@ -124,17 +128,28 @@ class VWorker( swf.ActivityWorker ):
     def start_heartbeat(self, emit_heartbeat, heartbeat):
         self.validateUserMethod(emit_heartbeat)
         self.validateUserMethod(heartbeat)
-
-        #nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
-        nsecs = 2
-        nsecs = int(nsecs)
-        if nsecs is None or nsecs <= HeartbeatTester.HEARTBEAT_DELTA:
+        
+        pdb.set_trace()
+        nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
+        if nsecs == 'NONE':
             return None
-        nsecs = nsecs - HeartbeatTester.HEARTBEAT_DELTA
-        t = threading.Thread(target=emit_heartbeat, args = (nsecs, heartbeat))
-        t.setDaemon(True) # this makes thread terminate when process that created it terminates
-        t.start()
-        return t
+        #nsecs = 2
+        log = self.logger
+        log.info(json.dumps({'message' : 'Heartbeat timeout = %s' % nsecs}))
+        try: 
+            nsecs = int(nsecs)
+        except ValueError:
+            log.error(json.dumps({'message' : 'Could not convert %s to int' % nsecs}))
+            return None
+        else:
+            log.info(json.dumps({'message' : 'Heartbeat timeout after converting to int = %d' % nsecs})) 
+            if nsecs <= VWorker.HEARTBEAT_DELTA:
+                return None
+            nsecs = nsecs - VWorker.HEARTBEAT_DELTA
+            t = threading.Thread(target=emit_heartbeat, args = (nsecs, heartbeat))
+            t.setDaemon(True) # this makes thread terminate when process that created it terminates
+            t.start()
+            return t
 
     def emit_heartbeat(self, delay_secs, heartbeat):
         self.validateDelaySecs(delay_secs)
@@ -142,11 +157,14 @@ class VWorker( swf.ActivityWorker ):
      
         while self.heartbeat_active:
             heartbeat()
-            time.sleep(delay_secs)
+            #time.sleep(delay_secs)
+            time.sleep(100)
         return
 
+    '''
     def heartbeat(self):
         print 'heartbeat at %s' % (time.ctime(time.time()))
+    '''
 
     def stop_heartbeat(self, heartbeat_thread):
         if heartbeat_thread is None:
