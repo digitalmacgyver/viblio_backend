@@ -142,10 +142,10 @@ class VWorker( swf.ActivityWorker ):
             log.error(json.dumps({'message' : 'Could not convert %s to int' % nsecs}))
             return None
         else:
-            log.info(json.dumps({'message' : 'Heartbeat timeout after converting to int = %d' % nsecs})) 
             if nsecs <= VWorker.HEARTBEAT_DELTA:
                 return None
             nsecs = nsecs - VWorker.HEARTBEAT_DELTA
+            log.info(json.dumps({'message' : 'Starting heartbeat...'})) 
             t = threading.Thread(target=emit_heartbeat, args = (nsecs, heartbeat))
             t.setDaemon(True) # this makes thread terminate when process that created it terminates
             t.start()
