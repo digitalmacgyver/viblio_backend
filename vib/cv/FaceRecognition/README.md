@@ -123,10 +123,9 @@ during ```add_faces```.
 * contact_id - integer value identifying the contact this face is associated with
 * face_id - integer value identifying this particular face image
 * face_url - a URL to this face image
-* external_id - Either None, or an integer value - this is an
-  arbitrary convenience variable that allows a caller of the
-  recognition API to label a particular face in some way meaningful to
-  them
+* external_id - Either None, or an integer value - this is a
+  convenience variable that allows a caller of the recognition API to
+  label a particular face in some way meaningful to them
 * score - floating point value specifying how "good" this face is,
   higher values are better - will be used by face recognition to
   select the best faces to use for matching
@@ -146,7 +145,7 @@ during ```add_faces```.
 
 The Recognition System will set a number of additional fields in the
 Face data structure for its own purposes, these include: l1_id,
-l1_tag, l2_id, l2_tag, _sa_instance_state, created_date, updated_date.
+l1_tag, l2_id, l2_tag, \_sa_instance_state, created_date, updated_date.
 These values should not be relied upon or changed by API callers.
 
 
