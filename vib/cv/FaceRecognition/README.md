@@ -7,18 +7,14 @@ Terminology
 The face recognition system uses the following terminology:
 
 * Face: An image thought to contain one face (provided via a URL)
-
 * Contact: Each face that is added or deleted from the system is
   explicitly associated with a particular contact - this represents
   the identity of the person this face belongs to.
-
 * User: Each contact and their associated faces are associated with
   one user.  All face recognition operations are also associated with
   one user, and consider only faces and contacts for that user.
-
   * Users offer a way to partition the face recognition system into
     independent pieces.
-
 * Score: Each face added to the system must include a score.  This
   score is used by the face recognition system to identify the "best"
   faces to be used internally for recognition.  Higher values indicate
@@ -57,50 +53,33 @@ calls do no harm: faces can be added or deleted multiple times, all
 attempts past the first will be ignored.
 
 * ```add_faces( user_id, contact_id, [ array of face data structures ] )```
-  
   * Subsequent to this call, calls to ```recognize_face``` will
     consider these faces among those that identify ```contact_id```
-
   * ```user_id``` and ```contact_id``` are integer values provided by
     the caller specifying the user and contact that the faces in the
     array should be added to
-
   * If the ```user_id``` and/or ```contact_id``` are being used for
     the first time, appropriate structures are created in the
     recognition system, there are no "add_user" or "add_contact"
     methods
-
 * ```delete_faces( user_id, contact_id, [ array of face data structures ] )```
-
   * Calls to ```face_recognize``` will no longer consider these faces
     among those that identify ```contact_id```
-
 * ```delete_contact( user_id, contact_id )```
-
   * Delete all faces associated with the contact for the user
-
 * ```delete_user( user_id )```
-
   * Delete all faces and contacts for the user, and delete the user
      itself
-
 * ```get_faces( user_id, contact_id=None )```
-
   * Returns an array face data structures associated with this
     ```user_id``` and ```contact_id```
-
   * If ```contact_id``` is not provided, or is None, returns faces for
     all contacts associated with this user.
-
 * ```recognize_face( user_id, face_url )```
-
   * ```face_url``` is a URL to an image which is thought to contain a
     face
-
   * Returns either None or an array of 0-3 face data structures:
- 
     * Returns None if no face was detected in the image at ```face_url```
-
     * If ```face_url``` contains an face an array with 0-3 candidate
       augmented face data structures are returned in descending order
       of recognition confidence.  The face data structures are
@@ -123,6 +102,7 @@ attempts past the first will be ignored.
 }
 ```
 
+<a name="face_data_structure" />
 ### Face Data Structure
 
 The face data structure is a dictionary like object with the following
@@ -137,22 +117,16 @@ returned by the various API calls.
 The callers of the API must provide initial values for these fields
 during ```add_faces```.
 
-* user_id - integer value identifying the user this face is associated with
-
-* contact_id - integer value identifying the contact this face is associated with
-
-* face_id - integer value identifying this particular face image
-
 * Note: the ( user_id, contact_id, face_id ) tuple must uniquely
-  identify a face.
-
+  identify a face
+* user_id - integer value identifying the user this face is associated with
+* contact_id - integer value identifying the contact this face is associated with
+* face_id - integer value identifying this particular face image
 * face_url - a URL to this face image
-
 * external_id - Either None, or an integer value - this is an
   arbitrary convenience variable that allows a caller of the
   recognition API to label a particular face in some way meaningful to
   them
-
 * score - floating point value specifying how "good" this face is,
   higher values are better - will be used by face recognition to
   select the best faces to use for matching
@@ -164,7 +138,6 @@ during ```add_faces```.
 * id - integer value uniquely identifying this face.  This value is
   guaranteed to be unique across all faces in the recognition system
   and not to change
-
 * is_face - Boolean value which is true if the recognition system
   found a face in the provided image.  The recognition system does not
   use images where is_face is false for recognition purposes
