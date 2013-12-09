@@ -48,9 +48,17 @@ The [Face Data Structure](#face_data_structure) which is frequently
 used as a input argument and return value is described in the section
 below.
 
-The add and delete methods have the general property that redundant
-calls do no harm: faces can be added or deleted multiple times, all
-attempts past the first will be ignored.
+The add and delete methods have these general properties:
+
+* Redundant calls do no harm: faces can be added or deleted multiple
+  times, all attempts past the first will be ignored.
+
+* Partial errors do not terminate execution: if a given face can't be
+  added or deleted for some reason, this is noted and then the next
+  face is processed.  Information about which faces were successfully
+  processed are available in the return values.
+
+All these calls globally serialize on the user in question.
 
 * ```add_faces( user_id, contact_id, [ array of face data structures ] )```
   * Subsequent to this call, calls to ```recognize_face``` will
@@ -97,10 +105,13 @@ attempts past the first will be ignored.
 { 
   'added'     : [ array of added face data structures ],
   'deleted'   : [ array of deleted face data structures ],
-  'not_found' : [ array of face data structures for which no operation was performed ],
+  'unchanged' : [ array of face data structures for which no operation was performed ],
   'error'     : [ array of face data structures for which an unexpected error occurred ]
 }
 ```
+
+The ```unchanged``` key can occur when we are requested to add a face
+that already exists, or delete a face that does not exist.
 
 <a name="face_data_structure" />
 ### Face Data Structure
@@ -163,7 +174,7 @@ deferred processing for previously failed operations.
 Callers of the API generally need not worry about this, it is
 mentioned here as a developer note and to explain why log message may
 indicate unexpected operations being performed (e.g. faces being
-deleted on a call ```to get_faces```).
+deleted on a call to ```get_faces```).
 
 Determinism
 -----------
