@@ -202,7 +202,6 @@ reasons:
 
 * We rely on a third party recognition system which makes no such
   guarantees
-
 * Race conditions can arise, for example if three requests come in
   rapid sequence saying: Add face A, delete face A, add face A they
   may be executed in a different order such as Add face A, add face A
