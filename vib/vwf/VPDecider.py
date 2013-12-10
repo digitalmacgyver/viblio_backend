@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import pdb
+
 import boto.swf
 import boto.swf.layer2 as swf
 import json
@@ -55,6 +57,7 @@ class VPDecider( swf.Decider ):
                     } ) )
 
         # Listen for decisions in this task list.
+        #pdb.set_trace()
         history = self.poll( task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList )
         history_events = history.get( 'events', [] )
         while 'nextPageToken' in history:
@@ -62,6 +65,9 @@ class VPDecider( swf.Decider ):
             history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList )
             history_events += history.get( 'events', [] )
 
+        with open('/tmp/pretty.history.' + str(time.time()) + '.txt', 'w') as f:
+             pprint.PrettyPrinter( indent=4, stream=f ).pprint( history_events )
+            
         if len( history_events ) == 0:
             log.debug( json.dumps( {
                         'message' : 'Nothing to do.'
@@ -69,6 +75,11 @@ class VPDecider( swf.Decider ):
             return True
 
         pprint.PrettyPrinter( indent=4 ).pprint( history_events )
+        
+        '''
+        f = open('/tmp/pretty.history.txt', 'w')
+        print >> f, pprint.PrettyPrinter( indent=4 ).pprint( history_events )
+        '''
 
         tasks = [ 'Transcode', 'FaceDetect', 'FaceRecognize', 'NotifyComplete' ]
 
