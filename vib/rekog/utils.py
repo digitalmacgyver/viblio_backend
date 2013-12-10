@@ -81,24 +81,41 @@ def train_for_user( user_id, namespace = None ):
     r = requests.post( "http://rekognition.com/func/api/", data )
     return r.json()
 
-def visualize_for_user( user_id, num_img_return_pertag=1, namespace = None ):
+def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_default=False, namespace = None ):
     '''Calls the ReKognition Visualize function and returns an array
     of { tag, url, index : [#, #, ...] } elements for each tagged
     person.
 
-    Defaults to only one image per person.'''
+    Defaults to only one image per person.
+
+    If num_img_return_pertag is None the default Rekoginition behavior
+    (all tags) is done.
+
+    If no_image is True then no images are generated, only the text
+    response is generated.
+
+    If show_detault is True then untagged images are included under
+    the _x_all tag.'''
 
     if namespace == None:
         namespace = default_namespace
 
+    jobs = 'face_visualize'
+    if no_image:
+        jobs += '_no_image'
+    if show_default:
+        jobs += '_show_default_tag'
+
     data = {
         'api_key'      : rekog_api_key,
         'api_secret'   : rekog_api_secret,
-        'jobs'         : 'face_visualize',
-        'num_img_return_pertag' : num_img_return_pertag,
+        'jobs'         : jobs,
         'name_space'   : namespace,
         'user_id'      : user_id
         }
+
+    if num_img_return_pertag is not None:
+        data['num_img_return_pertag'] = num_img_return_pertag
 
     r = requests.post( "http://rekognition.com/func/api/", data )
 
@@ -165,3 +182,19 @@ def delete_user( user_id, namespace=None ):
     r = requests.post( "http://rekognition.com/func/api/", data )
     return r.json()
 
+def cluster_for_user( user_id, namespace=None ):
+    '''Clusters the user in question and returns the result.'''
+
+    if namespace == None:
+        namespace = default_namespace
+        
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_cluster',
+        'name_space'   : namespace,
+        'user_id'      : user_id
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    return r.json()

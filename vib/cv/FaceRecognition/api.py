@@ -59,11 +59,12 @@ def delete_contact( user_id, contact_id ):
         # DEBUG - decide where to run synchronization to clean stuff
         # up, here, or at the bottom.
 
-        log.info( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'message'    : 'Deleting contact %s for user %s.' % ( contact_id, user_id )
-                } )
+        # DEBUG systematically handle errors from recognition results.
+        # result->status != 'Succeed.'
+
+        log.info( { 'user_id'    : user_id,
+                    'contact_id' : contact_id,
+                    'message'    : 'Deleting contact %s for user %s.' % ( contact_id, user_id ) } )
         
         l2_user_id = "%s_%s" % ( user_id, contact_id )
 
@@ -72,45 +73,37 @@ def delete_contact( user_id, contact_id ):
         l1_delete_tags = {}
 
         for face in faces:
-            if face.is_face:
+            if face['is_face']:
                 if face.l1_id is not None:
-                    tag = face.l1_tag
+                    tag = face['l1_tag']
 
-                    log.debug( {
-                            'user_id'    : user_id,
-                            'contact_id' : contact_id,
-                            'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face.l1_id, user_id )
-                            } )
+                    log.debug( { 'user_id'    : user_id,
+                                 'contact_id' : contact_id,
+                                 'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face['l1_id'], user_id ) } )
 
                     if tag in l1_delete_tags:
-                        l1_delete_tags[tag] += ';%s' % ( face.l1_id )
+                        l1_delete_tags[tag] += ';%s' % ( face['l1_id'] )
                     else:
-                        l1_delete_tags[tag] = [ face.l1_id ]
+                        l1_delete_tags[tag] = [ face['l1_id'] ]
                 
         for tag in sorted( delete_tags.keys() ):
             result = rekog.delete_face_for_user( user_id, tag, delete_tags[tag], config.recog_l1_namespace )
-            log.debug( {
-                    'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'rekog_result' : result,
-                    'message'    : 'Deleted faces %s for user_id %s, tag %s' % ( delete_tags[tag], user_id, tag )
-                    } )
+            log.debug( { 'user_id'    : user_id,
+                         'contact_id' : contact_id,
+                         'rekog_result' : result,
+                         'message'    : 'Deleted faces %s for user %s, tag %s' % ( delete_tags[tag], user_id, tag ) } )
 
         result = rekog.train_for_user( user_id, config.recog_l1_namespace )
-        log.debug( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'rekog_result' : result,
-                'message'    : 'Trained l1 database %s for user_id %s' % ( user_id, user_id )
-                } )
+        log.debug( { 'user_id'      : user_id,
+                     'contact_id'   : contact_id,
+                     'rekog_result' : result,
+                     'message'      : 'Trained l1 database %s for user %s' % ( user_id, user_id ) } )
 
         result = rekog.delete_user( l2_user_id, config.recog_l2_namespace )
-        log.debug( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'rekog_result' : result,
-                'message'    : 'Deleted l2 database for user_id %s' % ( l2_user_id )
-                } )
+        log.debug( { 'user_id'      : user_id,
+                     'contact_id'   : contact_id,
+                     'rekog_result' : result,
+                     'message'      : 'Deleted l2 database for user %s' % ( l2_user_id ) } )
     
         recog_db._delete_contact_faces_for_user( user_id, contact_id )
 
@@ -142,99 +135,124 @@ def delete_faces( user_id, contact_id, faces ):
     try:
         # DEBUG turn on serialization.
 
-        log.info( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'message'    : 'Deleting faces related to contact %s for user %s.' % ( contact_id, user_id )
-                } )
+        # DEBUG ensure consistentcy between DB and rekog.
+
+        '''
+        2. Iterate over each face.
+        If face then delete l2 entry
+        If l1 entry then delete l1 entry, l1 impact == true
+        3. Cluster l2
+        4. See if any cluster membership changed, if so update l2 tags
+        5. See if any clusters are not represented, if so add l1 tags, l1 face, l1 impact == true
+        6. See if any clusters have new representatives, if so add l1 tagss, l1 face, l1 impact == true
+        7. If l1 impact == true train l1
+        '''
+
+        log.info( { 'user_id'    : user_id,
+                    'contact_id' : contact_id,
+                    'message'    : 'Deleting faces related to contact %s for user %s.' % ( contact_id, user_id ) } )
 
         deleted = []
-        ( faces, not_found, error ) = helpers._populate_faces( user_id, contact_id, faces )
+        ( faces, unchanged, error ) = helpers._populate_faces( user_id, contact_id, faces )
+
+        initial_faces = recog_db._get_contact_faces_for_user( user_id, contact_id )
+        
+        initial_clusters = rekog.visualize_for_user( l2_user_id, num_img_return_pertag=None, no_image=True, show_default=True )
 
         l2_user_id = "%s_%s" % ( user_id, contact_id )
 
-        '''
-        For each thing in faces:
-        1. Delete all l1 faces for this contact.
-        2. Delete all faces from l2
-        3. Cluster l2
-        4. CROSS CHECK CLUSTER BETWEEN FACES AND DB.
-        4. Create new l1 faces from cluster
-        5. Retrain l1
-        6. Delete face rows from database.
-        '''
+        l1_delete_tags = {}
+        l2_delete_tags = {}
 
-        delete_tags = {}
-
-        # DEBUG - check on
-        
         for face in faces:
-            try:
-                if face['l1_idx'] is not None:
-                    if face['l1_tag'] is None:
-                        tag = '_x_all'
-                    else:
-                        tag = face['l1_tag']
+            if face['l1_idx'] is not None:
+                log.debug( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face['l1_id'], user_id ) } )
 
-            log.debug( {
-                    'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face.l1_id, user_id )
-                    } )
-
-            if tag in delete_tags:
-                delete_tags[tag] += ';%s' % ( face.l1_id )
-            else:
-                delete_tags[tag] = [ face.l1_id ]
-                                
-
-
-                        
-                        
-
+                tag = face['l1_tag']
+                    
+                if tag in l1_delete_tags:
+                    l1_delete_tags[tag] += ';%s' % ( face['l1_id'] )
                 else:
-                    raise Exception("Must include id field in face dictionary.")
+                    l1_delete_tags[tag] = [ face['l1_id'] ]
 
-            except Exception as e:
-                # Do not throw exception here - we want to delete as
-                # much as we are able to.
-                log.info( {
-                        'user_id'    : user_id,
-                        'contact_id' : contact_id,
-                        'message'    : 'Error deleting face for to contact %s for user %s, error was: %s' % ( contact_id, user_id, e )
-                } )    
-                error.append( face )
-                
-        faces = recog_db._get_contact_faces_for_user( user_id, contact_id )
+            if face['l2_id'] is not None:
+                log.debug( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'message'    : 'Adding tag %s with index %s to list of faces to delete in l2 database for %s.' % ( tag, face['l2_id'], l2_user_id ) } )
 
-        delete_tags = {}
-
-        for face in faces:
-            if face.l1_id is not None:
-                if face.l1_tag is not None:
-                    tag = face.l1_tag
+                if face['l2_tag'] is not None:
+                    tag = face['l2_tag']
                 else:
                     tag = '_all_x'
 
-            log.debug( {
-                    'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face.l1_id, user_id )
-                    } )
+                if tag in l2_delete_tags:
+                    l2_delete_tags[tag] += ';%s' % ( face['l2_id'] )
+                else:
+                    l2_delete_tags[tag] = [ face['l2_id'] ]
 
-            if tag in delete_tags:
-                delete_tags[tag] += ';%s' % ( face.l1_id )
-            else:
-                delete_tags[tag] = [ face.l1_id ]
+        for tag in sorted( l1_delete_tags.keys() ):
+            try:
+                result = rekog.delete_face_for_user( user_id, tag, l1_delete_tags[tag], config.recog_l1_namespace )
+                log.debug( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'rekog_result' : result,
+                             'message'    : 'Deleted faces %s for user %s, tag %s' % ( l1_delete_tags[tag], user_id, tag ) } )
+            except Exception as e:
+                # Do not throw exception here - we want to delete as
+                # much as we are able to.
+                log.error( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'message'    : 'Error deleting face for to contact %s for user %s, error was: %s' % ( contact_id, user_id, e ) } )
+                # DEBUG add the error face to the output here.
+
+        for tag in sorted( l2_delete_tags.keys() ):
+            try:
+                result = rekog.delete_face_for_user( l2_user_id, tag, l2_delete_tags[tag], config.recog_l1_namespace )
+                log.debug( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'rekog_result' : result,
+                             'message'    : 'Deleted faces %s for user %s, tag %s' % ( l2_delete_tags[tag], l2_user_id, tag ) } )
+            except Exception as e:
+                # Do not throw exception here - we want to delete as
+                # much as we are able to.
+                log.error( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'message'    : 'Error deleting face for to contact %s for user %s, error was: %s' % ( contact_id, user_id, e ) } )
+                # DEBUG add the error face to the output here.
+
+        cluster_result = rekog.cluster_for_user( l2_user_id, config.recog_l2_namespace )
+        log.debug( { 'user_id'      : user_id,
+                     'contact_id'   : contact_id,
+                     'rekog_result' : cluster_result,
+                     'message'      : 'Clustered l2 database for user %s' % ( user_id ) } )
+
+        # Determine if any cluster membership has changed.
+
+        ### DEBUG - we want this to be easily done from multiple
+        ### places, so it should have a helper function. 
+        ### 
+        ### We'd like to have the helper update the database too - but
+        ### does this cause confusion in that we're changing the DB
+        ### piecewise as we go through this?
+        ###
+        ### DECISION: JUST HACK THIS OUT, THEN TRY TO IMPLEMENT NOT
+        ### REPRESENTED CLUSTERS, IT WILL BECOME CLEAR IF THERE IS
+        ### COMMONALITY THERE
+
+        new_image_clusters = {}
+        for cluster in json.loads( cluster_result )['clusters']:
+            for img in cluster['img_index']:
+                new_image_clusters[img] = cluster['tag']
                 
-        for tag in sorted( delete_tags.keys() ):
-            result = rekog.delete_face_for_user( user_id, tag, delete_tags[tag], config.recog_l1_namespace )
-            log.debug( {
-                    'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'rekog_result' : result,
-                    'message'    : 'Deleted faces %s for user_id %s, tag %s' % ( delete_tags[tag], user_id, tag )
-                    } )
+        for face in initial_faces:
+            img_index = face['l2_idx']
+            initial_cluster = face['l2_tag']
+
+            if img_index is not None and img_index in new_image_clusters:
+                
+
 
         result = rekog.train_for_user( user_id, config.recog_l1_namespace )
         log.debug( {
