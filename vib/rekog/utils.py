@@ -83,7 +83,7 @@ def train_for_user( user_id, namespace = None ):
 
 def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_default=False, namespace = None ):
     '''Calls the ReKognition Visualize function and returns an array
-    of { tag, url, index : [#, #, ...] } elements for each tagged
+    of { tag, url, index : ['1', '2', ...] } elements for each tagged
     person.
 
     Defaults to only one image per person.
@@ -183,7 +183,12 @@ def delete_user( user_id, namespace=None ):
     return r.json()
 
 def cluster_for_user( user_id, namespace=None ):
-    '''Clusters the user in question and returns the result.'''
+    '''Clusters the user in question and returns the result.  Result
+    format is:
+
+    { 'clusters' : [ { 'tag': 'cluster0', 'img_index': [1,2,3] }, ... ],
+      'usage'    : { 'status' : 'Succeed.', ... } }
+    '''
 
     if namespace == None:
         namespace = default_namespace

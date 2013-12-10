@@ -70,9 +70,9 @@ face_url
 external_id - Optional Application defined key can be stored here.
 score - Application provides, will be used to determine the "best" face
 is_face = true/false - If we think the image at face_url is a face
-l1_id
+l1_idx - a 32 char string
 l1_tag = see below
-l2_id
+l2_idx - a 32 char string
 l2_tag = NULL or the name of the cluster if in a cluster
 
 l1 tag is composed this way:
