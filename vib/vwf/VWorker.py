@@ -129,7 +129,7 @@ class VWorker( swf.ActivityWorker ):
         self.validateUserMethod(emit_heartbeat)
         self.validateUserMethod(heartbeat)
         
-        pdb.set_trace()
+        #pdb.set_trace()
         nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
         if nsecs == 'NONE':
             return None
@@ -157,8 +157,8 @@ class VWorker( swf.ActivityWorker ):
      
         while self.heartbeat_active:
             heartbeat()
-            #time.sleep(delay_secs)
-            time.sleep(100)
+            time.sleep(delay_secs + VWorder.HEARTBEAT_DELTA + 100)
+            #time.sleep(100)
         return
 
     '''
