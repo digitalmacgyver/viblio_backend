@@ -45,6 +45,28 @@ def upload_file( filename, bucket, key ):
                               } ) )
         raise
 
+def upload_string( string, bucket, key ):
+    '''Store the string to s3 in bucket/key'''
+    try:
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+        bucket = s3.get_bucket( bucket )
+        k = Key( bucket )
+
+        log.info( json.dumps( { 
+                    'message' : 'Storing string in s3: %s/%s' % ( bucket, key )
+                              } ) )
+
+        k.key = key
+
+        k.set_contents_from_string( string )
+
+    except Exception as e:
+        log.error( json.dumps( { 
+                    'message' : 'Failed to store string to s3: %s/%s' % ( bucket, key )
+                              } ) )
+        raise
+
+
 def download_file( filename, bucket, key ):
     '''Download to the file at filename the contents of s3 in bucket/key'''
     try:
@@ -63,6 +85,29 @@ def download_file( filename, bucket, key ):
     except Exception as e:
         log.error( json.dumps( { 
                     'message' : 'Failed to download %s from s3: %s/%s' % ( filename, bucket, key )
+                              } ) )
+        raise
+
+def download_string( bucket, key ):
+    '''Download to the file at filename the contents of s3 in bucket/key'''
+    try:
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+        bucket = s3.get_bucket( bucket )
+        k = Key( bucket )
+
+        log.info( json.dumps( { 
+                    'message' : 'Downloading as string from s3: %s/%s' % ( bucket, key )
+                              } ) )
+
+        k.key = key
+
+        string = k.get_contents_as_string()
+
+        return string
+
+    except Exception as e:
+        log.error( json.dumps( { 
+                    'message' : 'Failed to download string from s3: %s/%s' % ( bucket, key )
                               } ) )
         raise
 

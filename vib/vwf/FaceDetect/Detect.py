@@ -11,6 +11,7 @@ import os
 from boto.s3.key import Key
 from vib.vwf.VWorker import VWorker
 import vib.vwf.FaceDetect.db_utils as db_utils
+import vib.utils.s3
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -168,17 +169,22 @@ class Detect( VWorker ):
             shutil.rmtree(working_dir)
             
         faces_string = json.dumps(faces_info)
-        # Check to make sure returned json string is smaller than 32K characters
-        if len(faces_string) > 32000:
-            log.error( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'message' : "Face Detect output too large for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
-                    } ) )
-            raise Exception( "Output too large" )
-        else:
-            db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
-            return faces_info
+
+        
+
+        recognition_input = media_uuid + '/' + media_uuid + '_recognition_input.json'
+
+        vib.utils.s3.upload_string( faces_string, s3_bucket, recognition_input )
+        db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+
+        return { 
+            'user_uuid' : user_uuid,
+            'media_uuid' : media_uuid,
+            'recognition_input' : {
+                's3_bucket' : s3_bucket,
+                's3_key' : recognition_input,
+                }
+            }
 
     def run_cleanup_files(self, options):
         media_uuid = options['media_uuid']

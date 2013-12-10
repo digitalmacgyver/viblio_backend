@@ -11,6 +11,7 @@ from vib.vwf.VWorker import VWorker
 
 import vib.vwf.FaceRecognize.mturk_utils as mturk_utils
 import vib.vwf.FaceRecognize.db_utils as db_utils
+import vib.utils.s3 as s3
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -38,7 +39,11 @@ class Recognize( VWorker ):
 
             user_uuid  = options['user_uuid']
             media_uuid = options['media_uuid']
-            tracks     = options['FaceDetect']['tracks']
+            recognition_input = options['FaceDetect']['recognition_input']
+            input_bucket = recognition_input['s3_bucket']
+            input_key = recognition_input['s3_key']
+
+            tracks = json.loads( s3.download_string( input_bucket, input_key ) )['tracks']
 
             self.user_uuid = user_uuid
             self.media_uuid = media_uuid
