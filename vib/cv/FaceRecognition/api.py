@@ -95,11 +95,16 @@ def add_faces( user_id, contact_id, faces ):
                 if recog_db._check_face_exists( face['user_id'], face['contact_id'], face['face_id'] ):
                     unchanged.append( face )
                 else:
-                    rekog.add_face_for_user( l2_user, face['face_url'], None, config.recog_l2_namespace )
+                    l2_idx = rekog.add_face_for_user( l2_user, face['face_url'], None, config.recog_l2_namespace )
                 
-                    recog_db._add_face( user_id, contact_id, face )
+                    if l2_idx is not None:
+                        face['l2_idx'] = l2_idx
+                        face['l2_tag'] = '_x_all'
+                        recog_db._add_face( user_id, contact_id, face )
                     
-                    added.append( face )
+                        added.append( face )
+                    else:
+                        unchanged.append( face )
 
             except Exception as e:
                 log.error( { 'user_id'    : user_id,
@@ -112,6 +117,8 @@ def add_faces( user_id, contact_id, faces ):
 
         # We always do reconciliation even if we didn't add anything,
         # it can clean up errors made by prior API calls which failed.
+        import pdb
+        pdb.set_trace()
         helpers._reconcile_db_rekog( user_id, contact_id )
                 
         return { 

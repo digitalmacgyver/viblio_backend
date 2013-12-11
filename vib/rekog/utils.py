@@ -32,7 +32,7 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
         'name_space'   : namespace,
         'user_id'      : user_id,
         'tag'          : tag,
-        'url'          : url
+        'urls'          : url
         }
 
     r = requests.post( "http://rekognition.com/func/api/", data )

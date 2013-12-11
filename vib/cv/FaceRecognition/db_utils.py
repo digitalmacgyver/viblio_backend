@@ -28,7 +28,9 @@ def _add_face( user_id, contact_id, face ):
             face_id     = face['face_id'],
             face_url    = face['face_url'],
             external_id = face['external_id'],
-            score       = face['score']
+            score       = face['score'],
+            l2_idx      = face['l2_idx'],
+            l2_tag      = face['l2_tag']
             )
 
         orm.add( face )
