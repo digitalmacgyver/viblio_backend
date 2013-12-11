@@ -56,67 +56,43 @@ class VWorker( swf.ActivityWorker ):
         self.heartbeat_thread = None
         try:
             log = self.logger
-
             log.debug( json.dumps( { 'message' : 'Polling for task.' } ) )
-
             activity_task = self.poll()
-
             if 'taskToken' not in activity_task or len( activity_task['taskToken'] ) == 0:
                 log.debug( json.dumps( { 'message' : 'Nothing to do.' } ) )
                 return True
             else:
                 self.heartbeat_active = True
+                log.info(json.dumps({'message' : 'Starting heartbeat...' }))
                 self.heartbeat_thread = self.start_heartbeat(self.emit_heartbeat, self.heartbeat)
-                
                 input_opts = json.loads( activity_task['input'] )
-
                 media_uuid = input_opts['media_uuid']
                 user_uuid  = input_opts['user_uuid']
-
-                log.info( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : 'Starting task.' 
-                            } ) )
-                
+                log.info( json.dumps( {  'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'message' : 'Starting task.'  } ) )               
                 #_mp_log( self.task_name + " Started", media_uuid, user_uuid, { 'activity' : self.task_name } )
                 result = self.run_task( input_opts )
-
                 if 'ACTIVITY_ERROR' in result:
-                    log.error( json.dumps( { 
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
+                    log.error( json.dumps( { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid,
                                 'message' : "Task had an error, failing the task with retry: %s" % result.get( 'retry', False ) } ) ) 
                     #_mp_log( self.task_name + " Failed", media_uuid, user_uuid, { 'activity' : self.task_name } )
                     self.fail( details = json.dumps( { 'retry' : result.get( 'retry', False ) } ) )
                 else:
-                    log.info( json.dumps( { 
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'message' : 'Task completed.'
-                                } ) )
-
+                    log.info( json.dumps( {  'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'message' : 'Task completed.' } ) )
                     _mp_log( self.task_name + " Completed", media_uuid, user_uuid, { 'activity' : self.task_name } )
-
                     self.complete( result = json.dumps( result ) )
-
                 return True
-
         except Exception as error:
-            log.error( json.dumps( { 
-                        #'media_uuid' : media_uuid,
-                        #'user_uuid' : user_uuid,
-                        'message' : "Task had an exception: %s" % error } ) )
+            log = self.logger
+            log.error( json.dumps( { 'message' : "Task had an exception: %s" % error } ) )
             self.fail( reason = str( error ) )
             raise error
         finally:
             try:
+                log.info(json.dumps({'message' : 'Stopping heartbeat...' }))
                 self.stop_heartbeat(self.heartbeat_thread)
             except Exception as error:
-                log.error( json.dumps( { 
-	                #'media_uuid' : media_uuid,
-	                #'user_uuid' : user_uuid,
-	                'message' : "Task had an exception stopping heartbeat: %s" % error } ) )
+                log = self.logger
+                log.error( json.dumps( { 'message' : "Task had an exception stopping heartbeat: %s" % error } ) )
                 self.fail( reason = str( error ) )
                 raise error
 
@@ -157,7 +133,10 @@ class VWorker( swf.ActivityWorker ):
      
         while self.heartbeat_active:
             heartbeat()
-            time.sleep(delay_secs + VWorder.HEARTBEAT_DELTA + 100)
+            log = self.logger
+            log.info(json.dumps({'message' : 'Heartbeat just occurred, will delay %s' % delay_secs}))
+            time.sleep(delay_secs);
+            #time.sleep(delay_secs + VWorder.HEARTBEAT_DELTA + 100)
             #time.sleep(100)
         return
 
