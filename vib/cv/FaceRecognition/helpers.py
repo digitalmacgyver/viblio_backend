@@ -50,6 +50,10 @@ def _reconcile_db_rekog( user_id, contact_id ):
     1 must be trained.
     '''
 
+    # DEBUG - handle what happens when we try to add an existing face
+    # to l1 but rekognition has since decided it is not a face (maybe
+    # the face image was deleted from Viblio)
+
     l1_user = _get_l1_user( user_id, contact_id )
     l2_user = _get_l2_user( user_id, contact_id )
 
@@ -76,8 +80,8 @@ def _reconcile_db_rekog( user_id, contact_id ):
     if _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
         l1_train = True
 
-    if l1_train
-        recog.train_for_user( l1_user, config.recog_l1_namespace )
+    if l1_train:
+        rekog.train_for_user( l1_user, config.recog_l1_namespace )
 
     return l1_train
 
@@ -195,7 +199,7 @@ def _populate_faces( user_id, contact_id, faces ):
     unchanged = []
     errors = []
 
-    face_keys = [ 'id', 'user_id', 'contact_id', 'face_id', 'face_url', 'external_id', 'score', 'is_face', 'l1_idx', 'l1_tag', 'l2_idx', 'l2_tag' ]
+    face_keys = [ 'id', 'user_id', 'contact_id', 'face_id', 'face_url', 'external_id', 'score', 'l1_idx', 'l1_tag', 'l2_idx', 'l2_tag' ]
 
     for face in faces:
         # Check if this is already a face data structure
@@ -291,7 +295,7 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
 
     # Add faces to the l1 system
     for l2_tag, l2_idx in best_l2_face.items():
-        face = db_face_by_l2_ldx[l2_idx]
+        face = db_face_by_l2_idx[l2_idx]
         url = face['face_url']
         if ( l2_tag not in l1_face_for_contact_by_l2_tag[l2_tag] ) or ( l2_idx != l1_face_for_contact_by_l2_tag[l2_tag]['l2_idx'] ):
             # This l2 tag is new, or a best new face has been found.
@@ -345,9 +349,9 @@ def _prepare_db_face_data( db_faces ):
 
     for face in db_faces:
         if face['l1_idx']:
-            db_faces_by_l1_idx[faces['l1_idx']] = face
+            db_face_by_l1_idx[face['l1_idx']] = face
         if face['l2_idx']:
-            db_faces_by_l2_idx[faces['l1_idx']] = face
+            db_face_by_l2_idx[face['l1_idx']] = face
             
     return ( db_face_by_l1_idx, db_face_by_l2_idx )
             

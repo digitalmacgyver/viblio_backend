@@ -148,9 +148,6 @@ during ```add_faces```.
 * id - integer value uniquely identifying this face.  This value is
   guaranteed to be unique across all faces in the recognition system
   and not to change
-* is_face - Boolean value which is true if the recognition system
-  found a face in the provided image.  The recognition system does not
-  use images where is_face is false for recognition purposes
 
 *Private fields set by the Recognition System:*
 

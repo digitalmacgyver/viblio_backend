@@ -71,6 +71,8 @@ def add_faces( user_id, contact_id, faces ):
         # DEBUG - decide where to run synchronization to clean stuff
         # up, here, or at the bottom.
 
+        # DEBUG - think about setting the isface field.  See if we're using it anywhere.
+
         added = []
         unchanged = []
         error = []
@@ -151,25 +153,24 @@ def delete_contact( user_id, contact_id ):
         l1_delete_tags = {}
 
         for face in faces:
-            if face['is_face']:
-                if face['l1_idx'] is not None:
-                    tag = face['l1_tag']
+            if face['l1_idx'] is not None:
+                tag = face['l1_tag']
 
-                    log.debug( { 'user_id'    : user_id,
-                                 'contact_id' : contact_id,
-                                 'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face['l1_idx'], user_id ) } )
+                log.debug( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face['l1_idx'], user_id ) } )
 
-                    if tag in l1_delete_tags:
-                        l1_delete_tags[tag] += ';%s' % ( face['l1_idx'] )
-                    else:
-                        l1_delete_tags[tag] = [ face['l1_idx'] ]
+                if tag in l1_delete_tags:
+                    l1_delete_tags[tag] += ';%s' % ( face['l1_idx'] )
+                else:
+                    l1_delete_tags[tag] = [ face['l1_idx'] ]
                 
-        for tag in sorted( delete_tags.keys() ):
-            result = rekog.delete_face_for_user( l1_user, tag, delete_tags[tag], config.recog_l1_namespace )
+        for tag in sorted( l1_delete_tags.keys() ):
+            result = rekog.delete_face_for_user( l1_user, tag, l1_delete_tags[tag], config.recog_l1_namespace )
             log.debug( { 'user_id'    : user_id,
                          'contact_id' : contact_id,
                          'rekog_result' : result,
-                         'message'    : 'Deleted faces %s for user %s, tag %s' % ( delete_tags[tag], l1_user, tag ) } )
+                         'message'    : 'Deleted faces %s for user %s, tag %s' % ( l1_delete_tags[tag], l1_user, tag ) } )
 
         result = rekog.train_for_user( l1_user, config.recog_l1_namespace )
         log.debug( { 'user_id'      : user_id,
@@ -231,12 +232,12 @@ def delete_faces( user_id, contact_id, faces ):
         for face in faces:
             # Build up list of l1 faces to delete.
             if face['l1_idx'] is not None:
+                tag = face['l1_tag']
+                    
                 log.debug( { 'user_id'    : user_id,
                              'contact_id' : contact_id,
                              'message'    : 'Adding tag %s with index %s to list of faces to delete in l1 database for %s.' % ( tag, face['l1_idx'], user_id ) } )
 
-                tag = face['l1_tag']
-                    
                 if tag in l1_delete_tags:
                     l1_delete_tags[tag] += ';%s' % ( face['l1_idx'] )
                 else:

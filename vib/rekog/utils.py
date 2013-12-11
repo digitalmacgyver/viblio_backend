@@ -31,8 +31,8 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
         'jobs'         : 'face_add',
         'name_space'   : namespace,
         'user_id'      : user_id,
-        'tag'          : tag, 
-        'img_index'    : face_idx
+        'tag'          : tag,
+        'url'          : url
         }
 
     r = requests.post( "http://rekognition.com/func/api/", data )

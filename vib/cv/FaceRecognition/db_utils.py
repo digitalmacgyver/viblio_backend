@@ -59,7 +59,7 @@ def _check_face_exists( user_id, contact_id, face_id ):
         elif len( result ) == 0:
             return False
         else:
-            raise Exception( "Found %d faces for user, contact, face_id, expected 0 or 1." % ( len( result ), user_id, contact_id, face_id ) )
+            raise Exception( "Found %d faces for user, contact, face_id: %s, %s, %s expected 0 or 1." % ( len( result ), user_id, contact_id, face_id ) )
 
         orm.commit()
     
@@ -135,7 +135,7 @@ def _delete_faces( faces ):
 
     return
 
-def _get_faces_by_id( face_id ):
+def _get_face_by_id( face_id ):
     '''Returns either a dictionary like object representing the row
     for in the recognition database for this face, or None if the face
     is not found.'''
@@ -193,7 +193,7 @@ def _get_contact_faces_for_user( user_id, contact_id ):
                 } )
         raise
 
-def _upate_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
+def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
     '''Update the l1/l2 settings for the face in question'''
 
     orm = None
@@ -209,7 +209,7 @@ def _upate_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
 
         orm = vib.db.orm.get_session()
     
-        face = orm.query( Faces ).filter( Face.id == face_id )[0]
+        face = orm.query( Faces ).filter( Faces.id == face_id )[0]
 
         face.l1_idx = l1_idx
         face.l1_tag = l1_tag
