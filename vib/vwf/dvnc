@@ -1,1 +1,2 @@
+source setup-env.sh
 DEPLOYMENT=local ./NotifyComplete-wrapper.py
