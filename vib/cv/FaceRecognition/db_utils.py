@@ -13,6 +13,65 @@ from vib.db.models import *
 # vib.cv.FaceRecognize so this logger inherits those properties.
 log = logging.getLogger( __name__ )
 
+def _add_face( user_id, contact_id, face ):
+    '''Inserts a face.'''
+    try:
+        log.info( { 'user_id'    : user_id,
+                    'contact_id' : contact_id,
+                    'message'    : 'Adding face: %s' % ( face ) } )
+
+        orm = vib.db.orm.get_session()
+
+        face = Faces( 
+            user_id     = face['user_id'],
+            contact_id  = face['contact_id'],
+            face_id     = face['face_id'],
+            face_url    = face['face_url'],
+            external_id = face['external_id'],
+            score       = face['score']
+            )
+
+        orm.add( face )
+        orm.commit()
+    
+        return
+
+    except Exception as e:
+        log.error( { 'user_id'    : user_id,
+                     'contact_id' : contact_id,
+                     'message'    : 'Error adding faces %s: %s' % ( face, e ) } )
+        raise        
+
+
+def _check_face_exists( user_id, contact_id, face_id ):
+    '''Returns true if the given user_id, contact_id, face_id exist in the database.'''
+    try:
+        log.info( { 'user_id'    : user_id,
+                    'contact_id' : contact_id,
+                    'message'    : 'Checking whether user, contact, face_id exists: %s, %s, %s' % ( user_id, contact_id, face_id ) } )
+
+        orm = vib.db.orm.get_session()
+
+        result = orm.query( Faces ).filter( and_( Faces.user_id == user_id, Faces.contact_id == contact_id, Faces.face_id == face_id ) )[:]
+
+        if len( result ) == 1:
+            return True
+        elif len( result ) == 0:
+            return False
+        else:
+            raise Exception( "Found %d faces for user, contact, face_id, expected 0 or 1." % ( len( result ), user_id, contact_id, face_id ) )
+
+        orm.commit()
+    
+        return
+
+    except Exception as e:
+        log.error( { 'user_id'    : user_id,
+                     'contact_id' : contact_id,
+                     'message'    : 'Error checking whether user, contact, face_id exists %s, %s, %s: %s' % ( user_id, contact_id, face_id, e ) } )
+        raise        
+
+
 def _delete_contact_faces_for_user( user_id, contact_id ):
     '''Deletes all faces associated with this contact from our
     database.  The caller is presumed to have removed any other

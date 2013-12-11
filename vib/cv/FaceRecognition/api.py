@@ -46,7 +46,84 @@ config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 # Reflecting the disposition of each face from the input.
 
 def add_faces( user_id, contact_id, faces ):
-    pass
+    '''For an array of faces, adds them to the recognition system.
+
+    Input faces are dictionary like objects with:
+    user_id, contact_id, face_id - integers which form a unique key for this face
+    face_url - a URL where the image for this face can be accessed
+    external_id - arbitrary integer for use by the calling application
+    score - a floating point number used to select the "best" face from a set of faces
+
+    Faces which already exist (as determined by the presence of the
+    same user_id, contact_id, face_id) will be denoted in the
+    unchanged return value.
+
+    In the return value faces for which the recognition system did not
+    detect exactly one face in the face image will be returned in the
+    unchanged result, other unexpected errors will be returned in
+    errors.
+    '''
+
+    try:
+        # DEBUG - get serialization lock, set locked variable, add
+        # finally clause to unlock.
+
+        # DEBUG - decide where to run synchronization to clean stuff
+        # up, here, or at the bottom.
+
+        added = []
+        unchanged = []
+        error = []
+
+        l2_user = helpers._get_l2_user( user_id, contact_id )
+
+        face_keys = [ 'user_id', 'contact_id', 'face_id', 'face_url', 'external_id', 'score' ]
+
+        for face in faces:
+            try:
+                valid_face = True
+                for key in face_keys:
+                    if key not in face:
+                        valid_face = False
+                        break
+                if not valid_face:
+                    raise Exception( "Face did not have all required fields %s" % face_keys )
+
+                # DEBUG first check if the face is there.
+                if recog_db._check_face_exists( face['user_id'], face['contact_id'], face['face_id'] ):
+                    unchanged.append( face )
+                else:
+                    rekog.add_face_for_user( l2_user, face['face_url'], None, config.recog_l2_namespace )
+                
+                    recog_db._add_face( user_id, contact_id, face )
+                    
+                    added.append( face )
+
+            except Exception as e:
+                log.error( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'message'    : 'Error while adding face: %s' % ( e ) } )
+                error.append( face )
+
+        if len( added ):
+            rekog.cluster_for_user( l2_user, config.recog_l2_namespace )
+
+        # We always do reconciliation even if we didn't add anything,
+        # it can clean up errors made by prior API calls which failed.
+        helpers._reconcile_db_rekog( user_id, contact_id )
+                
+        return { 
+            'added'     : added,
+            'deleted'   : [],
+            'unchanged' : unchanged,
+            'error'     : error
+            }
+
+    except Exception as e:
+        log.error( { 'user_id'    : user_id,
+                     'contact_id' : contact_id,
+                     'message'    : 'Error while adding faces: %s' % ( e ) } )
+        raise
 
 def delete_contact( user_id, contact_id ):
     '''Deletes all information in the Recognition system about the
@@ -138,17 +215,6 @@ def delete_faces( user_id, contact_id, faces ):
 
         # DEBUG ensure consistentcy between DB and rekog.
 
-        '''
-        2. Iterate over each face.
-        If face then delete l2 entry
-        If l1 entry then delete l1 entry, l1 impact == true
-        3. Cluster l2
-        4. See if any cluster membership changed, if so update l2 tags
-        5. See if any clusters are not represented, if so add l1 tags, l1 face, l1 impact == true
-        6. See if any clusters have new representatives, if so add l1 tagss, l1 face, l1 impact == true
-        7. If l1 impact == true train l1
-        '''
-
         log.info( { 'user_id'    : user_id,
                     'contact_id' : contact_id,
                     'message'    : 'Deleting faces related to contact %s for user %s.' % ( contact_id, user_id ) } )
@@ -163,6 +229,7 @@ def delete_faces( user_id, contact_id, faces ):
         l2_delete_tags = {}
 
         for face in faces:
+            # Build up list of l1 faces to delete.
             if face['l1_idx'] is not None:
                 log.debug( { 'user_id'    : user_id,
                              'contact_id' : contact_id,
@@ -175,6 +242,7 @@ def delete_faces( user_id, contact_id, faces ):
                 else:
                     l1_delete_tags[tag] = [ face['l1_idx'] ]
 
+            # Build up list of l2 faces to delete.
             if face['l2_idx'] is not None:
                 log.debug( { 'user_id'    : user_id,
                              'contact_id' : contact_id,
@@ -190,6 +258,7 @@ def delete_faces( user_id, contact_id, faces ):
                 else:
                     l2_delete_tags[tag] = [ face['l2_idx'] ]
 
+        # Delete the l1 faces from ReKognition
         for tag in sorted( l1_delete_tags.keys() ):
             try:
                 result = rekog.delete_face_for_user( l1_user, tag, l1_delete_tags[tag], config.recog_l1_namespace )
@@ -205,6 +274,7 @@ def delete_faces( user_id, contact_id, faces ):
                              'message'    : 'Error deleting face for to contact %s for user %s, error was: %s' % ( contact_id, l1_user, e ) } )
                 # DEBUG add the error face to the output here.
 
+        # Delete the l2 faces from ReKognition
         for tag in sorted( l2_delete_tags.keys() ):
             try:
                 result = rekog.delete_face_for_user( l2_user, tag, l2_delete_tags[tag], config.recog_l1_namespace )
@@ -220,35 +290,32 @@ def delete_faces( user_id, contact_id, faces ):
                              'message'    : 'Error deleting face for to contact %s for user %s, error was: %s' % ( contact_id, l2_user, e ) } )
                 # DEBUG add the error face to the output here.
 
+        # Cluster l2 since we've deleted some faces.
         cluster_result = rekog.cluster_for_user( l2_user, config.recog_l2_namespace )
         log.debug( { 'user_id'      : user_id,
                      'contact_id'   : contact_id,
                      'rekog_result' : cluster_result,
                      'message'      : 'Clustered l2 database for user %s' % ( user_id ) } )
 
+        # Remove the deted faces from our tracking database.
         recog_db._delete_faces( faces )
 
         # Our deletes, clustering, and past errors from other
         # executions may have led to our database being out of sync
-        # with ReKognition, reconcile them.
-        helpers._reconcile_db_rekog( user_id, contact_id )
-
-        # DEBUG - untouched below this line.
-
-        result = rekog.train_for_user( l1_user, config.recog_l1_namespace )
-        log.debug( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'rekog_result' : result,
-                'message'    : 'Trained l1 database for user_id %s' % ( user_id )
-                } )
-
+        # with ReKognition, if so reconcile the two.
+        if not helpers._reconcile_db_rekog( user_id, contact_id ):
+            result = rekog.train_for_user( l1_user, config.recog_l1_namespace )
+            log.debug( {
+                    'user_id'    : user_id,
+                    'contact_id' : contact_id,
+                    'rekog_result' : result,
+                    'message'    : 'Trained l1 database for user_id %s' % ( user_id )
+                    } )
 
         return { 
             'added'     : [],
             'deleted'   : deleted,
-            'moved'     : [],
-            'not_found' : [],
+            'unchanged' : unchanged,
             'error'     : error
             }
 

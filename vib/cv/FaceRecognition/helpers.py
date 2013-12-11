@@ -10,9 +10,12 @@ import vib.cv.FaceRecognition.db_utils as recog_db
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-def _reconcile_db_rekog( user_id, contact_id, cluster_result ):
+def _reconcile_db_rekog( user_id, contact_id ):
     '''Reconcile the contents of our database and what is in
     ReKognition.
+
+    Returns true if this method trained l1 as a result of alterations
+    to l1.
 
     There are several conditions to check:
  
@@ -70,11 +73,13 @@ def _reconcile_db_rekog( user_id, contact_id, cluster_result ):
     _delete_db_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces )
     db_faces = recog_db._get_contact_faces_for_user( user_id, contact_id )
 
-    result = _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces )
-    if l1_train or result:
+    if _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
+        l1_train = True
+
+    if l1_train
         recog.train_for_user( l1_user, config.recog_l1_namespace )
 
-    return
+    return l1_train
 
 def _get_l1_user( user_id, contact_id ):
     '''Given a user_id and a contact_id, returns the ReKogntion user
@@ -214,21 +219,8 @@ def _populate_faces( user_id, contact_id, faces ):
     return ( result, unchanged, errors )
 
 def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
-    '''Finds and repairs:
-    
-    1. l2 faces whose cluster information is out of date in the database.
-
-    2. Clusters without l1 faces.
-
-    3. Clusters with the wrong l1 face.
-
-    4. l1 faces without clusters.
-
-    Returns true if any faces were added or deleted to l1.
     '''
-
-    '''
-    Data sources:
+    Inputs:
 
     l1_faces - the current list of all faces in l1.  Each l1 face has
     a tag and an index.  Their tag is the composition of the
@@ -244,15 +236,6 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     db_faces should be correct with regard to the l1tag and l1idx
     values of it's faces, but the l2tag and l2idx values can be
     incorrect as this function is to be called post clustering.
-
-    Operations:
-    
-    # Reconcile Rekog l2 with Rekog l1 and DB
-    for tag in l2:
-        if tag not present in l1 add it to rekog l1, update DB l1tag/idx for image
-        if tag in l1 has different image add new to rekog, update db l2tag/idx for added images 
-    for image in l1:
-        if not in best l2 faces delete it from rekog l1, update db l1tag/idx for image
     '''
 
     l1_user = _get_l1_user( user_id, contact_id )
