@@ -11,6 +11,41 @@ rekog_api_secret = config.rekog_api_secret
 
 default_namespace = config.rekog_namespace
 
+def add_face_for_user( user_id, url, tag=None, namespace=None ):
+    '''Adds face at URL for specified user.  If tag is specified the
+    name is added with that tag.
+
+    Returns either the index of the face in Rekognition (a string), or
+    None in the case that:
+    a. ReKognition found no faces
+    b. ReKognition found more than one face
+    c. There was an error
+    '''
+
+    if namespace == None:
+        namespace = default_namespace
+        
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_add',
+        'name_space'   : namespace,
+        'user_id'      : user_id,
+        'tag'          : tag, 
+        'img_index'    : face_idx
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    
+    result = r.json()
+
+    if result['usage']['status'] != 'Succeed.':
+        return None
+    elif len( result['face_detection'] ) != 1:
+        return None
+    else:
+        return result['face_detection'][0]['img_index']
+
 def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, namespace=None, skip_self=False ):
     '''For a given Facebook ID and a list of friends with { id, name }
     elements, execute the crawl faces ReKognition task.
