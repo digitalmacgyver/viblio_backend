@@ -1,3 +1,18 @@
+1. Spot test deletion methods.
+2. Implement get_faces
+3. Implement delete_user
+4. Test get_faces, delete_user
+5. Resolve DEBUGs throughout the code.
+6. Add logging throughout the code.
+
+7. Think about how to manage counting / reporting.
+
+8. Alter FaceRecognize to use this.
+
+9. Alter Facebook import to populate this.
+
+==
+
 2. Think of how to keep tally of success / failures:
 
 Need a distinct data structure that doesn't get things deleted from

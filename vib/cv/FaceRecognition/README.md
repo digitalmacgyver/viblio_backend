@@ -83,6 +83,7 @@ All these calls globally serialize on the user in question.
     ```user_id``` and ```contact_id```
   * If ```contact_id``` is not provided, or is None, returns faces for
     all contacts associated with this user.
+  * Returns None if an unexpected error occurs
 * ```recognize_face( user_id, face_url )```
   * ```face_url``` is a URL to an image which is thought to contain a
     face

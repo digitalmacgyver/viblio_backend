@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 # DEBUG - the caller of this script should define a logger that is
 # vib.cv.FaceRecognize so this logger inherits those properties.
@@ -7,6 +8,7 @@ log = logging.getLogger( __name__ )
 import vib.rekog.utils as rekog
 import vib.cv.FaceRecognition.db_utils as recog_db
 import vib.cv.FaceRecognition.helpers as helpers
+from vib.utils import Serialize
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -64,14 +66,21 @@ def add_faces( user_id, contact_id, faces ):
     errors.
     '''
 
-    try:
-        # DEBUG - get serialization lock, set locked variable, add
-        # finally clause to unlock.
+    lock_acquired = False
+    lock = None
 
+    try:
+        # Ensure this is the only FaceRecognition task going on for
+        # this user for the duration of this call.
+        lock = Serialize.Serialize( app = 'Recognition',
+                                    object_name = user_id,
+                                    owner_id = 'add_faces:'+str( uuid.uuid4() ),
+                                    app_config = config,
+                                    heartbeat = 10,
+                                    timeout = 30 )
+                                    
         # DEBUG - decide where to run synchronization to clean stuff
         # up, here, or at the bottom.
-
-        # DEBUG - think about setting the isface field.  See if we're using it anywhere.
 
         added = []
         unchanged = []
@@ -97,30 +106,25 @@ def add_faces( user_id, contact_id, faces ):
                 if face['contact_id'] != contact_id:
                     raise Exception( "Error, face for contact_id %s had contact_id of %s " % ( contact_id, face['contact_id'] ) )
 
-                print "Working on face: %s" % face
+                print "Working on %s" % ( helpers._format_face( face ) )
 
-                # DEBUG first check if the face is there.
                 if recog_db._check_face_exists( face['user_id'], face['contact_id'], face['face_id'] ):
-                    print "Face was found to already exist in the database."
+                    print "Already exists in database."
                     unchanged.append( face )
                 else:
-                    print "Adding face to recognition"
-
                     l2_idx = rekog.add_face_for_user( l2_user, face['face_url'], None, config.recog_l2_namespace )
                 
-                    print "Face idx in ReKognition is %s" % ( l2_idx )
+                    print "Added to ReKognitition, l2_idx: %s" % ( l2_idx )
 
                     if l2_idx is not None:
                         face['l2_idx'] = l2_idx
                         face['l2_tag'] = '_x_all'
                         
-                        print "Adding face %s to database." % ( face )
-
                         recog_db._add_face( user_id, contact_id, face )
-                    
+                        print "Added to database"
                         added.append( face )
                     else:
-                        print "No face found by ReKognition, skipping face: %s" % ( face )
+                        print "No face found by ReKognition, skipping"
                         unchanged.append( face )
 
             except Exception as e:
@@ -134,10 +138,6 @@ def add_faces( user_id, contact_id, faces ):
             print "Reclustering for user %s" % ( l2_user )
             rekog.cluster_for_user( l2_user, config.recog_l2_namespace )
 
-        # We always do reconciliation even if we didn't add anything,
-        # it can clean up errors made by prior API calls which failed.
-        import pdb
-        # pdb.set_trace()
         helpers._reconcile_db_rekog( user_id, contact_id )
                 
         return { 
@@ -152,14 +152,26 @@ def add_faces( user_id, contact_id, faces ):
                      'contact_id' : contact_id,
                      'message'    : 'Error while adding faces: %s' % ( e ) } )
         raise
+    finally:
+        if lock_acquired:
+            lock.release()
 
 def delete_contact( user_id, contact_id ):
     '''Deletes all information in the Recognition system about the
     given contact_id, if any.'''
 
+    lock_acquired = False
+    lock = None
+
     try:
-        # DEBUG - get serialization lock, set locked variable, add
-        # finally clause to unlock.
+        # Ensure this is the only FaceRecognition task going on for
+        # this user for the duration of this call.
+        lock = Serialize.Serialize( app = 'Recognition',
+                                    object_name = user_id,
+                                    owner_id = 'delete_contact:'+str( uuid.uuid4() ),
+                                    app_config = config,
+                                    heartbeat = 10,
+                                    timeout = 30 )
 
         # DEBUG - decide where to run synchronization to clean stuff
         # up, here, or at the bottom.
@@ -171,7 +183,7 @@ def delete_contact( user_id, contact_id ):
                     'contact_id' : contact_id,
                     'message'    : 'Deleting contact %s for user %s.' % ( contact_id, user_id ) } )
         
-        l1_user = helpers._get_l1_user( user_id, contact_id )
+        l1_user = helpers._get_l1_user( user_id )
         l2_user = helpers._get_l2_user( user_id, contact_id )
 
         faces = recog_db._get_contact_faces_for_user( user_id, contact_id )
@@ -212,6 +224,8 @@ def delete_contact( user_id, contact_id ):
     
         recog_db._delete_contact_faces_for_user( user_id, contact_id )
 
+        helpers._reconcile_db_rekog( user_id, contact_id )
+
         return { 
             'added'     : [],
             'deleted'   : faces,
@@ -220,12 +234,13 @@ def delete_contact( user_id, contact_id ):
             }
 
     except Exception as e:
-        log.error( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'message'    : 'Error while deleting contact: %s' % ( e )
-                } )
+        log.error( { 'user_id'    : user_id,
+                     'contact_id' : contact_id,
+                     'message'    : 'Error while deleting contact: %s' % ( e ) } )
         raise
+    finally:
+        if lock_acquired:
+            lock.release()
 
 def delete_faces( user_id, contact_id, faces ):
     '''Given a user_id, contact_id, and array of faces, delete the
@@ -237,10 +252,18 @@ def delete_faces( user_id, contact_id, faces ):
     * Dictionary like objects with an id field
     '''
 
-    try:
-        # DEBUG turn on serialization.
+    lock_acquired = False
+    lock = None
 
-        # DEBUG ensure consistentcy between DB and rekog.
+    try:
+        # Ensure this is the only FaceRecognition task going on for
+        # this user for the duration of this call.
+        lock = Serialize.Serialize( app = 'Recognition',
+                                    object_name = user_id,
+                                    owner_id = 'delete_faces:'+str( uuid.uuid4() ),
+                                    app_config = config,
+                                    heartbeat = 10,
+                                    timeout = 30 )
 
         log.info( { 'user_id'    : user_id,
                     'contact_id' : contact_id,
@@ -249,7 +272,7 @@ def delete_faces( user_id, contact_id, faces ):
         deleted = []
         ( faces, unchanged, error ) = helpers._populate_faces( user_id, contact_id, faces )
 
-        l1_user = helpers._get_l1_user( user_id, contact_id )
+        l1_user = helpers._get_l1_user( user_id )
         l2_user = helpers._get_l2_user( user_id, contact_id )
 
         l1_delete_tags = {}
@@ -298,7 +321,7 @@ def delete_faces( user_id, contact_id, faces ):
                 # much as we are able to.
                 log.error( { 'user_id'    : user_id,
                              'contact_id' : contact_id,
-                             'message'    : 'Error deleting face for to contact %s for user %s, error was: %s' % ( contact_id, l1_user, e ) } )
+                             'message'    : 'Error deleting face for contact %s for user %s, error was: %s' % ( contact_id, l1_user, e ) } )
                 # DEBUG add the error face to the output here.
 
         # Delete the l2 faces from ReKognition
@@ -314,7 +337,7 @@ def delete_faces( user_id, contact_id, faces ):
                 # much as we are able to.
                 log.error( { 'user_id'    : user_id,
                              'contact_id' : contact_id,
-                             'message'    : 'Error deleting face for to contact %s for user %s, error was: %s' % ( contact_id, l2_user, e ) } )
+                             'message'    : 'Error deleting face for contact %s for user %s, error was: %s' % ( contact_id, l2_user, e ) } )
                 # DEBUG add the error face to the output here.
 
         # Cluster l2 since we've deleted some faces.
@@ -347,44 +370,167 @@ def delete_faces( user_id, contact_id, faces ):
             }
 
     except Exception as e:
-        log.error( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'message'    : 'Error while deleting contact: %s' % ( e )
-                } )
+        log.error( { 'user_id'    : user_id,
+                     'contact_id' : contact_id,
+                     'message'    : 'Error while deleting contact: %s' % ( e ) } ) 
         raise
+    finally:
+        if lock_acquired:
+            lock.release()
 
 def delete_user( user_id ):
-    pass
+    '''Delete a user, and all associated contacts, entirely.'''
+
+    lock_acquired = False
+    lock = None
+
+    try:
+        # Ensure this is the only FaceRecognition task going on for
+        # this user for the duration of this call.
+        lock = Serialize.Serialize( app = 'Recognition',
+                                    object_name = user_id,
+                                    owner_id = 'delete_user:'+str( uuid.uuid4() ),
+                                    app_config = config,
+                                    heartbeat = 10,
+                                    timeout = 30 )
+
+        deleted = []
+
+        l1_user = helpers._get_l1_user( user_id )
+
+        faces = recog_db._get_all_faces_for_user( user_id )
+        l2_contacts = {}
+        for face in faces:
+            if face['contact_id'] not in l2_contacts:
+                l2_contacts[face['contact_id']] = True
+
+        # Delete the l1 faces from ReKognition
+        result = rekog.delete_face_for_user( l1_user, None, None, config.recog_l1_namespace )
+        log.debug( { 'user_id'    : user_id,
+                     'rekog_result' : result,
+                     'message'    : 'Deleted all ReKognition faces for l1 user %s' % ( l1_user ) } )
+
+        # Delete the l2 faces from ReKognition
+        for contact_id in l2_contacts:
+            l2_user = helpers._get_l2_user( user_id, contact_id) 
+
+            result = rekog.delete_face_for_user( l2_user, None, None, config.recog_l2_namespace )
+            log.debug( { 'user_id'    : user_id,
+                         'contact_id' : contact_id,
+                         'rekog_result' : result,
+                         'message'    : 'Deleted all ReKognition faces for l2 user %s, contact %s' % ( l2_user, contact_id ) } )
+            
+        # Delete faces from database
+        recog_db._delete_all_user_faces( user_id )
+
+        return { 
+            'added'     : [],
+            'deleted'   : faces,
+            'unchanged' : [],
+            'error'     : []
+            }
+    except Exception as e:
+        log.error( { 'user_id'    : user_id,
+                     'contact_id' : contact_id,
+                     'message'    : 'Error while deleting user: %s' % ( e ) } )
+        raise
+    finally:
+        if lock_acquired:
+            lock.release()
 
 def get_faces( user_id, contact_id = None ):
-    pass
+    '''Returns an array face data structures associated with this
+    user_id and contact_id.
+
+    If contact_id is not provided, or is None, returns faces for all
+    contacts associated with this user.
+
+    Returns None if an unexpected error occurs.
+    '''
+
+    lock_acquired = False
+    lock = None
+
+    try:
+        # Ensure this is the only FaceRecognition task going on for
+        # this user for the duration of this call.
+        lock = Serialize.Serialize( app = 'Recognition',
+                                    object_name = user_id,
+                                    owner_id = 'get_faces:'+str( uuid.uuid4() ),
+                                    app_config = config,
+                                    heartbeat = 10,
+                                    timeout = 30 )
+
+        helpers._reconcile_db_rekog( user_id, contact_id )
+        
+        if contact_id is not None:
+            log.debug( { 'user_id'    : user_id,
+                         'contact_id' : contact_id,
+                         'message'    : 'Getting faces for user_id %s, contact_id %s' % ( user_id, contact_id ) } )
+            return recog_db._get_contact_faces_for_user( user_id, contact_id )
+        else:
+            log.debug( { 'user_id'    : user_id,
+                         'message'    : 'Getting all faces for user_id %s' % ( user_id ) } )
+            return recog_db._get_all_faces_for_user( user_id )
+
+    except Exception as e:
+        log.debug( { 'user_id'    : user_id,
+                     'contact_id' : contact_id,
+                     'message'    : 'Error while getting faces for user_id %s, contact_id %s: %s' % ( user_id, contact_id, e ) } ) 
+        return None
+    finally:
+        if lock_acquired:
+            lock.release()
 
 def recognize_face( user_id, face_url ):
-    # DEBUG - change this function to not take a second argument.
-    l1_user = helpers._get_l1_user( user_id, None )
+    '''Takes in a face_url and tries to recognize whether that face is
+    known from amongst the other faces from user_id.
 
-    #    import pdb
-    # pdb.set_trace()
+    If no face is detected at face_url, or if an unexpected error
+    occures, None is returned.
 
-    matches = rekog.recognize_for_user( l1_user, face_url, config.recog_l1_namespace )
+    Otherwise, an array with 0-3 augmented faces is returned, in
+    descending order of match confidence.  Each such face has an
+    additional 'recognition_confidence' key which is a floating point
+    value from 0-1, where higher values indicate more confidence.
+    '''
+    
+    lock_acquired = False
+    lock = None
 
-    # DEBUG - anecdotally faces with recognition confidence over 0.5
-    # are probably good matches, below that they may be FPs.  Most FPs
-    # seem clustered below 0.3.
+    try:
+        # Ensure this is the only FaceRecognition task going on for
+        # this user for the duration of this call.
+        lock = Serialize.Serialize( app = 'Recognition',
+                                    object_name = user_id,
+                                    owner_id = 'recognize_face:'+str( uuid.uuid4() ),
+                                    app_config = config,
+                                    heartbeat = 10,
+                                    timeout = 30 )
 
-    if matches is None:
-        return None
-    else:
-        result = []
-        for match in matches:
-            l1_tag = match['tag']
-            recognition_confidence = match['score']
-            ( contact_id, l2_tag, l2_idx ) = helpers._parse_l1_tag( l1_tag )
-            face = recog_db._get_face_by_l1_tag( user_id, l1_tag )
-            if face is not None:
-                face['recognition_confidence'] = recognition_confidence
-                result.append( face )
+        # DEBUG - add logging.
+
+        l1_user = helpers._get_l1_user( user_id )
+
+        matches = rekog.recognize_for_user( l1_user, face_url, config.recog_l1_namespace )
+
+        if matches is None:
+            return None
+        else:
+            result = []
+            for match in matches:
+                l1_tag = match['tag']
+                recognition_confidence = match['score']
+                ( contact_id, l2_tag, l2_idx ) = helpers._parse_l1_tag( l1_tag )
+                helpers._reconcile_db_rekog( user_id, contact_id )
+                face = recog_db._get_face_by_l1_tag( user_id, l1_tag )
+                if face is not None:
+                    face['recognition_confidence'] = recognition_confidence
+                    result.append( face )
 
         return sorted( result, key=lambda x: -float( x['recognition_confidence'] ) )
-
+    except Exception as e:
+        return None
+    finally:
+        if lock_acquired:
+            lock.release()
