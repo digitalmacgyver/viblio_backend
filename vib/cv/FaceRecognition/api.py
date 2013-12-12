@@ -73,11 +73,13 @@ def add_faces( user_id, contact_id, faces ):
         # Ensure this is the only FaceRecognition task going on for
         # this user for the duration of this call.
         lock = Serialize.Serialize( app = 'Recognition',
-                                    object_name = user_id,
+                                    object_name = str( user_id ),
                                     owner_id = 'add_faces:'+str( uuid.uuid4() ),
                                     app_config = config,
                                     heartbeat = 10,
                                     timeout = 30 )
+        lock.acquire()
+        lock_acquired = True
                                     
         # DEBUG - decide where to run synchronization to clean stuff
         # up, here, or at the bottom.
@@ -167,11 +169,13 @@ def delete_contact( user_id, contact_id ):
         # Ensure this is the only FaceRecognition task going on for
         # this user for the duration of this call.
         lock = Serialize.Serialize( app = 'Recognition',
-                                    object_name = user_id,
+                                    object_name = str( user_id ),
                                     owner_id = 'delete_contact:'+str( uuid.uuid4() ),
                                     app_config = config,
                                     heartbeat = 10,
                                     timeout = 30 )
+        lock.acquire()
+        lock_acquired = True
 
         # DEBUG - decide where to run synchronization to clean stuff
         # up, here, or at the bottom.
@@ -259,11 +263,13 @@ def delete_faces( user_id, contact_id, faces ):
         # Ensure this is the only FaceRecognition task going on for
         # this user for the duration of this call.
         lock = Serialize.Serialize( app = 'Recognition',
-                                    object_name = user_id,
+                                    object_name = str( user_id ),
                                     owner_id = 'delete_faces:'+str( uuid.uuid4() ),
                                     app_config = config,
                                     heartbeat = 10,
                                     timeout = 30 )
+        lock.acquire()
+        lock_acquired = True
 
         log.info( { 'user_id'    : user_id,
                     'contact_id' : contact_id,
@@ -388,11 +394,13 @@ def delete_user( user_id ):
         # Ensure this is the only FaceRecognition task going on for
         # this user for the duration of this call.
         lock = Serialize.Serialize( app = 'Recognition',
-                                    object_name = user_id,
+                                    object_name = str( user_id ),
                                     owner_id = 'delete_user:'+str( uuid.uuid4() ),
                                     app_config = config,
                                     heartbeat = 10,
                                     timeout = 30 )
+        lock.acquire()
+        lock_acquired = True
 
         deleted = []
 
@@ -431,7 +439,6 @@ def delete_user( user_id ):
             }
     except Exception as e:
         log.error( { 'user_id'    : user_id,
-                     'contact_id' : contact_id,
                      'message'    : 'Error while deleting user: %s' % ( e ) } )
         raise
     finally:
@@ -455,11 +462,13 @@ def get_faces( user_id, contact_id = None ):
         # Ensure this is the only FaceRecognition task going on for
         # this user for the duration of this call.
         lock = Serialize.Serialize( app = 'Recognition',
-                                    object_name = user_id,
+                                    object_name = str( user_id ),
                                     owner_id = 'get_faces:'+str( uuid.uuid4() ),
                                     app_config = config,
                                     heartbeat = 10,
                                     timeout = 30 )
+        lock.acquire()
+        lock_acquired = True
 
         helpers._reconcile_db_rekog( user_id, contact_id )
         
@@ -502,11 +511,13 @@ def recognize_face( user_id, face_url ):
         # Ensure this is the only FaceRecognition task going on for
         # this user for the duration of this call.
         lock = Serialize.Serialize( app = 'Recognition',
-                                    object_name = user_id,
+                                    object_name = str( user_id ),
                                     owner_id = 'recognize_face:'+str( uuid.uuid4() ),
                                     app_config = config,
                                     heartbeat = 10,
                                     timeout = 30 )
+        lock.acquire()
+        lock_acquired = True
 
         # DEBUG - add logging.
 
