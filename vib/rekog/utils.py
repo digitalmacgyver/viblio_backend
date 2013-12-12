@@ -15,7 +15,7 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
     '''Adds face at URL for specified user.  If tag is specified the
     name is added with that tag.
 
-    Returns either the index of the face in Rekognition (a string), or
+    Returns either the index of the face in ReKognition (a string), or
     None in the case that:
     a. ReKognition found no faces
     b. ReKognition found more than one face
@@ -32,7 +32,7 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
         'name_space'   : namespace,
         'user_id'      : user_id,
         'tag'          : tag,
-        'urls'          : url
+        'urls'         : url
         }
 
     r = requests.post( "http://rekognition.com/func/api/", data )
@@ -65,13 +65,40 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
     else:
         return None
 
+def cluster_for_user( user_id, namespace=None ):
+    '''Clusters the user in question and returns the result.  Result
+    format is:
+
+    { 'clusters' : [ { 'tag': 'cluster0', 'img_index': [1,2,3] }, ... ],
+      'usage'    : { 'status' : 'Succeed.', ... } }
+
+    Raises an exception if the API call does not succeed.
+    '''
+
+    if namespace == None:
+        namespace = default_namespace
+        
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_cluster',
+        'name_space'   : namespace,
+        'user_id'      : user_id
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    result = r.json()
+    if result['usage']['status'] == 'Succeed.':
+        return result
+    else:
+        raise Exception( result['usage']['status'] )
 
 def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, namespace=None, skip_self=False ):
     '''For a given Facebook ID and a list of friends with { id, name }
     elements, execute the crawl faces ReKognition task.
 
     Returns a list of the result(s) of the request(s) made in JSON
-    format.
+    format.  Any API failures are included in the results.
     '''
 
     if namespace == None:
@@ -116,8 +143,61 @@ def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, name
 
     return results
 
+def delete_face_for_user( user_id, tag, face_idx, namespace=None ):
+    '''Deletes the face tagged with index face_idx for user_id in
+    namespace.  The special _x_all tag can be used for untagged faces.
+
+    Optionally face_idx can be formatted as '1;2;3' to delete multiple
+    faces at once
+
+    Raises an exception if the API call does not succeed.'''
+
+    if namespace == None:
+        namespace = default_namespace
+        
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_delete',
+        'name_space'   : namespace,
+        'user_id'      : user_id,
+        'tag'          : tag, 
+        'img_index'    : face_idx
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    result = r.json()
+    if result['usage']['status'] == 'Succeed.':
+        return result
+    else:
+        raise Exception( result['usage']['status'] )
+
+def delete_user( user_id, namespace=None ):
+    '''Deletes the entirety of the ReKognition structure for the
+    provided user, namespace
+
+    Raises an exception if the API call does not succeed.'''
+
+    if namespace == None:
+        namespace = default_namespace
+        
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_delete',
+        'name_space'   : namespace,
+        'user_id'      : user_id
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    result = r.json()
+    if result['usage']['status'] == 'Succeed.':
+        return result
+    else:
+        raise Exception( result['usage']['status'] )
+
 def recognize_for_user( user_id, url, namespace = None ):
-    '''Call the Rekognition recognize API for the URL within the
+    '''Call the ReKognition recognize API for the URL within the
     user_id/namespace.
 
     Returns None if there is no face at URL.
@@ -126,7 +206,7 @@ def recognize_for_user( user_id, url, namespace = None ):
     face with the highest confidence are returned.
     
     Returns an array of up up to 3 matches in descending order of
-    recogntion confidence of this format:
+    recognition confidence of this format:
     [ { 'tag' : 'matched_image_tag', 'score' : '0.03' }, ... ]
     '''
 
@@ -144,8 +224,6 @@ def recognize_for_user( user_id, url, namespace = None ):
 
     r = requests.post( "http://rekognition.com/func/api/", data )
     result = r.json()
-
-    #print result
 
     if result['usage']['status'] != 'Succeed.':
         return None
@@ -168,12 +246,39 @@ def recognize_for_user( user_id, url, namespace = None ):
     else:
         return None
 
+def rename_tag_for_user( user_id, old_tag, new_tag, namespace=None ):
+    '''Renames all occurrences of old_tag to new_tag for the user.
+    Returns the result of the API call in JSON format.
+
+    Raises an exception if the API call does not succeed.'''
+    if namespace == None:
+        namespace = default_namespace
+        
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_rename',
+        'tag'          : old_tag,
+        'new_tag'      : new_tag,
+        'name_space'   : namespace,
+        'user_id'      : user_id
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    result = r.json()
+    if result['usage']['status'] == 'Succeed.':
+        return result
+    else:
+        raise Exception( result['usage']['status'] )
+
 
 def train_for_user( user_id, namespace = None ):
-    '''Call the Rekognition training API for all faces for the
+    '''Call the ReKognition training API for all faces for the
     user.
 
-    Returns the request result in JSON format.'''
+    Returns the request result in JSON format.
+
+    Raises an exception if the API call does not succeed.'''
 
     if namespace == None:
         namespace = default_namespace
@@ -187,7 +292,12 @@ def train_for_user( user_id, namespace = None ):
         }
 
     r = requests.post( "http://rekognition.com/func/api/", data )
-    return r.json()
+    result = r.json()
+    if result['usage']['status'] == 'Succeed.':
+        return result
+    else:
+        raise Exception( result['usage']['status'] )
+
 
 def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_default=False, namespace = None ):
     '''Calls the ReKognition Visualize function and returns an array
@@ -196,14 +306,16 @@ def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_d
 
     Defaults to only one image per person.
 
-    If num_img_return_pertag is None the default Rekoginition behavior
+    If num_img_return_pertag is None the default ReKognition behavior
     (all tags) is done.
 
     If no_image is True then no images are generated, only the text
     response is generated.
 
-    If show_detault is True then untagged images are included under
-    the _x_all tag.'''
+    If show_default is True then untagged images are included under
+    the _x_all tag.
+
+    Raises an exception if the API call does not succeed.'''
 
     if namespace == None:
         namespace = default_namespace
@@ -226,88 +338,9 @@ def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_d
         data['num_img_return_pertag'] = num_img_return_pertag
 
     r = requests.post( "http://rekognition.com/func/api/", data )
+    result = r.json()
+    if result['usage']['status'] == 'Succeed.':
+        return result['visualization']
+    else:
+        raise Exception( result['usage']['status'] )
 
-    return r.json()['visualization']
-
-def rename_tag_for_user( user_id, old_tag, new_tag, namespace=None ):
-    '''Renames all occurences of old_tag to new_tag for the user.
-    Returns the result of the API call in JSON format.'''
-
-    if namespace == None:
-        namespace = default_namespace
-        
-    data = {
-        'api_key'      : rekog_api_key,
-        'api_secret'   : rekog_api_secret,
-        'jobs'         : 'face_rename',
-        'tag'          : old_tag,
-        'new_tag'      : new_tag,
-        'name_space'   : namespace,
-        'user_id'      : user_id
-        }
-
-    r = requests.post( "http://rekognition.com/func/api/", data )
-    return r.json()
-
-def delete_face_for_user( user_id, tag, face_idx, namespace=None ):
-    '''Deletes the face tagged with index face_idx for user_id in
-    namespace.  The special _x_all tag can be used for untagged faces.
-
-    Optionally face_idx can be formatted as '1;2;3' to delete multiple
-    faces at once'''
-
-    if namespace == None:
-        namespace = default_namespace
-        
-    data = {
-        'api_key'      : rekog_api_key,
-        'api_secret'   : rekog_api_secret,
-        'jobs'         : 'face_delete',
-        'name_space'   : namespace,
-        'user_id'      : user_id,
-        'tag'          : tag, 
-        'img_index'    : face_idx
-        }
-
-    r = requests.post( "http://rekognition.com/func/api/", data )
-    return r.json()
-
-def delete_user( user_id, namespace=None ):
-    '''Deletes the entirety of the ReKognition system for the provider
-    user, namespace'''
-
-    if namespace == None:
-        namespace = default_namespace
-        
-    data = {
-        'api_key'      : rekog_api_key,
-        'api_secret'   : rekog_api_secret,
-        'jobs'         : 'face_delete',
-        'name_space'   : namespace,
-        'user_id'      : user_id
-        }
-
-    r = requests.post( "http://rekognition.com/func/api/", data )
-    return r.json()
-
-def cluster_for_user( user_id, namespace=None ):
-    '''Clusters the user in question and returns the result.  Result
-    format is:
-
-    { 'clusters' : [ { 'tag': 'cluster0', 'img_index': [1,2,3] }, ... ],
-      'usage'    : { 'status' : 'Succeed.', ... } }
-    '''
-
-    if namespace == None:
-        namespace = default_namespace
-        
-    data = {
-        'api_key'      : rekog_api_key,
-        'api_secret'   : rekog_api_secret,
-        'jobs'         : 'face_cluster',
-        'name_space'   : namespace,
-        'user_id'      : user_id
-        }
-
-    r = requests.post( "http://rekognition.com/func/api/", data )
-    return r.json()
