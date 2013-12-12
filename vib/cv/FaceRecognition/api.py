@@ -27,7 +27,7 @@ config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 # external system related to this operation.  In the case of
 # move_faces this is the destination.
 #
-# face_id - integar identifying the particular image for the contact
+# face_id - integer identifying the particular image for the contact
 # in the external system.
 #
 # face_url - a URL to an image of the face
@@ -36,7 +36,7 @@ config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 # set of faces for the same contact the one with the highest
 # face_score will be treated as the "best" image available.
 #
-# external_id - Optional, an aribitrary integer the external system
+# external_id - Optional, an arbitrary integer the external system
 # can set to further identify this face in the external system (if
 # user_id, contact_id, and face_id are not sufficient)
 #
@@ -81,9 +81,6 @@ def add_faces( user_id, contact_id, faces ):
         lock.acquire()
         lock_acquired = True
                                     
-        # DEBUG - decide where to run synchronization to clean stuff
-        # up, here, or at the bottom.
-
         added = []
         unchanged = []
         error = []
@@ -116,7 +113,7 @@ def add_faces( user_id, contact_id, faces ):
                 else:
                     l2_idx = rekog.add_face_for_user( l2_user, face['face_url'], None, config.recog_l2_namespace )
                 
-                    print "Added to ReKognitition, l2_idx: %s" % ( l2_idx )
+                    print "Added to ReKognition, l2_idx: %s" % ( l2_idx )
 
                     if l2_idx is not None:
                         face['l2_idx'] = l2_idx
@@ -176,12 +173,6 @@ def delete_contact( user_id, contact_id ):
                                     timeout = 30 )
         lock.acquire()
         lock_acquired = True
-
-        # DEBUG - decide where to run synchronization to clean stuff
-        # up, here, or at the bottom.
-
-        # DEBUG systematically handle errors from recognition results.
-        # result->status != 'Succeed.'
 
         log.info( { 'user_id'    : user_id,
                     'contact_id' : contact_id,
@@ -353,7 +344,7 @@ def delete_faces( user_id, contact_id, faces ):
                      'rekog_result' : cluster_result,
                      'message'      : 'Clustered l2 database for user %s' % ( user_id ) } )
 
-        # Remove the deted faces from our tracking database.
+        # Remove the deleted faces from our tracking database.
         recog_db._delete_faces( faces )
 
         # Our deletes, clustering, and past errors from other
@@ -496,7 +487,7 @@ def recognize_face( user_id, face_url ):
     known from amongst the other faces from user_id.
 
     If no face is detected at face_url, or if an unexpected error
-    occures, None is returned.
+    occurs, None is returned.
 
     Otherwise, an array with 0-3 augmented faces is returned, in
     descending order of match confidence.  Each such face has an

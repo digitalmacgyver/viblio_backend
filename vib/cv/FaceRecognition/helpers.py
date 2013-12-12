@@ -19,13 +19,13 @@ def _reconcile_db_rekog( user_id, contact_id ):
 
     There are several conditions to check:
  
-    1. A face is present in ReKognition level 2 without a
-    corresponding entry in the database: delete the face in
+    1. A face is present in the ReKognition level 2 structure without
+    a corresponding entry in the database: delete the face in
     ReKognition.
 
-    2. A face is present in ReKognition level 1 for this contact
-    without a corresponding entry in the database: delete the face in
-    ReKognition.
+    2. A face is present in the ReKognition level 1 structure for this
+    contact without a corresponding entry in the database: delete the
+    face in ReKognition.
 
     3. A face is present in the database and tagged as having an l2
     entry, but no l2 entry exists in ReKognition: If the face has an
@@ -51,7 +51,7 @@ def _reconcile_db_rekog( user_id, contact_id ):
     '''
 
     # DEBUG - handle what happens when we try to add an existing face
-    # to l1 but rekognition has since decided it is not a face (maybe
+    # to l1 but ReKognition has since decided it is not a face (maybe
     # the face image was deleted from Viblio)
 
     l1_user = _get_l1_user( user_id )
@@ -103,14 +103,14 @@ def _reconcile_db_rekog( user_id, contact_id ):
     return l1_train
 
 def _get_l1_user( user_id ):
-    '''Given a user_id, returns the ReKogntion user for the l1
-    database for that user.'''
+    '''Given a user_id, returns the ReKognition user for the l1
+    structure for that user.'''
 
     return "%s" % ( user_id )
 
 def _get_l2_user( user_id, contact_id ):
-    '''Given a user_id and a contact_id, returns the ReKogntion user
-    for the l2 database for that user and contact.'''
+    '''Given a user_id and a contact_id, returns the ReKognition user
+    for the l2 structure for that user and contact.'''
 
     return "%s_%s" % ( user_id, contact_id )
 
@@ -124,8 +124,6 @@ def _delete_db_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     '''
 
     # DEBUG - add logging
-    
-    # DEBUG - add errorhandling of rekog result.
     
     l1_indices = {}
     
@@ -176,8 +174,6 @@ def _delete_rekog_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces ):
 
     # DEBUG - add logging
     
-    # DEBUG - add errorhandling of rekog result.
-    
     l1_user = _get_l1_user( user_id )
     l2_user = _get_l2_user( user_id, contact_id )
     
@@ -210,7 +206,7 @@ def _delete_rekog_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     return ( l1_deleted, l2_deleted )
 
 def _populate_faces( user_id, contact_id, faces ):
-    '''Given an input arry of faces, returns an output array of fully
+    '''Given an input array of faces, returns an output array of fully
     populated face data structures.'''
 
     result = []
@@ -258,7 +254,7 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     tag.
 
     db_faces - The current values stored in the database.  Each face
-    present in l1 or l2 is represented in db_faces somwehere.
+    present in l1 or l2 is represented in db_faces somewhere.
     db_faces should be correct with regard to the l1tag and l1idx
     values of it's faces, but the l2tag and l2idx values can be
     incorrect as this function is to be called post clustering.
@@ -362,7 +358,7 @@ def _prepare_l1_face_data( contact_id, l1_faces ):
 
                 # We try to avoid this scenario but aren't very
                 # rigorous about it - if this exception starts getting
-                # thrown we need to explicitlt catch and handle this
+                # thrown we need to explicitly catch and handle this
                 # in the reconcile_cluster code or elsewhere.
                 if l2_tag in l1_face_for_contact_by_l2_tag:
                     raise Exception( "Error: multiple faces for a single l2_tag %s found in l1 for contact %s, this should never happen." % ( l2_tag, contact_id ) )
