@@ -91,19 +91,36 @@ def add_faces( user_id, contact_id, faces ):
                 if not valid_face:
                     raise Exception( "Face did not have all required fields %s" % face_keys )
 
+                if face['user_id'] != user_id:
+                    raise Exception( "Error, face for user_id %s had user_id of %s " % ( user_id, face['user_id'] ) )
+
+                if face['contact_id'] != contact_id:
+                    raise Exception( "Error, face for contact_id %s had contact_id of %s " % ( contact_id, face['contact_id'] ) )
+
+                print "Working on face: %s" % face
+
                 # DEBUG first check if the face is there.
                 if recog_db._check_face_exists( face['user_id'], face['contact_id'], face['face_id'] ):
+                    print "Face was found to already exist in the database."
                     unchanged.append( face )
                 else:
+                    print "Adding face to recognition"
+
                     l2_idx = rekog.add_face_for_user( l2_user, face['face_url'], None, config.recog_l2_namespace )
                 
+                    print "Face idx in ReKognition is %s" % ( l2_idx )
+
                     if l2_idx is not None:
                         face['l2_idx'] = l2_idx
                         face['l2_tag'] = '_x_all'
+                        
+                        print "Adding face %s to database." % ( face )
+
                         recog_db._add_face( user_id, contact_id, face )
                     
                         added.append( face )
                     else:
+                        print "No face found by ReKognition, skipping face: %s" % ( face )
                         unchanged.append( face )
 
             except Exception as e:
@@ -112,13 +129,15 @@ def add_faces( user_id, contact_id, faces ):
                              'message'    : 'Error while adding face: %s' % ( e ) } )
                 error.append( face )
 
+
         if len( added ):
+            print "Reclustering for user %s" % ( l2_user )
             rekog.cluster_for_user( l2_user, config.recog_l2_namespace )
 
         # We always do reconciliation even if we didn't add anything,
         # it can clean up errors made by prior API calls which failed.
         import pdb
-        pdb.set_trace()
+        # pdb.set_trace()
         helpers._reconcile_db_rekog( user_id, contact_id )
                 
         return { 
@@ -342,5 +361,30 @@ def get_faces( user_id, contact_id = None ):
     pass
 
 def recognize_face( user_id, face_url ):
-    pass
+    # DEBUG - change this function to not take a second argument.
+    l1_user = helpers._get_l1_user( user_id, None )
+
+    #    import pdb
+    # pdb.set_trace()
+
+    matches = rekog.recognize_for_user( l1_user, face_url, config.recog_l1_namespace )
+
+    # DEBUG - anecdotally faces with recognition confidence over 0.5
+    # are probably good matches, below that they may be FPs.  Most FPs
+    # seem clustered below 0.3.
+
+    if matches is None:
+        return None
+    else:
+        result = []
+        for match in matches:
+            l1_tag = match['tag']
+            recognition_confidence = match['score']
+            ( contact_id, l2_tag, l2_idx ) = helpers._parse_l1_tag( l1_tag )
+            face = recog_db._get_face_by_l1_tag( user_id, l1_tag )
+            if face is not None:
+                face['recognition_confidence'] = recognition_confidence
+                result.append( face )
+
+        return sorted( result, key=lambda x: -float( x['recognition_confidence'] ) )
 

@@ -153,7 +153,37 @@ def _get_face_by_id( face_id ):
         result = orm.query( Faces ).filter( Faces.id == face_id )
 
         if result.count() == 1:
-            return result[0].__dict__
+            face = result[0].__dict__.copy()
+            orm.commit()
+            return face
+        else:
+            return None
+
+    except Exception as e:
+        log.error( {
+                'message'    : 'Error getting face data, error was: %s' % ( e )
+                } )
+        raise
+
+def _get_face_by_l1_tag( user_id, l1_tag ):
+    '''Returns either a dictionary like object representing the row
+    for in the recognition database for this face, or None if the face
+    is not found.'''
+
+    try:
+
+        log.info( {
+                'message'    : 'Getting face data for user_id %s, l1_tag %s' % ( user_id, l1_tag )
+                } )
+
+        orm = vib.db.orm.get_session()
+    
+        result = orm.query( Faces ).filter( and_( Faces.user_id == user_id, Faces.l1_tag == l1_tag ) )
+
+        if result.count() == 1:
+            face = result[0].__dict__.copy()
+            orm.commit()
+            return face
         else:
             return None
 
@@ -181,7 +211,7 @@ def _get_contact_faces_for_user( user_id, contact_id ):
     
         query = orm.query( Faces ).filter( and_( Faces.user_id == user_id, Faces.contact_id == contact_id ) )
 
-        result = [ u.__dict__ for u in query.all() ]
+        result = [ u.__dict__.copy() for u in query.all() ]
         
         orm.commit()
     

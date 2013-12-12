@@ -41,10 +41,30 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
 
     if result['usage']['status'] != 'Succeed.':
         return None
-    elif len( result['face_detection'] ) != 1:
-        return None
-    else:
+    elif len( result['face_detection'] ) == 1:
         return result['face_detection'][0]['img_index']
+    elif len( result['face_detection'] ) > 1:
+        # Sometimes ReKognition detects multiple faces when there is
+        # only one face.  Keep only the best face.
+        best = None
+        best_confidence = 0
+        delete = []
+        for face in result['face_detection']:
+            face_confidence = face['confidence']
+            if face_confidence > best_confidence:
+                if best is not None:
+                    delete.append( best )
+                best_confidence = face_confidence
+                best = face
+            else:
+                delete.append( face )
+
+        for face in delete:
+            delete_face_for_user( user_id, '_x_all', face['img_index'], namespace )
+        return best['img_index']
+    else:
+        return None
+
 
 def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, namespace=None, skip_self=False ):
     '''For a given Facebook ID and a list of friends with { id, name }
@@ -95,6 +115,59 @@ def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, name
         results.append( r.json() )
 
     return results
+
+def recognize_for_user( user_id, url, namespace = None ):
+    '''Call the Rekognition recognize API for the URL within the
+    user_id/namespace.
+
+    Returns None if there is no face at URL.
+
+    If multiple faces are detected in the input URL, matches for the
+    face with the highest confidence are returned.
+    
+    Returns an array of up up to 3 matches in descending order of
+    recogntion confidence of this format:
+    [ { 'tag' : 'matched_image_tag', 'score' : '0.03' }, ... ]
+    '''
+
+    if namespace == None:
+        namespace = default_namespace
+
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_recognize',
+        'name_space'   : namespace,
+        'user_id'      : user_id,
+        'urls'         : url
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    result = r.json()
+
+    #print result
+
+    if result['usage']['status'] != 'Succeed.':
+        return None
+    elif ( len( result['face_detection'] ) == 1 ) and ( 'matches' in result['face_detection'][0] ):
+        return result['face_detection'][0]['matches']
+    elif len( result['face_detection'] ) > 1:
+        # Sometimes ReKognition detects multiple faces when there is
+        # only one face.  Keep only the best face.
+        best = { 'matches' : None }
+        best_confidence = 0
+
+        for face in result['face_detection']:
+            if 'matches' in face:
+                face_confidence = face['confidence']
+                if face_confidence > best_confidence:
+                    best_confidence = face_confidence
+                    best = face
+
+        return best['matches']
+    else:
+        return None
+
 
 def train_for_user( user_id, namespace = None ):
     '''Call the Rekognition training API for all faces for the
