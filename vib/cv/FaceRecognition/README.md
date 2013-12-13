@@ -113,6 +113,7 @@ All these calls globally serialize on the user in question.
     entire system are returned, otherwise stats only for that
     ```user_id``` are returned.
   * Return value is:
+
     ```
     {  'recognize_calls' : 743, # The total number of recognize_face calls 
                                 # for which any candidate matches were returned
