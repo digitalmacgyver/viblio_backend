@@ -77,6 +77,9 @@ class Providers(BaseModel, Serializer):
 class Faces( BaseModel, Serializer ):
     pass
 
+class RecognitionFeedback( BaseModel, Serializer ):
+    pass
+
 """
 Well, reflection really only gives us the column definitions it
 seems.  We are still responsible for establishing the relationships

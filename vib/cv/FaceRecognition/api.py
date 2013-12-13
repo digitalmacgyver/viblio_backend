@@ -196,7 +196,7 @@ def delete_contact( user_id, contact_id ):
                 if tag in l1_delete_tags:
                     l1_delete_tags[tag] += ';%s' % ( face['l1_idx'] )
                 else:
-                    l1_delete_tags[tag] = [ face['l1_idx'] ]
+                    l1_delete_tags[tag] = face['l1_idx']
                 
         for tag in sorted( l1_delete_tags.keys() ):
             result = rekog.delete_face_for_user( l1_user, tag, l1_delete_tags[tag], config.recog_l1_namespace )
@@ -270,6 +270,9 @@ def delete_faces( user_id, contact_id, faces ):
         deleted = []
         ( faces, unchanged, error ) = helpers._populate_faces( user_id, contact_id, faces )
 
+        #import pdb
+        #pdb.set_trace()
+        
         l1_user = helpers._get_l1_user( user_id )
         l2_user = helpers._get_l2_user( user_id, contact_id )
 
@@ -288,14 +291,14 @@ def delete_faces( user_id, contact_id, faces ):
                 if tag in l1_delete_tags:
                     l1_delete_tags[tag] += ';%s' % ( face['l1_idx'] )
                 else:
-                    l1_delete_tags[tag] = [ face['l1_idx'] ]
+                    l1_delete_tags[tag] = face['l1_idx']
 
             # Build up list of l2 faces to delete.
             if face['l2_idx'] is not None:
                 if face['l2_tag'] is not None:
                     tag = face['l2_tag']
                 else:
-                    tag = '_all_x'
+                    tag = '_x_all'
 
                 log.debug( { 'user_id'    : user_id,
                              'contact_id' : contact_id,
@@ -305,7 +308,7 @@ def delete_faces( user_id, contact_id, faces ):
                 if tag in l2_delete_tags:
                     l2_delete_tags[tag] += ';%s' % ( face['l2_idx'] )
                 else:
-                    l2_delete_tags[tag] = [ face['l2_idx'] ]
+                    l2_delete_tags[tag] = face['l2_idx']
 
         # Delete the l1 faces from ReKognition
         for tag in sorted( l1_delete_tags.keys() ):
@@ -326,7 +329,7 @@ def delete_faces( user_id, contact_id, faces ):
         # Delete the l2 faces from ReKognition
         for tag in sorted( l2_delete_tags.keys() ):
             try:
-                result = rekog.delete_face_for_user( l2_user, tag, l2_delete_tags[tag], config.recog_l1_namespace )
+                result = rekog.delete_face_for_user( l2_user, tag, l2_delete_tags[tag], config.recog_l2_namespace )
                 log.debug( { 'user_id'    : user_id,
                              'contact_id' : contact_id,
                              'rekog_result' : result,
@@ -393,6 +396,8 @@ def delete_user( user_id ):
                                     timeout = 30 )
         lock.acquire()
         lock_acquired = True
+
+        # DEBUG - correctly populte deleted.
 
         deleted = []
 
@@ -519,29 +524,117 @@ def recognize_face( user_id, face_url ):
 
         matches = rekog.recognize_for_user( l1_user, face_url, config.recog_l1_namespace )
 
+        reconciled_contacts = {}
+
         if matches is None:
             return None
         else:
             faces = []
             for match in matches:
                 l1_tag = match['tag']
-                recognition_confidence = match['score']
+                recognition_confidence = float( match['score'] )
                 ( contact_id, l2_tag, l2_idx ) = helpers._parse_l1_tag( l1_tag )
-                helpers._reconcile_db_rekog( user_id, contact_id )
+                if contact_id not in reconciled_contacts:
+                    helpers._reconcile_db_rekog( user_id, contact_id )
+                    reconciled_contacts[contact_id] = True
                 face = recog_db._get_face_by_l1_tag( user_id, l1_tag )
                 if face is not None:
                     face['recognition_confidence'] = recognition_confidence
                     faces.append( face )
 
-        result = []
-        result['faces'] = sorted( result, key=lambda x: -float( x['recognition_confidence'] ) )[:3]
-
-        # DEBUG - do this...
-        result['recognize_id'] = recog_db._add_recognition_feedback()
+        result = {}
+        result['faces'] = sorted( faces, key=lambda x: -x['recognition_confidence'] )[:3]
+        result['recognize_id'] = recog_db._add_recognition_feedback( user_id, face_url, result['faces'] )
 
         return result
     except Exception as e:
+        print "ERROR WAS %s" % e
         return None
     finally:
         if lock_acquired:
             lock.release()
+
+def recognition_feedback( recognize_id, result ):
+    '''recognize_id is the value returned by a prior call to recognize_face
+
+    result is either:
+        None if none of the faces from recognize_face were matches
+        1, 2, or 3 if the 1st, 2nd, or 3rd face from recognize_face was a match (in the case where multiple faces were matches the lowest matching number should be used)
+    '''
+
+    try:
+        recog_db._update_recognition_result( recognize_id, result )
+        return
+    except Exception as e:
+        raise
+
+def recognition_stats( user_id=None ):
+    '''If user_id is not provided or is None, stats for the entire
+    system are returned, otherwise stats only for that user_id are
+    returned.
+
+    Return value is:
+
+    {  'recognize_calls' : 743, # The total number of recognize_face calls 
+                                # for which any candidate matches were returned
+       'feedback_calls'  : 367, # The number of recognize_face calls for which 
+                                # recognition_feedback has been provided
+       'true_positives'  : 312, # The number of successful matches made
+       'false_positives' :  55, # The number of times no match was found }
+
+    Note that false_positives + true_positives == feedback_falls
+    '''
+
+    try:
+        stats = recog_db._get_recognition_stats( user_id )
+
+        recognize_calls = 0
+        feedback_calls  = 0
+        true_positives  = 0
+        false_positives = 0
+
+        for stat in stats:
+            recognize_calls += 1
+            if stat['feedback_received']:
+                feedback_calls += 1
+                if stat['recognized']:
+                    true_positives += 1
+                else:
+                    false_positives += 1
+
+        return {
+            'recognize_calls' : recognize_calls,
+            'feedback_calls'  : feedback_calls,
+            'true_positives'  : true_positives,
+            'false_positives' : false_positives
+            }
+    except Exception as e:
+        raise
+
+def recognition_stat_details( user_id=None ):
+    '''If user_id is not provided or is None, stats for the entire
+    system are returned, otherwise stats only for that user_id are
+    returned.
+
+    Returns an array of dictionary like objects with many fields,
+    including:
+
+    {  'id'                : 12,   # The recognition_id of this row returned from recognize_face
+    'user_id'           : 443,
+    'face_url'          : 'http://...', 
+    'face1_id'          : 69, 
+    'face1_confidence'  : 0.98,
+    'face2_id'          : 69, 
+    'face2_confidence'  : 0.98,
+    'face3_id'          : None, 
+    'face3_confidence'  : None,
+    'feedback_received' : True, # Has feedback about this match been received?
+    'recognized'        : True,
+    'feedback_result'   : 2,    # The value of recognize_feedback's result
+    }
+    '''
+
+    try:
+        return recog_db._get_recognition_stats( user_id )
+    except Exception as e:
+        raise

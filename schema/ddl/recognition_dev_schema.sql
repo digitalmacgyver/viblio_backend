@@ -26,6 +26,28 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`faces` (
   UNIQUE INDEX `user_id_UNIQUE` (`user_id` ASC, `contact_id` ASC, `face_id` ASC) )
 ENGINE = InnoDB;
 
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`recognition_feedback`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`recognition_feedback` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `face_url` VARCHAR(2048) NOT NULL ,
+  `face1_id` INT(11) NULL DEFAULT NULL ,
+  `face1_confidence` DOUBLE NULL DEFAULT NULL ,
+  `face2_id` INT(11) NULL DEFAULT NULL ,
+  `face2_confidence` DOUBLE NULL DEFAULT NULL ,
+  `face3_id` INT(11) NULL DEFAULT NULL ,
+  `face3_confidence` DECIMAL NULL DEFAULT NULL ,
+  `feedback_received` TINYINT(1) NULL DEFAULT NULL ,
+  `recognized` TINYINT(1) NULL DEFAULT NULL ,
+  `feedback_result` INT(11) NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) )
+ENGINE = InnoDB;
+
 USE `video_dev_1`;
 
 DELIMITER $$
@@ -44,6 +66,30 @@ USE `video_dev_1`$$
 
 CREATE
 	TRIGGER face_updated BEFORE UPDATE ON faces FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER recognition_feedback_created BEFORE INSERT ON recognition_feedback FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER recognition_feedback_updated BEFORE UPDATE ON recognition_feedback FOR EACH ROW
 BEGIN
 	set NEW.updated_date = NOW();
 END;

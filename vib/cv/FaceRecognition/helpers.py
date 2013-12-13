@@ -304,10 +304,11 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             print "ReKog: Deleting l1 idx:%s tag:%s" % ( l1_idx, l1_tag )
             rekog.delete_face_for_user( l1_user, l1_tag, l1_idx, config.recog_l1_namespace )
             
-            if face['l2_idx'] != l2_idx or face['l2_tag'] != l2_tag:
-                raise Exception( "Found mismatch in l2 data for face %s, expected l2idx: %s, l2tag: %s" % ( _format_face( face ), l2_idx, l2_tag ) )
-
             print "DB: NULLING l1 fields for: %s" % ( _format_face( face ) )
+            # Note - l2_idx and l2_tag may be different from
+            # face['l2_idx'], face['l2_tag'] due to other changes
+            # above.  In this context the data in ReKognition is
+            # authorotative.
             recog_db._update_layer_settings( face, None, None, l2_idx, l2_tag )
             l1_changed = True
 
@@ -325,10 +326,10 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             l1_idx = rekog.add_face_for_user( l1_user, url, l1_tag, config.recog_l1_namespace )
             print "ReKog: added l1 idx:%s tag:%s" % ( l1_idx, l1_tag )
             if l1_idx is not None:
-
-                if face['l2_idx'] != l2_idx or face['l2_tag'] != l2_tag:
-                    raise Exception( "Found mismatch in l2 data for face %s, expected l2idx: %s, l2tag: %s" % ( _format_face( face ), l2_idx, l2_tag ) )
-
+                # Note - l2_idx and l2_tag may be different from
+                # face['l2_idx'], face['l2_tag'] due to other changes
+                # above.  In this context the data in ReKognition is
+                # authorotative.
                 print "DB: Setting values l1idx:%s l1tag:%s l2idx:%s l2tag:%s for: %s" % ( l1_idx, l1_tag, l2_idx, l2_tag, _format_face( face ) )
                 recog_db._update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag )
                 l1_changed = True
@@ -389,8 +390,14 @@ def _prepare_l2_face_data( l2_faces, db_face_by_l2_idx ):
         l2_tag = face['tag']
 
         for idx in face['index']:
-            # Build up l2_face_by_idx
-            l2_face_by_idx[idx] = l2_tag
+            # Build up l2_face_by_idx - each face in a cluster also
+            # appears in the _x_all tag, we only denote the l2_tag as
+            # being _x_all if that is the only occurence.
+            if idx in l2_face_by_idx:
+                if l2_tag != '_x_all':
+                    l2_face_by_idx[idx] = l2_tag
+            else:
+                l2_face_by_idx[idx] = l2_tag
             
             # Build up best_l2_face
             if l2_tag != '_x_all':

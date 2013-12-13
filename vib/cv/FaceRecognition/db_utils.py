@@ -44,6 +44,52 @@ def _add_face( user_id, contact_id, face ):
                      'message'    : 'Error adding faces %s: %s' % ( face, e ) } )
         raise        
 
+def _add_recognition_feedback( user_id, face_url, faces ):
+    '''Inserts a tracking row for feedback collection'''
+    try:
+        log.info( { 'user_id'    : user_id,
+                    'message'    : 'Adding face recognition feedback row for user %s' % ( user_id ) } )
+
+        orm = vib.db.orm.get_session()
+
+        face1_id         = None
+        face1_confidence = None
+        face2_id         = None
+        face2_confidence = None
+        face3_id         = None
+        face3_confidence = None
+
+        if len( faces ) >= 1:
+            face1_id = faces[0]['id']
+            face1_confidence = faces[0]['recognition_confidence']
+        if len( faces ) >= 2:
+            face2_id = faces[1]['id']
+            face2_confidence = faces[1]['recognition_confidence']
+        if len( faces ) == 3:
+            face3_id = faces[2]['id']
+            face3_confidence = faces[2]['recognition_confidence']
+
+        feedback = RecognitionFeedback( 
+            user_id          = user_id,
+            face_url         = face_url,
+            face1_id         = face1_id,
+            face1_confidence = face1_confidence,
+            face2_id         = face2_id,
+            face2_confidence = face2_confidence,
+            face3_id         = face3_id,
+            face3_confidence = face3_confidence
+            )
+
+        orm.add( feedback )
+        orm.commit()
+    
+        return feedback.id
+
+    except Exception as e:
+        log.error( { 'user_id'    : user_id,
+                     'message'    : 'Error adding recognition feedback row: %s' % ( e ) } )
+        raise        
+
 
 def _check_face_exists( user_id, contact_id, face_id ):
     '''Returns true if the given user_id, contact_id, face_id exist in the database.'''
@@ -254,6 +300,33 @@ def _get_face_by_l1_tag( user_id, l1_tag ):
         log.error( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } )
         raise
 
+def _get_recognition_stats( user_id=None ):
+    '''If user_id is not provided, or is None, return all recognition
+    stats.  Otherwise return all stats for that user.'''
+
+    try:
+        orm = vib.db.orm.get_session()
+
+        if user_id is not None:
+            log.info( { 'user_id' : user_id,
+                        'message' : 'Getting recognition stats for user %s' % ( user_id ) } )
+            
+            stats = orm.query( RecognitionFeedback ).filter( RecognitionFeedback.user_id == user_id )
+        else:
+            log.info( { 'message' : 'Getting all recognition stats' } )
+            
+            stats = orm.query( RecognitionFeedback )
+
+        result = [ s.__dict__.copy() for s in stats.all() ]
+
+        orm.commit()
+    
+        return result
+
+    except Exception as e:
+        log.error( { 'message' : 'Error getting recognition stats: %s' % ( e ) } )
+        raise        
+
 def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
     '''Update the l1/l2 settings for the face in question'''
 
@@ -282,3 +355,38 @@ def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
     except Exception as e:
         log.error( { 'message'    : 'Error updating face l1/2 data: %s' % ( e ) } ) 
         raise
+
+def _update_recognition_result( recognize_id, result ):
+    '''Sets the feedback_received, recognized, and feedback_result
+    fields based on result.
+
+    If result is None then feedback_received=True, recognized=False,
+    and feedback_result=NULL.
+    
+    Otherwise, feedback_received=True, recognized=True, and
+    feedback_result=result
+    '''
+
+    try:
+        log.info( { 'message' : 'Updating recognize_id %s with result %s' % ( recognize_id, result ) } )
+
+        orm = vib.db.orm.get_session()
+
+        feedback = orm.query( RecognitionFeedback ).filter( RecognitionFeedback.id == recognize_id )[0]
+
+        if result is not None:
+            feedback.feedback_received = True
+            feedback.recognized = True
+            feedback.feedback_result = result
+        else:
+            feedback.feedback_received = True
+            feedback.recognized = False
+            feedback.feedback_result = None
+
+        orm.commit()
+    
+        return
+
+    except Exception as e:
+        log.error( { 'message' : 'Error updating recognition feedback row: %s' % ( e ) } )
+        raise        

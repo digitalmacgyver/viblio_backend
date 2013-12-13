@@ -122,7 +122,7 @@ All these calls globally serialize on the user in question.
        'true_positives'  : 312, # The number of successful matches made
        'false_positives' :  55, # The number of times no match was found }
     ```
-    Note that ```false_positives + true_positives == feedback_falls```
+    Note that ```false_positives + true_positives == feedback_calls```
 * ```recognition_stat_details( user_id=None )```
   * If ```user_id``` is not provided or is ```None```, stats for the
     entire system are returned, otherwise stats only for that

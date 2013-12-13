@@ -102,6 +102,7 @@ def reflect( engine, models ):
         'password_resets' : True,
         'pending_users' : True,
         'providers' : True,
+        'recognition_feedback' : True,
         'roles' : True,
         'sessions' : True,
         'share_types' : True,
