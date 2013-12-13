@@ -129,6 +129,7 @@ All these calls globally serialize on the user in question.
     ```user_id``` are returned.
   * Returns an array of dictionary like objects with the following
     format:
+
     ```
     {  'id'                : 12,   # The recognition_id of this row returned from recognize_face
        'user_id'           : 443,
@@ -144,6 +145,7 @@ All these calls globally serialize on the user in question.
        'feedback_result'   : 2,    # The value of recognize_feedback's result
     }
     ```
+
     Notes:
       * ```face#_id|confidence``` are ```None``` if the ```recognize_face``` returned less than 3 candidate faces
       * ```feedback_result``` is ```None``` if ```recognized``` is ```False``
