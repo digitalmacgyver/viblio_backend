@@ -102,8 +102,7 @@ All these calls globally serialize on the user in question.
         confidence. ```recognition_confidence``` is a floating point
         number between 0 and 1.
 * ```recognition_feedback( recognize_id, result )```
-  * ```recognize_id``` is the value returned by a prior call to
-    ```recognize_face```
+  * ```recognize_id``` is the value returned by a prior call to ```recognize_face```
   * ```result``` is either:
     * None if none of the faces from ```recognize_face``` were matches
     * 1, 2, or 3 if the 1st, 2nd, or 3rd face from
