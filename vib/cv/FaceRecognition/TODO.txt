@@ -1,7 +1,3 @@
-1. Spot test deletion methods.
-2. Implement get_faces
-3. Implement delete_user
-4. Test get_faces, delete_user
 5. Resolve DEBUGs throughout the code.
 6. Add logging throughout the code.
 
@@ -11,87 +7,27 @@
 
 9. Alter Facebook import to populate this.
 
-==
+== Counting / reporting ==
 
-2. Think of how to keep tally of success / failures:
+What if recognize face creates a row:
 
-Need a distinct data structure that doesn't get things deleted from
-it.
+id
+user_id
+face_url
+feedback_recieved = bool
+recognized = bool
+matched_face_id
+face1_id
+face1_confidence
+face2_id
+face2_confidence
+face3_id
+face3_confidence
 
-These values aren't FKs because we want to keep them if the original
-content gets deleted.
+recognize_feedback( recognize_id, { 1,2,3 or None } )
 
-each row has user_id, media_id (video), media_asset_id (face)
+We need a recogize_stats( user_id=None )
 
-Operations:
-
-On each call to recognize we add a row saying
-
-Properties of sets of combined tracks:
-1) Match in MTurk recognition
-
-False positive for each higher rank not selected
-Rank, confidence
-
-True positive for selected
-Rank, confidence
-
-These rows have candidate and potential fields with media_assset_ids.
-
-2) New face in MTurk recognition (e.g. rejection of all best matches)
-
-No match, scores of matches
-
-3) Unidentified to Identified merge
-
-False negative
-
-4) Single video rename
-
-False positive (could also be a false negative)
-
-5) Single face rename
-
-False positive (could also be a false negative)
-
-3. Define / install database schema.
-
-===== RDS SCHEMA DESIGN ======
-
-2) One table with:
-
-matching results:
-
-unknown_asset_id
-unknown_asset_uri
-unknown_feature_coordinates
-candidate_1_id
-candidate_1_confidence
-candidate_1_match = true/false
-2, 3
-match_found = true/false
-
-FIRST OFF: FACES MAY NOT BE RECOGNIZED AS FACES AT ALL BY RECOGNITION.
-
-SECONDLY: THEY MAY NOT PARTICIPATE IN A CLUSTER.
-
-FIELDS AREN'T FKs AS WE DON'T WANT CASCADES
-
-id - surrogate key
-user_id - 1st field of natural key, caller must ensure NK is unique
-contact_id - 2nd field of natural key
-face_id - 3rd field of natural key
-face_url 
-external_id - Optional Application defined key can be stored here.
-score - Application provides, will be used to determine the "best" face
-l1_idx - a 32 char string
-l1_tag = see below
-l2_idx - a 32 char string
-l2_tag = NULL or the name of the cluster if in a cluster
-
-l1 tag is composed this way:
-* If the l2 is in a cluster:
-
-
- contact_id _ cluster_name _ l2_idx
+count( * ) == attempted matches
+count where result == None == False positives
 

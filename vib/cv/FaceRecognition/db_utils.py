@@ -105,11 +105,9 @@ def _delete_contact_faces_for_user( user_id, contact_id ):
 
     try:
 
-        log.info( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'message'    : 'Deleting all faces for user_id %s, contact_id %s' % ( user_id, contact_id )
-                } )
+        log.info( { 'user_id'    : user_id,
+                    'contact_id' : contact_id,
+                    'message'    : 'Deleting all faces for user_id %s, contact_id %s' % ( user_id, contact_id ) } )
 
         orm = vib.db.orm.get_session()
     
@@ -120,11 +118,9 @@ def _delete_contact_faces_for_user( user_id, contact_id ):
         return
 
     except Exception as e:
-        log.error( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'message'    : 'Error deleting all faces for user %s, contact %s: %s' % ( user_id, contact_id, e )
-                } )
+        log.error( { 'user_id'    : user_id,
+                     'contact_id' : contact_id,
+                     'message'    : 'Error deleting all faces for user %s, contact %s: %s' % ( user_id, contact_id, e ) } )
         raise
 
 def _delete_faces( faces ):
@@ -139,11 +135,9 @@ def _delete_faces( faces ):
             face_id = face['id']
             user_id = face['user_id']
             contact_id = face['contact_id']
-            log.info( {
-                    'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Deleting face %s for user_id %s, contact_id %s' % ( face_id, user_id, contact_id )
-                    } )
+            log.info( { 'user_id'    : user_id,
+                        'contact_id' : contact_id,
+                        'message'    : 'Deleting face %s for user_id %s, contact_id %s' % ( face_id, user_id, contact_id ) } )
 
             orm = vib.db.orm.get_session()
     
@@ -152,9 +146,7 @@ def _delete_faces( faces ):
             orm.commit()
 
         except Exception as e:
-            log.error( {
-                    'message'    : 'Error deleting face, error was: %s' % ( e )
-                    } )
+            log.error( { 'message'    : 'Error deleting face, error was: %s' % ( e ) } )
             if orm is not None:
                 orm.rollback()
             raise
@@ -221,9 +213,7 @@ def _get_face_by_id( face_id ):
 
     try:
 
-        log.info( {
-                'message'    : 'Getting face data for face_id: %s' % ( face_id )
-                } )
+        log.info( { 'message'    : 'Getting face data for face_id: %s' % ( face_id ) } )
 
         orm = vib.db.orm.get_session()
     
@@ -237,9 +227,7 @@ def _get_face_by_id( face_id ):
             return None
 
     except Exception as e:
-        log.error( {
-                'message'    : 'Error getting face data, error was: %s' % ( e )
-                } )
+        log.error( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } )
         raise
 
 def _get_face_by_l1_tag( user_id, l1_tag ):
@@ -249,9 +237,7 @@ def _get_face_by_l1_tag( user_id, l1_tag ):
 
     try:
 
-        log.info( {
-                'message'    : 'Getting face data for user_id %s, l1_tag %s' % ( user_id, l1_tag )
-                } )
+        log.info( { 'message'    : 'Getting face data for user_id %s, l1_tag %s' % ( user_id, l1_tag ) } )
 
         orm = vib.db.orm.get_session()
     
@@ -265,9 +251,7 @@ def _get_face_by_l1_tag( user_id, l1_tag ):
             return None
 
     except Exception as e:
-        log.error( {
-                'message'    : 'Error getting face data, error was: %s' % ( e )
-                } )
+        log.error( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } )
         raise
 
 def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
@@ -278,11 +262,9 @@ def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
         face_id = face['id']
         user_id = face['user_id']
         contact_id = face['contact_id']
-        log.info( {
-                'user_id'    : user_id,
-                'contact_id' : contact_id,
-                'message'    : 'Updating face_id %s with l1_idx-tag: %s-%s and l2_idx-tag: %s-%s' % ( face_id, l1_idx, l1_tag, l2_idx, l2_tag )
-                } )
+        log.info( { 'user_id'    : user_id,
+                    'contact_id' : contact_id,
+                    'message'    : 'Updating face_id %s with l1_idx-tag: %s-%s and l2_idx-tag: %s-%s' % ( face_id, l1_idx, l1_tag, l2_idx, l2_tag ) } )
 
         orm = vib.db.orm.get_session()
     
@@ -298,7 +280,5 @@ def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
         return
 
     except Exception as e:
-        log.error( {
-                'message'    : 'Error updating face l1/2 data: %s' % ( e )
-                } )
+        log.error( { 'message'    : 'Error updating face l1/2 data: %s' % ( e ) } ) 
         raise

@@ -205,11 +205,12 @@ def delete_contact( user_id, contact_id ):
                          'rekog_result' : result,
                          'message'    : 'Deleted faces %s for user %s, tag %s' % ( l1_delete_tags[tag], l1_user, tag ) } )
 
-        result = rekog.train_for_user( l1_user, config.recog_l1_namespace )
-        log.debug( { 'user_id'      : user_id,
-                     'contact_id'   : contact_id,
-                     'rekog_result' : result,
-                     'message'      : 'Trained l1 database %s for user %s' % ( l1_user, user_id ) } )
+        if len( l1_delete_tags.keys() ):
+            result = rekog.train_for_user( l1_user, config.recog_l1_namespace )
+            log.debug( { 'user_id'      : user_id,
+                         'contact_id'   : contact_id,
+                         'rekog_result' : result,
+                         'message'      : 'Trained l1 database %s for user %s' % ( l1_user, user_id ) } )
 
         result = rekog.delete_user( l2_user, config.recog_l2_namespace )
         log.debug( { 'user_id'      : user_id,
@@ -291,14 +292,15 @@ def delete_faces( user_id, contact_id, faces ):
 
             # Build up list of l2 faces to delete.
             if face['l2_idx'] is not None:
-                log.debug( { 'user_id'    : user_id,
-                             'contact_id' : contact_id,
-                             'message'    : 'Adding tag %s with index %s to list of faces to delete in l2 database for %s.' % ( tag, face['l2_idx'], l2_user ) } )
-
                 if face['l2_tag'] is not None:
                     tag = face['l2_tag']
                 else:
                     tag = '_all_x'
+
+                log.debug( { 'user_id'    : user_id,
+                             'contact_id' : contact_id,
+                             'message'    : 'Adding tag %s with index %s to list of faces to delete in l2 database for %s.' % ( tag, face['l2_idx'], l2_user ) } )
+
 
                 if tag in l2_delete_tags:
                     l2_delete_tags[tag] += ';%s' % ( face['l2_idx'] )
@@ -337,12 +339,13 @@ def delete_faces( user_id, contact_id, faces ):
                              'message'    : 'Error deleting face for contact %s for user %s, error was: %s' % ( contact_id, l2_user, e ) } )
                 # DEBUG add the error face to the output here.
 
-        # Cluster l2 since we've deleted some faces.
-        cluster_result = rekog.cluster_for_user( l2_user, config.recog_l2_namespace )
-        log.debug( { 'user_id'      : user_id,
-                     'contact_id'   : contact_id,
-                     'rekog_result' : cluster_result,
-                     'message'      : 'Clustered l2 database for user %s' % ( user_id ) } )
+        if len( l2_delete_tags.keys() ):
+            # Cluster l2 since we've deleted some faces.
+            cluster_result = rekog.cluster_for_user( l2_user, config.recog_l2_namespace )
+            log.debug( { 'user_id'      : user_id,
+                         'contact_id'   : contact_id,
+                         'rekog_result' : cluster_result,
+                         'message'      : 'Clustered l2 database for user %s' % ( user_id ) } )
 
         # Remove the deleted faces from our tracking database.
         recog_db._delete_faces( faces )
@@ -352,12 +355,10 @@ def delete_faces( user_id, contact_id, faces ):
         # with ReKognition, if so reconcile the two.
         if not helpers._reconcile_db_rekog( user_id, contact_id ):
             result = rekog.train_for_user( l1_user, config.recog_l1_namespace )
-            log.debug( {
-                    'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'rekog_result' : result,
-                    'message'    : 'Trained l1 database for user_id %s' % ( user_id )
-                    } )
+            log.debug( { 'user_id'    : user_id,
+                         'contact_id' : contact_id,
+                         'rekog_result' : result,
+                         'message'    : 'Trained l1 database for user_id %s' % ( user_id ) } )
 
         return { 
             'added'     : [],
@@ -512,6 +513,8 @@ def recognize_face( user_id, face_url ):
 
         # DEBUG - add logging.
 
+        # DEBUG - validate return values for these methods.
+
         l1_user = helpers._get_l1_user( user_id )
 
         matches = rekog.recognize_for_user( l1_user, face_url, config.recog_l1_namespace )
@@ -519,7 +522,7 @@ def recognize_face( user_id, face_url ):
         if matches is None:
             return None
         else:
-            result = []
+            faces = []
             for match in matches:
                 l1_tag = match['tag']
                 recognition_confidence = match['score']
@@ -528,9 +531,15 @@ def recognize_face( user_id, face_url ):
                 face = recog_db._get_face_by_l1_tag( user_id, l1_tag )
                 if face is not None:
                     face['recognition_confidence'] = recognition_confidence
-                    result.append( face )
+                    faces.append( face )
 
-        return sorted( result, key=lambda x: -float( x['recognition_confidence'] ) )
+        result = []
+        result['faces'] = sorted( result, key=lambda x: -float( x['recognition_confidence'] ) )[:3]
+
+        # DEBUG - do this...
+        result['recognize_id'] = recog_db._add_recognize_feedback()
+
+        return result
     except Exception as e:
         return None
     finally:

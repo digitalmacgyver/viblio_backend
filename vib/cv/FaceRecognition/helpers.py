@@ -50,10 +50,6 @@ def _reconcile_db_rekog( user_id, contact_id ):
     1 must be trained.
     '''
 
-    # DEBUG - handle what happens when we try to add an existing face
-    # to l1 but ReKognition has since decided it is not a face (maybe
-    # the face image was deleted from Viblio)
-
     l1_user = _get_l1_user( user_id )
     l2_user = _get_l2_user( user_id, contact_id )
 
@@ -172,8 +168,6 @@ def _delete_rekog_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     any faces were deleted from l1, and the second is true if any
     faces were deleted from l2.'''
 
-    # DEBUG - add logging
-    
     l1_user = _get_l1_user( user_id )
     l2_user = _get_l2_user( user_id, contact_id )
     
@@ -194,14 +188,14 @@ def _delete_rekog_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             if idx not in db_l1_indices:
                 l1_deleted = True
                 result = rekog.delete_face_for_user( l1_user, face['tag'], idx, config.recog_l1_namespace )
-                print "ReKog: Deleted DB face from L1: %s" % ( _format_face( face ) )
+                print "ReKog: Deleted DB face from L1 idx: %s tag: %s" % ( idx, face['tag'] )
 
     for face in l2_faces:
         for idx in face['index']:
             if idx not in db_l2_indices:
                 l2_deleted = True
                 result = rekog.delete_face_for_user( l2_user, face['tag'], idx, config.recog_l2_namespace )
-                print "ReKog: Deleted DB face from L2: %s" % ( _format_face( face ) )
+                print "ReKog: Deleted DB face from L2 idx: %s tag: %s" % ( idx, face['tag'] )
 
     return ( l1_deleted, l2_deleted )
 
@@ -287,9 +281,7 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             raise Exception( "Index %s for tag %s not found in DB l2, but it must be." % ( l2_idx, l2_tag ) )
         elif l2_tag != db_face_by_l2_idx[l2_idx]['l2_tag']:
             face = db_face_by_l2_idx[l2_idx]
-            # DEBUG - what happens if you explicitly tag something as
-            # _x_all in ReKognition - is this the same as untagging
-            # it, or does that create a tag named _x_all.
+
             print "DB: Setting l2 values idx:%s tag:%s  for: %s" % ( l2_idx, l2_tag, _format_face( face ) )
             recog_db._update_layer_settings( face, face['l1_idx'], face['l1_tag'], l2_idx, l2_tag )
 
@@ -311,8 +303,10 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             # null.
             print "ReKog: Deleting l1 idx:%s tag:%s" % ( l1_idx, l1_tag )
             rekog.delete_face_for_user( l1_user, l1_tag, l1_idx, config.recog_l1_namespace )
-            # DEBUG - Check if face's l2 fields match up to what we're
-            # doing here and throw an exception if not.
+            
+            if face['l2_idx'] != l2_idx or face['l2_tag'] != l2_tag:
+                raise Exception( "Found mismatch in l2 data for face %s, expected l2idx: %s, l2tag: %s" % ( _format_face( face ), l2_idx, l2_tag ) )
+
             print "DB: NULLING l1 fields for: %s" % ( _format_face( face ) )
             recog_db._update_layer_settings( face, None, None, l2_idx, l2_tag )
             l1_changed = True
@@ -331,11 +325,13 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             l1_idx = rekog.add_face_for_user( l1_user, url, l1_tag, config.recog_l1_namespace )
             print "ReKog: added l1 idx:%s tag:%s" % ( l1_idx, l1_tag )
             if l1_idx is not None:
-                # DEBUG - Check if face's l2 fields match up to what we're
-                # doing here and throw an exception if not.
+
+                if face['l2_idx'] != l2_idx or face['l2_tag'] != l2_tag:
+                    raise Exception( "Found mismatch in l2 data for face %s, expected l2idx: %s, l2tag: %s" % ( _format_face( face ), l2_idx, l2_tag ) )
+
                 print "DB: Setting values l1idx:%s l1tag:%s l2idx:%s l2tag:%s for: %s" % ( l1_idx, l1_tag, l2_idx, l2_tag, _format_face( face ) )
                 recog_db._update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag )
-            l1_changed = True
+                l1_changed = True
 
     return l1_changed
 
