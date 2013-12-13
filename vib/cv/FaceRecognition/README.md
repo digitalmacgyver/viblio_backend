@@ -41,8 +41,9 @@ API
 
 ### Methods
 
-Return values for all methods except for ```get_faces``` and
-```recognize_face``` are described in the subsequent section.
+Return values for all methods except for ```get_faces``` and the
+```recogn(ize*|ition*)``` methods are described in the subsequent
+section.
 
 The [Face Data Structure](#face_data_structure) which is frequently
 used as a input argument and return value is described in the section
@@ -71,7 +72,7 @@ All these calls globally serialize on the user in question.
     recognition system, there are no "add_user" or "add_contact"
     methods
 * ```delete_faces( user_id, contact_id, [ array of face data structures ] )```
-  * Calls to ```face_recognize``` will no longer consider these faces
+  * Calls to ```recognize_face``` will no longer consider these faces
     among those that identify ```contact_id```
 * ```delete_contact( user_id, contact_id )```
   * Delete all faces associated with the contact for the user
@@ -87,16 +88,69 @@ All these calls globally serialize on the user in question.
 * ```recognize_face( user_id, face_url )```
   * ```face_url``` is a URL to an image which is thought to contain a
     face
-  * Returns either None or an array of 0-3 face data structures:
+  * Returns either None or the following data structure
     * Returns None if no face was detected in the image at ```face_url```
-    * If ```face_url``` contains an face an array with 0-3 candidate
-      augmented face data structures are returned in descending order
-      of recognition confidence.  The face data structures are
-      augmented with an additional ```recognition_confidence``` key
-      which is the recognition confidence.
-      ```recognition_confidence``` is a floating point number between
-      0 and 1.
+    * If a face was detected, returns this data structure: ```{ 'recognize_id' : 123, 'faces' : [ array of 0-3 face data structures ] }```
+      * ```recognize_id``` is an integer that is used to provide
+        feedback to FaceRecognition system for reporting, see
+        ```recognize_feedback``` and ```recognize_stats``` below
+      * The ```faces``` key refers to a face array with 0-3 candidate
+        augmented face data structures are returned in descending
+        order of recognition confidence.  The face data structures are
+        augmented with an additional ```recognition_confidence``` key
+        which is the recognition
+        confidence. ```recognition_confidence``` is a floating point
+        number between 0 and 1.
+* ```recognition_feedback( recognize_id, result )```
+  * ```recognize_id``` is the value returned by a prior call to
+    ```recognize_face```
+  * ```result``` is either:
+    * None if none of the faces from ```recognize_face``` were matches
+    * 1, 2, or 3 if the 1st, 2nd, or 3rd face from
+      ```recognize_face``` was a match (in the case where multiple
+      faces were matches the lowest matching number should be used)
+* ```recognition_stats( user_id=None )```
+  * If ```user_id``` is not provided or is ```None```, stats for the
+    entire system are returned, otherwise stats only for that
+    ```user_id``` are returned.
+  * Return value is:
 
+    ```
+    {  'recognize_calls' : 743, # The total number of recognize_face calls 
+                                # for which any candidate matches were returned
+       'feedback_calls'  : 367, # The number of recognize_face calls for which 
+                                # recognition_feedback has been provided
+       'true_positives'  : 312, # The number of successful matches made
+       'false_positives' :  55, # The number of times no match was found }
+    ```
+    Note that ```false_positives + true_positives == feedback_falls```
+* ```recognition_stat_details( user_id=None )```
+  * If ```user_id``` is not provided or is ```None```, stats for the
+    entire system are returned, otherwise stats only for that
+    ```user_id``` are returned.
+  * Returns an array of dictionary like objects with the following
+    format:
+
+    ```
+    {  'id'                : 12,   # The recognition_id of this row returned from recognize_face
+       'user_id'           : 443,
+       'face_url'          : 'http://...', 
+       'face1_id'          : 69, 
+       'face1_confidence'  : 0.98,
+       'face2_id'          : 69, 
+       'face2_confidence'  : 0.98,
+       'face3_id'          : None, 
+       'face3_confidence'  : None,
+       'feedback_received' : True, # Has feedback about this match been received?
+       'recognized'        : True,
+       'feedback_result'   : 2,    # The value of recognize_feedback's result
+    }
+    ```
+
+    Notes:
+      * ```face#_id|confidence``` are ```None``` if the ```recognize_face``` returned less than 3 candidate faces
+      * ```feedback_result``` is ```None``` if ```recognized``` is ```False``
+       
 ### Return Values
 
 * All methods except get_faces and recognize_face return the following

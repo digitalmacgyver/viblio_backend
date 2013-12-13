@@ -537,7 +537,7 @@ def recognize_face( user_id, face_url ):
         result['faces'] = sorted( result, key=lambda x: -float( x['recognition_confidence'] ) )[:3]
 
         # DEBUG - do this...
-        result['recognize_id'] = recog_db._add_recognize_feedback()
+        result['recognize_id'] = recog_db._add_recognition_feedback()
 
         return result
     except Exception as e:
