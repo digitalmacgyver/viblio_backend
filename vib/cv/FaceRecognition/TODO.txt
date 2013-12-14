@@ -1,8 +1,30 @@
-5. Resolve DEBUGs throughout the code.
+1) Finish adding faces from staging.
 
-6. Add logging throughout the code.
+2) Run through the queues on local / staging.
+
+3) Test some queue operations on my accounts in staging.
+
+4) Update face recognition code.
+
+5) Merge branch with master (check out latest master first)
+
+
+--
 
 8. Alter FaceRecognize to use this.
 
 9. Alter Facebook import to populate this.
+
+
+{"new_contact":"2041",
+"delete_old_contact":1,
+"action":"move_faces",
+"user_id":"119",
+"media_asset_feature_ids":["2913","2914","2915"],
+"old_contact":"1148"}
+
+{"contact_id":"1437",
+"action":"delete_contact",
+"user_id":"105",
+"media_asset_feature_ids":["4198"]}
 

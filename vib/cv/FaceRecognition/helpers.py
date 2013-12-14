@@ -1,6 +1,7 @@
+import json
 import logging
 
-# DEBUG - the caller of this script should define a logger that is
+# The caller of this script should define a logger that is
 # vib.cv.FaceRecognize so this logger inherits those properties.
 log = logging.getLogger( __name__ )
 
@@ -66,10 +67,15 @@ def _reconcile_db_rekog( user_id, contact_id ):
         
     l2_faces = rekog.visualize_for_user( l2_user, num_img_return_pertag=None, no_image=True, show_default=True, namespace=config.recog_l2_namespace )
 
-    print "Reconciling DB for u:%s c:%s" % ( user_id, contact_id )
-    #print "Db faces are: %s" % ( db_faces )
-    print "l1_faces are: %s" % ( l1_faces )
-    print "l2_faces are: %s" % ( l2_faces )
+    log.info( json.dumps( { 'user_id'    : user_id,
+                            'contact_id' : contact_id,
+                            'message'    : "Reconciling DB for u:%s c:%s" % ( user_id, contact_id ) } ) )
+    log.info( json.dumps( { 'user_id'    : user_id,
+                            'contact_id' : contact_id,
+                            'message'    : "l1_faces are: %s" % ( l1_faces ) } ) )
+    log.info( json.dumps( { 'user_id'    : user_id,
+                            'contact_id' : contact_id,
+                            'message'    : "l2_faces are: %s" % ( l2_faces ) } ) )
 
     # This call may change the contents of the ReKognition system, so
     # we must regenerate the l1_faces and l2_faces data structures.
@@ -119,8 +125,6 @@ def _delete_db_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     present in another layer, or delete the record entirely.
     '''
 
-    # DEBUG - add logging
-    
     l1_indices = {}
     
     for face in l1_faces:
@@ -144,18 +148,27 @@ def _delete_db_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces ):
                 # This face has invalid l1 settings, but valid l2
                 # settings, remove the l1 settings.
                 recog_db._update_layer_settings( face, None, None, l2_idx, l2_tag )
-                print "DB: Setting l1 values to NULL for: %s" % ( _format_face( face ) )
+
+                log.info( json.dumps( { 'user_id'    : user_id,
+                                        'contact_id' : contact_id,
+                                        'message'    : "DB: Setting l1 values to NULL for: %s" % ( _format_face( face ) ) } ) )
             else:
                 # This face has no valid settings, delete the entire
                 # record.
-                print "DB: Deleting face: %s" % ( _format_face( face ) )
+                log.info( json.dumps( { 'user_id'    : user_id,
+                                        'contact_id' : contact_id,
+                                        'message'    : "DB: Deleting face: %s" % ( _format_face( face ) ) } ) )
                 recog_db._delete_faces( [ face ] )
         elif l2_idx and l2_idx not in l2_indices:
             if l1_idx and l1_idx in l1_indices:
                 recog_db._update_layer_settings( face, l1_idx, l1_tag, None, None )
-                print "DB: Setting l2 values to NULL for: %s" % ( _format_face( face ) )
+                log.info( json.dumps( { 'user_id'    : user_id,
+                                        'contact_id' : contact_id,
+                                        'message'    : "DB: Setting l2 values to NULL for: %s" % ( _format_face( face ) ) } ) )
             else:
-                print "DB: Deleting face: %s" % ( _format_face( face ) )
+                log.info( json.dumps( { 'user_id'    : user_id,
+                                        'contact_id' : contact_id,
+                                        'message'    : "DB: Deleting face: %s" % ( _format_face( face ) ) } ) )
                 recog_db._delete_faces( [ face ] )
 
     return
@@ -188,14 +201,20 @@ def _delete_rekog_mismatch( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             if idx not in db_l1_indices:
                 l1_deleted = True
                 result = rekog.delete_face_for_user( l1_user, face['tag'], idx, config.recog_l1_namespace )
-                print "ReKog: Deleted DB face from L1 idx: %s tag: %s" % ( idx, face['tag'] )
+                log.info( json.dumps( { 'user_id'    : user_id,
+                                        'contact_id' : contact_id,
+                                        'message'    : "ReKog: Deleted DB face from L1 idx: %s tag: %s" % ( idx, face['tag'] ) } ) )
+
 
     for face in l2_faces:
         for idx in face['index']:
             if idx not in db_l2_indices:
                 l2_deleted = True
                 result = rekog.delete_face_for_user( l2_user, face['tag'], idx, config.recog_l2_namespace )
-                print "ReKog: Deleted DB face from L2 idx: %s tag: %s" % ( idx, face['tag'] )
+                log.info( json.dumps( { 'user_id'    : user_id,
+                                        'contact_id' : contact_id,
+                                        'message'    : "ReKog: Deleted DB face from L2 idx: %s tag: %s" % ( idx, face['tag'] ) } ) )
+
 
     return ( l1_deleted, l2_deleted )
 
@@ -254,9 +273,6 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     incorrect as this function is to be called post clustering.
     '''
 
-    import pdb
-    #pdb.set_trace()
-
     l1_user = _get_l1_user( user_id )
     l2_user = _get_l2_user( user_id, contact_id )
     
@@ -282,7 +298,10 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
         elif l2_tag != db_face_by_l2_idx[l2_idx]['l2_tag']:
             face = db_face_by_l2_idx[l2_idx]
 
-            print "DB: Setting l2 values idx:%s tag:%s  for: %s" % ( l2_idx, l2_tag, _format_face( face ) )
+            log.info( json.dumps( { 'user_id'    : user_id,
+                                    'contact_id' : contact_id,
+                                    'message'    : "DB: Setting l2 values idx:%s tag:%s  for: %s" % ( l2_idx, l2_tag, _format_face( face ) ) } ) )
+
             recog_db._update_layer_settings( face, face['l1_idx'], face['l1_tag'], l2_idx, l2_tag )
 
     # Update the l1 ReKognition system and database wherever l1
@@ -301,10 +320,16 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             # remove the current l1 representative for l2 from l1, and
             # set the l1 fields of the database row for this face to
             # null.
-            print "ReKog: Deleting l1 idx:%s tag:%s" % ( l1_idx, l1_tag )
+            log.info( json.dumps( { 'user_id'    : user_id,
+                                    'contact_id' : contact_id,
+                                    'message'    : "ReKog: Deleting l1 idx:%s tag:%s" % ( l1_idx, l1_tag ) } ) )
+
             rekog.delete_face_for_user( l1_user, l1_tag, l1_idx, config.recog_l1_namespace )
             
-            print "DB: NULLING l1 fields for: %s" % ( _format_face( face ) )
+            log.info( json.dumps( { 'user_id'    : user_id,
+                                    'contact_id' : contact_id,
+                                    'message'    : "DB: NULLING l1 fields for: %s" % ( _format_face( face ) ) } ) )
+
             # Note - l2_idx and l2_tag may be different from
             # face['l2_idx'], face['l2_tag'] due to other changes
             # above.  In this context the data in ReKognition is
@@ -316,7 +341,7 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     for l2_tag, l2_idx in best_l2_face.items():
         face = db_face_by_l2_idx[l2_idx]
         url = face['face_url']
-        #pdb.set_trace()
+
         if ( l2_tag not in l1_face_for_contact_by_l2_tag ) or ( l2_idx != l1_face_for_contact_by_l2_tag[l2_tag]['l2_idx'] ):
             # This l2 tag is new, or a best new face has been found.
             # In either case we need to add this l2 face to the l1
@@ -324,13 +349,19 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             # this face to those of an l1 representative.
             l1_tag = _get_l1_tag( contact_id, l2_tag, l2_idx )
             l1_idx = rekog.add_face_for_user( l1_user, url, l1_tag, config.recog_l1_namespace )
-            print "ReKog: added l1 idx:%s tag:%s" % ( l1_idx, l1_tag )
+            log.info( json.dumps( { 'user_id'    : user_id,
+                                    'contact_id' : contact_id,
+                                    'message'    : "ReKog: added l1 idx:%s tag:%s" % ( l1_idx, l1_tag ) } ) )
+
             if l1_idx is not None:
                 # Note - l2_idx and l2_tag may be different from
                 # face['l2_idx'], face['l2_tag'] due to other changes
                 # above.  In this context the data in ReKognition is
                 # authorotative.
-                print "DB: Setting values l1idx:%s l1tag:%s l2idx:%s l2tag:%s for: %s" % ( l1_idx, l1_tag, l2_idx, l2_tag, _format_face( face ) )
+                log.info( json.dumps( { 'user_id'    : user_id,
+                                        'contact_id' : contact_id,
+                                        'message'    : "DB: Setting values l1idx:%s l1tag:%s l2idx:%s l2tag:%s for: %s" % ( l1_idx, l1_tag, l2_idx, l2_tag, _format_face( face ) ) } ) )
+
                 recog_db._update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag )
                 l1_changed = True
 

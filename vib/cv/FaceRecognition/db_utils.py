@@ -3,22 +3,23 @@
 # should only be called by other functions in the
 # vib.cv.FaceRecognition namespace.
 
+import json
 import logging
 from sqlalchemy import and_
 
 import vib.db.orm
 from vib.db.models import *
 
-# DEBUG - the caller of this script should define a logger that is
+# The caller of this script should define a logger that is
 # vib.cv.FaceRecognize so this logger inherits those properties.
 log = logging.getLogger( __name__ )
 
 def _add_face( user_id, contact_id, face ):
     '''Inserts a face.'''
     try:
-        log.info( { 'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Adding face: %s' % ( face ) } )
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'contact_id' : contact_id,
+                                'message'    : 'Adding face: %s' % ( face ) } ) )
 
         orm = vib.db.orm.get_session()
 
@@ -39,16 +40,16 @@ def _add_face( user_id, contact_id, face ):
         return
 
     except Exception as e:
-        log.error( { 'user_id'    : user_id,
-                     'contact_id' : contact_id,
-                     'message'    : 'Error adding faces %s: %s' % ( face, e ) } )
+        log.error( json.dumps( { 'user_id'    : user_id,
+                                 'contact_id' : contact_id,
+                                 'message'    : 'Error adding faces %s: %s' % ( face, e ) } ) )
         raise        
 
 def _add_recognition_feedback( user_id, face_url, faces ):
     '''Inserts a tracking row for feedback collection'''
     try:
-        log.info( { 'user_id'    : user_id,
-                    'message'    : 'Adding face recognition feedback row for user %s' % ( user_id ) } )
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'message'    : 'Adding face recognition feedback row for user %s' % ( user_id ) } ) )
 
         orm = vib.db.orm.get_session()
 
@@ -86,17 +87,17 @@ def _add_recognition_feedback( user_id, face_url, faces ):
         return feedback.id
 
     except Exception as e:
-        log.error( { 'user_id'    : user_id,
-                     'message'    : 'Error adding recognition feedback row: %s' % ( e ) } )
+        log.error( json.dumps( { 'user_id'    : user_id,
+                                 'message'    : 'Error adding recognition feedback row: %s' % ( e ) } ) )
         raise        
 
 
 def _check_face_exists( user_id, contact_id, face_id ):
     '''Returns true if the given user_id, contact_id, face_id exist in the database.'''
     try:
-        log.info( { 'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Checking whether user, contact, face_id exists: %s, %s, %s' % ( user_id, contact_id, face_id ) } )
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'contact_id' : contact_id,
+                                'message'    : 'Checking whether user, contact, face_id exists: %s, %s, %s' % ( user_id, contact_id, face_id ) } ) )
 
         orm = vib.db.orm.get_session()
 
@@ -114,9 +115,9 @@ def _check_face_exists( user_id, contact_id, face_id ):
         return
 
     except Exception as e:
-        log.error( { 'user_id'    : user_id,
-                     'contact_id' : contact_id,
-                     'message'    : 'Error checking whether user, contact, face_id exists %s, %s, %s: %s' % ( user_id, contact_id, face_id, e ) } )
+        log.error( json.dumps( { 'user_id'    : user_id,
+                                 'contact_id' : contact_id,
+                                 'message'    : 'Error checking whether user, contact, face_id exists %s, %s, %s: %s' % ( user_id, contact_id, face_id, e ) } ) )
         raise        
 
 def _delete_all_user_faces( user_id ):
@@ -127,8 +128,8 @@ def _delete_all_user_faces( user_id ):
 
     orm = None
     try:
-        log.info( { 'user_id'    : user_id,
-                    'message'    : 'Deleting all faces for user_id %s' % ( user_id ) } )
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'message'    : 'Deleting all faces for user_id %s' % ( user_id ) } ) )
 
         orm = vib.db.orm.get_session()
     
@@ -138,7 +139,7 @@ def _delete_all_user_faces( user_id ):
 
         return
     except Exception as e:
-        log.error( { 'message'    : 'Error deleting face, error was: %s' % ( e ) } )
+        log.error( json.dumps( { 'message'    : 'Error deleting face, error was: %s' % ( e ) } ) )
         if orm is not None:
             orm.rollback()
             
@@ -151,9 +152,9 @@ def _delete_contact_faces_for_user( user_id, contact_id ):
 
     try:
 
-        log.info( { 'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Deleting all faces for user_id %s, contact_id %s' % ( user_id, contact_id ) } )
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'contact_id' : contact_id,
+                                'message'    : 'Deleting all faces for user_id %s, contact_id %s' % ( user_id, contact_id ) } ) )
 
         orm = vib.db.orm.get_session()
     
@@ -164,9 +165,9 @@ def _delete_contact_faces_for_user( user_id, contact_id ):
         return
 
     except Exception as e:
-        log.error( { 'user_id'    : user_id,
-                     'contact_id' : contact_id,
-                     'message'    : 'Error deleting all faces for user %s, contact %s: %s' % ( user_id, contact_id, e ) } )
+        log.error( json.dumps( { 'user_id'    : user_id,
+                                 'contact_id' : contact_id,
+                                 'message'    : 'Error deleting all faces for user %s, contact %s: %s' % ( user_id, contact_id, e ) } ) )
         raise
 
 def _delete_faces( faces ):
@@ -181,9 +182,9 @@ def _delete_faces( faces ):
             face_id = face['id']
             user_id = face['user_id']
             contact_id = face['contact_id']
-            log.info( { 'user_id'    : user_id,
-                        'contact_id' : contact_id,
-                        'message'    : 'Deleting face %s for user_id %s, contact_id %s' % ( face_id, user_id, contact_id ) } )
+            log.info( json.dumps( { 'user_id'    : user_id,
+                                    'contact_id' : contact_id,
+                                    'message'    : 'Deleting face %s for user_id %s, contact_id %s' % ( face_id, user_id, contact_id ) } ) )
 
             orm = vib.db.orm.get_session()
     
@@ -192,7 +193,7 @@ def _delete_faces( faces ):
             orm.commit()
 
         except Exception as e:
-            log.error( { 'message'    : 'Error deleting face, error was: %s' % ( e ) } )
+            log.error( json.dumps( { 'message'    : 'Error deleting face, error was: %s' % ( e ) } ) )
             if orm is not None:
                 orm.rollback()
             raise
@@ -206,8 +207,8 @@ def _get_all_faces_for_user( user_id ):
     names.'''
 
     try:
-        log.info( { 'user_id'    : user_id,
-                    'message'    : 'Getting list of faces for user_id %s' % ( user_id ) } )
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'message'    : 'Getting list of faces for user_id %s' % ( user_id ) } ) )
 
         orm = vib.db.orm.get_session()
     
@@ -220,8 +221,8 @@ def _get_all_faces_for_user( user_id ):
         return result
 
     except Exception as e:
-        log.error( { 'user_id'    : user_id,
-                     'message'    : 'Error getting list of user faces: %s' % ( e ) } )
+        log.error( json.dumps( { 'user_id'    : user_id,
+                                 'message'    : 'Error getting list of user faces: %s' % ( e ) } ) )
         raise
 
 def _get_contact_faces_for_user( user_id, contact_id ):
@@ -232,9 +233,9 @@ def _get_contact_faces_for_user( user_id, contact_id ):
 
     try:
 
-        log.info( { 'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Getting list of faces for user_id %s, contact_id %s' % ( user_id, contact_id ) } )
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'contact_id' : contact_id,
+                                'message'    : 'Getting list of faces for user_id %s, contact_id %s' % ( user_id, contact_id ) } ) )
 
         orm = vib.db.orm.get_session()
     
@@ -247,9 +248,9 @@ def _get_contact_faces_for_user( user_id, contact_id ):
         return result
 
     except Exception as e:
-        log.error( { 'user_id'    : user_id,
-                     'contact_id' : contact_id,
-                     'message'    : 'Error getting list of user/contact faces: %s' % ( e ) } )
+        log.error( json.dumps( { 'user_id'    : user_id,
+                                 'contact_id' : contact_id,
+                                 'message'    : 'Error getting list of user/contact faces: %s' % ( e ) } ) )
         raise
 
 def _get_face_by_id( face_id ):
@@ -259,7 +260,7 @@ def _get_face_by_id( face_id ):
 
     try:
 
-        log.info( { 'message'    : 'Getting face data for face_id: %s' % ( face_id ) } )
+        log.info( json.dumps( { 'message'    : 'Getting face data for face_id: %s' % ( face_id ) } ) )
 
         orm = vib.db.orm.get_session()
     
@@ -273,7 +274,7 @@ def _get_face_by_id( face_id ):
             return None
 
     except Exception as e:
-        log.error( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } )
+        log.error( json.dumps( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } ) )
         raise
 
 def _get_face_by_l1_tag( user_id, l1_tag ):
@@ -283,7 +284,7 @@ def _get_face_by_l1_tag( user_id, l1_tag ):
 
     try:
 
-        log.info( { 'message'    : 'Getting face data for user_id %s, l1_tag %s' % ( user_id, l1_tag ) } )
+        log.info( json.dumps( { 'message'    : 'Getting face data for user_id %s, l1_tag %s' % ( user_id, l1_tag ) } ) )
 
         orm = vib.db.orm.get_session()
     
@@ -297,7 +298,7 @@ def _get_face_by_l1_tag( user_id, l1_tag ):
             return None
 
     except Exception as e:
-        log.error( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } )
+        log.error( json.dumps( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } ) )
         raise
 
 def _get_recognition_stats( user_id=None ):
@@ -308,12 +309,12 @@ def _get_recognition_stats( user_id=None ):
         orm = vib.db.orm.get_session()
 
         if user_id is not None:
-            log.info( { 'user_id' : user_id,
-                        'message' : 'Getting recognition stats for user %s' % ( user_id ) } )
+            log.info( json.dumps( { 'user_id' : user_id,
+                                    'message' : 'Getting recognition stats for user %s' % ( user_id ) } ) )
             
             stats = orm.query( RecognitionFeedback ).filter( RecognitionFeedback.user_id == user_id )
         else:
-            log.info( { 'message' : 'Getting all recognition stats' } )
+            log.info( json.dumps( { 'message' : 'Getting all recognition stats' } ) )
             
             stats = orm.query( RecognitionFeedback )
 
@@ -324,7 +325,7 @@ def _get_recognition_stats( user_id=None ):
         return result
 
     except Exception as e:
-        log.error( { 'message' : 'Error getting recognition stats: %s' % ( e ) } )
+        log.error( json.dumps( { 'message' : 'Error getting recognition stats: %s' % ( e ) } ) )
         raise        
 
 def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
@@ -335,9 +336,9 @@ def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
         face_id = face['id']
         user_id = face['user_id']
         contact_id = face['contact_id']
-        log.info( { 'user_id'    : user_id,
-                    'contact_id' : contact_id,
-                    'message'    : 'Updating face_id %s with l1_idx-tag: %s-%s and l2_idx-tag: %s-%s' % ( face_id, l1_idx, l1_tag, l2_idx, l2_tag ) } )
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'contact_id' : contact_id,
+                                'message'    : 'Updating face_id %s with l1_idx-tag: %s-%s and l2_idx-tag: %s-%s' % ( face_id, l1_idx, l1_tag, l2_idx, l2_tag ) } ) )
 
         orm = vib.db.orm.get_session()
     
@@ -353,7 +354,7 @@ def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
         return
 
     except Exception as e:
-        log.error( { 'message'    : 'Error updating face l1/2 data: %s' % ( e ) } ) 
+        log.error( json.dumps( { 'message'    : 'Error updating face l1/2 data: %s' % ( e ) } ) )
         raise
 
 def _update_recognition_result( recognize_id, result ):
@@ -368,7 +369,7 @@ def _update_recognition_result( recognize_id, result ):
     '''
 
     try:
-        log.info( { 'message' : 'Updating recognize_id %s with result %s' % ( recognize_id, result ) } )
+        log.info( json.dumps( { 'message' : 'Updating recognize_id %s with result %s' % ( recognize_id, result ) } ) )
 
         orm = vib.db.orm.get_session()
 
@@ -388,5 +389,5 @@ def _update_recognition_result( recognize_id, result ):
         return
 
     except Exception as e:
-        log.error( { 'message' : 'Error updating recognition feedback row: %s' % ( e ) } )
+        log.error( json.dumps( { 'message' : 'Error updating recognition feedback row: %s' % ( e ) } ) )
         raise        
