@@ -1,33 +1,8 @@
 5. Resolve DEBUGs throughout the code.
-6. Add logging throughout the code.
 
-7. Think about how to manage counting / reporting.
+6. Add logging throughout the code.
 
 8. Alter FaceRecognize to use this.
 
 9. Alter Facebook import to populate this.
-
-== Counting / reporting ==
-
-What if recognize face creates a row:
-
-id
-user_id
-face_url
-feedback_recieved = bool
-recognized = bool
-matched_face_id
-face1_id
-face1_confidence
-face2_id
-face2_confidence
-face3_id
-face3_confidence
-
-recognize_feedback( recognize_id, { 1,2,3 or None } )
-
-We need a recogize_stats( user_id=None )
-
-count( * ) == attempted matches
-count where result == None == False positives
 

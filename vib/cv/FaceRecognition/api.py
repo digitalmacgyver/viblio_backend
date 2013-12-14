@@ -397,7 +397,7 @@ def delete_user( user_id ):
         lock.acquire()
         lock_acquired = True
 
-        # DEBUG - correctly populte deleted.
+        # DEBUG - correctly populate deleted.
 
         deleted = []
 
