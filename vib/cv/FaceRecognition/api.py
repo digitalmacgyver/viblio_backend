@@ -86,6 +86,10 @@ def add_faces( user_id, contact_id, faces ):
         unchanged = []
         error = []
 
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'contact_id' : contact_id,
+                                'message'    : 'Adding faces for user_id %s, contact_id %s.' % ( user_id, contact_id ) } ) )
+
         l2_user = helpers._get_l2_user( user_id, contact_id )
 
         face_keys = [ 'user_id', 'contact_id', 'face_id', 'face_url', 'external_id', 'score' ]
@@ -106,25 +110,38 @@ def add_faces( user_id, contact_id, faces ):
                 if face['contact_id'] != contact_id:
                     raise Exception( "Error, face for contact_id %s had contact_id of %s " % ( contact_id, face['contact_id'] ) )
 
-                print "Working on %s" % ( helpers._format_face( face ) )
+                log.debug( json.dumps( { 'user_id'    : user_id,
+                                         'contact_id' : contact_id,
+                                         'message'    : "Working on face %s" % ( helpers._format_face( face ) ) } ) )
 
                 if recog_db._check_face_exists( face['user_id'], face['contact_id'], face['face_id'] ):
-                    print "Already exists in database."
+                    log.debug( json.dumps( { 'user_id'    : user_id,
+                                             'contact_id' : contact_id,
+                                             'message'    : "Face already exists in database." } ) )
+                    
                     unchanged.append( face )
                 else:
                     l2_idx = rekog.add_face_for_user( l2_user, face['face_url'], None, config.recog_l2_namespace )
                 
-                    print "Added to ReKognition, l2_idx: %s" % ( l2_idx )
+                    log.debug( json.dumps( { 'user_id'    : user_id,
+                                             'contact_id' : contact_id,
+                                             'message'    : "Face added to recognition with l2_idx: %s" % ( l2_idx ) } ) )
 
                     if l2_idx is not None:
                         face['l2_idx'] = l2_idx
                         face['l2_tag'] = '_x_all'
                         
                         recog_db._add_face( user_id, contact_id, face )
-                        print "Added to database"
+
+                        log.debug( json.dumps( { 'user_id'    : user_id,
+                                                 'contact_id' : contact_id,
+                                                 'message'    : "Added face to database." } ) )
+
                         added.append( face )
                     else:
-                        print "No face found by ReKognition, skipping"
+                        log.debug( json.dumps( { 'user_id'    : user_id,
+                                                 'contact_id' : contact_id,
+                                                 'message'    : "No face found by ReKognition, skipping." } ) )
                         unchanged.append( face )
 
             except Exception as e:
@@ -135,7 +152,9 @@ def add_faces( user_id, contact_id, faces ):
 
 
         if len( added ):
-            print "Reclustering for user %s" % ( l2_user )
+            log.debug( json.dumps( { 'user_id'    : user_id,
+                                     'contact_id' : contact_id,
+                                     'message'    : "Reclustering l2 system for user: %s" % ( l2_user ) } ) )
             rekog.cluster_for_user( l2_user, config.recog_l2_namespace )
 
         helpers._reconcile_db_rekog( user_id, contact_id )
@@ -374,7 +393,7 @@ def delete_faces( user_id, contact_id, faces ):
     except Exception as e:
         log.error( json.dumps( { 'user_id'    : user_id,
                                  'contact_id' : contact_id,
-                                 'message'    : 'Error while deleting contact: %s' % ( e ) } ) )
+                                 'message'    : 'Error while deleting faces: %s' % ( e ) } ) )
         raise
     finally:
         if lock_acquired:
@@ -397,6 +416,9 @@ def delete_user( user_id ):
                                     timeout = 30 )
         lock.acquire()
         lock_acquired = True
+
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'message'    : 'Deleting user_id: %s' % ( user_id ) } ) )
 
         # DEBUG - correctly populate deleted.
 
@@ -521,6 +543,9 @@ def recognize_face( user_id, face_url ):
 
         # DEBUG - validate return values for these methods.
 
+        log.info( json.dumps( { 'user_id'    : user_id,
+                                'message'    : 'Recognizing face for user_id: %s from: %s' % ( user_id, face_url ) } ) )
+
         l1_user = helpers._get_l1_user( user_id )
 
         matches = rekog.recognize_for_user( l1_user, face_url, config.recog_l1_namespace )
@@ -528,6 +553,8 @@ def recognize_face( user_id, face_url ):
         reconciled_contacts = {}
 
         if matches is None:
+            log.debug( json.dumps( { 'user_id'    : user_id,
+                                     'message'    : 'No face found in input image.' } ) )
             return None
         else:
             faces = []
@@ -547,9 +574,13 @@ def recognize_face( user_id, face_url ):
         result['faces'] = sorted( faces, key=lambda x: -x['recognition_confidence'] )[:3]
         result['recognize_id'] = recog_db._add_recognition_feedback( user_id, face_url, result['faces'] )
 
+        log.debug( json.dumps( { 'user_id'    : user_id,
+                                 'message'    : 'Found %s candidate matches.' % ( len( result ) ) } ) )
+
         return result
     except Exception as e:
-        print "ERROR WAS %s" % e
+        log.error( json.dumps( { 'user_id'    : user_id,
+                                 'message'    : 'Error while recognizing face for user_id %s: %s' % ( user_id, e ) } ) )
         return None
     finally:
         if lock_acquired:
@@ -567,6 +598,8 @@ def recognition_feedback( recognize_id, result ):
         recog_db._update_recognition_result( recognize_id, result )
         return
     except Exception as e:
+        log.error( json.dumps( { 'recognize_id' : recognize_id,
+                                 'message'      : 'Error storing recognizing face feedback: %s' % ( e ) } ) )
         raise
 
 def recognition_stats( user_id=None ):
@@ -610,6 +643,8 @@ def recognition_stats( user_id=None ):
             'false_positives' : false_positives
             }
     except Exception as e:
+        log.error( json.dumps( { 'recognize_id'    : user_id,
+                                 'message'    : 'Error getting recognizing face statistics for user_id %s: %s' % ( user_id, e ) } ) )
         raise
 
 def recognition_stat_details( user_id=None ):
@@ -638,4 +673,6 @@ def recognition_stat_details( user_id=None ):
     try:
         return recog_db._get_recognition_stats( user_id )
     except Exception as e:
+        log.error( json.dumps( { 'recognize_id'    : user_id,
+                                 'message'    : 'Error getting recognizing face statistic details for user_id %s: %s' % ( user_id, e ) } ) )
         raise

@@ -44,11 +44,12 @@ faces = orm.query( MediaAssetFeatures.id,
         MediaAssetFeatures.contact_id != None,
         MediaAssetFeatures.feature_type == 'face',
         MediaAssetFeatures.recognition_result == None,
+        MediaAssetFeatures.id > 4601
         ) )
 
 faces_by_user = {}
 
-for face in faces[256:]:
+for face in faces:
     score = 0
     #if face.detection_confidence is not None:
     #    score = face.detection_confidence

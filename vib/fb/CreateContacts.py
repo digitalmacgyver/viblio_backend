@@ -5,6 +5,7 @@ from boto.s3.key import Key
 import boto.sqs
 import boto.sqs.connection
 from boto.sqs.connection import Message
+from boto.sqs.message import RawMessage
 import datetime
 import json
 import logging
@@ -416,6 +417,7 @@ def __get_sqs():
 # 4. Delete temporary files
 
 sqs = __get_sqs().get_queue( config.fb_link_queue )
+sqs.set_message_class( RawMessage )
 
 def run():
     try:

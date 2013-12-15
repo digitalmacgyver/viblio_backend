@@ -294,7 +294,7 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     # changed clusters.
     for l2_idx, l2_tag in l2_face_by_idx.items():
         if l2_idx not in db_face_by_l2_idx:
-            raise Exception( "Index %s for tag %s not found in DB l2, but it must be." % ( l2_idx, l2_tag ) )
+            log.error( "Index %s for tag %s not found in DB l2, but it should be." % ( l2_idx, l2_tag ) )
         elif l2_tag != db_face_by_l2_idx[l2_idx]['l2_tag']:
             face = db_face_by_l2_idx[l2_idx]
 
@@ -333,7 +333,7 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
             # Note - l2_idx and l2_tag may be different from
             # face['l2_idx'], face['l2_tag'] due to other changes
             # above.  In this context the data in ReKognition is
-            # authorotative.
+            # authoritative.
             recog_db._update_layer_settings( face, None, None, l2_idx, l2_tag )
             l1_changed = True
 
@@ -357,7 +357,7 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
                 # Note - l2_idx and l2_tag may be different from
                 # face['l2_idx'], face['l2_tag'] due to other changes
                 # above.  In this context the data in ReKognition is
-                # authorotative.
+                # authoritative.
                 log.info( json.dumps( { 'user_id'    : user_id,
                                         'contact_id' : contact_id,
                                         'message'    : "DB: Setting values l1idx:%s l1tag:%s l2idx:%s l2tag:%s for: %s" % ( l1_idx, l1_tag, l2_idx, l2_tag, _format_face( face ) ) } ) )
@@ -423,7 +423,7 @@ def _prepare_l2_face_data( l2_faces, db_face_by_l2_idx ):
         for idx in face['index']:
             # Build up l2_face_by_idx - each face in a cluster also
             # appears in the _x_all tag, we only denote the l2_tag as
-            # being _x_all if that is the only occurence.
+            # being _x_all if that is the only occurrence.
             if idx in l2_face_by_idx:
                 if l2_tag != '_x_all':
                     l2_face_by_idx[idx] = l2_tag
