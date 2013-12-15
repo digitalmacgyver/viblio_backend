@@ -44,16 +44,19 @@ def get_picture_contacts_for_user_uuid( user_uuid ):
 def get_contact_uuid( contact_id ):
     '''inputs: a contact_id integer
 
-    outputs: the uuid of that contact.'''
+    outputs: the uuid of that contact, or None'''
 
     log.debug( json.dumps( { 'contact_id' : contact_id,
                              'message' : 'Getting contact_uuid for contact_id %s' % contact_id } ) ) 
 
     orm = vib.db.orm.get_session()
 
-    contact = orm.query( Contacts ).filter( Contacts.id == contact_id )[0]
+    contact = orm.query( Contacts ).filter( Contacts.id == contact_id ).all()
 
-    return contact.uuid
+    if len( contact ) == 1:
+        return contact[0].uuid
+    else:
+        return None
 
 def get_user_id( user_uuid ):
     '''inputs: a user_uuid string

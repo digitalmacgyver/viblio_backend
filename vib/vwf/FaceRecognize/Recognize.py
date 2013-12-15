@@ -491,7 +491,11 @@ class Recognize( VWorker ):
                                                 break
                  
                 if guess is not None:
-                    guess['uuid'] = db_utils.get_contact_uuid( guess['contact_id'] )
+                    guess_contact_id = db_utils.get_contact_uuid( guess['contact_id'] )
+                    if guess_contact_id is not None:
+                        guess['uuid'] = guess_contact_id
+                    else:
+                        guess = None
 
                 guesses.append( { 'guess'        : guess, 
                                   'recognize_id' : recognize_id } )
