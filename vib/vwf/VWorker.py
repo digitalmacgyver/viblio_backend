@@ -9,6 +9,11 @@ from logging import handlers
 import mixpanel
 import threading
 import time
+import pdb
+import boto
+#boto.set_stream_logger('foo')
+#ec2 = boto.connect_ec2(debug=2)
+
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -37,13 +42,10 @@ mp_web = mixpanel.Mixpanel( config.mp_web_token )
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
 
-import pdb
-
 class VWorker( swf.ActivityWorker ):
-    HEARTBEAT_DELTA = 1
+    HEARTBEAT_FREQUENCY = 3
 
     def __init__( self, **kwargs ):
-	#pdb.set_trace()
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
         self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix + config.UniqueTaskList
         self.version   = VPW[self.task_name].get( 'version'  , None )
@@ -71,6 +73,7 @@ class VWorker( swf.ActivityWorker ):
                 log.info( json.dumps( {  'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'message' : 'Starting task.'  } ) )               
                 #_mp_log( self.task_name + " Started", media_uuid, user_uuid, { 'activity' : self.task_name } )
                 result = self.run_task( input_opts )
+                #self.stop_heartbeat(self.heartbeat_thread)
                 if 'ACTIVITY_ERROR' in result:
                     log.error( json.dumps( { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid,
                                 'message' : "Task had an error, failing the task with retry: %s" % result.get( 'retry', False ) } ) ) 
@@ -105,11 +108,9 @@ class VWorker( swf.ActivityWorker ):
         self.validateUserMethod(emit_heartbeat)
         self.validateUserMethod(heartbeat)
         
-        #pdb.set_trace()
         nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
         if nsecs == 'NONE':
             return None
-        #nsecs = 2
         log = self.logger
         log.info(json.dumps({'message' : 'Heartbeat timeout = %s' % nsecs}))
         try: 
@@ -118,9 +119,10 @@ class VWorker( swf.ActivityWorker ):
             log.error(json.dumps({'message' : 'Could not convert %s to int' % nsecs}))
             return None
         else:
-            if nsecs <= VWorker.HEARTBEAT_DELTA:
-                return None
-            nsecs = nsecs - VWorker.HEARTBEAT_DELTA
+            nsecs /= VWorker.HEARTBEAT_FREQUENCY
+
+            #nsecs = 1
+
             log.info(json.dumps({'message' : 'Starting heartbeat...'})) 
             t = threading.Thread(target=emit_heartbeat, args = (nsecs, heartbeat))
             t.setDaemon(True) # this makes thread terminate when process that created it terminates
@@ -130,14 +132,15 @@ class VWorker( swf.ActivityWorker ):
     def emit_heartbeat(self, delay_secs, heartbeat):
         self.validateDelaySecs(delay_secs)
         self.validateUserMethod(heartbeat)
-     
+
+        log = self.logger
         while self.heartbeat_active:
             heartbeat()
-            log = self.logger
+
+            #delay_secs = delay_secs + VWorker.HEARTBEAT_DELTA + 100            
+
             log.info(json.dumps({'message' : 'Heartbeat just occurred, will delay %s' % delay_secs}))
             time.sleep(delay_secs);
-            #time.sleep(delay_secs + VWorder.HEARTBEAT_DELTA + 100)
-            #time.sleep(100)
         return
 
     '''
