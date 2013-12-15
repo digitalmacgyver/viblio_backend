@@ -1,9 +1,3 @@
-6) Write a wrapper and change supervisor for pipeline import
-
-5) Merge branch with master (check out latest master first)
-
-7) Deploy to staging.
-
 --
 
 9. Alter Facebook import to populate this.
