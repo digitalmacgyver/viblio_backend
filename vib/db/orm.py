@@ -28,9 +28,7 @@ def valid_session( sess ):
 def get_session():
     sess = Session()
     if valid_session( sess ):
-        print "Session is valid"
         return sess
     else:
-        print "Invalid session, issuing rollback"
         sess.rollback()
         return sess

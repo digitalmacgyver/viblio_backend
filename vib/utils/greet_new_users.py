@@ -3,6 +3,7 @@
 import boto.sqs
 import boto.sqs.connection
 from boto.sqs.connection import Message
+from boto.sqs.message import RawMessage
 import datetime
 import json
 import logging
@@ -214,6 +215,7 @@ def __get_sqs():
     return boto.sqs.connect_to_region( config.sqs_region, aws_access_key_id = config.awsAccess, aws_secret_access_key = config.awsSecret )
 
 sqs = __get_sqs().get_queue( config.new_account_creation_queue )
+sqs.set_message_class( RawMessage )
 
 def run():
     try:

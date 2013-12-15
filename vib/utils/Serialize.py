@@ -48,11 +48,11 @@ class Serialize( object ):
         self.app         = app
 
         if not object_name or len( object_name ) > 64:
-            raise Exception( "app argument must be a 64 character or less string." )
+            raise Exception( "object_name argument must be a 64 character or less string." )
         self.object_name = object_name
 
         if not owner_id or len( owner_id ) > 64:
-            raise Exception( "app argument must be a 64 character or less string." )
+            raise Exception( "owner_id argument must be a 64 character or less string." )
         self.owner_id    = owner_id
 
         if heartbeat != None and heartbeat <= 0:

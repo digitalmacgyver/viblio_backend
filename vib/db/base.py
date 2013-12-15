@@ -89,6 +89,7 @@ def reflect( engine, models ):
     orm_tables = {
         'asset_types' : True,
         'contacts' : True,
+        'faces' : True,
         'feature_types' : True,
         'links' : True,
         'media' : True,
@@ -101,6 +102,7 @@ def reflect( engine, models ):
         'password_resets' : True,
         'pending_users' : True,
         'providers' : True,
+        'recognition_feedback' : True,
         'roles' : True,
         'sessions' : True,
         'share_types' : True,

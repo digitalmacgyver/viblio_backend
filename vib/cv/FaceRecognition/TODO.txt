@@ -1,215 +1,333 @@
-1. DB Stuff.
-2. Hack up v1.
-3. Test messages and verify.
-4. Change forms, test and verify.
-5. Hassle andy about messages.
-5. Update FB import stuff
-6. Test DB import
-6. Write docs
-
-Start design of system.  
-
-1. Organize code structure, modules and seperations.
-
-Module goes in:
-vib.cv.FaceRecognize.*
-
-There are two modules:
-* One that has the functions (delete_contact, ...)
-* One that drives these functions and interacts with the queues.
-
-Has 2 DB interfaces:
-
-1) Interfaces with our standard schema, and is implemented in vib.db....
-2) Interfaces with the new schema, and is implemented under FR.R
-
-Has a dispatcher that listenes for actions.
-1) Today that thing uses a test hook / config files.
-2) In the future that will be connected to queues.
-
-Functions are:
-* delete_contact
-* delete_faces_for_contact - no error on failure (races)
-* move_faces (w/wo delete_old_contact)
-* add_faces_for_contact
-
-THESE FUNCTIONS DO AS MUCH OF THEIR WORK AS THEY CAN.  RETURN LISTS OF
-WHAT THEY WERE ABLE TO EFFECT
-
-NOTE: WE DO NOT SERIALIZE AROUND THESE FUNCTIONS, IT IS THE CALLERS
-RESPONSIBILITY TO SERIALIZE IF APPROPRIATE.
-
-QUESTION:
-
-1) Do we delete contacts from L2 without faces?
-
-* NO - THIS REQUIRES NO SPECIAL CASING IN CODE AND MAY PROVE USEFUL
-* FOR DEBUGGING.
-
-2) Do we automatically create L2 DBs when we get a request to add
-faces to a contact that doesn't exist.
-
-* YES - REKOGNITION HAS AN AUTOVIVIFY BEHAVIOR, AND DUE TO RACE
-* CONDITIONS WE MAY BE MISSING A CONTACT THAT SHOULD EXIST.
-
-3) Why delete_contact and delete_faces_for_contact then?
-delete_contact cleans up any previously failed deletes due to races.
-
-LAYER 2 CONTAINS ALL IMAGES WE FOUND FOR THAT FACE EXCLUDING BAD ONES.
-
-LAYER 2 MAY NOT CONTAIN ANY CLUSTERS, IF SO WE SIMPLY DON'T INCLUDE
-THAT FACE IN LAYER 1.
-
-2. Think of how to keep tally of success / failures:
-
-Need a distinct data structure that doesn't get things deleted from
-it.
-
-These values aren't FKs because we want to keep them if the original
-content gets deleted.
-
-each row has user_id, media_id (video), media_asset_id (face)
-
-Operations:
-
-On each call to recognize we add a row saying
-
-Properties of sets of combined tracks:
-1) Match in MTurk recognition
-
-False positive for each higher rank not selected
-Rank, confidence
-
-True positive for selected
-Rank, confidence
-
-These rows have candidate and potential fields with media_assset_ids.
-
-2) New face in MTurk recognition (e.g. rejection of all best matches)
-
-No match, scores of matches
-
-3) Unidentified to Identified merge
-
-False negative
-
-4) Single video rename
-
-False positive (could also be a false negative)
-
-5) Single face rename
-
-False positive (could also be a false negative)
-
-
-3. Define / install database schema.
-
-===== DESIGN CONSIDERATIONS =====
-
-1. Recognition changes 1 op per face to do a cluster call. 
-
-TBD - How many calls does Train cost?
-
-2. The implementation of many of our primitives look like:
-   a. Add/delete l2 images
-   b. Re-cluster
-   c. Add/delete l1 images
-   d. Re-train
-
-If this is going to be hundreds of API calls per invocation, we may
-have to think about the cost.
-
-1 cent per 1000 API calls. 
-
-HOWEVER: 1 cent per 50 API calls if we crach through 45,000 a day.
-
-3. THINK ABOUT - We only need to fix the DB for user X before we do
-recongition for user X.  Does it make sense to defer all the
-book-keeping until that time?  If so we'll have to make sure our
-things pass an ACID test / preserve ordering.
-
-
-===== BACK END PRIMITIVES ======
-
-delete_faces_for_contact - remove a list of faces for that contact -
-if contact has no faces at the end of the operation deletes it.
-
-delete_contact - remove a contact and all faces associated with that contact
-
-Add faces to contact - add a set of faces to a given contact - if
-contact is not present in the database creates it.
-
-move_faces - Move a list of faces from old contact to new contact
-
-===== RDS SCHEMA DESIGN ======
-
-2) One table with:
-
-matching results:
-
-unknown_asset_id
-unknown_asset_uri
-unknown_feature_coordinates
-candidate_1_id
-candidate_1_confidence
-candidate_1_match = true/false
-2, 3
-match_found = true/false
-
-FIRST OFF: FACES MAY NOT BE RECOGNIZED AS FACES AT ALL BY RECOGNITION.
-
-SECONDLY: THEY MAY NOT PARTICIPATE IN A CLUSTER.
-
-FIELDS AREN'T FKs AS WE DON'T WANT CASCADES
-
-id
-user_id
-media_asset_id
-media_asset_feature_id
-contact_id
-face_score
-viblio_url = /s/p or whatever
-is_face = true/false
-l1_id
-l1_tag = see below
-l2_id
-l2_tag = NULL or the name of the cluster if in a cluster
-
-l1 tag is composed this way:
-* If the l2 is in a cluster, contact_id+l2_tag
-
-==== EXPERIMENT RESULTS ====
-
-If you run cluster with some undefined tags and an existing face will
-it cluster them together?
-
-Testing in matt@ account with test_cluster name space and demo user id.
- 
-I've uploaded 2 copies of foo_0_0.jpg that are the same.  
-
-1) Cluster.
-     RESULT - Single new cluster, plus 2 photos showing up as untagged still.
-
-2) Upload a 4th copy.  
-
-   RESULT - New copies didn't seem to be available in their web UI.
-   Perhaps they do some kind of server side de-duplication of
-   identical images.?
-
-NOTE: Clustering takes 1 API call per face in database.  NOTE:
-Clustering API's return value is good enough to know what IDX's are in
-what cluster.
-
-3) Re-cluster and untagged gets added.
-4) Add _1, _2 faces and cluster and see where they end up.
-
-This impacts the entire design, as I'll have to store the clusters in
-our system because their system only gives us one tag which is the
-clusters name.
-
-Here the name would be contact_id-cluster_id and in RDS we'd store a
-cluster_id -> MAF mapping.
-
-TBD - Can you untag something by renaming the tag to null (special
-JSON value)
-
+6) Write a wrapper and change supervisor for pipeline import
+
+5) Merge branch with master (check out latest master first)
+
+7) Deploy to staging.
+
+--
+
+9. Alter Facebook import to populate this.
+
+
+{"new_contact":"2041",
+"delete_old_contact":1,
+"action":"move_faces",
+"user_id":"119",
+"media_asset_feature_ids":["2913","2914","2915"],
+"old_contact":"1148"}
+
+{"contact_id":"1437",
+"action":"delete_contact",
+"user_id":"105",
+"media_asset_feature_ids":["4198"]}
+
+
+
+
+1,2 - 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+
+4,5 - 24BL0XULRGNXIXBXXIO5IP7NIZTQ45
+
+6 -  2F4NCWYB49FDZ60S86SJRNSTHEESO6
+
+====
+
+KeyboardInterrupt
+Stopping heartbeat on FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 6f123f60-6576-11e3-ae13-99567a640969
+Closing database connection and disposing of engine.
+viblio@viblio-VB:~/viblio/video_processor/vib/vwf$ DEPLOYMENT=local ./FaceRecognize-wrapper.py 
+{"message": "Polling for task."}
+{"message": "Nothing to do."}
+{"message": "Polling for task."}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Starting task.", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Working on media_uuid: 7f486a60-6578-11e3-ae13-99567a640969 for user: 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Attempting to acquire serialization lock for 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Checking the current lock status: FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35.
+Attempting to lock: FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35.
+Checking the current lock status: FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35.
+We appear to own the lock, validating ownership of lock.
+7f486a60-6578-11e3-ae13-99567a640969 acquired lock: FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35
+Starting new heartbeat for 7f486a60-6578-11e3-ae13-99567a640969 for lock: FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Getting merged tracks", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Creating merge hit", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Creating Merge Track HIT for 7f486a60-6578-11e3-ae13-99567a640969
+Heartbeating FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 7f486a60-6578-11e3-ae13-99567a640969
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Created merge hit with HITId of 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting status for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting status for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting status for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K"}
+Heartbeating FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 7f486a60-6578-11e3-ae13-99567a640969
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting status for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting status for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting status for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K"}
+Heartbeating FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 7f486a60-6578-11e3-ae13-99567a640969
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting status for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting status for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+Getting assignment for hit: 2FJTHV8ER9YC01STX4JM8KFH4ZXQ3K
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "error_code": "two_face", "message": "Two face track 0", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "track_id": 0}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Found new track 6", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "track_id": 6}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Found new track 4", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "track_id": 4}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Found new track 1", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "track_id": 1}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Merging track 2 with 1", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "value": "1", "track_id": 2}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Merging track 5 with 4", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "value": "4", "track_id": 5}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Recognizing faces", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"message": "Getting user_id for user_uuid 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"message": "Getting contacts with pictures for user 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Checking the current lock status: Recognition, 149.
+Attempting to lock: Recognition, 149.
+Checking the current lock status: Recognition, 149.
+We appear to own the lock, validating ownership of lock.
+recognize_face:bd57a241-7e3d-4542-8c12-e400a7615ccc acquired lock: Recognition, 149
+Starting new heartbeat for recognize_face:bd57a241-7e3d-4542-8c12-e400a7615ccc for lock: Recognition, 149
+{"message": "Recognizing face for user_id: 149 from: https://staging.viblio.com/s/ip/7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_1_0.jpg", "user_id": 149}
+Heartbeating Recognition, 149, recognize_face:bd57a241-7e3d-4542-8c12-e400a7615ccc
+{"message": "Getting list of faces for user_id 149, contact_id 1959", "user_id": 149, "contact_id": 1959}
+{"message": "Reconciling DB for u:149 c:1959", "user_id": 149, "contact_id": 1959}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/93bc668ce310cb31.jpg', u'index': [u'1159594'], u'tag': u'1959-cluster0-1122634', u'total_img': 1}, {u'url': u'http://rekognition.com/visualization/559d8a658da2fec0.jpg', u'index': [u'1412644'], u'tag': u'1959-cluster1-1716244', u'total_img': 1}]", "user_id": 149, "contact_id": 1959}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/d00223a34cfa730e.jpg', u'index': [u'1052272', u'1122634', u'1131874', u'1171170', u'1172490', u'1228010', u'1267610', u'1412644', u'1413964', u'1443170', u'1716244', u'792232'], u'tag': u'_x_all', u'total_img': 12}, {u'url': u'http://rekognition.com/visualization/6953ae860f191004.jpg', u'index': [u'1052272', u'1122634', u'1131874', u'1171170', u'1172490', u'1228010', u'1267610', u'1443170', u'792232'], u'tag': u'cluster0', u'total_img': 9}, {u'url': u'http://rekognition.com/visualization/175ecaf68491ef89.jpg', u'index': [u'1412644', u'1413964', u'1716244'], u'tag': u'cluster1', u'total_img': 3}]", "user_id": 149, "contact_id": 1959}
+{"message": "Getting list of faces for user_id 149, contact_id 1959", "user_id": 149, "contact_id": 1959}
+{"message": "Getting face data for user_id 149, l1_tag 1959-cluster0-1122634"}
+{"message": "Getting list of faces for user_id 149, contact_id 1869", "user_id": 149, "contact_id": 1869}
+{"message": "Reconciling DB for u:149 c:1869", "user_id": 149, "contact_id": 1869}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/48605f6872d0da4f.jpg', u'index': [u'1180026'], u'tag': u'1869-cluster0-1012386', u'total_img': 1}]", "user_id": 149, "contact_id": 1869}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/ffc9011e1f0b264f.jpg', u'index': [u'1012386', u'1137786'], u'tag': u'_x_all', u'total_img': 2}, {u'url': u'http://rekognition.com/visualization/8919fbf59b007c0a.jpg', u'index': [u'1012386', u'1137786'], u'tag': u'cluster0', u'total_img': 2}]", "user_id": 149, "contact_id": 1869}
+{"message": "Getting list of faces for user_id 149, contact_id 1869", "user_id": 149, "contact_id": 1869}
+{"message": "Getting face data for user_id 149, l1_tag 1869-cluster0-1012386"}
+{"message": "Getting list of faces for user_id 149, contact_id 2172", "user_id": 149, "contact_id": 2172}
+{"message": "Reconciling DB for u:149 c:2172", "user_id": 149, "contact_id": 2172}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/5bcae9348e89bb58.jpg', u'index': [u'1012386'], u'tag': u'2172-cluster-1280346', u'total_img': 1}]", "user_id": 149, "contact_id": 2172}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/a8f118b87aab05b1.jpg', u'index': [u'1280346'], u'tag': u'_x_all', u'total_img': 1}, {u'url': u'http://rekognition.com/visualization/2b25a596079b53f5.jpg', u'index': [u'1280346'], u'tag': u'cluster', u'total_img': 1}]", "user_id": 149, "contact_id": 2172}
+{"message": "Getting list of faces for user_id 149, contact_id 2172", "user_id": 149, "contact_id": 2172}
+{"message": "Getting face data for user_id 149, l1_tag 2172-cluster-1280346"}
+{"message": "Adding face recognition feedback row for user 149", "user_id": 149}
+/usr/local/lib/python2.7/dist-packages/sqlalchemy/engine/default.py:324: Warning: Data truncated for column 'face3_confidence' at row 1
+  cursor.execute(statement, parameters)
+{"message": "Found 2 candidate matches.", "user_id": 149}
+Stopping heartbeat for Recognition, 149, recognize_face:bd57a241-7e3d-4542-8c12-e400a7615ccc in release.
+Trying to release lock Recognition, 149 on behalf of recognize_face:bd57a241-7e3d-4542-8c12-e400a7615ccc.
+Lock Recognition, 149 released by recognize_face:bd57a241-7e3d-4542-8c12-e400a7615ccc.
+Ensuring lock released in destructor.
+Closing database connection and disposing of engine.
+{"message": "Getting contact_uuid for contact_id 1959", "contact_id": 1959}
+Checking the current lock status: Recognition, 149.
+Attempting to lock: Recognition, 149.
+Checking the current lock status: Recognition, 149.
+We appear to own the lock, validating ownership of lock.
+recognize_face:8b9002df-f1ac-4ec4-8387-87406e24c302 acquired lock: Recognition, 149
+Starting new heartbeat for recognize_face:8b9002df-f1ac-4ec4-8387-87406e24c302 for lock: Recognition, 149
+{"message": "Recognizing face for user_id: 149 from: https://staging.viblio.com/s/ip/7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_4_0.jpg", "user_id": 149}
+Stopping heartbeat on Recognition, 149, recognize_face:bd57a241-7e3d-4542-8c12-e400a7615ccc
+Closing database connection and disposing of engine.
+Heartbeating Recognition, 149, recognize_face:8b9002df-f1ac-4ec4-8387-87406e24c302
+{"message": "Getting list of faces for user_id 149, contact_id 1959", "user_id": 149, "contact_id": 1959}
+Heartbeating FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 7f486a60-6578-11e3-ae13-99567a640969
+{"message": "Reconciling DB for u:149 c:1959", "user_id": 149, "contact_id": 1959}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/bcd73092677e54da.jpg', u'index': [u'1159594'], u'tag': u'1959-cluster0-1122634', u'total_img': 1}, {u'url': u'http://rekognition.com/visualization/eafa827840be130f.jpg', u'index': [u'1412644'], u'tag': u'1959-cluster1-1716244', u'total_img': 1}]", "user_id": 149, "contact_id": 1959}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/a78640896886c2c7.jpg', u'index': [u'1052272', u'1122634', u'1131874', u'1171170', u'1172490', u'1228010', u'1267610', u'1412644', u'1413964', u'1443170', u'1716244', u'792232'], u'tag': u'_x_all', u'total_img': 12}, {u'url': u'http://rekognition.com/visualization/3c0753625a88c943.jpg', u'index': [u'1052272', u'1122634', u'1131874', u'1171170', u'1172490', u'1228010', u'1267610', u'1443170', u'792232'], u'tag': u'cluster0', u'total_img': 9}, {u'url': u'http://rekognition.com/visualization/f2bedf5d46b41e67.jpg', u'index': [u'1412644', u'1413964', u'1716244'], u'tag': u'cluster1', u'total_img': 3}]", "user_id": 149, "contact_id": 1959}
+{"message": "Getting list of faces for user_id 149, contact_id 1959", "user_id": 149, "contact_id": 1959}
+{"message": "Getting face data for user_id 149, l1_tag 1959-cluster0-1122634"}
+{"message": "Getting face data for user_id 149, l1_tag 1959-cluster1-1716244"}
+{"message": "Getting list of faces for user_id 149, contact_id 1869", "user_id": 149, "contact_id": 1869}
+{"message": "Reconciling DB for u:149 c:1869", "user_id": 149, "contact_id": 1869}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/fe3270a11403c3cb.jpg', u'index': [u'1180026'], u'tag': u'1869-cluster0-1012386', u'total_img': 1}]", "user_id": 149, "contact_id": 1869}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/cd4130306c0795d9.jpg', u'index': [u'1012386', u'1137786'], u'tag': u'_x_all', u'total_img': 2}, {u'url': u'http://rekognition.com/visualization/697faa87ecefbb14.jpg', u'index': [u'1012386', u'1137786'], u'tag': u'cluster0', u'total_img': 2}]", "user_id": 149, "contact_id": 1869}
+{"message": "Getting list of faces for user_id 149, contact_id 1869", "user_id": 149, "contact_id": 1869}
+{"message": "Getting face data for user_id 149, l1_tag 1869-cluster0-1012386"}
+{"message": "Adding face recognition feedback row for user 149", "user_id": 149}
+{"message": "Found 2 candidate matches.", "user_id": 149}
+Stopping heartbeat for Recognition, 149, recognize_face:8b9002df-f1ac-4ec4-8387-87406e24c302 in release.
+Trying to release lock Recognition, 149 on behalf of recognize_face:8b9002df-f1ac-4ec4-8387-87406e24c302.
+Lock Recognition, 149 released by recognize_face:8b9002df-f1ac-4ec4-8387-87406e24c302.
+Ensuring lock released in destructor.
+Closing database connection and disposing of engine.
+{"message": "Getting contact_uuid for contact_id 1959", "contact_id": 1959}
+Checking the current lock status: Recognition, 149.
+Attempting to lock: Recognition, 149.
+Checking the current lock status: Recognition, 149.
+We appear to own the lock, validating ownership of lock.
+recognize_face:11e85488-a469-4470-a5be-43025b3f691d acquired lock: Recognition, 149
+Starting new heartbeat for recognize_face:11e85488-a469-4470-a5be-43025b3f691d for lock: Recognition, 149
+{"message": "Recognizing face for user_id: 149 from: https://staging.viblio.com/s/ip/7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_6_0.jpg", "user_id": 149}
+Heartbeating Recognition, 149, recognize_face:11e85488-a469-4470-a5be-43025b3f691d
+{"message": "Getting list of faces for user_id 149, contact_id 1869", "user_id": 149, "contact_id": 1869}
+{"message": "Reconciling DB for u:149 c:1869", "user_id": 149, "contact_id": 1869}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/5c7234fc9ee10d23.jpg', u'index': [u'1180026'], u'tag': u'1869-cluster0-1012386', u'total_img': 1}]", "user_id": 149, "contact_id": 1869}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/799b255a7ad3b36c.jpg', u'index': [u'1012386', u'1137786'], u'tag': u'_x_all', u'total_img': 2}, {u'url': u'http://rekognition.com/visualization/9339208aa7db73ec.jpg', u'index': [u'1012386', u'1137786'], u'tag': u'cluster0', u'total_img': 2}]", "user_id": 149, "contact_id": 1869}
+{"message": "Getting list of faces for user_id 149, contact_id 1869", "user_id": 149, "contact_id": 1869}
+Stopping heartbeat on Recognition, 149, recognize_face:8b9002df-f1ac-4ec4-8387-87406e24c302
+Closing database connection and disposing of engine.
+{"message": "Getting face data for user_id 149, l1_tag 1869-cluster0-1012386"}
+{"message": "Getting list of faces for user_id 149, contact_id 2172", "user_id": 149, "contact_id": 2172}
+{"message": "Reconciling DB for u:149 c:2172", "user_id": 149, "contact_id": 2172}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/a7b8e56793d6ceb4.jpg', u'index': [u'1012386'], u'tag': u'2172-cluster-1280346', u'total_img': 1}]", "user_id": 149, "contact_id": 2172}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/06c2c269ffc1e2b3.jpg', u'index': [u'1280346'], u'tag': u'_x_all', u'total_img': 1}, {u'url': u'http://rekognition.com/visualization/15334404810233f7.jpg', u'index': [u'1280346'], u'tag': u'cluster', u'total_img': 1}]", "user_id": 149, "contact_id": 2172}
+{"message": "Getting list of faces for user_id 149, contact_id 2172", "user_id": 149, "contact_id": 2172}
+{"message": "Getting face data for user_id 149, l1_tag 2172-cluster-1280346"}
+{"message": "Getting list of faces for user_id 149, contact_id 2173", "user_id": 149, "contact_id": 2173}
+{"message": "Reconciling DB for u:149 c:2173", "user_id": 149, "contact_id": 2173}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/ff77ef61703bb1d1.jpg', u'index': [u'1123266'], u'tag': u'2173-cluster-1210386', u'total_img': 1}]", "user_id": 149, "contact_id": 2173}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/54194ee915889062.jpg', u'index': [u'1210386'], u'tag': u'_x_all', u'total_img': 1}, {u'url': u'http://rekognition.com/visualization/58355eb2dd8a0b19.jpg', u'index': [u'1210386'], u'tag': u'cluster', u'total_img': 1}]", "user_id": 149, "contact_id": 2173}
+{"message": "Getting list of faces for user_id 149, contact_id 2173", "user_id": 149, "contact_id": 2173}
+{"message": "Getting face data for user_id 149, l1_tag 2173-cluster-1210386"}
+{"message": "Adding face recognition feedback row for user 149", "user_id": 149}
+{"message": "Found 2 candidate matches.", "user_id": 149}
+Stopping heartbeat for Recognition, 149, recognize_face:11e85488-a469-4470-a5be-43025b3f691d in release.
+Trying to release lock Recognition, 149 on behalf of recognize_face:11e85488-a469-4470-a5be-43025b3f691d.
+Lock Recognition, 149 released by recognize_face:11e85488-a469-4470-a5be-43025b3f691d.
+Ensuring lock released in destructor.
+Closing database connection and disposing of engine.
+{"message": "Getting contact_uuid for contact_id 1869", "contact_id": 1869}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Creating 3 recognition hits", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Creating Recognize Face HIT for media/track 7f486a60-6578-11e3-ae13-99567a640969/1
+Creating Recognize Face HIT for media/track 7f486a60-6578-11e3-ae13-99567a640969/4
+Creating Recognize Face HIT for media/track 7f486a60-6578-11e3-ae13-99567a640969/6
+Stopping heartbeat on Recognition, 149, recognize_face:11e85488-a469-4470-a5be-43025b3f691d
+Closing database connection and disposing of engine.
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Created 3 hits, HITIds are: [{'merged_tracks': [{u'faces': [{u'isMale': True, u'hasAdditionalFaceInformation': True, u'wearingGlasses': False, u's3_key': u'7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_1_0.jpg', u'mouthLocationConfidence': 0.5, u'sharpness': 0.670588, u'height': 73, u'glassesConfidence': 0.35, u'isHappy': True, u'totalConfidence': 0.236636, u'expressionConfidence': 0.44, u'mouthOpen': True, u'rightEyeConfidence': 0.5, u'genderConfidence': 0.44, u'face_rotation_pitch': 0, u'face_rotation_yaw': 0, u'noseLocationConfidence': 0.5, u'backgroundUniformity': 0.306357, u'width': 73, u'leftEyeConfidence': 0.5, u'rightEyeCenter': [72, 66], u'grayscaleDensity': 0.984314, u'interEyeDistance': 42.0119, u'noseLocation': [89, 74], u'wearingDarkGlassesConfidence': 0.11, u'mouthOpenConfidence': 1, u's3_bucket': u'viblio-uploaded-files', u'md5sum': u'5c7e48a91b76a9a58d844eebe96899cf', u'leftEyeCenter': [114, 114], u'mouthLocation': [90, 107], u'face_rotation_roll': 2, u'face_confidence': 60.8033, u'face_id': 0, u'wearingDarkGlasses': False}], u'visiblity_info': [{u'end_frame': 33285, u'start_frame': 33225}], u'track_id': 1}, {u'faces': [{u'isMale': True, u'hasAdditionalFaceInformation': True, u'wearingGlasses': False, u's3_key': u'7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_2_0.jpg', u'mouthLocationConfidence': 0.5, u'sharpness': 0.639216, u'height': 71, u'glassesConfidence': 0.38, u'isHappy': True, u'totalConfidence': 0.21825, u'expressionConfidence': 0.21, u'mouthOpen': True, u'rightEyeConfidence': 0.5, u'genderConfidence': 0.06, u'face_rotation_pitch': 0, u'face_rotation_yaw': 0, u'noseLocationConfidence': 0.5, u'backgroundUniformity': 0.228408, u'width': 71, u'leftEyeConfidence': 0.5, u'rightEyeCenter': [73, 66], u'grayscaleDensity': 0.984314, u'interEyeDistance': 38.0526, u'noseLocation': [93, 72], u'wearingDarkGlassesConfidence': 0.09, u'mouthOpenConfidence': 1, u's3_bucket': u'viblio-uploaded-files', u'md5sum': u'49ba5aaa8419f2bdf7daf989be2ec6dc', u'leftEyeCenter': [111, 111], u'mouthLocation': [90, 104], u'face_rotation_roll': 3, u'face_confidence': 54.1248, u'face_id': 0, u'wearingDarkGlasses': False}], u'visiblity_info': [{u'end_frame': 33450, u'start_frame': 33315}], u'track_id': 2}], 'HITId': u'2ACHYW2GTP9VHL0G7RS6CYSOR49SNR'}, {'merged_tracks': [{u'faces': [{u'isMale': True, u'hasAdditionalFaceInformation': True, u'wearingGlasses': False, u's3_key': u'7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_4_0.jpg', u'mouthLocationConfidence': 0.5, u'sharpness': 0.498039, u'height': 64, u'glassesConfidence': 0.24, u'isHappy': True, u'totalConfidence': 0.232596, u'expressionConfidence': 0.51, u'mouthOpen': True, u'rightEyeConfidence': 0.5, u'genderConfidence': 0.13, u'face_rotation_pitch': 0, u'face_rotation_yaw': 0, u'noseLocationConfidence': 0.5, u'backgroundUniformity': 0.179919, u'width': 64, u'leftEyeConfidence': 0.5, u'rightEyeCenter': [60, 59], u'grayscaleDensity': 0.976471, u'interEyeDistance': 32.0624, u'noseLocation': [77, 68], u'wearingDarkGlassesConfidence': 0.16, u'mouthOpenConfidence': 1, u's3_bucket': u'viblio-uploaded-files', u'md5sum': u'd29e70e194039b6e8c3164e9d8a43cee', u'leftEyeCenter': [92, 92], u'mouthLocation': [75, 94], u'face_rotation_roll': 3, u'face_confidence': 61.298, u'face_id': 0, u'wearingDarkGlasses': False}], u'visiblity_info': [{u'end_frame': 33795, u'start_frame': 33540}], u'track_id': 4}, {u'faces': [{u'isMale': True, u'hasAdditionalFaceInformation': True, u'wearingGlasses': False, u's3_key': u'7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_5_0.jpg', u'mouthLocationConfidence': 0.5, u'sharpness': 0.501961, u'height': 128, u'glassesConfidence': 0.2, u'isHappy': False, u'totalConfidence': 0.290723, u'expressionConfidence': 0.2, u'mouthOpen': True, u'rightEyeConfidence': 0.5, u'genderConfidence': 0.26, u'face_rotation_pitch': 0, u'face_rotation_yaw': 0, u'noseLocationConfidence': 0.5, u'backgroundUniformity': 0.490505, u'width': 128, u'leftEyeConfidence': 0.5, u'rightEyeCenter': [116, 92], u'grayscaleDensity': 0.960784, u'interEyeDistance': 70.3491, u'noseLocation': [153, 113], u'wearingDarkGlassesConfidence': 0.47, u'mouthOpenConfidence': 1, u's3_bucket': u'viblio-uploaded-files', u'md5sum': u'099a6c3ee180c96e19411c129637c33c', u'leftEyeCenter': [186, 186], u'mouthLocation': [156, 163], u'face_rotation_roll': -5, u'face_confidence': 52.4252, u'face_id': 0, u'wearingDarkGlasses': False}], u'visiblity_info': [{u'end_frame': 35340, u'start_frame': 34485}], u'track_id': 5}], 'HITId': u'24BL0XULRGNXIXBXXIO5IP7NIZTQ45'}, {'merged_tracks': [{u'faces': [{u'isMale': False, u'hasAdditionalFaceInformation': True, u'wearingGlasses': True, u's3_key': u'7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_6_0.jpg', u'mouthLocationConfidence': 0.5, u'sharpness': 0.407843, u'height': 71, u'glassesConfidence': 0.2, u'isHappy': True, u'totalConfidence': 0.497947, u'expressionConfidence': 0, u'mouthOpen': True, u'rightEyeConfidence': 0.5, u'genderConfidence': 0.1, u'face_rotation_pitch': 0, u'face_rotation_yaw': 0, u'noseLocationConfidence': 0.5, u'backgroundUniformity': 0.627383, u'width': 71, u'leftEyeConfidence': 0.5, u'rightEyeCenter': [72, 78], u'grayscaleDensity': 0.980392, u'interEyeDistance': 38.0132, u'noseLocation': [88, 88], u'wearingDarkGlassesConfidence': 0, u'mouthOpenConfidence': 0.86, u's3_bucket': u'viblio-uploaded-files', u'md5sum': u'82128cea991ef05bb542d71331835bc8', u'leftEyeCenter': [110, 110], u'mouthLocation': [89, 112], u'face_rotation_roll': -4, u'face_confidence': 59.5987, u'face_id': 0, u'wearingDarkGlasses': False}], u'visiblity_info': [{u'end_frame': 36045, u'start_frame': 35700}], u'track_id': 6}], 'HITId': u'2F4NCWYB49FDZ60S86SJRNSTHEESO6'}]", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+Getting status for hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2ACHYW2GTP9VHL0G7RS6CYSOR49SNR"}
+Getting hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+Getting status for hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2ACHYW2GTP9VHL0G7RS6CYSOR49SNR"}
+Heartbeating FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 7f486a60-6578-11e3-ae13-99567a640969
+Getting hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+Getting status for hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2ACHYW2GTP9VHL0G7RS6CYSOR49SNR"}
+Getting hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+Getting status for hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+Getting assignment for hit: 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 24BL0XULRGNXIXBXXIO5IP7NIZTQ45
+Getting status for hit: 24BL0XULRGNXIXBXXIO5IP7NIZTQ45
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Hit 24BL0XULRGNXIXBXXIO5IP7NIZTQ45 not complete, sleeping for 10 seconds", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "24BL0XULRGNXIXBXXIO5IP7NIZTQ45"}
+Heartbeating FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 7f486a60-6578-11e3-ae13-99567a640969
+Getting hit: 24BL0XULRGNXIXBXXIO5IP7NIZTQ45
+Getting status for hit: 24BL0XULRGNXIXBXXIO5IP7NIZTQ45
+Getting assignment for hit: 24BL0XULRGNXIXBXXIO5IP7NIZTQ45
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Getting hit: 2F4NCWYB49FDZ60S86SJRNSTHEESO6
+Getting status for hit: 2F4NCWYB49FDZ60S86SJRNSTHEESO6
+Getting assignment for hit: 2F4NCWYB49FDZ60S86SJRNSTHEESO6
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "data": "machine_recognized_df357679-0955-4d8a-9df6-9f0a9ba2d86e", "message": "Found data machine_recognized_df357679-0955-4d8a-9df6-9f0a9ba2d86e for hit 2ACHYW2GTP9VHL0G7RS6CYSOR49SNR", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2ACHYW2GTP9VHL0G7RS6CYSOR49SNR"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "data": "human_recognized_df357679-0955-4d8a-9df6-9f0a9ba2d86e", "message": "Found data human_recognized_df357679-0955-4d8a-9df6-9f0a9ba2d86e for hit 24BL0XULRGNXIXBXXIO5IP7NIZTQ45", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "24BL0XULRGNXIXBXXIO5IP7NIZTQ45"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "data": "new_face", "message": "Found data new_face for hit 2F4NCWYB49FDZ60S86SJRNSTHEESO6", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "hit_id": "2F4NCWYB49FDZ60S86SJRNSTHEESO6"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Heartbeating", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Updating contacts", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Updating contacts in video 7f486a60-6578-11e3-ae13-99567a640969 for user 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Labeling media_asset_feature.id 4761 of track 0 as a two_face track.", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Creating new contact with uuid 2dc55931-1fea-4ec7-9313-fa9200707076 for user_id 149 ", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "contact_uuid": "2dc55931-1fea-4ec7-9313-fa9200707076"}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Associating new user 2dc55931-1fea-4ec7-9313-fa9200707076 with track_id 6", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "contact_uuid": "2dc55931-1fea-4ec7-9313-fa9200707076", "track_id": 6}
+{"message": "Updating recognize_id 79 with result None"}
+Checking the current lock status: Recognition, 149.
+Attempting to lock: Recognition, 149.
+Checking the current lock status: Recognition, 149.
+We appear to own the lock, validating ownership of lock.
+add_faces:1404f1d1-9c73-4036-a92b-5a07ed0accfc acquired lock: Recognition, 149
+Starting new heartbeat for add_faces:1404f1d1-9c73-4036-a92b-5a07ed0accfc for lock: Recognition, 149
+{"message": "Adding faces for user_id 149, contact_id 2175.", "user_id": 149, "contact_id": 2175}
+{"message": "Working on face i:N/A u:149 c:2175 f:4766 l1idx:N/A l1tag:N/A l2idx:N/A l2tag:N/A s:0.497947", "user_id": 149, "contact_id": 2175}
+{"message": "Checking whether user, contact, face_id exists: 149, 2175, 4766", "user_id": 149, "contact_id": 2175}
+Heartbeating Recognition, 149, add_faces:1404f1d1-9c73-4036-a92b-5a07ed0accfc
+{"message": "Face added to recognition with l2_idx: 1286946", "user_id": 149, "contact_id": 2175}
+{"message": "Adding face: {'user_id': 149L, 'l2_idx': u'1286946', 'contact_id': 2175L, 'score': Decimal('0.497947'), 'l2_tag': '_x_all', 'face_url': 'https://staging.viblio.com/s/ip/7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_6_0.jpg', 'face_id': 4766L, 'external_id': 18304L}", "user_id": 149, "contact_id": 2175}
+{"message": "Added face to database.", "user_id": 149, "contact_id": 2175}
+{"message": "Reclustering l2 system for user: 149_2175", "user_id": 149, "contact_id": 2175}
+{"message": "Getting list of faces for user_id 149, contact_id 2175", "user_id": 149, "contact_id": 2175}
+{"message": "Reconciling DB for u:149 c:2175", "user_id": 149, "contact_id": 2175}
+{"message": "l1_faces are: []", "user_id": 149, "contact_id": 2175}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/871c8108f5b1c38f.jpg', u'index': [u'1286946'], u'tag': u'_x_all', u'total_img': 1}, {u'url': u'http://rekognition.com/visualization/ee453d4ff3ca36b4.jpg', u'index': [u'1286946'], u'tag': u'cluster', u'total_img': 1}]", "user_id": 149, "contact_id": 2175}
+{"message": "Getting list of faces for user_id 149, contact_id 2175", "user_id": 149, "contact_id": 2175}
+{"message": "DB: Setting l2 values idx:1286946 tag:cluster  for: i:1720 u:149 c:2175 f:4766 l1idx:None l1tag:None l2idx:1286946 l2tag:_x_all s:0.4979470000", "user_id": 149, "contact_id": 2175}
+{"message": "Updating face_id 1720 with l1_idx-tag: None-None and l2_idx-tag: 1286946-cluster", "user_id": 149, "contact_id": 2175}
+{"message": "ReKog: added l1 idx:1210386 tag:2175-cluster-1286946", "user_id": 149, "contact_id": 2175}
+{"message": "DB: Setting values l1idx:1210386 l1tag:2175-cluster-1286946 l2idx:1286946 l2tag:cluster for: i:1720 u:149 c:2175 f:4766 l1idx:None l1tag:None l2idx:1286946 l2tag:_x_all s:0.4979470000", "user_id": 149, "contact_id": 2175}
+{"message": "Updating face_id 1720 with l1_idx-tag: 1210386-2175-cluster-1286946 and l2_idx-tag: 1286946-cluster", "user_id": 149, "contact_id": 2175}
+Stopping heartbeat for Recognition, 149, add_faces:1404f1d1-9c73-4036-a92b-5a07ed0accfc in release.
+Trying to release lock Recognition, 149 on behalf of add_faces:1404f1d1-9c73-4036-a92b-5a07ed0accfc.
+Lock Recognition, 149 released by add_faces:1404f1d1-9c73-4036-a92b-5a07ed0accfc.
+Ensuring lock released in destructor.
+Closing database connection and disposing of engine.
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Associating existing user df357679-0955-4d8a-9df6-9f0a9ba2d86e with track_id 4", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "contact_uuid": "df357679-0955-4d8a-9df6-9f0a9ba2d86e", "track_id": 4}
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Associating existing user df357679-0955-4d8a-9df6-9f0a9ba2d86e with track_id 5", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35", "contact_uuid": "df357679-0955-4d8a-9df6-9f0a9ba2d86e", "track_id": 5}
+{"message": "Updating recognize_id 78 with result 1"}
+Stopping heartbeat on Recognition, 149, add_faces:1404f1d1-9c73-4036-a92b-5a07ed0accfc
+Closing database connection and disposing of engine.
+Checking the current lock status: Recognition, 149.
+Attempting to lock: Recognition, 149.
+Checking the current lock status: Recognition, 149.
+We appear to own the lock, validating ownership of lock.
+add_faces:a42f56fe-7611-49a3-ba0d-d05f9c856cd3 acquired lock: Recognition, 149
+Starting new heartbeat for add_faces:a42f56fe-7611-49a3-ba0d-d05f9c856cd3 for lock: Recognition, 149
+{"message": "Adding faces for user_id 149, contact_id 1959.", "user_id": 149, "contact_id": 1959}
+{"message": "Working on face i:N/A u:149 c:1959 f:4764 l1idx:N/A l1tag:N/A l2idx:N/A l2tag:N/A s:0.232596", "user_id": 149, "contact_id": 1959}
+{"message": "Checking whether user, contact, face_id exists: 149, 1959, 4764", "user_id": 149, "contact_id": 1959}
+Heartbeating Recognition, 149, add_faces:a42f56fe-7611-49a3-ba0d-d05f9c856cd3
+{"message": "Face added to recognition with l2_idx: 1228010", "user_id": 149, "contact_id": 1959}
+{"message": "Adding face: {'user_id': 149L, 'l2_idx': u'1228010', 'contact_id': 1959L, 'score': Decimal('0.232596'), 'l2_tag': '_x_all', 'face_url': 'https://staging.viblio.com/s/ip/7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_4_0.jpg', 'face_id': 4764L, 'external_id': 18302L}", "user_id": 149, "contact_id": 1959}
+{"message": "Added face to database.", "user_id": 149, "contact_id": 1959}
+{"message": "Working on face i:N/A u:149 c:1959 f:4765 l1idx:N/A l1tag:N/A l2idx:N/A l2tag:N/A s:0.290723", "user_id": 149, "contact_id": 1959}
+{"message": "Checking whether user, contact, face_id exists: 149, 1959, 4765", "user_id": 149, "contact_id": 1959}
+{"message": "Face added to recognition with l2_idx: 1687204", "user_id": 149, "contact_id": 1959}
+{"message": "Adding face: {'user_id': 149L, 'l2_idx': u'1687204', 'contact_id': 1959L, 'score': Decimal('0.290723'), 'l2_tag': '_x_all', 'face_url': 'https://staging.viblio.com/s/ip/7f486a60-6578-11e3-ae13-99567a640969/7f486a60-6578-11e3-ae13-99567a640969_face_5_0.jpg', 'face_id': 4765L, 'external_id': 18303L}", "user_id": 149, "contact_id": 1959}
+{"message": "Added face to database.", "user_id": 149, "contact_id": 1959}
+{"message": "Reclustering l2 system for user: 149_1959", "user_id": 149, "contact_id": 1959}
+{"message": "Getting list of faces for user_id 149, contact_id 1959", "user_id": 149, "contact_id": 1959}
+{"message": "Reconciling DB for u:149 c:1959", "user_id": 149, "contact_id": 1959}
+{"message": "l1_faces are: [{u'url': u'http://rekognition.com/visualization/f5360591160aecf8.jpg', u'index': [u'1159594'], u'tag': u'1959-cluster0-1122634', u'total_img': 1}, {u'url': u'http://rekognition.com/visualization/6b33ac9b3335b949.jpg', u'index': [u'1412644'], u'tag': u'1959-cluster1-1716244', u'total_img': 1}]", "user_id": 149, "contact_id": 1959}
+{"message": "l2_faces are: [{u'url': u'http://rekognition.com/visualization/29c394b89ee85011.jpg', u'index': [u'1052272', u'1122634', u'1131874', u'1171170', u'1172490', u'1228010', u'1267610', u'1412644', u'1413964', u'1443170', u'1687204', u'1716244', u'792232'], u'tag': u'_x_all', u'total_img': 13}, {u'url': u'http://rekognition.com/visualization/5f5a0c7b423b3ca1.jpg', u'index': [u'1052272', u'1122634', u'1131874', u'1171170', u'1172490', u'1228010', u'1267610', u'1443170', u'792232'], u'tag': u'cluster0', u'total_img': 9}, {u'url': u'http://rekognition.com/visualization/90aee2cc7118cdc3.jpg', u'index': [u'1412644', u'1413964', u'1687204', u'1716244'], u'tag': u'cluster1', u'total_img': 4}]", "user_id": 149, "contact_id": 1959}
+{"message": "Getting list of faces for user_id 149, contact_id 1959", "user_id": 149, "contact_id": 1959}
+{"message": "DB: Setting l2 values idx:1687204 tag:cluster1  for: i:1722 u:149 c:1959 f:4765 l1idx:None l1tag:None l2idx:1687204 l2tag:_x_all s:0.2907230000", "user_id": 149, "contact_id": 1959}
+{"message": "Updating face_id 1722 with l1_idx-tag: None-None and l2_idx-tag: 1687204-cluster1", "user_id": 149, "contact_id": 1959}
+{"message": "DB: Setting l2 values idx:1228010 tag:cluster0  for: i:1721 u:149 c:1959 f:4764 l1idx:None l1tag:None l2idx:1228010 l2tag:_x_all s:0.2325960000", "user_id": 149, "contact_id": 1959}
+{"message": "Updating face_id 1721 with l1_idx-tag: None-None and l2_idx-tag: 1228010-cluster0", "user_id": 149, "contact_id": 1959}
+Stopping heartbeat for Recognition, 149, add_faces:a42f56fe-7611-49a3-ba0d-d05f9c856cd3 in release.
+Trying to release lock Recognition, 149 on behalf of add_faces:a42f56fe-7611-49a3-ba0d-d05f9c856cd3.
+Lock Recognition, 149 released by add_faces:a42f56fe-7611-49a3-ba0d-d05f9c856cd3.
+Ensuring lock released in destructor.
+Closing database connection and disposing of engine.
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Returning successfully", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Stopping heartbeat for FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 7f486a60-6578-11e3-ae13-99567a640969 in release.
+Trying to release lock FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35 on behalf of 7f486a60-6578-11e3-ae13-99567a640969.
+Lock FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35 released by 7f486a60-6578-11e3-ae13-99567a640969.
+{"media_uuid": "7f486a60-6578-11e3-ae13-99567a640969", "message": "Task completed.", "user_uuid": "60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35"}
+Ensuring lock released in destructor.
+Closing database connection and disposing of engine.
+{"message": "Polling for task."}
+Stopping heartbeat on Recognition, 149, add_faces:a42f56fe-7611-49a3-ba0d-d05f9c856cd3
+Closing database connection and disposing of engine.
+Stopping heartbeat on FaceRecognize, 60F84ABE-2FA7-11E3-ADD2-BE51F9A9DC35, 7f486a60-6578-11e3-ae13-99567a640969
+Closing database connection and disposing of engine.
+{"message": "Nothing to do."}
