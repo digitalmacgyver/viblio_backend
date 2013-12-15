@@ -158,7 +158,8 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
             orm.commit()
             try:
-                rec.recognition_feedback( recognition_data[uuid]['recognize_id'], 1 )
+                if recognition_data is not None and recognition_data[uuid]['recognize_id'] is not None:
+                    rec.recognition_feedback( recognition_data[uuid]['recognize_id'], None )
                 _add_recognition_faces( orm, user_id, new_contact.id, media_id, tracks )
             except:
                 log.error( json.dumps( {'user_uuid' : user_uuid,
@@ -196,9 +197,10 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
                 orm.commit()
                 try:
-                    rec.recognition_feedback( recognition_data[uuid]['recognize_id'], 1 )
+                    if recognition_data is not None and recognition_data[uuid]['recognize_id'] is not None:
+                        rec.recognition_feedback( recognition_data[uuid]['recognize_id'], 1 )
                     _add_recognition_faces( orm, user_id, existing_contact.id, media_id, tracks )
-                except:
+                except Exception as e:
                     log.error( json.dumps( {'user_uuid' : user_uuid,
                                             'media_uuid' : media_uuid,
                                             'contact_uuid' : existing_contact.uuid,

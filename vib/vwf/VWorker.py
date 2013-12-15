@@ -11,7 +11,7 @@ import time
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-logger = logging.getLogger( 'vib.vwf' )
+logger = logging.getLogger( 'vib' )
 logger.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )

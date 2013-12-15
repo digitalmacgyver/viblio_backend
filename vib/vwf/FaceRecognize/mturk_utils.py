@@ -49,14 +49,14 @@ def create_merge_hit( media_uuid, tracks ):
 
     return hit_id
 
-def create_recognize_hits( media_uuid, merged_tracks, contacts, guess, recognize_id ):
+def create_recognize_hits( media_uuid, merged_tracks, contacts, guesses ):
     '''Returns an array of hash with keys:
     merged_tracks : the tracks associated with the HIT for this element
     HITId : the hit_id for this element
     '''
     ret = []
 
-    for person_tracks in merged_tracks:
+    for idx, person_tracks in enumerate( merged_tracks ):
         # We need a deterministic ID here across multiple runs of the
         # script / submissions of input to ensure we don't re-create
         # HITs that have already been created.
@@ -67,7 +67,7 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guess, recognize
             'LifetimeInSeconds' : 36*60*60,
             'RequesterAnnotation' : media_uuid + '-%d' % ( id_for_person_track ),
             'UniqueRequestToken' : ( 'recognize-%d-' % ( id_for_person_track ) ) + media_uuid,
-            'Question' : recognize_face_form.get_question( person_tracks, contacts, guess, recognize_id )
+            'Question' : recognize_face_form.get_question( person_tracks, contacts, guesses[idx]['guess'], guesses[idx]['recognize_id'] )
             }
 
         print "Creating Recognize Face HIT for media/track %s/%s" % ( media_uuid, id_for_person_track )

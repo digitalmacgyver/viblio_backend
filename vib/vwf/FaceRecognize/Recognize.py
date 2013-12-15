@@ -30,11 +30,16 @@ class Recognize( VWorker ):
 
         NOTE: The size of the return value is limited to 32 kB
         '''
+
         try:
             # How often should we poll Mechanical Turk to see if a job
             # is done.
             self.polling_secs = 10
             
+            # When we find a face with a recognition confidence
+            # greater than this we stop looking.
+            self.recognition_threshold = 0.9
+
             self.lock_acquired = False
 
             user_uuid  = options['user_uuid']
@@ -428,6 +433,7 @@ class Recognize( VWorker ):
         '''
 
         user_uuid = self.user_uuid
+        user_id = db_utils.get_user_id( user_uuid )
         media_uuid = self.media_uuid
 
         log.debug( json.dumps( { 
@@ -448,26 +454,34 @@ class Recognize( VWorker ):
 
         if len( contacts ) > 0:
             # There user has at least one contact with a picture
-
-            # DEBUG - actually do some work with recognition here.
-            guess = None
-            guess_confidence = None
-            recognize_id = None
+            guesses = []
             for person_track in merged_tracks:
+                guess = None
+                guess_confidence = None
+                recognize_id = None
+                done = False
                 for track in person_track:
-                    for face in track['faces']:
-                        matches = rec.recognize_face( db_utils.get_user_id( user_uuid ), "%s%s" % ( config.ImageServer, face['s3_key'] ) )
-                        if matches is not None:
-                            if len( matches ):
-                                current_guess = matches['faces'][0]
-                                current_confidence = current_guess['recognition_confidence']
-                                if guess_confidence is None or current_confidence > guess_confidence:
-                                    guess = current_guess
-                                    guess_confidence = current_confidence
-                                    recognize_id = matches['recognize_id']
+                    if not done:
+                        for face in track['faces']:
+                            self.heartbeat()
+                            matches = rec.recognize_face( user_id, "%s%s" % ( config.ImageServer, face['s3_key'] ) )
+                            if matches is not None:
+                                if len( matches ):
+                                    current_guess = matches['faces'][0]
+                                    current_confidence = current_guess['recognition_confidence']
+                                    if guess_confidence is None or current_confidence > guess_confidence:
+                                        guess = current_guess
+                                        guess_confidence = current_confidence
+                                        recognize_id = matches['recognize_id']
+                                        if guess_confidence >= self.recognition_threshold:
+                                            done = True
+                                            break
                  
-            if guess is not None:
-                guess['uuid'] = db_utils.get_contact_uuid( guess['contact_id'] )
+                if guess is not None:
+                    guess['uuid'] = db_utils.get_contact_uuid( guess['contact_id'] )
+
+                guesses.append( { 'guess'        : guess, 
+                                  'recognize_id' : recognize_id } )
                
             log.debug( json.dumps( { 
                         'media_uuid' : media_uuid,
@@ -477,7 +491,7 @@ class Recognize( VWorker ):
 
             # hit_tracks is An array of hash elements with HITId and
             # merged_tracks keys.
-            hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guess, recognize_id )
+            hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guesses )
             log.info( json.dumps( { 
                         'media_uuid' : media_uuid,
                         'user_uuid' : user_uuid,
@@ -516,11 +530,12 @@ class Recognize( VWorker ):
                             } ) )
                 self.heartbeat()
 
-            recognized_faces, new_faces = self._process_recognized( answer_dicts, hit_tracks, guess )
+            recognized_faces, new_faces, recognition_data = self._process_recognized( answer_dicts, hit_tracks, guess )
         else:
             # The user has no contacts with pictures, so everyone here is new.
             recognized_faces = {}
             new_faces = {}
+            recognition_data = None
             for person_tracks in merged_tracks:
                 contact_uuid = str( uuid.uuid4() )
                 new_faces[contact_uuid] = person_tracks
@@ -532,7 +547,7 @@ class Recognize( VWorker ):
                     } ) )
         self.heartbeat()
 
-        return recognized_faces, new_faces
+        return recognized_faces, new_faces, recognition_data
 
     def _process_recognized( self, answer_dicts, hit_tracks, guess ):
         '''Given sets of user answers, interpret the results to tag
@@ -547,6 +562,9 @@ class Recognize( VWorker ):
         * recognized_[uuid]
         * new_face
         '''
+
+        #import pdb
+        #pdb.set_trace()
 
         user_uuid = self.user_uuid
         media_uuid = self.media_uuid
@@ -601,11 +619,11 @@ class Recognize( VWorker ):
                 new_faces[contact_uuid] = person_tracks
                 recognition_data[contact_uuid] = { 'recognition_result' : 'new_face' }
             elif data.startswith( 'human_recognized_' ):
-                contact_uuid = data.rpartition( '_' )[3]
+                contact_uuid = data.rpartition( '_' )[2]
                 recognized_faces[contact_uuid] = person_tracks
                 recognition_data[contact_uuid] = { 'recognition_result' : 'human_recognized' }
             elif data.startswith( 'machine_recognized_' ):
-                contact_uuid = data.rpartition( '_' )[3]
+                contact_uuid = data.rpartition( '_' )[2]
                 recognized_faces[contact_uuid] = person_tracks
                 recognition_data[contact_uuid] = { 'recognition_result' : 'machine_recognized' }
             else:
