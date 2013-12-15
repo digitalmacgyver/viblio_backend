@@ -49,7 +49,7 @@ def create_merge_hit( media_uuid, tracks ):
 
     return hit_id
 
-def create_recognize_hits( media_uuid, merged_tracks, contacts, guess ):
+def create_recognize_hits( media_uuid, merged_tracks, contacts, guess, recognize_id ):
     '''Returns an array of hash with keys:
     merged_tracks : the tracks associated with the HIT for this element
     HITId : the hit_id for this element
@@ -67,7 +67,7 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guess ):
             'LifetimeInSeconds' : 36*60*60,
             'RequesterAnnotation' : media_uuid + '-%d' % ( id_for_person_track ),
             'UniqueRequestToken' : ( 'recognize-%d-' % ( id_for_person_track ) ) + media_uuid,
-            'Question' : recognize_face_form.get_question( person_tracks, contacts, guess )
+            'Question' : recognize_face_form.get_question( person_tracks, contacts, guess, recognize_id )
             }
 
         print "Creating Recognize Face HIT for media/track %s/%s" % ( media_uuid, id_for_person_track )

@@ -1,17 +1,23 @@
-1) Finish adding faces from staging.
-
-2) Run through the queues on local / staging.
-
-3) Test some queue operations on my accounts in staging.
-
 4) Update face recognition code.
+
+CODED:
+* Get the top guess at the top of the page - add recognition feedback.
+
+* Update response to include "human_recognized",
+  "machine_vision_recognized", and "new_person" (include all values in
+  same track)
+
+* Add all faces to recognition system.
+
+TBD:
+* Send 12 faces - top 6 actors, and 6 most recent.
+
+* Update other tools to not exlude specific patterns, bad this etc,
+  not != None.
 
 5) Merge branch with master (check out latest master first)
 
-
 --
-
-8. Alter FaceRecognize to use this.
 
 9. Alter Facebook import to populate this.
 

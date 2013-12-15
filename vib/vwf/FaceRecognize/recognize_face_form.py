@@ -48,7 +48,7 @@ def _get_contact_row_html( contacts, start_idx, cell_count ):
         contact = contacts[i]
         contact_uuid = contact.uuid
         
-        html += '<td><img src="%s%s" height="65" width="65" alt="Img. %s" /></td>' % ( server, contact.picture_uri, start_idx + i )
+        html += '<td><img src="%s%s" height="128" width="128" alt="Img. %s" /></td>' % ( server, contact.picture_uri, start_idx + i )
 
     for i in range( contact_count, cell_count ):
         html += '<td></td>'
@@ -60,7 +60,7 @@ def _get_contact_row_html( contacts, start_idx, cell_count ):
         contact = contacts[i]
         contact_uuid = contact.uuid
         
-        html += '<td><input type="radio" name="answer" value="recognized_%s" /></td>' % ( contact_uuid )
+        html += '<td><input type="radio" name="answer" value="human_recognized_%s" /></td>' % ( contact_uuid )
 
     for i in range( contact_count, cell_count ):
         html += '<td></td>'
@@ -69,7 +69,7 @@ def _get_contact_row_html( contacts, start_idx, cell_count ):
 
     return html
 
-def get_question( person_tracks, contacts, guess ):
+def get_question( person_tracks, contacts, guess, recognize_id ):
     html = html_front
 
     server = config.ImageServer
@@ -77,17 +77,19 @@ def get_question( person_tracks, contacts, guess ):
     # Create a table of the person we're recognizing
     html += '<table><tr>'
     for face in person_tracks[0]['faces']:
-        html += '<td><img src="%s%s" height="65" width="65" alt="An Image" /></td>' % ( server, face['s3_key'] )
+        html += '<td><img src="%s%s" height="128" width="128" alt="An Image" /></td>' % ( server, face['s3_key'] )
     html += '</tr></table>'
    
     html += form_front
+
+    html += '<input type="hidden" name="recognize_id" value="%s" />' % ( recognize_id )
 
     html += '<table border="1">'
 
     if guess:
         html += '<tr>'
-        html += '<td><input type="radio" name="answer" value="recognized_%s" /></td>' % ( guess.uuid )
-        html += '<td>The person  is the same as this person: <img src="%s%s" height="65" width="65" alt="Img. %s" /></td>' % ( server, guess.picture_uri, 'guess' )
+        html += '<td><input type="radio" name="answer" value="machine_recognized_%s" /></td>' % ( guess['uuid'] )
+        html += '<td>The person  is the same as this person: <img src="%s" height="128" width="128" alt="Img. %s" /></td>' % ( guess['face_url'], 'guess' )
         html += '</tr>'
 
     html += '<tr>'
@@ -100,7 +102,7 @@ def get_question( person_tracks, contacts, guess ):
     html += '<td>'
 
     html += '<table>'
-    col_faces = 12
+    col_faces = 6
 
     for idx in range( 0, len( contacts ), col_faces ):
         html += _get_contact_row_html( contacts[idx:idx+col_faces], idx, col_faces )
@@ -118,7 +120,7 @@ def get_question( person_tracks, contacts, guess ):
     html += '</table>'
     html += form_back
     # Parenthesis because of integer division not being associative.
-    html += html_back % ( 100*( 1+len( contacts )/col_faces ) + 325 ) 
+    html += html_back % ( 163*( 1+len( contacts )/col_faces ) + 325 ) 
     
     return html
 
