@@ -56,6 +56,19 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guesses ):
     '''
     ret = []
 
+    seen_contacts = {}
+    unique_contacts = []
+    for guess_data in guesses:
+        guess = guess_data['guess']
+        if guess and ( guess['uuid'] not in seen_contacts ):
+            seen_contacts[guess['uuid']] = True
+
+    for contact in contacts:
+        if contact.uuid not in seen_contacts:
+            seen_contacts[contact.uuid] = True
+            unique_contacts.append( contact )
+
+
     for idx, person_tracks in enumerate( merged_tracks ):
         # We need a deterministic ID here across multiple runs of the
         # script / submissions of input to ensure we don't re-create
@@ -67,7 +80,7 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guesses ):
             'LifetimeInSeconds' : 36*60*60,
             'RequesterAnnotation' : media_uuid + '-%d' % ( id_for_person_track ),
             'UniqueRequestToken' : ( 'recognize-%d-' % ( id_for_person_track ) ) + media_uuid,
-            'Question' : recognize_face_form.get_question( person_tracks, contacts, guesses[idx]['guess'], guesses[idx]['recognize_id'] )
+            'Question' : recognize_face_form.get_question( person_tracks, unique_contacts, guesses[idx]['guess'], guesses[idx]['recognize_id'] )
             }
 
         print "Creating Recognize Face HIT for media/track %s/%s" % ( media_uuid, id_for_person_track )

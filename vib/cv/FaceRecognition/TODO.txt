@@ -1,6 +1,6 @@
 4) Update face recognition code.
 
-CODED:
+TESTED:
 * Get the top guess at the top of the page - add recognition feedback.
 
 * Update response to include "human_recognized",
@@ -9,6 +9,9 @@ CODED:
 
 * Add all faces to recognition system.
 
+
+CODED:
+
 TBD:
 * Send 12 faces - top 6 actors, and 6 most recent.
 
@@ -16,6 +19,10 @@ TBD:
   not != None.
 
 5) Merge branch with master (check out latest master first)
+
+6) Write a wrapper and change supervisor for pipeline import
+
+7) Deploy to staging.
 
 --
 

@@ -2,7 +2,7 @@
 
 import json
 import logging
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 
 import vib.cv.FaceRecognition.api as rec
 import vib.db.orm
@@ -28,14 +28,18 @@ def get_picture_contacts_for_user_uuid( user_uuid ):
     orm = vib.db.orm.get_session()
 
     user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
-    result = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.picture_uri != None ) ).order_by( Contacts.created_date.desc() )[:]
 
-    log.info( json.dumps( {
-                'user_uuid' : user_uuid,
-                'message' : 'User %s had %d contacts with pictures' % ( user_uuid, len( result ) )
-                } ) )
+    popular_features = orm.query( MediaAssetFeatures.contact_id, func.count( '*' ) ).filter( and_( MediaAssetFeatures.user_id == user.id, MediaAssetFeatures.contact_id is not None ) ).group_by( MediaAssetFeatures.contact_id )[:6]
+    
+    popular_contact_ids = {}
+    for feature in popular_features:
+        popular_contact_ids[feature.contact_id] = True
 
-    return result
+    popular_contacts = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.picture_uri != None, Contacts.id.in_( popular_contact_ids.keys() ) ) ).order_by( Contacts.created_date.desc() ).all()
+
+    recent_contacts = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.picture_uri != None ) ).order_by( Contacts.created_date.desc() )[:6]
+
+    return popular_contacts + recent_contacts
 
 def get_contact_uuid( contact_id ):
     '''inputs: a contact_id integer
@@ -100,6 +104,9 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
     Returns True on success.
     '''
 
+    #import pdb
+    #pdb.set_trace()
+
     log.debug( json.dumps( {
                 'user_uuid' : user_uuid,
                 'media_uuid' : media_uuid,
@@ -156,7 +163,7 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
                 for feature in new_features:
                     feature.recognition_result = 'new_face'
 
-            orm.commit()
+                orm.commit()
             try:
                 if recognition_data is not None and recognition_data[uuid]['recognize_id'] is not None:
                     rec.recognition_feedback( recognition_data[uuid]['recognize_id'], None )
@@ -195,7 +202,7 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
                     for feature in existing_features:
                         feature.recognition_result = recognition_data[uuid]['recognition_result']
 
-                orm.commit()
+                    orm.commit()
                 try:
                     if recognition_data is not None and recognition_data[uuid]['recognize_id'] is not None:
                         rec.recognition_feedback( recognition_data[uuid]['recognize_id'], 1 )
