@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import csv
-from sqlalchemy import and_
+from sqlalchemy import and_, not_
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -19,7 +19,7 @@ bad_images = orm.query( MediaAssets.uri,
                         ).filter( and_(
         MediaAssets.id == MediaAssetFeatures.media_asset_id,
         MediaAssetFeatures.feature_type == 'face',
-        MediaAssetFeatures.recognition_result != None ) )
+        MediaAssetFeatures.recognition_result.in_( 'bad_track', 'bad_face', 'two_face', 'not_face' ) ) )
 
 with open( 'output.csv', 'wb' ) as csvfile:
     out = csv.writer( csvfile, quoting=csv.QUOTE_MINIMAL )

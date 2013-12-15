@@ -126,9 +126,6 @@ sqs.set_message_class( RawMessage )
 
 def run():
     try:
-        #import pdb
-        #pdb.set_trace()
-
         message = None
         message = sqs.read( wait_time_seconds = 20 )
 
@@ -142,9 +139,6 @@ def run():
             log.info( json.dumps( { 'message' : "Reviewing candidate message with body was: %s" % body } ) )
         except Exception as e:
             log.debug( json.dumps( { 'message' : "Error converting body to string, error was: %s" % e } ) )
-
-        options = json.loads( body )
-
 
         options = json.loads( body )
 
@@ -179,7 +173,6 @@ def run():
         else:
             log.error( json.dumps( { "Error, unknown action: %s" % ( action ) } ) )
 
-        # DEBUG
         sqs.delete_message( message )
         return True
 

@@ -86,7 +86,7 @@ Updates database rows:
     * Recognized faces get a contact_id of the appropriate contact
     * New faces get a contact_id of the newly created contact
   * Faces that do not get contacts:
-    * Non-faces get a recognition_result of ```non_face```
+    * Non-faces get a recognition_result of ```not_face```
     * Unrecognizable faces get a recognition_result of ```bad_face```
     * Tracks that had 2 or more distinct faces get a recognition_result of ```two_face```
 

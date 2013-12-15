@@ -2,7 +2,7 @@
 
 import logging
 
-from sqlalchemy import and_
+from sqlalchemy import and_, not_
 
 import vib.cv.FaceRecognition as rec
 
@@ -41,9 +41,9 @@ faces = orm.query( MediaAssetFeatures.id,
                    MediaAssets.uri
                    ).filter( and_(
         MediaAssets.id == MediaAssetFeatures.media_asset_id,
-        MediaAssetFeatures.contact_id != None,
+        MediaAssetFeatures.contact_id != ,
         MediaAssetFeatures.feature_type == 'face',
-        MediaAssetFeatures.recognition_result == None,
+        not_( MediaAssetFeatures.recognition_result.in_( 'bad_track', 'bad_face', 'two_face', 'not_face' ) ) ),
         MediaAssetFeatures.id > 4601
         ) )
 
