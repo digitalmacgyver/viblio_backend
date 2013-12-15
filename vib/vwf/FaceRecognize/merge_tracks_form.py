@@ -110,7 +110,7 @@ def get_question( tracks ):
         html += _get_question_html_for_track( track, max_faces )
     html += '</table>'
     html += form_back
-    html += html_back % ( 193*len( tracks ) + 100 ) 
+    html += html_back % ( 220*len( tracks ) + 163 ) 
     
     return html
 

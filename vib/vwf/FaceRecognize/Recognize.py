@@ -37,6 +37,9 @@ class Recognize( VWorker ):
             # is done.
             self.polling_secs = 10
             
+            #import pdb
+            #pdb.set_trace()
+            
             # When we find a face with a recognition confidence
             # greater than this we stop looking.
             self.recognition_threshold = 0.9
@@ -143,6 +146,10 @@ class Recognize( VWorker ):
                         'user_uuid' : user_uuid,
                         'message' : "Recognizing faces"
                         } ) )
+
+            #import pdb
+            #pdb.set_trace()
+
             recognized_faces, new_faces, recognition_data = self._recognize_faces( merged_tracks )
 
             log.debug( json.dumps( { 
@@ -465,22 +472,23 @@ class Recognize( VWorker ):
                 guess_confidence = None
                 recognize_id = None
                 done = False
-                for track in person_track:
-                    if not done:
-                        for face in track['faces']:
-                            self.heartbeat()
-                            matches = rec.recognize_face( user_id, "%s%s" % ( config.ImageServer, face['s3_key'] ) )
-                            if matches is not None:
-                                if len( matches ):
-                                    current_guess = matches['faces'][0]
-                                    current_confidence = current_guess['recognition_confidence']
-                                    if guess_confidence is None or current_confidence > guess_confidence:
-                                        guess = current_guess
-                                        guess_confidence = current_confidence
-                                        recognize_id = matches['recognize_id']
-                                        if guess_confidence >= self.recognition_threshold:
-                                            done = True
-                                            break
+                if len( contacts ) > 1:
+                    for track in person_track:
+                        if not done:
+                            for face in track['faces']:
+                                self.heartbeat()
+                                matches = rec.recognize_face( user_id, "%s%s" % ( config.ImageServer, face['s3_key'] ) )
+                                if matches is not None:
+                                    if len( matches['faces'] ):
+                                        current_guess = matches['faces'][0]
+                                        current_confidence = current_guess['recognition_confidence']
+                                        if guess_confidence is None or current_confidence > guess_confidence:
+                                            guess = current_guess
+                                            guess_confidence = current_confidence
+                                            recognize_id = matches['recognize_id']
+                                            if guess_confidence >= self.recognition_threshold:
+                                                done = True
+                                                break
                  
                 if guess is not None:
                     guess['uuid'] = db_utils.get_contact_uuid( guess['contact_id'] )
