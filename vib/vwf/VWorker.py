@@ -55,7 +55,6 @@ class VWorker( swf.ActivityWorker ):
         self.logger = logger
 
     def run( self ):
-        self.heartbeat_thread = None
         try:
             log = self.logger
             log.debug( json.dumps( { 'message' : 'Polling for task.' } ) )
@@ -64,16 +63,24 @@ class VWorker( swf.ActivityWorker ):
                 log.debug( json.dumps( { 'message' : 'Nothing to do.' } ) )
                 return True
             else:
-                self.heartbeat_active = True
-                log.info(json.dumps({'message' : 'Starting heartbeat...' }))
-                self.heartbeat_thread = self.start_heartbeat(self.emit_heartbeat, self.heartbeat)
                 input_opts = json.loads( activity_task['input'] )
                 media_uuid = input_opts['media_uuid']
                 user_uuid  = input_opts['user_uuid']
                 log.info( json.dumps( {  'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'message' : 'Starting task.'  } ) )               
                 #_mp_log( self.task_name + " Started", media_uuid, user_uuid, { 'activity' : self.task_name } )
-                result = self.run_task( input_opts )
-                #self.stop_heartbeat(self.heartbeat_thread)
+
+                self.heartbeat_thread = None
+                result = {}
+                try:
+                    log.info(json.dumps({'message' : 'About to call start_heartbeat...' }))
+                    self.heartbeat_active = True
+                    self.heartbeat_thread = self.start_heartbeat(self.emit_heartbeat, self.heartbeat)
+                    log.info(json.dumps({'message' : 'Running task...' }))
+                    result = self.run_task( input_opts )
+                finally:
+                   log.info(json.dumps({'message' : 'Stopping heartbeat...' }))
+                   self.stop_heartbeat(self.heartbeat_thread)
+
                 if 'ACTIVITY_ERROR' in result:
                     log.error( json.dumps( { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid,
                                 'message' : "Task had an error, failing the task with retry: %s" % result.get( 'retry', False ) } ) ) 
@@ -89,16 +96,6 @@ class VWorker( swf.ActivityWorker ):
             log.error( json.dumps( { 'message' : "Task had an exception: %s" % error } ) )
             self.fail( reason = str( error ) )
             raise error
-        finally:
-            try:
-                log.info(json.dumps({'message' : 'Stopping heartbeat...' }))
-                self.stop_heartbeat(self.heartbeat_thread)
-            except Exception as error:
-                log = self.logger
-                log.error( json.dumps( { 'message' : "Task had an exception stopping heartbeat: %s" % error } ) )
-                self.fail( reason = str( error ) )
-                raise error
-
 
     def run_task( self, opts ):
         '''Clients must override this method'''
