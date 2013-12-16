@@ -169,7 +169,10 @@ class VPDecider( swf.Decider ):
                             task_input[prerequisite] = input_opts
 
                         #_mp_log( task+" Retry", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity' : task } )
-                        heartbeat_timeout         =  VPW[task]['default_task_heartbeat_timeout'] 
+                        schedule_to_close_timeout = VPW[task]['default_task_schedule_to_close_timeout'] 
+                        schedule_to_start_timeout = VPW[task]['default_task_schedule_to_start_timeout'] 
+                        start_to_close_timeout    = VPW[task]['default_task_start_to_close_timeout'] 
+                        heartbeat_timeout         = VPW[task]['default_task_heartbeat_timeout'] 
                         log.info( json.dumps( { 'message' : 'setting heartbeat_timeout to %s' % heartbeat_timeout} ) )
                         decisions.schedule_activity_task( 
                             task + '-' + workflow_input['media_uuid'],
@@ -177,7 +180,10 @@ class VPDecider( swf.Decider ):
                             VPW[task]['version'],
                             task_list = VPW[task]['task_list'] + config.VPWSuffix + config.UniqueTaskList,
                             input = json.dumps( task_input ),
-                            heartbeat_timeout = heartbeat_timeout
+                            schedule_to_close_timeout = schedule_to_close_timeout,
+                            schedule_to_start_timeout = schedule_to_start_timeout,
+                            start_to_close_timeout    = start_to_close_timeout,
+                            heartbeat_timeout         = heartbeat_timeout
                             )
 
                 elif task in timed_out_tasks:
@@ -222,7 +228,6 @@ class VPDecider( swf.Decider ):
                         schedule_to_start_timeout = 'NONE'
                         start_to_close_timeout    = 'NONE'
                         heartbeat_timeout         = 'NONE'
-                        '''
                         if VPW[task]['default_task_schedule_to_close_timeout'] != 'NONE':
                             schedule_to_close_timeout = str( timeout_factor * int( VPW[task]['default_task_schedule_to_close_timeout'] ) )
                         if VPW[task]['default_task_schedule_to_start_timeout'] != 'NONE':
@@ -231,8 +236,6 @@ class VPDecider( swf.Decider ):
                             start_to_close_timeout    = str( timeout_factor * int( VPW[task]['default_task_start_to_close_timeout'] ) )
                         if VPW[task]['default_task_heartbeat_timeout']         != 'NONE':
                             heartbeat_timeout         = str( timeout_factor * int( VPW[task]['default_task_heartbeat_timeout'] ) )
-                        '''
-                        heartbeat_timeout         =  VPW[task]['default_task_heartbeat_timeout'] 
                         #_mp_log( task + " Retry", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         log.info( json.dumps( { 'message' : 'setting heartbeat_timeout to %s' % heartbeat_timeout} ) )
                         decisions.schedule_activity_task( 
@@ -262,7 +265,10 @@ class VPDecider( swf.Decider ):
                         task_input[prerequisite] = input_opts
 
                     #_mp_log( task + " Scheduled", media_uuid, user_uuid, { 'activity' : task } )
-                    heartbeat_timeout         =  VPW[task]['default_task_heartbeat_timeout'] 
+                    schedule_to_close_timeout = VPW[task]['default_task_schedule_to_close_timeout'] 
+                    schedule_to_start_timeout = VPW[task]['default_task_schedule_to_start_timeout'] 
+                    start_to_close_timeout    = VPW[task]['default_task_start_to_close_timeout'] 
+                    heartbeat_timeout         = VPW[task]['default_task_heartbeat_timeout'] 
                     log.info( json.dumps( { 'message' : 'setting heartbeat_timeout to %s' % heartbeat_timeout} ) )
                     decisions.schedule_activity_task( 
                         task + '-' + workflow_input['media_uuid'],
@@ -270,7 +276,10 @@ class VPDecider( swf.Decider ):
                         VPW[task]['version'],
                         task_list = VPW[task]['task_list'] + config.VPWSuffix + config.UniqueTaskList,
                         input = json.dumps( task_input ),
-                        heartbeat_timeout = heartbeat_timeout
+                        schedule_to_close_timeout = schedule_to_close_timeout,
+                        schedule_to_start_timeout = schedule_to_start_timeout,
+                        start_to_close_timeout    = start_to_close_timeout,
+                        heartbeat_timeout         = heartbeat_timeout
                         )
                 else:
                     log.debug( json.dumps( {

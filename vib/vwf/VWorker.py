@@ -130,34 +130,7 @@ class VWorker( swf.ActivityWorker ):
             t.setDaemon(True) # this makes thread terminate when process that created it terminates
             t.start()
             return t
-            
-    '''
-    def start_heartbeat(self, emit_heartbeat, heartbeat):
-        self.validate_user_method(emit_heartbeat)
-        self.validate_user_method(heartbeat)
-        
-        nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
-        if nsecs == 'NONE':
-            return None
-        log = self.logger
-        log.info(json.dumps({'message' : 'Heartbeat timeout = %s' % nsecs}))
-        try: 
-            nsecs = int(nsecs)
-        except ValueError:
-            log.error(json.dumps({'message' : 'Could not convert %s to int' % nsecs}))
-            return None
-        else:
-            nsecs /= VWorker.HEARTBEAT_FREQUENCY
-
-            #nsecs = 1
-
-            log.info(json.dumps({'message' : 'Starting heartbeat...'})) 
-            t = threading.Thread(target=emit_heartbeat, args = (nsecs, heartbeat))
-            t.setDaemon(True) # this makes thread terminate when process that created it terminates
-            t.start()
-            return t
-    '''
-    
+              
     def emit_heartbeat(self, delay_secs, heartbeat):
         self.validate_delay_secs(delay_secs)
         self.validate_user_method(heartbeat)
@@ -165,17 +138,9 @@ class VWorker( swf.ActivityWorker ):
         log = self.logger
         while self.heartbeat_active:
             heartbeat()
-
-            #delay_secs = delay_secs + VWorker.HEARTBEAT_DELTA + 100            
-
             log.info(json.dumps({'message' : 'Heartbeat just occurred, will delay %d' % delay_secs}))
             time.sleep(delay_secs);
         return
-
-    '''
-    def heartbeat(self):
-        print 'heartbeat at %s' % (time.ctime(time.time()))
-    '''
 
     def stop_heartbeat(self, heartbeat_thread):
         if heartbeat_thread is None:
