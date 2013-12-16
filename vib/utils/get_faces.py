@@ -6,7 +6,7 @@ import os
 import json
 import pprint
 import requests
-from sqlalchemy import and_
+from sqlalchemy import and_, not_, or_
 from StringIO import StringIO
 
 import vib.config.AppConfig
@@ -31,8 +31,8 @@ faces = orm.query( Media.filename,
         Media.id == MediaAssetFeatures.media_id,
         MediaAssets.id == MediaAssetFeatures.media_asset_id,
         MediaAssetFeatures.feature_type == 'face',
-        MediaAssetFeatures.recognition_result == None,
-        MediaAssetFeatures.created_date >= from_when ) ) 
+        or_( MediaAssetFeatures.recognition_result == None, not_( MediaAssetFeatures.recognition_result.in_( [ 'bad_face', 'bad_track', 'not_face', 'two_face' ] ) ) ),
+        MediaAssetFeatures.created_date >= from_when ) )
 
 outdir = '/wintmp/faces/'
 

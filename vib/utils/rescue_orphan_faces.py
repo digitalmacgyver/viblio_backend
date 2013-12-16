@@ -63,7 +63,7 @@ def update_orphan_faces( hours=24*3 ):
                 MediaAssetFeatures.contact_id == None, 
                 MediaAssets.asset_type == 'face',
                 MediaAssetFeatures.feature_type == 'face',
-                not_( MediaAssetFeatures.recognition_result.in_( 'bad_track', 'bad_face', 'two_face', 'not_face' ) ),
+                not_( MediaAssetFeatures.recognition_result.in_( [ 'bad_track', 'bad_face', 'two_face', 'not_face' ] ) ),
                 MediaAssetFeatures.created_date <= from_when
                 ) ).group_by(
                 MediaAssetFeatures.media_id,
