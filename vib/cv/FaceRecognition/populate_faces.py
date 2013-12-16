@@ -31,9 +31,6 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-import pdb
-pdb.set_trace()
-
 orm = vib.db.orm.get_session()
 
 faces = orm.query( MediaAssetFeatures.id,
