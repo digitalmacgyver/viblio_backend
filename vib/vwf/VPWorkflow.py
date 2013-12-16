@@ -50,8 +50,7 @@ VPW = {
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
         'default_task_schedule_to_start_timeout' : str( 15*60*60 ),
         'default_task_start_to_close_timeout' : str( 10*60*60 ),
-        'default_task_heartbeat_timeout' : str( 5 ),
-        #'default_task_heartbeat_timeout' : 'NONE',
+        'default_task_heartbeat_timeout' : str( 300 ),
         },
 
     'FaceDetect' : {
@@ -65,7 +64,7 @@ VPW = {
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
         'default_task_schedule_to_start_timeout' : str( 15*60*60),
         'default_task_start_to_close_timeout' : str( 10*60*60 ),
-        'default_task_heartbeat_timeout' : 'NONE',
+        'default_task_heartbeat_timeout' : str( 300 ),
         },
 
     'FaceRecognize' : {

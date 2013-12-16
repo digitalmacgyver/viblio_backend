@@ -43,12 +43,17 @@ import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
 
 class VWorker( swf.ActivityWorker ):
-    HEARTBEAT_FREQUENCY = 3
 
     def __init__( self, **kwargs ):
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
         self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix + config.UniqueTaskList
         self.version   = VPW[self.task_name].get( 'version'  , None )
+
+        heartbeat_timeout = VPW[self.task_name].get( 'default_task_heartbeat_timeout', 'NONE' )
+        if heartbeat_timeout == 'NONE':
+            self.HEARTBEAT_FREQUENCY = None
+        else:
+            self.HEARTBEAT_FREQUENCY = int( heartbeat_timeout ) / 3
 
         super( VWorker, self ).__init__( **kwargs )
 
@@ -116,7 +121,7 @@ class VWorker( swf.ActivityWorker ):
             log.error(json.dumps({'message' : 'Could not convert %s to int' % nsecs}))
             return None
         else:
-            f = VWorker.HEARTBEAT_FREQUENCY
+            f = self.HEARTBEAT_FREQUENCY
             log.info(json.dumps({'message' : 'HEARTBEAT_FREQUENCY has value %s' % f}))        
             if f <= 1:
                 log.error(json.dumps({'message' : 'HEARTBEAT_FREQUENCY must be greater than 1'}))
@@ -124,9 +129,8 @@ class VWorker( swf.ActivityWorker ):
             elif nsecs <= f:
                 log.error(json.dumps({'message' : 'heartbeat timeout cannot be less than HEARTBEAT_FREQUENCY'}))
                 return None
-            period = nsecs/f
-            log.info(json.dumps({'message' : 'Starting heartbeat thread with period %d' % period}))        
-            t = threading.Thread(target=emit_heartbeat, args = (period, heartbeat))
+            log.info(json.dumps({'message' : 'Starting heartbeat thread with period %d' % f}))
+            t = threading.Thread(target=emit_heartbeat, args = (f, heartbeat))
             t.setDaemon(True) # this makes thread terminate when process that created it terminates
             t.start()
             return t
@@ -138,7 +142,7 @@ class VWorker( swf.ActivityWorker ):
         log = self.logger
         while self.heartbeat_active:
             heartbeat()
-            log.info(json.dumps({'message' : 'Heartbeat just occurred, will delay %d' % delay_secs}))
+            log.debug(json.dumps({'message' : 'Heartbeat just occurred, will delay %d' % delay_secs}))
             time.sleep(delay_secs);
         return
 
