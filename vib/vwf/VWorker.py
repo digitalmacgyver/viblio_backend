@@ -102,8 +102,39 @@ class VWorker( swf.ActivityWorker ):
         raise NotImplementedError()
 
     def start_heartbeat(self, emit_heartbeat, heartbeat):
-        self.validateUserMethod(emit_heartbeat)
-        self.validateUserMethod(heartbeat)
+        self.validate_user_method(emit_heartbeat)
+        self.validate_user_method(heartbeat)
+        
+        log = self.logger    
+        nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
+        log.info(json.dumps({'message' : 'heartbeat timeout set in VPWorkflow to %s' % nsecs}))        
+        if nsecs == 'NONE':
+            return None
+        try:
+            nsecs = int(nsecs)
+        except ValueError:
+            log.error(json.dumps({'message' : 'Could not convert %s to int' % nsecs}))
+            return None
+        else:
+            f = VWorker.HEARTBEAT_FREQUENCY
+            log.info(json.dumps({'message' : 'HEARTBEAT_FREQUENCY has value %s' % f}))        
+            if f <= 1:
+                log.error(json.dumps({'message' : 'HEARTBEAT_FREQUENCY must be greater than 1'}))
+                return None
+            elif nsecs <= f:
+                log.error(json.dumps({'message' : 'heartbeat timeout cannot be less than HEARTBEAT_FREQUENCY'}))
+                return None
+            period = nsecs/f
+            log.info(json.dumps({'message' : 'Starting heartbeat thread with period %d' % period}))        
+            t = threading.Thread(target=emit_heartbeat, args = (period, heartbeat))
+            t.setDaemon(True) # this makes thread terminate when process that created it terminates
+            t.start()
+            return t
+            
+    '''
+    def start_heartbeat(self, emit_heartbeat, heartbeat):
+        self.validate_user_method(emit_heartbeat)
+        self.validate_user_method(heartbeat)
         
         nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
         if nsecs == 'NONE':
@@ -125,10 +156,11 @@ class VWorker( swf.ActivityWorker ):
             t.setDaemon(True) # this makes thread terminate when process that created it terminates
             t.start()
             return t
-
+    '''
+    
     def emit_heartbeat(self, delay_secs, heartbeat):
-        self.validateDelaySecs(delay_secs)
-        self.validateUserMethod(heartbeat)
+        self.validate_delay_secs(delay_secs)
+        self.validate_user_method(heartbeat)
 
         log = self.logger
         while self.heartbeat_active:
@@ -136,7 +168,7 @@ class VWorker( swf.ActivityWorker ):
 
             #delay_secs = delay_secs + VWorker.HEARTBEAT_DELTA + 100            
 
-            log.info(json.dumps({'message' : 'Heartbeat just occurred, will delay %s' % delay_secs}))
+            log.info(json.dumps({'message' : 'Heartbeat just occurred, will delay %d' % delay_secs}))
             time.sleep(delay_secs);
         return
 
@@ -151,13 +183,7 @@ class VWorker( swf.ActivityWorker ):
         self.heartbeat_active = False
         heartbeat_thread.join()
 
-    def validateBool(self, var):
-        if var is None:
-            raise UnboundLocalError('var is None')
-        elif not isinstance(var, bool):
-            raise TypeError('var is not a bool')
-
-    def validateDelaySecs(self, delay_secs):
+    def validate_delay_secs(self, delay_secs):
         if delay_secs is None:
             raise UnboundLocalError('delay_secs is None')
         elif not isinstance(delay_secs, int):
@@ -165,7 +191,7 @@ class VWorker( swf.ActivityWorker ):
         elif delay_secs <= 0:
             raise TypeError('delay_secs must be > 0')
 
-    def validateUserMethod(self, var):
+    def validate_user_method(self, var):
         if var is None:
             raise UnboundLocalError('method variable is None')
         elif not inspect.ismethod(var):
