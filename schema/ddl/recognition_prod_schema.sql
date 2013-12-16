@@ -2,13 +2,13 @@ SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 
-CREATE SCHEMA IF NOT EXISTS `video_dev_1` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ;
-USE `video_dev_1` ;
+CREATE SCHEMA IF NOT EXISTS `video_dev` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ;
+USE `video_dev` ;
 
 -- -----------------------------------------------------
--- Table `video_dev_1`.`faces`
+-- Table `video_dev`.`faces`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`faces` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`faces` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `user_id` INT NOT NULL ,
   `contact_id` INT NOT NULL ,
@@ -28,9 +28,9 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_dev_1`.`recognition_feedback`
+-- Table `video_dev`.`recognition_feedback`
 -- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`recognition_feedback` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`recognition_feedback` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `user_id` INT(11) NOT NULL ,
   `face_url` VARCHAR(2048) NOT NULL ,
@@ -48,10 +48,10 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`recognition_feedback` (
   PRIMARY KEY (`id`) )
 ENGINE = InnoDB;
 
-USE `video_dev_1`;
+USE `video_dev`;
 
 DELIMITER $$
-USE `video_dev_1`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -61,7 +61,7 @@ BEGIN
 END;
 $$
 
-USE `video_dev_1`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -75,7 +75,7 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_dev_1`$$
+USE `video_dev`$$
 
 
 CREATE
@@ -85,7 +85,7 @@ BEGIN
 END;
 $$
 
-USE `video_dev_1`$$
+USE `video_dev`$$
 
 
 CREATE
