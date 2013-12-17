@@ -65,8 +65,8 @@ class VPDecider( swf.Decider ):
             history = self.poll( next_page_token=history['nextPageToken'], task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList )
             history_events += history.get( 'events', [] )
 
-        with open('/tmp/pretty.history.' + str(time.time()) + '.txt', 'w') as f:
-             pprint.PrettyPrinter( indent=4, stream=f ).pprint( history_events )
+        #with open('/tmp/pretty.history.' + str(time.time()) + '.txt', 'w') as f:
+        #    pprint.PrettyPrinter( indent=4, stream=f ).pprint( history_events )
             
         if len( history_events ) == 0:
             log.debug( json.dumps( {
@@ -74,7 +74,7 @@ class VPDecider( swf.Decider ):
                         } ) )
             return True
 
-        pprint.PrettyPrinter( indent=4 ).pprint( history_events )
+        #pprint.PrettyPrinter( indent=4 ).pprint( history_events )
         
         '''
         f = open('/tmp/pretty.history.txt', 'w')
