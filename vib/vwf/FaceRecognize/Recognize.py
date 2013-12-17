@@ -48,7 +48,18 @@ class Recognize( VWorker ):
 
             user_uuid  = options['user_uuid']
             media_uuid = options['media_uuid']
-            recognition_input = options['FaceDetect']['recognition_input']
+            recognition_input = options['FaceDetect'].get( 'recognition_input', None )
+
+            if recognition_input is None:
+                log.info( json.dumps( { 
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
+                            } ) )
+                db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+                return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
+
+            
             input_bucket = recognition_input['s3_bucket']
             input_key = recognition_input['s3_key']
 
@@ -110,6 +121,7 @@ class Recognize( VWorker ):
                 #
                 # We achieve this by sleeping until the timeout for
                 # this task would have expired, and then exiting.
+                self.stop_heartbeat()
                 time.sleep( 1.5 * int( VPW[self.task_name].get( 'default_task_heartbeat_timeout', '300' ) ) )
                 # Attempting a heartbeat now results in an exception
                 # being thrown.

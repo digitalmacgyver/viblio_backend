@@ -84,7 +84,7 @@ class VWorker( swf.ActivityWorker ):
                     result = self.run_task( input_opts )
                 finally:
                    log.info(json.dumps({'message' : 'Stopping heartbeat...' }))
-                   self.stop_heartbeat(self.heartbeat_thread)
+                   self.stop_heartbeat()
 
                 if 'ACTIVITY_ERROR' in result:
                     log.error( json.dumps( { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid,
@@ -146,11 +146,12 @@ class VWorker( swf.ActivityWorker ):
             time.sleep(delay_secs);
         return
 
-    def stop_heartbeat(self, heartbeat_thread):
-        if heartbeat_thread is None:
+    def stop_heartbeat( self ):
+        if self.heartbeat_thread is None:
             return
         self.heartbeat_active = False
-        heartbeat_thread.join()
+        self.heartbeat_thread.join()
+        self.heartbeat_thread = None
 
     def validate_delay_secs(self, delay_secs):
         if delay_secs is None:
