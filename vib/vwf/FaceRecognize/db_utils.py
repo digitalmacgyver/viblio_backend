@@ -29,7 +29,7 @@ def get_picture_contacts_for_user_uuid( user_uuid ):
 
     user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
 
-    popular_features = orm.query( MediaAssetFeatures.contact_id, func.count( '*' ) ).filter( and_( MediaAssetFeatures.user_id == user.id, MediaAssetFeatures.contact_id is not None ) ).group_by( MediaAssetFeatures.contact_id )[:6]
+    popular_features = orm.query( MediaAssetFeatures.contact_id, func.count( '*' ) ).filter( and_( MediaAssetFeatures.user_id == user.id, MediaAssetFeatures.contact_id != None ) ).group_by( MediaAssetFeatures.contact_id ).order_by( func.count( '*' ).desc() )[:6]
     
     popular_contact_ids = {}
     for feature in popular_features:
