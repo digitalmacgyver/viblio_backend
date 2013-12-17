@@ -103,7 +103,7 @@ class Transcode( VWorker ):
             media.status = self.task_name + 'Complete'
 
             # Calculate the recording date for video versions.
-            recording_date = datetime.datetime.now()
+            recording_date = datetime.datetime.utcfromtimestamp( 0 )
             if exif['create_date'] and exif['create_date'] != '' and exif['create_date'] != '0000:00:00 00:00:00':
                 recording_date = exif['create_date']
             log.debug( 'Setting recording date to ' + str( recording_date ) )
