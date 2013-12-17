@@ -205,7 +205,7 @@ class VPDecider( swf.Decider ):
                                     } ) )
 
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
-                        decisions.fail_workflow_execution( reason=reason )
+                        decisions.fail_workflow_execution( reason=reason[:250] )
                     else:
                         log.warning( json.dumps( {
                                     'media_uuid' : media_uuid,

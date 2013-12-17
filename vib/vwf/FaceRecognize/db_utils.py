@@ -20,6 +20,9 @@ def get_picture_contacts_for_user_uuid( user_uuid ):
     related to the input user_uuid who have pictures. Members of
     contacts are accessed through dot notation, not indexing.'''
 
+    #import pdb
+    #pdb.set_trace()
+
     log.debug( json.dumps( {
                 'user_uuid' : user_uuid,
                 'message' : 'Getting contacts with pictures for user %s' % user_uuid

@@ -56,24 +56,22 @@ def create_recognize_hits( media_uuid, merged_tracks, contacts, guesses ):
     '''
     ret = []
 
-    seen_contacts = {}
-    unique_contacts = []
-    for guess_data in guesses:
-        guess = guess_data['guess']
-        if guess and ( guess['uuid'] not in seen_contacts ):
-            seen_contacts[guess['uuid']] = True
-
-    for contact in contacts:
-        if contact.uuid not in seen_contacts:
-            seen_contacts[contact.uuid] = True
-            unique_contacts.append( contact )
-
-
     for idx, person_tracks in enumerate( merged_tracks ):
         # We need a deterministic ID here across multiple runs of the
         # script / submissions of input to ensure we don't re-create
         # HITs that have already been created.
         id_for_person_track = min( a['track_id'] for a in person_tracks )
+
+        seen_contacts = {}
+        unique_contacts = []
+        guess = guesses[idx]['guess']
+        if guess and ( guess['uuid'] not in seen_contacts ):
+            seen_contacts[guess['uuid']] = True
+                
+        for contact in contacts:
+            if contact.uuid not in seen_contacts:
+                seen_contacts[contact.uuid] = True
+                unique_contacts.append( contact )
 
         create_options = {
             'HITTypeId' : RecognizeHITTypeId,
