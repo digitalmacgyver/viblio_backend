@@ -99,7 +99,7 @@ class VWorker( swf.ActivityWorker ):
         except Exception as error:
             log = self.logger
             log.error( json.dumps( { 'message' : "Task had an exception: %s" % error } ) )
-            self.fail( reason = str( error ) )
+            self.fail( reason = str( error )[:250] )
             raise error
 
     def run_task( self, opts ):

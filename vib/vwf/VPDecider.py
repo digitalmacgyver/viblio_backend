@@ -138,7 +138,7 @@ class VPDecider( swf.Decider ):
 
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity': task, 'type' : 'max_retries' } )
 
-                        decisions.fail_workflow_execution( reason=reason )
+                        decisions.fail_workflow_execution( reason=reason[:250] )
 
                     elif not details[-1].get( 'retry', False ):
                         reason = "Most recent failure for task %s said not to retry, terminating workflow." % task
@@ -154,7 +154,7 @@ class VPDecider( swf.Decider ):
 
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task, 'type' : 'fatal_error' } )
 
-                        decisions.fail_workflow_execution( reason=reason )
+                        decisions.fail_workflow_execution( reason=reason[:250] )
                     else:
 
                         log.info( json.dumps( {
