@@ -1,2 +1,0 @@
-source setup-env.sh
-DEPLOYMENT=local ./VPDecider-wrapper.py
