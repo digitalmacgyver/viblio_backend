@@ -134,7 +134,21 @@ class VWorker( swf.ActivityWorker ):
             t.setDaemon(True) # this makes thread terminate when process that created it terminates
             t.start()
             return t
-              
+
+    def emit_heartbeat(self, delay_secs, heartbeat):
+        self.validate_delay_secs(delay_secs)
+        self.validate_user_method(heartbeat)
+
+        log = self.logger
+        while True:
+            heartbeat()
+            log.info(json.dumps({'message' : 'Heartbeat just occurred, time to next heartbeat is %d seconds' % delay_secs}))
+            for i in range(delay_secs):
+                if not self.heartbeat_active:
+                    return
+                time.sleep(1);
+
+    '''          
     def emit_heartbeat(self, delay_secs, heartbeat):
         self.validate_delay_secs(delay_secs)
         self.validate_user_method(heartbeat)
@@ -145,6 +159,7 @@ class VWorker( swf.ActivityWorker ):
             log.debug(json.dumps({'message' : 'Heartbeat just occurred, will delay %d' % delay_secs}))
             time.sleep(delay_secs);
         return
+    '''
 
     def stop_heartbeat( self ):
         if self.heartbeat_thread is None:
