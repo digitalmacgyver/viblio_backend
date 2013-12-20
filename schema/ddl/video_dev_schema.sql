@@ -566,6 +566,21 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_share_messages` (
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`ui_kv_store`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`ui_kv_store` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `domain` VARCHAR(64) NOT NULL ,
+  `key` VARCHAR(128) NOT NULL ,
+  `value` TEXT NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `domain_UNIQUE` (`domain` ASC, `key` ASC) )
+ENGINE = InnoDB;
+
 USE `video_dev_1`;
 
 DELIMITER $$
@@ -1136,6 +1151,30 @@ USE `video_dev_1`$$
 
 CREATE
 	TRIGGER media_share_message_updated BEFORE UPDATE ON media_share_messages FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER ui_kv_store_created BEFORE INSERT ON ui_kv_store FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER ui_kv_store_updated BEFORE UPDATE ON ui_kv_store FOR EACH ROW
 BEGIN
 	set NEW.updated_date = NOW();
 END;
