@@ -42,8 +42,12 @@ def get_exif( media_uuid, filename ):
         duration     = exif_data.get( 'Duration', None )
 
         if duration is not None:
-            ( hours, minutes, secs ) = re.match( r'(\d+):(\d\d):(\d\d)', duration ).groups()
-            duration = int( hours )*60*60 + int( minutes )*60 + int( secs )
+            match = re.match( r'(\d+):(\d\d):(\d\d)', duration )
+            if match is not None:
+                ( hours, minutes, secs ) = match.groups()
+                duration = int( hours )*60*60 + int( minutes )*60 + int( secs )
+            else:
+                duration = None
 
         return {  'file_ext'    : file_ext, 
                   'mime_type'   : mime_type, 

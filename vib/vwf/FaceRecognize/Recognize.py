@@ -559,7 +559,7 @@ class Recognize( VWorker ):
                             } ) )
                 self.heartbeat()
 
-            recognized_faces, new_faces, recognition_data = self._process_recognized( answer_dicts, hit_tracks, guess )
+            recognized_faces, new_faces, recognition_data = self._process_recognized( answer_dicts, hit_tracks )
         else:
             # The user has no contacts with pictures, so everyone here is new.
             recognized_faces = {}
@@ -578,7 +578,7 @@ class Recognize( VWorker ):
 
         return recognized_faces, new_faces, recognition_data
 
-    def _process_recognized( self, answer_dicts, hit_tracks, guess ):
+    def _process_recognized( self, answer_dicts, hit_tracks ):
         '''Given sets of user answers, interpret the results to tag
         users.  Return a recognized_faces, new_faces tuple.
 
