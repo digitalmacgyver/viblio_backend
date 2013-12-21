@@ -121,6 +121,8 @@ class Transcode( VWorker ):
             for output in outputs:
                 output_uuid = str( uuid.uuid4() )
 
+                output_exif = tutils.get_exif( media_uuid, output['output_file_fs'] )
+
                 log.info( json.dumps( {
                             'media_uuid' : media_uuid,
                             'user_uuid' : user_uuid,
@@ -141,7 +143,8 @@ class Transcode( VWorker ):
                     bytes        = os.path.getsize( output['output_file_fs'] ),
                     uri          = output['output_file']['s3_key'],
                     location     = 'us',
-                    view_count   = 0 )
+                    view_count   = 0,
+                    duration     = output_exif['duration'] )
                 media.assets.append( video_asset )
 
                 for thumbnail in output['thumbnails']:
@@ -194,6 +197,7 @@ class Transcode( VWorker ):
                         'user_uuid' : user_uuid,
                         'message' : "Exception while transcoding video for user %s, media %s, error was: %s" % ( user_uuid, media_uuid, e )
                         } ) )
+
             self.cleanup_files( media_uuid, user_uuid, original_file, outputs )
             raise
 

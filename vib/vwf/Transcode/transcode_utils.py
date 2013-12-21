@@ -2,6 +2,7 @@ import commands
 import json
 import logging
 import os
+import re
 
 import vib.utils.s3 as s3
 
@@ -38,6 +39,11 @@ def get_exif( media_uuid, filename ):
         create_date  = str( exif_data.get( 'MediaCreateDate', '' ) )
         image_width  = exif_data.get( 'ImageWidth', None)
         image_height = exif_data.get( 'ImageHeight', None)
+        duration     = exif_data.get( 'Duration', None )
+
+        if duration is not None:
+            ( hours, minutes, secs ) = re.match( r'(\d+):(\d\d):(\d\d)', duration ).groups()
+            duration = int( hours )*60*60 + int( minutes )*60 + int( secs )
 
         return {  'file_ext'    : file_ext, 
                   'mime_type'   : mime_type, 
@@ -47,7 +53,8 @@ def get_exif( media_uuid, filename ):
                   'rotation'    : rotation, 
                   'frame_rate'  : frame_rate,
                   'width'       : image_width,
-                  'height'      : image_height
+                  'height'      : image_height,
+                  'duration'    : duration
                   }
 
     except Exception as e:
