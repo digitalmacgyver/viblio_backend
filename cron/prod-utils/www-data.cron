@@ -1,1 +1,2 @@
 0 */2 * * * export PYTHONPATH=/deploy/prod/; /deploy/prod/vib/utils/notify_mturk_workers.py >> /tmp/notify_mturk_workers-$(/bin/date +"\%F").log 2>&1
+0 0 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/cv/FaceRecognition/CleanupFaces-wrapper.py >> /tmp/CleanupFaces-$(/bin/date +"\%F").log 2>&1
