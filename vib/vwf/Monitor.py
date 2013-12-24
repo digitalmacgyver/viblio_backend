@@ -2,6 +2,7 @@
 
 import boto.swf
 import boto.swf.layer2 as swf
+import boto.ec2.cloudwatch as cloudwatch
 import json
 import logging
 from logging import handlers
@@ -41,11 +42,20 @@ class Monitor( swf.Domain ):
         super( Monitor, self ).__init__( **kwargs )
 
         self.logger = logger
+        self.cw = cloudwatch.connect_to_region( config.cloudwatch_region )
 
     def print_queue_depths( self ):
         for stage in sorted( VPW.keys() ):
             print "%s (%s) had %s outstanding tasks." % ( stage, VPW[stage]['task_list'] + config.VPWSuffix + config.UniqueTaskList, self.count_pending_activity_tasks( VPW[stage]['task_list'] + config.VPWSuffix + config.UniqueTaskList )['count'] )
 
-
-        
-
+    def update_cloudwatch( self ):
+        for stage in sorted( VPW.keys() ):
+            self.cw.put_metric_data( config.swf_domain, 
+                                     config.swf_queue_metric, 
+                                     self.count_pending_activity_tasks( VPW[stage]['task_list'] + config.VPWSuffix + config.UniqueTaskList )['count'],
+                                     unit       = 'Count',
+                                     dimensions = { 'Stage' : stage,
+                                                    'Deployment' : config.VPWSuffix
+                                                    }
+                                     )
+                                     
