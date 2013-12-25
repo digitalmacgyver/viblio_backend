@@ -76,9 +76,6 @@ def cleanup_user( user_id, media_uuid = None ):
     return
 
 try:
-    import pdb
-    pdb.set_trace()
-
     log = logger
     orm = vib.db.orm.get_session()
     
