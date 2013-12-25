@@ -2,3 +2,4 @@
 0 0 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/cv/FaceRecognition/CleanupFaces-wrapper.py >> /tmp/CleanupFaces-$(/bin/date +"\%F").log 2>&1
 */5 * * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/monitoring/MonitorQueues-wrapper.py >> /tmp/MonitorQueues-prod-$(/bin/date +"\%F").log 2>&1
 */5 * * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=staging; /deploy/prod/vib/monitoring/MonitorQueues-wrapper.py >> /tmp/MonitorQueues-staging-$(/bin/date +"\%F").log 2>&1
+*/15 * * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/monitoring/monitor-pipeline.py >> /tmp/monitor-pipeline-prod-$(/bin/date +"\%F").log 2>&1
