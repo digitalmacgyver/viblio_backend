@@ -94,11 +94,14 @@ try:
         heartbeat_uuid = None
         if len( heartbeat_media ) == 1:
             if heartbeat_media[0].status == 'FaceRecognizeComplete':
+                log.debug( json.dumps( { 'message' : 'Pipeline OK' } ) )
                 log_status( 1 )
             else:
                 heartbeat_uuid = heartbeat_media[0].uuid
+                log.debug( json.dumps( { 'message' : 'Pipeline not OK' } ) )
                 log_status( 0 )
         else:
+            log.debug( json.dumps( { 'message' : 'Pipeline not OK' } ) )
             log_status( 0 )
 
         cleanup_user( user_id, heartbeat_uuid )
@@ -108,4 +111,5 @@ try:
         send_heartbeat_video( relpath, config.pipeline_test_video )
 except Exception as e:
     print "Error while initiating pipeline: %s" % ( e )
+    log.debug( json.dumps( { 'message' : 'Pipeline not OK' } ) )
     log_status( 0 )
