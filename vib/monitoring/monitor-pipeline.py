@@ -49,7 +49,7 @@ def log_status( status ):
 def send_heartbeat_video( relpath, video ):
     deployment = os.environ.get( 'DEPLOYMENT', 'local' )
 
-    command = '%s../../tuspy/tuspy.py -a %s -s %s -e %s -p %s -f %s' % ( relpath, deployment, deployment, config.monitoring_user, config.monitoring_password, relpath+video )
+    command = '%s/tuspy.py -a %s -s %s -e %s -p %s -f %s' % ( relpath, deployment, deployment, config.monitoring_user, config.monitoring_password, relpath+video )
 
     ( status, output ) = commands.getstatusoutput( command )
     if status:
