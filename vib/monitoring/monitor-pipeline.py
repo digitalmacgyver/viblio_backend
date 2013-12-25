@@ -59,18 +59,19 @@ def send_heartbeat_video( relpath, video ):
 
 def cleanup_user( user_id, media_uuid = None ):
     if media_uuid != None:
-        swf.WorkflowExecution( 
-            name = config.VPWName + config.VPWsuffix,
-            domain = vib.vwf.VPWorkflow.domain,
-            version = vib.vwf.VPWorkflow.version
-            ).terminate( 
-            domain = vib.vwf.VPWorkflow.domain,
-            workflow_id = media_uuid
-            )
+        pass
+        #swf.WorkflowExecution( 
+        #    name = config.VPWName + config.VPWSuffix,
+        #    domain = vib.vwf.VPWorkflow.domain,
+        #    version = vib.vwf.VPWorkflow.version
+        #    ).terminate( 
+        #    domain = vib.vwf.VPWorkflow.domain,
+        #    workflow_id = media_uuid
+        #    )
 
     orm = vib.db.orm.get_session()
     if user_id != None:
-        orm.query( Media ).filter( Media.user_id == user_id ).delete()
+        orm.query( Media ).filter( and_( Media.user_id == user_id, Media.title == config.pipeline_title ) ).delete()
         orm.commit()
         rec.delete_user( user_id )
 
@@ -95,6 +96,7 @@ try:
             if heartbeat_media[0].status == 'FaceRecognizeComplete':
                 log_status( 1 )
             else:
+                heartbeat_uuid = heartbeat_media[0].uuid
                 log_status( 0 )
         else:
             log_status( 0 )
