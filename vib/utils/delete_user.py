@@ -7,6 +7,7 @@ import sys
 import vib.utils.s3 as s3
 import vib.db.orm
 from vib.db.models import *
+import vib.cv.FaceRecognition.api as rec
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -116,6 +117,15 @@ def delete_all_data_for_user( user_uuid, verbose=False ):
 
         orm.query( Users ).filter( Users.id == user[0].id ).delete()
         
+        orm.commit()
+
+        try:
+            if verbose:
+                print "Deleting all face recognition data for user_id %s" % ( user.id )
+                rec.delete_user( user.id )
+        except Exception as e:
+            print "Error deleting face recognition data: %s" % ( e )
+
         orm.commit()
 
         if verbose:
