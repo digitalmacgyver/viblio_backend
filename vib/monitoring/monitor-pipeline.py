@@ -67,7 +67,8 @@ def cleanup_user( user_id, media_uuid = None ):
     orm = vib.db.orm.get_session()
     if user_id != None:
         orm.query( Media ).filter( Media.user_id == user_id ).delete()
-        rec.delete_user( user.id )
+        orm.commit()
+        rec.delete_user( user_id )
 
     return
 
