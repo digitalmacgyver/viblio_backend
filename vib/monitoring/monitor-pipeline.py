@@ -79,8 +79,8 @@ try:
     if len( user ) != 1:
         log.error( json.dumps( { 'message' : '%s user records found for monitoring email %s, expected 1.' % ( len( user ), config.monitoring_user ) } ) )
     else:
-        user_uuid = user.uuid
-        user_id = user.id
+        user_uuid = user[0].uuid
+        user_id = user[0].id
 
         heartbeat_media = orm.query( Media ).filter( Media.user_id == user_id ).all()
 
