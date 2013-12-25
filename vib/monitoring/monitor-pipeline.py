@@ -51,6 +51,9 @@ def send_heartbeat_video( relpath, video ):
     command = '%s../../tuspy/tuspy.py -a %s -s %s -e %s -p %s -f %s' % ( relpath, deployment, deployment, config.monitoring_user, config.monitoring_password, relpath+video )
 
     ( status, output ) = commands.getstatusoutput( command )
+    if status:
+        raise Exception( "Error uploading file with tuspy: %s" % ( output ) )
+
     return
 
 def cleanup_user( user_id, media_uuid = None ):
@@ -87,7 +90,7 @@ try:
         user_uuid = user[0].uuid
         user_id = user[0].id
 
-        heartbeat_media = orm.query( Media ).filter( Media.user_id == user_id ).all()
+        heartbeat_media = orm.query( Media ).filter( and_( Media.user_id == user_id, Media.title == config.pipeline_title ).all()
 
         heartbeat_uuid = None
         if len( heartbeat_media ) == 1:
