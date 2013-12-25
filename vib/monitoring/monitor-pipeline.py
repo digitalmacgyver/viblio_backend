@@ -7,6 +7,7 @@ import json
 import logging
 from logging import handlers
 import os
+from sqlalchemy import and_
 
 import vib.db.orm
 from vib.db.models import *
@@ -87,7 +88,7 @@ try:
         user_uuid = user[0].uuid
         user_id = user[0].id
 
-        heartbeat_media = orm.query( Media ).filter( and_( Media.user_id == user_id, Media.title == config.pipeline_title ).all()
+        heartbeat_media = orm.query( Media ).filter( and_( Media.user_id == user_id, Media.title == config.pipeline_title ) ).all()
 
         heartbeat_uuid = None
         if len( heartbeat_media ) == 1:
