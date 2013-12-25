@@ -10,9 +10,9 @@ import os
 
 import vib.db.orm
 from vib.db.models import *
-import vib.utils.delete_user
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
+import vib.cv.FaceRecognition.api as rec
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -53,7 +53,7 @@ def send_heartbeat_video( relpath, video ):
     ( status, output ) = commands.getstatusoutput( command )
     return
 
-def cleanup_user( user_uuid, media_uuid = None ):
+def cleanup_user( user_id, media_uuid = None ):
     if media_uuid != None:
         swf.WorkflowExecution( 
             name = config.VPWName + config.VPWsuffix,
@@ -64,7 +64,11 @@ def cleanup_user( user_uuid, media_uuid = None ):
             workflow_id = media_uuid
             )
 
-    vib.utils.delete_user.delete_all_data_for_user( user_uuid )
+    orm = vib.db.orm.get_session()
+    if user_id != None:
+        orm.query( Media ).filter( Media.user_id == user_id ).delete()
+        rec.delete_user( user.id )
+
     return
 
 try:
@@ -93,7 +97,7 @@ try:
         else:
             log_status( 0 )
 
-        cleanup_user( user_uuid, heartbeat_uuid )
+        cleanup_user( user_id, heartbeat_uuid )
         relpath = os.path.dirname( __file__ )
         if len( relpath ) and relpath[-1] != '/':
             relpath += '/'
