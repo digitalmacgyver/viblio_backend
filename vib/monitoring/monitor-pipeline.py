@@ -102,7 +102,7 @@ try:
         relpath = os.path.dirname( __file__ )
         if len( relpath ) and relpath[-1] != '/':
             relpath += '/'
-        send_heartbeat_video( relpath, config.pipline_test_video )
+        send_heartbeat_video( relpath, config.pipeline_test_video )
 except Exception as e:
     print "Error while initiating pipeline: %s" % ( e )
     log_status( 0 )
