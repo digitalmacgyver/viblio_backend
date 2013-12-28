@@ -2,6 +2,7 @@
 import boto.swf.layer2 as swf
 import datetime
 import fcntl
+import hashlib
 import hmac
 import json
 import logging
@@ -178,6 +179,48 @@ class Worker( Background ):
         if 'finalLength' in self.data['info'] and self.data['info']:
             log.debug( 'JSON finalLength is: ' + str( self.data['info']['finalLength'] ) )
 
+        # Check if we've already seen this file for this user.
+        unique_hash = None
+        try:
+            log.info( 'Computing MD5SUM for input file: %s' % ( files['main']['ifile'] ) )
+            
+            f = open( files['main']['ifile'], 'rb' )
+            md5 = hashlib.md5()
+            while True:
+                file_data = f.read( 1048576 )
+                if not file_data:
+                    break
+                md5.update( file_data )
+            unique_hash = md5.hexdigest()
+            f.close()
+
+            log.debug( 'Getting the current user from the database for uid: %s' % ( self.data['info']['uid'] ) )
+            user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
+
+            log.debug( 'Checking uniqueness of file with hash %s for uid %s' % ( unique_hash, self.data['info']['uid'] ) )
+            db_files = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.unique_hash == unique_hash ) ).all()
+
+            if len( db_files ) == 0:
+                log.info( 'File with hash %s for user uuid %s is unique, proceeding.' % ( unique_hash, self.data['info']['uid'] ) )
+            else:
+                log.info( 'File with hash %s for user uuid %s is not unique, terminating.' % ( unique_hash, self.data['info']['uid'] ) )
+                self.handle_errors()
+                self.__release_lock()
+                if self.popeye_logging_handler:
+                    self.popeye_log.removeHandler( self.popeye_logging_handler )
+                    self.popeye_logging_handler = None
+                return
+
+        except Exception as e:
+            self.__safe_log( self.popeye_log.exception, 'Failed to determine uniqueness of uploaded file: %s' % ( e ) )
+            self.handle_errors()
+            self.__release_lock()
+            if self.popeye_logging_handler:
+                self.popeye_log.removeHandler( self.popeye_logging_handler )
+                self.popeye_logging_handler = None
+            raise
+
+
         # Load data from _metadata.json into self.data['metadata']
         log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
         self.__initialize_metadata( files['metadata']['ifile'] )
@@ -232,7 +275,8 @@ class Worker( Background ):
                            filename       = client_filename,
                            title          = media_title,
                            view_count     = 0,
-                           status         = 'PopeyeComplete' )
+                           status         = 'PopeyeComplete',
+                           unique_hash    = unique_hash )
 
             # Associate media with user.
             user.media.append( media )

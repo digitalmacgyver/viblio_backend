@@ -1,3 +1,14 @@
+alter table media_assets drop column filename;
+alter table media_assets drop column format;
+alter table media_assets drop column time_stamp;
+alter table media_assets drop column intellivision_file_id;
+alter table contacts drop column intellivision_id;
+
+alter table media add column unique_hash VARCHAR(32) NULL DEFAULT NULL after uuid;
+alter table media add unique index unique_hash_UNIQUE(unique_hash,user_id);
+
+===
+
 alter table media add column status VARCHAR(32) NULL DEFAULT NULL after lng;
 
 update media set status = 'FaceRecognizeComplete' where id in ( select media_id from media_assets where asset_type = 'main' );
