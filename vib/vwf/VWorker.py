@@ -148,19 +148,6 @@ class VWorker( swf.ActivityWorker ):
                     return
                 time.sleep(1);
 
-    '''          
-    def emit_heartbeat(self, delay_secs, heartbeat):
-        self.validate_delay_secs(delay_secs)
-        self.validate_user_method(heartbeat)
-
-        log = self.logger
-        while self.heartbeat_active:
-            heartbeat()
-            log.debug(json.dumps({'message' : 'Heartbeat just occurred, will delay %d' % delay_secs}))
-            time.sleep(delay_secs);
-        return
-    '''
-
     def stop_heartbeat( self ):
         if self.heartbeat_thread is None:
             return

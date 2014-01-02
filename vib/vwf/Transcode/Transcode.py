@@ -96,7 +96,15 @@ class Transcode( VWorker ):
             orm = vib.db.orm.get_session()
 
             # Get the media object to which all our subordinate files relate.
-            media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
+            media = orm.query( Media ).filter( Media.uuid == media_uuid ).first()
+            if media is None:
+                log.error( json.dumps( {
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : 'Failed to locate database record for media %s, perhaps it has been deleted?' % ( media_uuid ) } ) )
+                # Terminate execution permanently, if there is no
+                # database record for this we can't possibly proceed.
+                return { 'ACTIVITY_ERROR' : True, 'retry' : False }
 
             media.lat = exif['lat']
             media.lng = exif['lng']
@@ -110,7 +118,16 @@ class Transcode( VWorker ):
             log.debug( 'Exif data for create was ' + exif['create_date'] )    
             media.recording_date = recording_date
 
-            original = orm.query( MediaAssets ).filter( MediaAssets.uuid == options['original_uuid'] ).one()
+            original = orm.query( MediaAssets ).filter( MediaAssets.uuid == options['original_uuid'] ).first()
+            if original is None:
+                log.error( json.dumps( {
+                            'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : 'Failed to locate database record for original media asset %s, perhaps it has been deleted?' % ( media_uuid ) } ) )
+                # Terminate execution permanently, if there is no
+                # database record for this we can't possibly proceed.
+                return { 'ACTIVITY_ERROR' : True, 'retry' : False }
+
             original.mimetype = 'video/%s' % exif.get( 'format', 'mp4' )
 
             # We will return to the next stage the key/bucket of the

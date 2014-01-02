@@ -266,7 +266,7 @@ class Recognize( VWorker ):
         hit_completed = False
         
         while not mturk_utils.hit_completed( hit_id ):
-            log.info( json.dumps( { 
+            log.debug( json.dumps( { 
                         'media_uuid' : media_uuid,
                         'user_uuid' : user_uuid,
                         'hit_id' : hit_id,

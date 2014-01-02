@@ -102,6 +102,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     ffopts = ' -c:a libfdk_aac '
     
     log_message = ''
+    cmd_output = ''
 
     if rotation == '90':
         log_message = 'Video is rotated 90 degrees, rotating.'
@@ -136,12 +137,12 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                 'media_uuid' : media_uuid,
                 'message' : "Running FFMPEG command %s" % cmd
                 } ) )
-    ( status, output ) = commands.getstatusoutput( cmd )
-    output = output.decode( 'utf-8' )
+    ( status, cmd_output ) = commands.getstatusoutput( cmd )
+    cmd_output = cmd_output.decode( 'utf-8' )
 
     log.debug( json.dumps( {
                 'media_uuid' : media_uuid,
-                'message' : "FFMPEG command output was: %s" % output
+                'message' : "FFMPEG command output was: %s" % cmd_output
                 } ) )
 
     valid_outputs = True
@@ -152,9 +153,9 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     if not valid_outputs or status != 0:
         log.error( json.dumps( {
                     'media_uuid' : media_uuid,
-                    'message' : 'Failed to generate transcoded video with: %s' % cmd
+                    'message' : 'Failed to generate transcoded video with: %s, error was ...%s' % ( cmd, cmd_output[-256:])
                     } ) )
-        raise Exception( 'Failed to generate transcoded video with: %s' % cmd )
+        raise Exception( 'Failed to generate transcoded video: ...%s' % cmd_output[-256:] )
 
     # Generate posters and upload to S3
     for idx, output in enumerate( outputs ):
@@ -192,6 +193,8 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
     # the "times" key of the thumbnails data structure.
 
     for idx, thumbnail in enumerate( thumbnails ):
+        output = ''
+
         time = thumbnail['times'][0]
 
         ffmpeg_opts = ' -vframes 1 '
@@ -252,9 +255,9 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
             if status != 0 or not os.path.isfile( thumbnail_file_fs ):
                 log.error( json.dumps( {
                             'media_uuid' : media_uuid,
-                            'message' : "Failed to generate thumbnail for media_uuid %s, video file %s with command %s" % ( media_uuid, input_file_fs, cmd )
+                            'message' : "Failed to generate thumbnail for media_uuid %s, video file %s with command %s, error was ...%s" % ( media_uuid, input_file_fs, cmd, output[-256:] )
                             } ) )
-                raise Exception( 'Failed to generate poster with command: %s' % cmd )
+                raise Exception( 'Failed to generate thumbnail ...%s' % output[-256:] )
             else:
                 thumbnail['output_file_fs'] = thumbnail_file_fs 
         else:
