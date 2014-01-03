@@ -109,15 +109,9 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
     Returns True on success.
     '''
-
-    #import pdb
-    #pdb.set_trace()
-
-    log.debug( json.dumps( {
-                'user_uuid' : user_uuid,
-                'media_uuid' : media_uuid,
-                'message' : 'Updating contacts in video %s for user %s' % ( media_uuid, user_uuid )
-                } ) )
+    log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                             'media_uuid' : media_uuid,
+                             'message' : 'Updating contacts in video %s for user %s' % ( media_uuid, user_uuid ) } ) )
 
     orm = vib.db.orm.get_session()
 
@@ -127,7 +121,14 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
 
         user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
         user_id = user.id
+    except Exception as e:
+        message = 'Failed to find media %s or user %s in database, perhaps they have been deleted?' % ( media_uuid, user_uuid )
+        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                 'media_uuid' : media_uuid,
+                                 'message' : message } ) )
+        raise Exception( message )
 
+    try:
         # Handle bad tracks
         for element in bad_tracks:
             bad_track = element['track']

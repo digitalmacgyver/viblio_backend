@@ -186,8 +186,13 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails ):
 
     exif = get_exif( media_uuid, input_file_fs )
 
-    video_x = int( exif['width'] )
-    video_y = int( exif['height'] )
+    try:
+        video_x = int( exif['width'] )
+        video_y = int( exif['height'] )
+    except Exception as e:
+        message = 'Failed to extract width and height from transcoded video for media_uuid %s, terminating.' % ( media_uuid )
+        log.error( json.dumps( { 'media_uuid' : media_uuid, 'message' : message } ) )
+        raise Exception( message )
 
     # DEBUG - for the time being we support only the first element of
     # the "times" key of the thumbnails data structure.
