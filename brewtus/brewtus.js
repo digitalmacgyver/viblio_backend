@@ -316,8 +316,12 @@
 	if (body == null) {
 	    body = '';
 	}
-
-	res.writeHead(statusCode, reason);
+	
+	try {
+	    res.writeHead(statusCode, reason);
+	} catch(error) {
+	    winston.error(util.inspect(error));
+	}
 	return res.end(body);
     };
 
