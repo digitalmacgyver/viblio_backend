@@ -62,6 +62,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media` (
   `user_id` INT(11) NOT NULL ,
   `uuid` VARCHAR(36) NOT NULL ,
   `media_type` VARCHAR(16) NOT NULL ,
+  `is_album` TINYINT(1) NOT NULL DEFAULT false ,
   `title` VARCHAR(200) NULL DEFAULT NULL ,
   `filename` VARCHAR(1024) NULL DEFAULT NULL ,
   `description` VARCHAR(1024) NULL DEFAULT NULL ,
@@ -107,6 +108,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`contacts` (
   `id` INT(11) NOT NULL AUTO_INCREMENT ,
   `uuid` VARCHAR(36) NOT NULL ,
   `user_id` INT(11) NOT NULL ,
+  `is_group` TINYINT(1) NOT NULL DEFAULT false ,
   `contact_name` VARCHAR(128) NULL DEFAULT NULL ,
   `contact_email` VARCHAR(128) NULL DEFAULT NULL ,
   `contact_viblio_id` INT(11) NULL DEFAULT NULL ,
@@ -283,7 +285,9 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_shares` (
   `uuid` VARCHAR(36) NULL DEFAULT NULL ,
   `media_id` INT(11) NOT NULL ,
   `user_id` INT(11) NULL DEFAULT NULL ,
+  `contact_id` INT(11) NULL DEFAULT NULL ,
   `share_type` VARCHAR(16) NOT NULL ,
+  `is_group_share` TINYINT(1) NOT NULL DEFAULT false ,
   `view_count` INT NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
@@ -292,6 +296,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_shares` (
   PRIMARY KEY (`id`) ,
   INDEX `fk_media_shares_media1` (`media_id` ASC) ,
   UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
+  INDEX `fk_media_shares_contacts1` (`contact_id` ASC) ,
   CONSTRAINT `fk_media_shares_users1`
     FOREIGN KEY (`user_id` )
     REFERENCES `video_dev_1`.`users` (`id` )
@@ -305,6 +310,11 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_shares` (
   CONSTRAINT `fk_media_shares_media1`
     FOREIGN KEY (`media_id` )
     REFERENCES `video_dev_1`.`media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_media_shares_contacts1`
+    FOREIGN KEY (`contact_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
@@ -576,6 +586,59 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`ui_kv_store` (
   `updated_date` DATETIME NULL DEFAULT NULL ,
   PRIMARY KEY (`id`) ,
   UNIQUE INDEX `domain_UNIQUE` (`domain` ASC, `key` ASC) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`contact_groups`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`contact_groups` (
+  `group_id` INT(11) NOT NULL ,
+  `contact_id` INT(11) NULL DEFAULT NULL ,
+  `contact_viblio_id` INT NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`group_id`, `contact_id`) ,
+  INDEX `fk_contact_groups_contacts2` (`contact_id` ASC) ,
+  INDEX `fk_contact_groups_contacts3` (`contact_viblio_id` ASC) ,
+  CONSTRAINT `fk_contact_groups_contacts1`
+    FOREIGN KEY (`group_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_contact_groups_contacts2`
+    FOREIGN KEY (`contact_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_contact_groups_contacts3`
+    FOREIGN KEY (`contact_viblio_id` )
+    REFERENCES `video_dev_1`.`contacts` (`contact_viblio_id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`media_albums`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_albums` (
+  `album_id` INT(11) NOT NULL ,
+  `media_id` INT(11) NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`album_id`, `media_id`) ,
+  INDEX `fk_media_albums_media2` (`media_id` ASC) ,
+  CONSTRAINT `fk_media_albums_media1`
+    FOREIGN KEY (`album_id` )
+    REFERENCES `video_dev_1`.`media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_media_albums_media2`
+    FOREIGN KEY (`media_id` )
+    REFERENCES `video_dev_1`.`media` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 USE `video_dev_1`;
@@ -1172,6 +1235,54 @@ USE `video_dev_1`$$
 
 CREATE
 	TRIGGER ui_kv_store_updated BEFORE UPDATE ON ui_kv_store FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER contact_group_created BEFORE INSERT ON contact_groups FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER contact_group_updated BEFORE UPDATE ON contact_groups FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER media_album_created BEFORE INSERT ON media_albums FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER media_album_updated BEFORE UPDATE ON media_albums FOR EACH ROW
 BEGIN
 	set NEW.updated_date = NOW();
 END;
