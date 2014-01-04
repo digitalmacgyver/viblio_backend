@@ -1,3 +1,116 @@
+
+alter table contacts add column is_group bool null default false after user_id;
+alter table media add column is_album bool null default false after media_type;
+alter table media_shares add column is_group_share bool null default false after share_type;
+
+alter table media_shares add column contact_id integer null default null after user_id;
+alter table media_shares add INDEX `fk_media_shares_contacts1` (`contact_id` ASC);
+alter table media_shares add  CONSTRAINT `fk_media_shares_contacts1`
+    FOREIGN KEY (`contact_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE;
+
+alter table users modify email varchar(128) null default null;
+alter table users add unique index email_UNIQUE( email );
+
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`contact_groups` (
+  `group_id` INT(11) NOT NULL ,
+  `contact_id` INT(11) NULL DEFAULT NULL ,
+  `contact_viblio_id` INT NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`group_id`, `contact_id`) ,
+  INDEX `fk_contact_groups_contacts2` (`contact_id` ASC) ,
+  INDEX `fk_contact_groups_contacts3` (`contact_viblio_id` ASC) ,
+  CONSTRAINT `fk_contact_groups_contacts1`
+    FOREIGN KEY (`group_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_contact_groups_contacts2`
+    FOREIGN KEY (`contact_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_contact_groups_contacts3`
+    FOREIGN KEY (`contact_viblio_id` )
+    REFERENCES `video_dev_1`.`contacts` (`contact_viblio_id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_albums` (
+  `album_id` INT(11) NOT NULL ,
+  `media_id` INT(11) NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`album_id`, `media_id`) ,
+  INDEX `fk_media_albums_media2` (`media_id` ASC) ,
+  CONSTRAINT `fk_media_albums_media1`
+    FOREIGN KEY (`album_id` )
+    REFERENCES `video_dev_1`.`media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_media_albums_media2`
+    FOREIGN KEY (`media_id` )
+    REFERENCES `video_dev_1`.`media` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER media_album_created BEFORE INSERT ON media_albums FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER media_album_updated BEFORE UPDATE ON media_albums FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER contact_group_created BEFORE INSERT ON contact_groups FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER contact_group_updated BEFORE UPDATE ON contact_groups FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+===
+
 alter table media_assets drop column filename;
 alter table media_assets drop column format;
 alter table media_assets drop column time_stamp;
