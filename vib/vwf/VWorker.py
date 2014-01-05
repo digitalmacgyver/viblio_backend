@@ -42,12 +42,17 @@ mp_web = mixpanel.Mixpanel( config.mp_web_token )
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
 
+import pdb
+
 class VWorker( swf.ActivityWorker ):
 
     def __init__( self, **kwargs ):
+        pdb.set_trace()        
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
         self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix + config.UniqueTaskList
         self.version   = VPW[self.task_name].get( 'version'  , None )
+        self.lock_wait_secs = VPW[self.task_name].get('lock_wait_secs', None)
+        self.lock_heartbeat_secs = VPW[self.task_name].get('lock_heartbeat_secs', None)
 
         heartbeat_timeout = VPW[self.task_name].get( 'default_task_heartbeat_timeout', 'NONE' )
         if heartbeat_timeout == 'NONE':
