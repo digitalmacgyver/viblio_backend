@@ -33,6 +33,9 @@ class Recognize( VWorker ):
         '''
 
         try:
+            #import pdb
+            #pdb.set_trace()
+
             # How often should we poll Mechanical Turk to see if a job
             # is done.
             self.polling_secs = 10
