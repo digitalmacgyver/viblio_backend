@@ -89,6 +89,8 @@ def reflect( engine, models ):
     orm_tables = {
         'asset_types' : True,
         'contacts' : True,
+        'contact_groups' : True,
+        'email_users' : True,
         'faces' : True,
         'feature_types' : True,
         'links' : True,
