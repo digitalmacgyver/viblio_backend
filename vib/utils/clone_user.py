@@ -81,9 +81,6 @@ def clone_user( user_uuid, new_email, verbose=False ):
         # Contact groups
         # Media albums
 
-        # We don't copy comments
-        # We don't copy shares
-
         picture_uris = {}
         contact_ids = {}
 
