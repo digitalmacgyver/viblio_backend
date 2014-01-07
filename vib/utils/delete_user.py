@@ -62,7 +62,7 @@ def get_input( question, default="no" ):
             sys.stdout.write("Please respond with 'yes' or 'no' "\
                              "(or 'y' or 'n').\n")
 
-def delete_all_data_for_user( user_uuid, verbose=False ):
+def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
     orm = None
 
     try:
@@ -74,9 +74,11 @@ def delete_all_data_for_user( user_uuid, verbose=False ):
             print "Found %s users with uuid %s, returning without deleting anything." % ( user.count(), user_uuid )
             return 0
 
+        user_id = user[0].id
+
         media = orm.query( Media ).filter( Media.user_id == user[0].id )
-        assets = orm.query( MediaAssets ).filter( MediaAssets.user_id == user[0].id )
-        contacts = orm.query( Contacts ).filter( Contacts.user_id == user[0].id )
+        assets = orm.query( MediaAssets ).filter( MediaAssets.user_id == user_id )
+        contacts = orm.query( Contacts ).filter( Contacts.user_id == user_id )
     
         if verbose:
             print "About to delete all data for user %s with uuid %s" % ( user[0].email, user[0].uuid )
@@ -110,19 +112,25 @@ def delete_all_data_for_user( user_uuid, verbose=False ):
         if verbose:
             print "Deleting all contacts for user %s" % ( user_uuid )
             
-        orm.query( Contacts ).filter( Contacts.user_id == user[0].id ).delete()
+        orm.query( Contacts ).filter( Contacts.user_id == user_id ).delete()
 
-        if verbose:
-            print "Deleting all comments, shares, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )
-
-        orm.query( Users ).filter( Users.id == user[0].id ).delete()
+        if delete_user:
+            if verbose:
+                print "Deleting user and all comments, shares, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
+            orm.query( Users ).filter( Users.id == user_id ).delete()
+        else:
+            # Delete everything about this user, but leave the user in
+            # tact.
+            if verbose:
+                print "Deleting all comments, shares, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
+            orm.query( Media ).filter( Media.user_id == user_id ).delete()
         
         orm.commit()
 
         try:
             if verbose:
-                print "Deleting all face recognition data for user_id %s" % ( user.id )
-                rec.delete_user( user.id )
+                print "Deleting all face recognition data for user_id %s" % ( user_id )
+                rec.delete_user( user_id )
         except Exception as e:
             print "Error deleting face recognition data: %s" % ( e )
 
@@ -138,7 +146,7 @@ def delete_all_data_for_user( user_uuid, verbose=False ):
             orm.rollback()
 
 if __name__ == '__main__':
-    usage = "usage: DEPLOYMENT=[staging|prod] %prog [-e user@email.com]|[-u user-uuid]"
+    usage = "usage: DEPLOYMENT=[staging|prod] %prog [-e user@email.com]|[-u user-uuid] [-d]"
     parser = OptionParser( usage = usage )
     parser.add_option("-e", "--email",
                   dest="email",
@@ -146,6 +154,9 @@ if __name__ == '__main__':
     parser.add_option("-u", "--user",
                       dest="user_uuid",
                       help="The user uuid of the user to delete all data for." )
+    parser.add_option( '-d', '--data-only', action="store_true", default=False,
+                       dest='data_only',
+                       help='Only delete the user data, but leave the user itself in tact.' )
 
     (options, args) = parser.parse_args()
 
@@ -167,6 +178,9 @@ if __name__ == '__main__':
     elif options.user_uuid:
         user_uuid = options.user_uuid
 
-        delete_all_data_for_user( user_uuid, verbose=True )
+        if options.data_only:
+            delete_all_data_for_user( user_uuid, delete_user=False, verbose=True )
+        else:
+            delete_all_data_for_user( user_uuid, delete_user=True, verbose=True )           
 
 
