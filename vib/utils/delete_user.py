@@ -179,8 +179,8 @@ if __name__ == '__main__':
         user_uuid = options.user_uuid
 
         if options.data_only:
-            delete_all_data_for_user( user_uuid, delete_user=False, verbose=True )
+            delete_all_data_for_user( user_uuid, delete_user=False, verbose=False )
         else:
-            delete_all_data_for_user( user_uuid, delete_user=True, verbose=True )           
+            delete_all_data_for_user( user_uuid, delete_user=True, verbose=False )           
 
 
