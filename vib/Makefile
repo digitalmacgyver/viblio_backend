@@ -13,7 +13,7 @@ PYPKGS=\
 	boto \
 	web.py \
 	wsgilog \
-	sqlalchemy \
+	sqlalchemy==0.9.1 \
 	requests \
 	pytz \
 	mixpanel-py \

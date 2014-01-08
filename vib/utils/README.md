@@ -19,7 +19,7 @@ Utility Index:
 
 * [collect-recog-errors.py](collect-recog-errors.py) - A simple script to generate lists of things detected by our face detector but marked by our face recognition pipeline as unusable
 * [create_hittype.py](create_hittype.py) - A script to create an Amazon Mechanical Turk HITType
-* [delete_user.py](delete_user.py) - A script to delete users and their files
+* [delete_user.py](delete_user.py) - A script to delete users and their files, or optionally just delete all data for a user
 * [get_faces.py](get_faces.py) - A script to download all the face images for the last 10 days along with their associated face detection metadata
 * [grant_mturk_qualification.py](grant_mturk_qualification.py) - A script to grant the VibWork qualification to an Amazon Mechanical Turk worker so they are able to see our face recognition tasks
 * [notify_mturk_workers.py](notify_mturk_workers.py) - A script run from cron on our EC2 prod-vwf1 instance once every 2 hours to send the list of MTurk workers in the body of the script notification that there is work pending

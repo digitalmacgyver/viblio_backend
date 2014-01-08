@@ -182,7 +182,7 @@ class Serialize( object ):
                 lock = result.fetchone()
                 result.close()
 
-                if lock == None:
+                if lock is None:
                     # It appears this object has never been locked, try to
                     # set up a lock.
                     self.log.info( "Attempting to create new lock: %s, %s." 
@@ -319,7 +319,7 @@ class Serialize( object ):
             lock = result.fetchone()
             result.close()
 
-            if lock == None:
+            if lock is None:
                 self.log.info( "No need to release lock - lock %s, %s does not exist."
                                % ( self.app, self.object_name ) )
                 self.has_lock = False

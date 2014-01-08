@@ -1,4 +1,3 @@
-
 alter table contacts add column is_group bool null default false after user_id;
 alter table media add column is_album bool null default false after media_type;
 alter table media_shares add column is_group_share bool null default false after share_type;
@@ -7,14 +6,14 @@ alter table media_shares add column contact_id integer null default null after u
 alter table media_shares add INDEX `fk_media_shares_contacts1` (`contact_id` ASC);
 alter table media_shares add  CONSTRAINT `fk_media_shares_contacts1`
     FOREIGN KEY (`contact_id` )
-    REFERENCES `video_dev_1`.`contacts` (`id`)
+    REFERENCES `video_dev`.`contacts` (`id`)
     ON DELETE CASCADE
     ON UPDATE CASCADE;
 
 alter table users modify email varchar(128) null default null;
 alter table users add unique index email_UNIQUE( email );
 
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`contact_groups` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`contact_groups` (
   `group_id` INT(11) NOT NULL ,
   `contact_id` INT(11) NULL DEFAULT NULL ,
   `contact_viblio_id` INT NULL DEFAULT NULL ,
@@ -25,17 +24,17 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`contact_groups` (
   INDEX `fk_contact_groups_contacts3` (`contact_viblio_id` ASC) ,
   CONSTRAINT `fk_contact_groups_contacts1`
     FOREIGN KEY (`group_id` )
-    REFERENCES `video_dev_1`.`contacts` (`id` )
+    REFERENCES `video_dev`.`contacts` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_contact_groups_contacts2`
     FOREIGN KEY (`contact_id` )
-    REFERENCES `video_dev_1`.`contacts` (`id` )
+    REFERENCES `video_dev`.`contacts` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_contact_groups_contacts3`
     FOREIGN KEY (`contact_viblio_id` )
-    REFERENCES `video_dev_1`.`contacts` (`contact_viblio_id` )
+    REFERENCES `video_dev`.`contacts` (`contact_viblio_id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
