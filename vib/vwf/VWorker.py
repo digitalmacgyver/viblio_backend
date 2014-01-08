@@ -132,7 +132,8 @@ class VWorker( swf.ActivityWorker ):
                 if 'LOCK_ERROR' in result:
                     log.error( json.dumps( { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid,
                                 'message' : "Task had an error: could not acquire lock"} ) ) 
-                    self.fail(details = json.dumps({'retry':True }), reason = json.dumps('no_lock'))
+                    #self.fail(details = json.dumps({'retry':True }), reason = json.dumps('no_lock'))
+                    self.fail(details = json.dumps({'retry':True }), reason = 'no_lock')
                 elif 'ACTIVITY_ERROR' in result:
                     log.error( json.dumps( { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid,
                                 'message' : "Task had an error, failing the task with retry: %s" % result.get( 'retry', False ) } ) ) 

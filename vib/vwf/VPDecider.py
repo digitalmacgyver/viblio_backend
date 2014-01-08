@@ -397,7 +397,8 @@ def _get_failed( history_events ):
             failed_event = history_events[ event['activityTaskFailedEventAttributes']['scheduledEventId'] - 1 ]
             if failed_event['eventType'] == 'ActivityTaskScheduled':
                 failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
-                reason = json.loads( event['activityTaskFailedEventAttributes'].get( 'reason' ))
+                #reason = json.loads( event['activityTaskFailedEventAttributes'].get( 'reason' ))
+                reason = event['activityTaskFailedEventAttributes'].get( 'reason' )
                 if reason is None or reason == 'no_lock':
                     continue
                 details =  json.loads( event['activityTaskFailedEventAttributes'].get( 'details', '{ "retry" : true }' ) )
@@ -424,7 +425,8 @@ def _get_failed_no_lock( history_events ):
             failed_event = history_events[ event['activityTaskFailedEventAttributes']['scheduledEventId'] - 1 ]
             if failed_event['eventType'] == 'ActivityTaskScheduled':
                 failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
-                reason = json.loads( event['activityTaskFailedEventAttributes'].get( 'reason' ))
+                #reason = json.loads( event['activityTaskFailedEventAttributes'].get( 'reason' ))
+                reason = event['activityTaskFailedEventAttributes'].get( 'reason' )
                 if reason is None or reason != 'no_lock':
                     continue
                 details =  json.loads( event['activityTaskFailedEventAttributes'].get( 'details', '{ "retry" : true }' ) )
