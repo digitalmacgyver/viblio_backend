@@ -103,9 +103,6 @@ class VWorker( swf.ActivityWorker ):
 
         log = self.logger
         lock = None
-
-        #lock0 = None
-
         self.heartbeat_thread = None
         try:
             self.heartbeat_active = True
@@ -124,10 +121,6 @@ class VWorker( swf.ActivityWorker ):
                     message = 'Sleeping for %s seconds before retrying lock acquisition' % nsecs
                     log.info(json.dumps({'message' : message }))               
                     time.sleep(nsecs)
-            
-            #lock0 = Serialize.Serialize(self.task_name, mid, str(time.time()), config, heartbeat=self.lock_heartbeat_secs)
-            #result = lock0.acquire(blocking=False)
-   
             lock = Serialize.Serialize(self.task_name[:64], mid[:64], task_token[:64], config, heartbeat=self.lock_heartbeat_secs)
             if lock.acquire(blocking=False):
                 log.info( json.dumps( {  'media_uuid' : mid, 'user_uuid' : uid, 'message' : 'Starting task.'  } ) )               
@@ -140,10 +133,6 @@ class VWorker( swf.ActivityWorker ):
             log.info(json.dumps({'message' : 'Releasing lock if held...' }))
             if lock:
                 lock.release()
-            '''
-            if lock0:
-                lock0.release()
-            '''
             log.info(json.dumps({'message' : 'Stopping heartbeat...' }))
             self.stop_heartbeat()    
     
