@@ -37,8 +37,8 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-#baseline_account = 'demo@viblio.com'
-#demo_accounts = [ 'demo01@viblio.com', 'demo02@viblio.com', 'demo03@viblio.com' ]
+baseline_account = 'demo@viblio.com'
+demo_accounts = [ 'demo01@viblio.com', 'demo02@viblio.com', 'demo03@viblio.com' ]
 
 #baseline_account = 'mjhayward+spock@gmail.com'
 #demo_accounts = [ 'mjhayward+demo@gmail.com' ]
