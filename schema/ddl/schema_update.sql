@@ -40,7 +40,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`contact_groups` (
 ENGINE = InnoDB;
 
 
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_albums` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media_albums` (
   `album_id` INT(11) NOT NULL ,
   `media_id` INT(11) NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
@@ -49,12 +49,12 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_albums` (
   INDEX `fk_media_albums_media2` (`media_id` ASC) ,
   CONSTRAINT `fk_media_albums_media1`
     FOREIGN KEY (`album_id` )
-    REFERENCES `video_dev_1`.`media` (`id` )
+    REFERENCES `video_dev`.`media` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_albums_media2`
     FOREIGN KEY (`media_id` )
-    REFERENCES `video_dev_1`.`media` (`id` )
+    REFERENCES `video_dev`.`media` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;

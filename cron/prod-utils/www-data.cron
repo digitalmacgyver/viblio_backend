@@ -5,10 +5,4 @@
 */15 * * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/monitoring/monitor-pipeline.py >> /tmp/monitor-pipeline-prod-$(/bin/date +"\%F").log 2>&1
 
 # Delete and recreate demo accounts
-0 0 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/delete_user.py -u 71416092-ac7b-4c80-9ba6-ae311a84bdfe -d >> /tmp/reset-demo-accounts-$(/bin/date +"\%F").log 2>&1
-0 0 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/delete_user.py -u 2b5b0796-755f-4267-b7d0-cd869fa88fee -d >> /tmp/reset-demo-accounts-$(/bin/date +"\%F").log 2>&1
-0 0 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/delete_user.py -u cee70306-b686-47b3-9566-2ec3074fd2c3 -d >> /tmp/reset-demo-accounts-$(/bin/date +"\%F").log 2>&1
-0 5 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/clone_user.py -u 745B0EC2-6123-11E3-8C73-96D7866DC9DF -n demo01@viblio.com >> /tmp/reset-demo-accounts-$(/bin/date +"\%F").log 2>&1
-0 5 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/clone_user.py -u 745B0EC2-6123-11E3-8C73-96D7866DC9DF -n demo02@viblio.com >> /tmp/reset-demo-accounts-$(/bin/date +"\%F").log 2>&1
-0 5 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/clone_user.py -u 745B0EC2-6123-11E3-8C73-96D7866DC9DF -n demo03@viblio.com >> /tmp/reset-demo-accounts-$(/bin/date +"\%F").log 2>&1
-
+0 8 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/manage_demo_accounts.py >> /tmp/manage-demo-accounts-$(/bin/date +"\%F").log 2>&1

@@ -17,7 +17,7 @@ log.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
 
-format_string = 'rescue_orphan_faces: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
+format_string = 'delete_user: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
 
 sys_formatter = logging.Formatter( format_string )
 
@@ -146,7 +146,7 @@ def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
             orm.rollback()
 
 if __name__ == '__main__':
-    usage = "usage: DEPLOYMENT=[staging|prod] %prog [-e user@email.com]|[-u user-uuid] [-d]"
+    usage = "usage: DEPLOYMENT=[staging|prod] %prog [-e user@email.com]|[-u user-uuid] [-d] [-q]"
     parser = OptionParser( usage = usage )
     parser.add_option("-e", "--email",
                   dest="email",
@@ -157,6 +157,10 @@ if __name__ == '__main__':
     parser.add_option( '-d', '--data-only', action="store_true", default=False,
                        dest='data_only',
                        help='Only delete the user data, but leave the user itself in tact.' )
+    parser.add_option( '-q', '--quiet', action="store_true", default=False,
+                       dest='quiet',
+                       help='Run in quiet mode with limited output and no interactive prompts.' )
+
 
     (options, args) = parser.parse_args()
 
@@ -177,10 +181,11 @@ if __name__ == '__main__':
 
     elif options.user_uuid:
         user_uuid = options.user_uuid
+        verbose = not options.quiet
 
         if options.data_only:
-            delete_all_data_for_user( user_uuid, delete_user=False, verbose=False )
+            delete_all_data_for_user( user_uuid, delete_user=False, verbose=verbose )
         else:
-            delete_all_data_for_user( user_uuid, delete_user=True, verbose=False )           
+            delete_all_data_for_user( user_uuid, delete_user=True, verbose=verbose )           
 
 
