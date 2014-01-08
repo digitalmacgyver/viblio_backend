@@ -1,3 +1,12 @@
+import inspect
+
+def validate_int(var):
+    if var is None:
+        raise UnboundLocalError('var is None')
+    elif not isinstance(var, int):
+        raise TypeError('var is not an int')
+
+
 def validate_user_method(var):
     if var is None:
         raise UnboundLocalError('method variable is None')

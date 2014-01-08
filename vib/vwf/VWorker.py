@@ -2,7 +2,7 @@
 
 import boto.swf
 import boto.swf.layer2 as swf
-import inspect
+import vib.vwf.CheckerUtils as CheckerUtils
 import json
 import logging
 from logging import handlers
@@ -48,7 +48,6 @@ import pdb
 class VWorker( swf.ActivityWorker ):
 
     def __init__( self, **kwargs ):
-        #pdb.set_trace()        
         self.domain    = VPW[self.task_name].get( 'domain'   , None )
         self.task_list = VPW[self.task_name].get( 'task_list', '' ) + config.VPWSuffix + config.UniqueTaskList
         self.version   = VPW[self.task_name].get( 'version'  , None )
@@ -65,56 +64,6 @@ class VWorker( swf.ActivityWorker ):
 
         self.logger = logger
 
-    def manage_run_task(self, task_token, input_options):
-        self.validate_string(task_token)
-        self.validate_dict(input_options)
-
-        log = self.logger
-        lock = None
-
-        lock0 = None
-
-        self.heartbeat_thread = None
-        try:
-            self.heartbeat_active = True
-            self.heartbeat_thread = self.start_heartbeat(self.emit_heartbeat, self.heartbeat)
-            mid = input_options['media_uuid']
-            uid = input_options['user_uuid']
-            #pdb.set_trace()
-            wait = input_options.get('lock_wait', False)
-            if wait and self.lock_wait_secs is not None:
-                try:
-                    nsecs = VPW[self.task_name].get('lock_wait_secs', 0)
-                    nsecs = int(nsecs)
-                except ValueError:
-                    message = 'Could not convert lock_wait_secs value of %s to int' % nsecs
-                    log.error(json.dumps({'message' : message}))
-                else:
-                    message = 'Sleeping for %s seconds before retrying lock acquisition' % nsecs
-                    time.sleep(nsecs)
-            
-            lock0 = Serialize.Serialize(self.task_name, mid, str(time.time()), config, heartbeat=self.lock_heartbeat_secs)
-            result = lock0.acquire(blocking=False)
-   
-            lock = Serialize.Serialize(self.task_name, mid, task_token[:64], config, heartbeat=self.lock_heartbeat_secs)
-            if lock.acquire(blocking=False):
-                log.info( json.dumps( {  'media_uuid' : mid, 'user_uuid' : uid, 'message' : 'Starting task.'  } ) )               
-                #_mp_log( self.task_name + " Started", mid, uid, { 'activity' : self.task_name } )
-                return self.run_task(input_options)
-            else:
-                log.error(json.dumps({'media_uuid' : mid, 'user_uuid' : uid, 'message' : "Task had an error: could not acquire lock"} ) ) 
-                return {'LOCK_ERROR' : True}
-        finally:
-            log.info(json.dumps({'message' : 'Releasing lock if held...' }))
-            if lock:
-                lock.release()
-
-            if lock0:
-                lock.release()
-
-            log.info(json.dumps({'message' : 'Stopping heartbeat...' }))
-            self.stop_heartbeat()    
-    
     def run( self ):
         try:
             log = self.logger
@@ -127,12 +76,10 @@ class VWorker( swf.ActivityWorker ):
                 input_opts = json.loads( activity_task['input'] )
                 media_uuid = input_opts['media_uuid']
                 user_uuid  = input_opts['user_uuid']
-                #pdb.set_trace()
                 result = self.manage_run_task(activity_task['taskToken'], input_opts)
                 if 'LOCK_ERROR' in result:
                     log.error( json.dumps( { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid,
                                 'message' : "Task had an error: could not acquire lock"} ) ) 
-                    #self.fail(details = json.dumps({'retry':True }), reason = json.dumps('no_lock'))
                     self.fail(details = json.dumps({'retry':True }), reason = 'no_lock')
                 elif 'ACTIVITY_ERROR' in result:
                     log.error( json.dumps( { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid,
@@ -150,13 +97,63 @@ class VWorker( swf.ActivityWorker ):
             self.fail( reason = str( error )[:250] )
             raise error
 
+    def manage_run_task(self, task_token, input_options):
+        CheckerUtils.validate_string(task_token)
+        CheckerUtils.validate_dict(input_options)
+
+        log = self.logger
+        lock = None
+
+        #lock0 = None
+
+        self.heartbeat_thread = None
+        try:
+            self.heartbeat_active = True
+            self.heartbeat_thread = self.start_heartbeat(self.emit_heartbeat, self.heartbeat)
+            mid = input_options['media_uuid']
+            uid = input_options['user_uuid']
+            wait = input_options.get('lock_wait', False)
+            if wait and self.lock_wait_secs is not None:
+                try:
+                    nsecs = VPW[self.task_name].get('lock_wait_secs', 0)
+                    nsecs = int(nsecs)
+                except ValueError:
+                    message = 'Could not convert lock_wait_secs value of %s to int' % nsecs
+                    log.error(json.dumps({'message' : message}))
+                else:
+                    message = 'Sleeping for %s seconds before retrying lock acquisition' % nsecs
+                    log.info(json.dumps({'message' : message }))               
+                    time.sleep(nsecs)
+            
+            #lock0 = Serialize.Serialize(self.task_name, mid, str(time.time()), config, heartbeat=self.lock_heartbeat_secs)
+            #result = lock0.acquire(blocking=False)
+   
+            lock = Serialize.Serialize(self.task_name[:64], mid[:64], task_token[:64], config, heartbeat=self.lock_heartbeat_secs)
+            if lock.acquire(blocking=False):
+                log.info( json.dumps( {  'media_uuid' : mid, 'user_uuid' : uid, 'message' : 'Starting task.'  } ) )               
+                #_mp_log( self.task_name + " Started", mid, uid, { 'activity' : self.task_name } )
+                return self.run_task(input_options)
+            else:
+                log.error(json.dumps({'media_uuid' : mid, 'user_uuid' : uid, 'message' : "Task had an error: could not acquire lock"} ) ) 
+                return {'LOCK_ERROR' : True}
+        finally:
+            log.info(json.dumps({'message' : 'Releasing lock if held...' }))
+            if lock:
+                lock.release()
+            '''
+            if lock0:
+                lock0.release()
+            '''
+            log.info(json.dumps({'message' : 'Stopping heartbeat...' }))
+            self.stop_heartbeat()    
+    
     def run_task( self, opts ):
         '''Clients must override this method'''
         raise NotImplementedError()
 
     def start_heartbeat(self, emit_heartbeat, heartbeat):
-        self.validate_user_method(emit_heartbeat)
-        self.validate_user_method(heartbeat)
+        CheckerUtils.validate_user_method(emit_heartbeat)
+        CheckerUtils.validate_user_method(heartbeat)
         
         log = self.logger    
         nsecs = VPW[self.task_name].get('default_task_heartbeat_timeout')
@@ -185,7 +182,7 @@ class VWorker( swf.ActivityWorker ):
 
     def emit_heartbeat(self, delay_secs, heartbeat):
         self.validate_delay_secs(delay_secs)
-        self.validate_user_method(heartbeat)
+        CheckerUtils.validate_user_method(heartbeat)
 
         log = self.logger
         while True:
@@ -204,36 +201,9 @@ class VWorker( swf.ActivityWorker ):
         self.heartbeat_thread = None
 
     def validate_delay_secs(self, delay_secs):
-        if delay_secs is None:
-            raise UnboundLocalError('delay_secs is None')
-        elif not isinstance(delay_secs, int):
-            raise TypeError('delay_secs is not an int')
-        elif delay_secs <= 0:
+        CheckerUtils.validate_int(delay_secs)
+        if delay_secs <= 0:
             raise ValueError('delay_secs must be > 0')
-
-    def validate_user_method(self, var):
-        if var is None:
-            raise UnboundLocalError('method variable is None')
-        elif not inspect.ismethod(var):
-            raise TypeError('method variable not a reference to a method')
-
-    def validate_string(self, var):
-        if var is None:
-            raise UnboundLocalError('var is None')
-        elif not isinstance(var, basestring):
-            raise TypeError('var is not a basestring')
-        elif len(var) == 0:
-            raise ValueError('var is a 0-length string')
-
-    def validate_dict(self, var):
-        if var is None:
-            raise UnboundLocalError('var is None')
-        elif not isinstance(var, dict):
-            raise TypeError('var is not a dict')
-        elif len(var) == 0:
-            raise ValueError('var is an empty dict')
-
-
 
 def _mp_log( event, media_uuid, user_uuid, properties = {} ):
     try:
