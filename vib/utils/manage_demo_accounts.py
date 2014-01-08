@@ -63,7 +63,7 @@ try:
         cmd = os.path.dirname( __file__ ) + '/delete_user.py -u %s -q' % ( user.uuid )
         log.info( json.dumps( { 'message' : 'About to run: %s' % ( cmd ) } ) )
         ( status, cmd_output ) = commands.getstatusoutput( cmd )
-        log.debug( json.dumps( { 'message' : 'Output was: %s' % ( cmd_output ) } ) )
+        log.debug( json.dumps( { 'message' : 'Output was: %s...' % ( cmd_output[:256] ) } ) )
         
 
     log.info( json.dumps( { 'message' : 'Cloning user %s' % ( baseline_account ) } ) )
@@ -71,7 +71,7 @@ try:
         cmd = os.path.dirname( __file__ ) + '/clone_user.py -u %s -n %s' % ( baseline_uuid, account )
         log.info( json.dumps( { 'message' : 'About to run: %s' % ( cmd ) } ) )
         ( status, cmd_output ) = commands.getstatusoutput( cmd )
-        log.debug( json.dumps( { 'message' : 'Output was: %s' % ( cmd_output ) } ) )    
+        log.debug( json.dumps( { 'message' : 'Output was: %s...' % ( cmd_output[:256] ) } ) )    
     
 except Exception as e:
     log.error( json.dumps( { 'message' : 'Exception: %s' % ( e ) } ) )
