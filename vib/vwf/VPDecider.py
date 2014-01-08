@@ -75,11 +75,6 @@ class VPDecider( swf.Decider ):
             return True
 
         #pprint.PrettyPrinter( indent=4 ).pprint( history_events )
-        
-        '''
-        f = open('/tmp/pretty.history.txt', 'w')
-        print >> f, pprint.PrettyPrinter( indent=4 ).pprint( history_events )
-        '''
 
         tasks = [ 'Transcode', 'FaceDetect', 'FaceRecognize', 'NotifyComplete' ]
 
@@ -132,7 +127,6 @@ class VPDecider( swf.Decider ):
                                     'user_uuid' : user_uuid,
                                     'task' : task,
                                     'error_code' : 'max_failures',
-                                    'history_events' : history_events,
                                     'message' : reason
                                     } ) )
 
@@ -148,7 +142,6 @@ class VPDecider( swf.Decider ):
                                     'user_uuid' : user_uuid,
                                     'task' : task,
                                     'error_code' : 'fatal_error',
-                                    'history_events' : history_events,
                                     'message' : reason
                                     } ) )
 
@@ -191,7 +184,6 @@ class VPDecider( swf.Decider ):
                     # We hit a timeout, see if we should restart the
                     # task and if we should change the timeout values.
 
-
                     if len( details ) > len( VPW[task]['timeout_retries'] ):
                         reason = "Task %s has timed out %d times exceeding the maximum allowed timeouts of %d, details were: %s" % ( task, len(details), len( VPW[task]['timeout_retries'] ), details )
 
@@ -200,7 +192,6 @@ class VPDecider( swf.Decider ):
                                     'user_uuid' : user_uuid,
                                     'task' : task,
                                     'error_code' : 'max_timeouts',
-                                    'history_events' : history_events,
                                     'message' : reason
                                     } ) )
 
