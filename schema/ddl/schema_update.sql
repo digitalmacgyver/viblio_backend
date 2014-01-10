@@ -1,3 +1,10 @@
+
+alter table asset_types modify column type varchar(32);
+alter table media_assets modify column asset_type varchar( 32 );
+
+===
+
+
 alter table contacts add column is_group bool null default false after user_id;
 alter table media add column is_album bool null default false after media_type;
 alter table media_shares add column is_group_share bool null default false after share_type;

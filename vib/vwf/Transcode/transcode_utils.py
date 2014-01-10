@@ -261,8 +261,8 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
             else:
                 thumbnail['output_file_fs'] = thumbnail_file_fs 
         elif thumbnail_type == 'animated':
-            import pdb
-            pdb.set_trace()
+            #import pdb
+            #pdb.set_trace()
 
             if input_frames is not None:
                 frames = int( input_frames[-1] )
