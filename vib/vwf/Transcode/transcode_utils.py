@@ -265,14 +265,14 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
             #pdb.set_trace()
 
             if input_frames is not None:
-                frames = int( input_frames[-1] )
+                frames = float( input_frames[-1] )
                 cmd = '/usr/local/bin/ffmpeg -i %s' % ( input_file_fs )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
                 
                 fps_string = re.search( r',\s+([\d\.]+)\s+fps', cmd_output )
                 
                 if fps_string is not None:
-                    fps = int( fps_string.groups()[0] )
+                    fps = float( fps_string.groups()[0] )
                 else:
                     raise Exception( 'Could not determine fps to generate animated thumbnail.' )
 
