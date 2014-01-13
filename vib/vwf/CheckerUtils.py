@@ -26,11 +26,12 @@ def validate_dict(var):
         raise UnboundLocalError('var is None')
     elif not isinstance(var, dict):
         raise TypeError('var is not a dict')
-    '''
-    elif len(var) == 0:
-        raise ValueError('var is an empty dict')
-    '''
 
+def validate_dict_nonempty(var):
+    validate_dict(var)
+    if len(var) == 0:
+        raise ValueError('var is an empty dict')
+    
 def validate_object(var):
     if var is None:
         raise UnboundLocalError('var is None')
