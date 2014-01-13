@@ -86,6 +86,12 @@ class EmailUsers( BaseModel, Serializer ):
 class ContactGroups( BaseModel, Serializer ):
     pass
 
+class Profiles( BaseModel, Serializer ):
+    pass
+
+class ProfileFields( BaseModel, Serializer ):
+    pass
+
 """
 Well, reflection really only gives us the column definitions it
 seems.  We are still responsible for establishing the relationships
@@ -108,7 +114,10 @@ def db_map(engine):
                                      cascade="all, delete-orphan"),
             'media_shares': relationship( models.MediaShares,
                                           lazy='dynamic',
-                                          backref='user' )
+                                          backref='user' ),
+            'profiles': relationship( models.Profiles,
+                                      lazy='dynamic',
+                                      backref='user' ),
             })
 
     mappers["media"].add_properties({
@@ -124,6 +133,12 @@ def db_map(engine):
 
     mappers["contacts"].add_properties( {
             "media_asset_features" : relationship( models.MediaAssetFeatures, backref="contacts" ) } )
+
+    mappers['profiles'].add_properties( {
+            'profile_fields' : relationship( models.ProfileFields,
+                                             backref = 'profiles',
+                                             cascade = 'all, delete-orphan' )
+            } )
 
     # return (mappers, tables, Session)
     return SessionFactory

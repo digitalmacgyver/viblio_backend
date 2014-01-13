@@ -1,3 +1,10 @@
+
+alter table asset_types modify column type varchar(32);
+alter table media_assets modify column asset_type varchar( 32 );
+
+===
+
+
 alter table contacts add column is_group bool null default false after user_id;
 alter table media add column is_album bool null default false after media_type;
 alter table media_shares add column is_group_share bool null default false after share_type;
@@ -40,7 +47,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`contact_groups` (
 ENGINE = InnoDB;
 
 
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_albums` (
+CREATE  TABLE IF NOT EXISTS `video_dev`.`media_albums` (
   `album_id` INT(11) NOT NULL ,
   `media_id` INT(11) NULL DEFAULT NULL ,
   `created_date` DATETIME NULL DEFAULT NULL ,
@@ -49,12 +56,12 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_albums` (
   INDEX `fk_media_albums_media2` (`media_id` ASC) ,
   CONSTRAINT `fk_media_albums_media1`
     FOREIGN KEY (`album_id` )
-    REFERENCES `video_dev_1`.`media` (`id` )
+    REFERENCES `video_dev`.`media` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_albums_media2`
     FOREIGN KEY (`media_id` )
-    REFERENCES `video_dev_1`.`media` (`id` )
+    REFERENCES `video_dev`.`media` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;

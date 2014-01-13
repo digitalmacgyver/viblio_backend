@@ -347,22 +347,46 @@ class Worker( Background ):
                                     'asset_type' : 'main',
                                     'thumbnails' : [ {
                                             'times' : [ 0.5 ],
-                                            'size': "320x180",
+                                            'type'  : 'static',
+                                            'size'  : "320x180",
                                             'label' : 'poster',
                                             'format' : 'png',
                                             'output_file' : {
                                                 's3_bucket' : config.bucket_name,
                                                 's3_key' : "%s_poster.png" % ( files['main']['key'] )
                                                 }
-                                            },
+                                            }, 
                                                      {
                                             'times' : [ 0.5 ],
                                             'size': "128x128",
+                                            'type'  : 'static',
                                             'label' : 'thumbnail',
                                             'format' : 'png',
                                             'output_file' : {
                                                 's3_bucket' : config.bucket_name,
                                                 's3_key' : "%s_thumbnail.png" % ( files['main']['key'] )
+                                                }
+                                            },
+                                                     {
+                                            'times' : [ 0.5 ],
+                                            'type'  : 'animated',
+                                            'size'  : "320x180",
+                                            'label' : 'poster_animated',
+                                            'format' : 'gif',
+                                            'output_file' : {
+                                                's3_bucket' : config.bucket_name,
+                                                's3_key' : "%s_poster_animated.gif" % ( files['main']['key'] )
+                                                }
+                                            },
+                                                     {
+                                            'times' : [ 0.5 ],
+                                            'size': "128x128",
+                                            'type'  : 'animated',
+                                            'label' : 'thumbnail_animated',
+                                            'format' : 'gif',
+                                            'output_file' : {
+                                                's3_bucket' : config.bucket_name,
+                                                's3_key' : "%s_thumbnail_animated.gif" % ( files['main']['key'] )
                                                 }
                                             } ]
                                     }

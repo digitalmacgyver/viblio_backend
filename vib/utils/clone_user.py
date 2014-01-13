@@ -19,7 +19,7 @@ log.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
 
-format_string = 'rescue_orphan_faces: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
+format_string = 'clone_user: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
 
 sys_formatter = logging.Formatter( format_string )
 
@@ -76,13 +76,28 @@ def clone_user( user_uuid, new_email, verbose=False ):
 
         # We don't copy:
         # Comments
-        # Profile settings
         # User roles
         # Contact groups
         # Media albums
 
         picture_uris = {}
         contact_ids = {}
+
+        # Profiles
+        profiles = orm.query( Profiles ).filter( Profiles.user_id == old_user_id )
+        for profile in profiles:
+            old_profile_id = profile.id
+
+            sqlalchemy.orm.session.make_transient( profile )
+            profile.id = None
+            user.profiles.append( profile )
+
+            profile_fields = orm.query( ProfileFields ).filter( ProfileFields.profiles_id == old_profile_id )
+            for profile_field in profile_fields:
+                sqlalchemy.orm.session.make_transient( profile_field )
+                profile_field.id = None
+                
+                profile.profile_fields.append( profile_field )
 
         # Media shares
         media_shares = orm.query( MediaShares ).filter( MediaShares.user_id == old_user_id )

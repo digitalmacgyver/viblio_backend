@@ -103,6 +103,8 @@ def reflect( engine, models ):
         'media_workorders' : True,
         'password_resets' : True,
         'pending_users' : True,
+        'profiles' : True,
+        'profile_fields' : True,
         'providers' : True,
         'recognition_feedback' : True,
         'roles' : True,

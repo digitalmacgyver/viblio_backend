@@ -25,7 +25,7 @@ log.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
 
-format_string = 'fb: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
+format_string = 'greet_new_users: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
 
 sys_formatter = logging.Formatter( format_string )
 
