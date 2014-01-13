@@ -72,7 +72,9 @@ class Monitor( swf.Domain ):
         ntrans = self.count_pending_activity_tasks(trans_name)['count']
         print('ntrans is %d' % ntrans)
         nfaced = self.count_pending_activity_tasks(faced_name)['count']
+        print('nfaced is %d' % nfaced)
         mx = max(ntrans, nfaced)
+        print('mx i %d' % mx)
         self.cw.put_metric_data(dom, 'queue_depth_for_scaling', mx)
 
     def task_list_name(self, type, settings, conf):
