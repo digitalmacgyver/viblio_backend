@@ -281,7 +281,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
 
                 cmd = 'cd %s ; /usr/local/bin/ffmpeg -i %s %s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, ffmpeg_scale, output_fps, media_uuid )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
-                cmd = 'cd %s ; /usr/bin/convert -delay 50 -loop 0 %s-thumb-*.jpg %s' % ( config.transcode_dir, media_uuid, thumbnail_file_fs )
+                cmd = 'cd %s ; /usr/bin/convert -delay 100 -loop 0 %s-thumb-*.jpg %s' % ( config.transcode_dir, media_uuid, thumbnail_file_fs )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
                 cmd = 'cd %s ; rm %s-thumb-*.jpg' % ( config.transcode_dir, media_uuid )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )                
