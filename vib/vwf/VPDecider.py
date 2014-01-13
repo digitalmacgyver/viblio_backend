@@ -16,6 +16,8 @@ from vib.vwf.VPWorkflow import VPW
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
+import vib.vwf.CheckerUtils as CheckerUtils
+
 mp = mixpanel.Mixpanel( config.mp_token )
 mp_web = mixpanel.Mixpanel( config.mp_web_token )
 
@@ -57,7 +59,6 @@ class VPDecider( swf.Decider ):
                     } ) )
 
         # Listen for decisions in this task list.
-        #pdb.set_trace()
         history = self.poll( task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList )
         history_events = history.get( 'events', [] )
         while 'nextPageToken' in history:
@@ -82,6 +83,7 @@ class VPDecider( swf.Decider ):
         media_uuid = workflow_input['media_uuid']
         user_uuid = workflow_input['user_uuid']
         failed_tasks = _get_failed( history_events )
+        no_lock_tasks = _get_failed_no_lock( history_events )
         timed_out_tasks = _get_timed_out_activities( history_events )
         completed_tasks = _get_completed( history_events )
 
@@ -179,6 +181,8 @@ class VPDecider( swf.Decider ):
                             heartbeat_timeout         = heartbeat_timeout
                             )
 
+                elif task in no_lock_tasks:
+                    self.process_no_lock_tasks(task, no_lock_tasks, completed_tasks, decisions, media_uuid, user_uuid, workflow_input, config)
                 elif task in timed_out_tasks:
                     details = timed_out_tasks[task]
                     # We hit a timeout, see if we should restart the
@@ -284,6 +288,46 @@ class VPDecider( swf.Decider ):
             
         return True
 
+    def process_no_lock_tasks(self, task, no_lock_tasks, completed_tasks, decisions, media_uuid, user_uuid, workflow_input, config):
+        CheckerUtils.validate_string(task)
+        CheckerUtils.validate_dict(no_lock_tasks)
+        CheckerUtils.validate_dict(completed_tasks)
+        CheckerUtils.validate_object(decisions)
+        CheckerUtils.validate_string(media_uuid)
+        CheckerUtils.validate_string(user_uuid)
+        CheckerUtils.validate_object(workflow_input)
+        CheckerUtils.validate_object(config)
+
+        log.info( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'message' : "Retrying task %s" % task}))
+        details = no_lock_tasks[task]
+        if len(details) > VPW[task]['lock_retries']:
+            reason = 'Task %s has exceeded maximum lock retries, terminating workflow' % task
+            log.error( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'error_code' : 'max_timeouts', 'message' : reason}))
+            _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'no_lock retries exceeded', 'activity' : task, 'type' : 'fatal_error' } )
+            decisions.fail_workflow_execution(reason = reason[:250])
+        else:
+            message = 'Retrying task %s for time %d out of %d allowed retries' % (task, len(details), VPW[task]['lock_retries'])
+            log.warning( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'message' : message}))
+            task_input = workflow_input
+            for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
+                task_input[prerequisite] = input_opts
+            task_input['lock_wait'] = True
+            schedule_to_close_timeout = VPW[task]['default_task_schedule_to_close_timeout'] 
+            schedule_to_start_timeout = VPW[task]['default_task_schedule_to_start_timeout'] 
+            start_to_close_timeout    = VPW[task]['default_task_start_to_close_timeout'] 
+            heartbeat_timeout         = VPW[task]['default_task_heartbeat_timeout'] 
+            decisions.schedule_activity_task( 
+                task + '-' + workflow_input['media_uuid'],
+                task + config.VPWSuffix,
+                VPW[task]['version'],
+                task_list = VPW[task]['task_list'] + config.VPWSuffix + config.UniqueTaskList,
+                input = json.dumps( task_input ),
+                schedule_to_close_timeout = schedule_to_close_timeout,
+                schedule_to_start_timeout = schedule_to_start_timeout,
+                start_to_close_timeout    = start_to_close_timeout,
+                heartbeat_timeout         = heartbeat_timeout
+                )
+    
 def _mp_log( event, media_uuid, user_uuid, properties = {} ):
     try:
         properties['media_uuid'] = media_uuid
@@ -342,6 +386,10 @@ def _get_failed( history_events ):
             failed_event = history_events[ event['activityTaskFailedEventAttributes']['scheduledEventId'] - 1 ]
             if failed_event['eventType'] == 'ActivityTaskScheduled':
                 failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
+                #reason = json.loads( event['activityTaskFailedEventAttributes'].get( 'reason' ))
+                reason = event['activityTaskFailedEventAttributes'].get( 'reason' )
+                if reason is None or reason == 'no_lock':
+                    continue
                 details =  json.loads( event['activityTaskFailedEventAttributes'].get( 'details', '{ "retry" : true }' ) )
                 if failed_event_name in failed:
                     failed[ failed_event_name ].append( details )
@@ -351,6 +399,35 @@ def _get_failed( history_events ):
                 raise Exception("AcivityTaskFailed scheduled event attribute not an activity task!")            
 
     return failed
+
+def _get_failed_no_lock( history_events ):
+    '''Goes through a set of events and returns a hash of the failed
+    ActivityTasks keyed on task name, with a value of the failure
+    event's "details" attribute converted from JSON, or { "retry" :
+    true } if there were no details.
+
+    This does not include SWF timeouts.
+    '''
+    failed = {}
+    for event in history_events:
+        if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskFailed':
+            failed_event = history_events[ event['activityTaskFailedEventAttributes']['scheduledEventId'] - 1 ]
+            if failed_event['eventType'] == 'ActivityTaskScheduled':
+                failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
+                #reason = json.loads( event['activityTaskFailedEventAttributes'].get( 'reason' ))
+                reason = event['activityTaskFailedEventAttributes'].get( 'reason' )
+                if reason is None or reason != 'no_lock':
+                    continue
+                details =  json.loads( event['activityTaskFailedEventAttributes'].get( 'details', '{ "retry" : true }' ) )
+                if failed_event_name in failed:
+                    failed[ failed_event_name ].append( details )
+                else:
+                    failed[ failed_event_name ] = [ details ]
+            else:
+                raise Exception("AcivityTaskFailed scheduled event attribute not an activity task!")            
+
+    return failed
+
 
 def _get_timed_out_activities( history_events ):
     '''Goes through a set of events and returns a hash of the timed
