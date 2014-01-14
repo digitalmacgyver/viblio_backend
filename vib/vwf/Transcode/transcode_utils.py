@@ -267,6 +267,10 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
             if input_frames is not None:
                 frames = float( input_frames[-1] )
                 cmd = '/usr/local/bin/ffmpeg -i %s' % ( input_file_fs )
+
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'message' : "Running command %s to determine fps for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
+
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
                 
                 fps_string = re.search( r',\s+([\d\.]+)\s+fps', cmd_output )
@@ -280,31 +284,26 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                 output_fps = float( 30 ) / input_length
 
                 cmd = 'cd %s ; /usr/local/bin/ffmpeg -i %s %s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, ffmpeg_scale, output_fps, media_uuid )
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'message' : "Running command %s to create animated gif thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
+                log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                         'message' : "Animated gif thumbnail generation command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, output ) } ) )
+
                 cmd = 'cd %s ; /usr/bin/convert -delay 100 -loop 0 %s-thumb-*.jpg %s' % ( config.transcode_dir, media_uuid, thumbnail_file_fs )
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'message' : "Running command %s to produce animated gif for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
+                log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                         'message' : "Animated gif thumbnail composition command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, output ) } ) )
+
                 cmd = 'cd %s ; rm %s-thumb-*.jpg' % ( config.transcode_dir, media_uuid )
-                ( status, cmd_output ) = commands.getstatusoutput( cmd )                
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'message' : "Running command %s to clean up thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
+                ( status, cmd_output ) = commands.getstatusoutput( cmd )          
+                log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                         'message' : "Animated gif thumbnail removal command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, output ) } ) )
+      
                 thumbnail['output_file_fs'] = thumbnail_file_fs 
 
     return thumbnails
-
-
-'''
-
-video_file="motinas_multi_face_fast.avi"
-number_frames=$(ffmpeg -i $video_file -vcodec copy -f rawvideo -y /dev/null 2>&1 | tr ^M '\n' | awk '/^frame=/ {print $2}'|tail -n 1)
-frame_rate=$(ffmpeg -i vid4.mp4 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p")
-length=$(echo "scale=10;$number_frames/$frame_rate" | bc)
-answer=$(echo "scale=10;30/$length" | bc)
-echo $answer
-echo $frame_rate
-ffmpeg -i $video_file -f image2 -vf fps=fps=$answer thumb%04d.jpg
-#converting to gif with ffmpeg
-#ffmpeg -f image2 -i thumb%04d.jpg video.avi
-#ffmpeg -i video.avi -t 1 out.gif
-#converting to gif with imagemagick
-# Install imagemagick using sudo apt-get install imagemagick
-convert -delay 50 -loop 0 thumb*.jpg video.gif
-rm -rf *.jpg
-'''
