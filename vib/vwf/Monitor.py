@@ -65,16 +65,12 @@ class Monitor( swf.Domain ):
 
     
     def set_queue_depth_for_scaling(self):
-        #pdb.set_trace()
         trans_name = self.task_list_name('Transcode', VPW, config)
         faced_name = self.task_list_name('FaceDetect', VPW, config)
         dom = config.swf_domain
         ntrans = self.count_pending_activity_tasks(trans_name)['count']
-        print('ntrans is %d' % ntrans)
         nfaced = self.count_pending_activity_tasks(faced_name)['count']
-        print('nfaced is %d' % nfaced)
         mx = max(ntrans, nfaced)
-        print('mx i %d' % mx)
         self.cw.put_metric_data(dom, 'queue_depth_for_scaling', mx)
 
     def task_list_name(self, type, settings, conf):
@@ -82,8 +78,8 @@ class Monitor( swf.Domain ):
         CheckerUtils.validate_dict_nonempty(settings)
         CheckerUtils.validate_object(conf)
 
-        nam = settings[type]['task_list']
+        base = settings[type]['task_list']
         suf = conf.VPWSuffix
         id = conf.UniqueTaskList
-        return nam + suf + id
+        return base + suf + id
                                      
