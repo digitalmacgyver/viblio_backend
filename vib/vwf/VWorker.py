@@ -112,7 +112,7 @@ class VWorker( swf.ActivityWorker ):
             wait = input_options.get('lock_wait', False)
             if wait and self.lock_wait_secs is not None:
                 try:
-                    nsecs = VPW[self.task_name].get('lock_wait_secs', 0)
+                    nsecs = self.lock_wait_secs
                     nsecs = int(nsecs)
                 except ValueError:
                     message = 'Could not convert lock_wait_secs value of %s to int' % nsecs
