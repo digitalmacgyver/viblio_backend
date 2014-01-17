@@ -71,7 +71,10 @@ class Monitor( swf.Domain ):
         ntrans = self.count_pending_activity_tasks(trans_name)['count']
         nfaced = self.count_pending_activity_tasks(faced_name)['count']
         mx = max(ntrans, nfaced)
-        self.cw.put_metric_data(dom, 'queue_depth_for_scaling', mx)
+
+        mx = 0
+
+        self.cw.put_metric_data(dom, 'queue_depth_for_scaling', mx, dimensions = { 'Deployment' : config.VPWSuffix })
 
     def task_list_name(self, type, settings, conf):
         CheckerUtils.validate_string(type)
