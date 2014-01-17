@@ -23,7 +23,7 @@ logger.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
 
-format_string = 'vwf: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
+format_string = 'continuous_integration: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
 
 sys_formatter = logging.Formatter( format_string )
 
@@ -35,6 +35,14 @@ consolelog.setLevel( logging.DEBUG )
 
 logger.addHandler( syslog )
 logger.addHandler( consolelog )
+
+'''
+1. git pull to specific path.
+2. Alter queues task lists.
+3. Send a video.
+4. Log an event.
+'''
+
 
 def log_status( status ):
     cw = cloudwatch.connect_to_region( config.cloudwatch_region )
