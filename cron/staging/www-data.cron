@@ -1,0 +1,1 @@
+*/5 * * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/prod/vib/monitoring/MonitorQueues-wrapper.py >> /tmp/MonitorQueues-staging-$(/bin/date +"\%F").log 2>&1
