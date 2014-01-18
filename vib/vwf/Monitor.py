@@ -72,8 +72,6 @@ class Monitor( swf.Domain ):
         nfaced = self.count_pending_activity_tasks(faced_name)['count']
         mx = max(ntrans, nfaced)
 
-        mx = 0
-
         self.cw.put_metric_data(dom, 'queue_depth_for_scaling', mx, dimensions = { 'Deployment' : config.VPWSuffix })
 
     def task_list_name(self, type, settings, conf):
