@@ -61,17 +61,16 @@ class Monitor( swf.Domain ):
                                                     }
                                      )
 
-    
-
-    
+     
     def set_queue_depth_for_scaling(self):
         trans_name = self.task_list_name('Transcode', VPW, config)
         faced_name = self.task_list_name('FaceDetect', VPW, config)
-        dom = config.swf_domain
+        dec_name = self.decider_task_list_name(config)
         ntrans = self.count_pending_activity_tasks(trans_name)['count']
         nfaced = self.count_pending_activity_tasks(faced_name)['count']
-        mx = max(ntrans, nfaced)
-
+        ndec = self.count_pending_decision_tasks(dec_name)['count']
+        mx = max(ndec, ntrans, nfaced)
+        dom = config.swf_domain
         self.cw.put_metric_data(dom, 'queue_depth_for_scaling', mx, dimensions = { 'Deployment' : config.VPWSuffix })
 
     def task_list_name(self, type, settings, conf):
@@ -83,4 +82,11 @@ class Monitor( swf.Domain ):
         suf = conf.VPWSuffix
         id = conf.UniqueTaskList
         return base + suf + id
-                                     
+  
+    def decider_task_list_name(self, conf):
+        CheckerUtils.validate_object(conf)
+
+        suf = conf.VPWSuffix
+        id = conf.UniqueTaskList
+        return 'VPDecider' + suf + id
+                                   
