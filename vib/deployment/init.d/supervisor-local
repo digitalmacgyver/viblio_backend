@@ -60,6 +60,14 @@ check_running()
 }
 
 _start() {
+    mkdir -p /mnt/uploaded_files
+    chown $USER:$GROUP /mnt/uploaded_files
+    chmod 777 /mnt/uploaded_files
+
+    mkdir -p /mnt/faces
+    chown $USER:$GROUP /mnt/faces
+    chmod 777 /mnt/faces
+
     start-stop-daemon --verbose --start --pidfile $PIDFILE \
     --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP \
@@ -76,6 +84,15 @@ _start() {
 
 start() {
     log_daemon_msg "Starting $APPNAME" $UNIXNAME
+
+    mkdir -p /mnt/uploaded_files
+    chown $USER:$GROUP /mnt/uploaded_files
+    chmod 777 /mnt/uploaded_files
+
+    mkdir -p /mnt/faces
+    chown $USER:$GROUP /mnt/faces
+    chmod 777 /mnt/faces
+
     if check_running; then
         log_progress_msg "already running"
         log_end_msg 0
