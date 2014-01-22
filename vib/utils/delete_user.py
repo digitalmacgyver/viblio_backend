@@ -2,6 +2,7 @@
 
 import logging
 from optparse import OptionParser
+from sqlalchemy import and_
 import sys
 
 import vib.utils.s3 as s3
@@ -112,17 +113,20 @@ def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
         if verbose:
             print "Deleting all contacts for user %s" % ( user_uuid )
             
+        orm.query( Contacts ).filter( and_( Contacts.user_id == user_id, Contacts.is_group == True ) ).delete()
         orm.query( Contacts ).filter( Contacts.user_id == user_id ).delete()
 
         if delete_user:
             if verbose:
                 print "Deleting user and all comments, shares, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
+            orm.query( Media ).filter( and_( Media.user_id == user_id, Media.is_album == True ) ).delete()
             orm.query( Users ).filter( Users.id == user_id ).delete()
         else:
             # Delete everything about this user, but leave the user in
             # tact.
             if verbose:
                 print "Deleting all comments, shares, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
+            orm.query( Media ).filter( and_( Media.user_id == user_id, Media.is_album == True ) ).delete()
             orm.query( Media ).filter( Media.user_id == user_id ).delete()
         
         orm.commit()
