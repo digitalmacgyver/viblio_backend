@@ -1,0 +1,10 @@
+1) Edit setup-env.sh to have the correct JAVA_HOME
+
+2) Run:
+
+source ./setup-env.sh
+
+3) 
+
+as-create-launch-config testconfig --image-id ami-9a1b7baa --instance-type m1.medium --associate-public-ip-address 1 --spot-price "0.035" --group vpc-internal-ssh
+
