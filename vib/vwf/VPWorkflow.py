@@ -35,9 +35,9 @@ VPW = {
         'default_task_schedule_to_start_timeout' : str( 21*60 ),
         'default_task_start_to_close_timeout' : str( 20*60 ),
         'default_task_heartbeat_timeout' : 'NONE',
-        'lock_retries' : 5,
-        'lock_heartbeat_secs' : 60,
-        'lock_wait_secs' : 7
+        'lock_retries' : 2,
+        'lock_heartbeat_secs' : 90,
+        'lock_wait_secs' : 300
         },
 
     'Transcode' : {
@@ -55,8 +55,8 @@ VPW = {
         'default_task_start_to_close_timeout' : str( 10*60*60 ),
         'default_task_heartbeat_timeout' : str( 300 ),
         'lock_retries' : 2,
-        'lock_heartbeat_secs' : 60,
-        'lock_wait_secs' : 7
+        'lock_heartbeat_secs' : 90,
+        'lock_wait_secs' : 300
         },
 
     'FaceDetect' : {
@@ -71,9 +71,9 @@ VPW = {
         'default_task_schedule_to_start_timeout' : str( 15*60*60),
         'default_task_start_to_close_timeout' : str( 10*60*60 ),
         'default_task_heartbeat_timeout' : str( 300 ),
-        'lock_retries' : 5,
-        'lock_heartbeat_secs' : 6,
-        'lock_wait_secs' : 7
+        'lock_retries' : 2,
+        'lock_heartbeat_secs' : 90,
+        'lock_wait_secs' : 300
         },
 
     'FaceRecognize' : {
@@ -94,9 +94,9 @@ VPW = {
         'default_task_schedule_to_start_timeout' : str( 36*60*60 ),
         'default_task_start_to_close_timeout' : str( 36*60*60 ),
         'default_task_heartbeat_timeout' : str( 5*60 ),
-        'lock_retries' : 5,
-        'lock_heartbeat_secs' : 6,
-        'lock_wait_secs' : 7
+        'lock_retries' : 2,
+        'lock_heartbeat_secs' : 90,
+        'lock_wait_secs' : 300
         },
 
     'NotifyComplete' : {
@@ -111,9 +111,9 @@ VPW = {
         'default_task_schedule_to_start_timeout' : str( 15*60 ),
         'default_task_start_to_close_timeout'    : str( 5*60 ),
         'default_task_heartbeat_timeout' : 'NONE',
-        'lock_retries' : 5,
-        'lock_heartbeat_secs' : 6,
-        'lock_wait_secs' : 7
+        'lock_retries' : 2,
+        'lock_heartbeat_secs' : 90,
+        'lock_wait_secs' : 300
        },
 
 }

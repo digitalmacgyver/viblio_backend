@@ -283,7 +283,7 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
     # l1_face_for_contact_by_idx[l1_idx] = l1_tag
     # l1_face_for_contact_by_l2_idx[l2_idx] = { l1_idx, l2_tag }
     # l1_face_for_contact_by_l2_tag[l2_tag] = { l1_idx, l2_idx }
-    ( l1_face_for_contact_by_idx, l1_face_for_contact_by_l2_idx, l1_face_for_contact_by_l2_tag ) = _prepare_l1_face_data( contact_id, l1_faces )
+    ( l1_face_for_contact_by_idx, l1_face_for_contact_by_l2_idx, l1_face_for_contact_by_l2_tag ) = _prepare_l1_face_data( l1_user, contact_id, l1_faces )
 
     # l2_face_by_idx[idx] = l2_tag
     # best_l2_face[tag] = l2_idx
@@ -367,9 +367,11 @@ def _reconcile_clusters( user_id, contact_id, db_faces, l1_faces, l2_faces ):
 
     return l1_changed
 
-def _prepare_l1_face_data( contact_id, l1_faces ):
+def _prepare_l1_face_data( user_id, contact_id, l1_faces ):
     '''Helper function that creates some data structures used by
     _reconcile_clusters'''
+
+    l1_user = _get_l1_user( user_id )
 
     l1_face_for_contact_by_idx = {}
     l1_face_for_contact_by_l2_idx = {}
@@ -381,15 +383,18 @@ def _prepare_l1_face_data( contact_id, l1_faces ):
             ( l2_contact, l2_tag, l2_idx ) = _parse_l1_tag( l1_tag )
 
             if contact_id == l2_contact:
+                # We've encountered a second tagged version of this
+                # users face in l1, this should not happen, clean up
+                # the duplicate.
+                if l2_tag in l1_face_for_contact_by_l2_tag:
+                    log.error( json.dumps( { 'user_id'    : user_id,
+                                             'contact_id' : contact_id,
+                                             'message'    : "Error, found multiple faces for a single l2_tag in l1.  ReKog: Deleting l1 idx:%s tag:%s" % ( idx, l1_tag ) } ) )
+                    rekog.delete_face_for_user( l1_user, l1_tag, idx, config.recog_l1_namespace )
+                    continue
+
                 l1_face_for_contact_by_idx[idx] = l1_tag
                 l1_face_for_contact_by_l2_idx[l2_idx] = { 'l1_idx' : idx, 'l2_tag' : l2_tag }
-
-                # We try to avoid this scenario but aren't very
-                # rigorous about it - if this exception starts getting
-                # thrown we need to explicitly catch and handle this
-                # in the reconcile_cluster code or elsewhere.
-                if l2_tag in l1_face_for_contact_by_l2_tag:
-                    raise Exception( "Error: multiple faces for a single l2_tag %s found in l1 for contact %s, this should never happen." % ( l2_tag, contact_id ) )
 
                 l1_face_for_contact_by_l2_tag[l2_tag] = { 'l1_idx' : idx, 'l2_idx' : l2_idx }
 

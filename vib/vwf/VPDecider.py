@@ -388,7 +388,7 @@ def _get_failed( history_events ):
                 failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
                 #reason = json.loads( event['activityTaskFailedEventAttributes'].get( 'reason' ))
                 reason = event['activityTaskFailedEventAttributes'].get( 'reason' )
-                if reason is None or reason == 'no_lock':
+                if reason == 'no_lock':
                     continue
                 details =  json.loads( event['activityTaskFailedEventAttributes'].get( 'details', '{ "retry" : true }' ) )
                 if failed_event_name in failed:
