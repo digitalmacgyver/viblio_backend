@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import os
+import pdb
 import uuid
 
 from vib.vwf.VWorker import VWorker
@@ -91,7 +92,11 @@ class Transcode( VWorker ):
                         'user_uuid' : user_uuid,
                         'message' : "Transcoding and storing the result in S3 for user %s media %s : " % ( user_uuid, media_uuid )
                         } ) )
+
+            pdb.set_trace()
+            self.heartbeat()
             outputs = tutils.transcode_and_store( media_uuid, original_file, outputs, exif )
+            self.heartbeat()
 
             orm = vib.db.orm.get_session()
 
@@ -193,7 +198,11 @@ class Transcode( VWorker ):
                         'user_uuid' : user_uuid,
                         'message' : "Committing rows to database for user %s, media %s" % ( user_uuid, media_uuid )
                         } ) )
+
+            pdb.set_trace()
+            self.heartbeat()
             orm.commit()
+            self.heartbeat()
 
             self.cleanup_files( media_uuid, user_uuid, original_file, outputs )
             

@@ -113,8 +113,9 @@ class Detect( VWorker ):
                     'user_uuid'  : user_uuid,
                     'message' : "Face Detect didn't find faces for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                     } ) )
-
+            self.heartbeat()
             db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+            self.heartbeat()
             return faces_info
         else:
             # Process faces
@@ -138,7 +139,9 @@ class Detect( VWorker ):
                                     'message' : "MD5 mismatch for media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                                     } ) )
                             raise
+                        self.heartbeat()
                         db_utils.add_media_asset_face(user_uuid, media_uuid, face['s3_key'], byte_size, track_id['track_id'], face)
+                        self.heartbeat()
                     except Exception as e:
                         log.error( json.dumps( { 
                                 'media_uuid' : media_uuid,
@@ -155,7 +158,9 @@ class Detect( VWorker ):
             json.dump( faces_info, file_handle )
             s3_key = media_uuid + '/' + media_uuid + '_faces.json'
             bucket_contents.key = s3_key
+            self.heartbeat()
             byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
+            self.heartbeat()
         except Exception as e:
             log.error( json.dumps( { 
                     'media_uuid' : media_uuid,
@@ -174,8 +179,10 @@ class Detect( VWorker ):
 
         recognition_input = media_uuid + '/' + media_uuid + '_recognition_input.json'
 
+        self.heartbeat()
         vib.utils.s3.upload_string( faces_string, s3_bucket, recognition_input )
         db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+        self.heartbeat()
 
         return { 
             'user_uuid' : user_uuid,

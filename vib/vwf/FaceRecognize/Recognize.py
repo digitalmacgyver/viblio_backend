@@ -59,7 +59,9 @@ class Recognize( VWorker ):
                             'user_uuid' : user_uuid,
                             'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
                             } ) )
+                self.heartbeat()
                 db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+                self.heartbeat()
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
 
             
@@ -90,7 +92,9 @@ class Recognize( VWorker ):
                             'user_uuid' : user_uuid,
                             'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
                             } ) )
+                self.heartbeat()
                 db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+                self.heartbeat()
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
 
             # Ensure we're the only one working on this particular
@@ -180,7 +184,9 @@ class Recognize( VWorker ):
                         'user_uuid' : user_uuid,
                         'message' : "Updating contacts"
                         } ) )
+            self.heartbeat()
             result = db_utils.update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tracks, recognition_data )
+            self.heartbeat()
             if not result:
                 # We had an error updating the DB contacts, most
                 # likely there was a race condition and a face we
@@ -193,7 +199,9 @@ class Recognize( VWorker ):
                             'user_uuid' : user_uuid,
                             'message' : "Returning successfully"
                             } ) )
+                self.heartbeat()
                 db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+                self.heartbeat()
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
             
         except Exception as e:
