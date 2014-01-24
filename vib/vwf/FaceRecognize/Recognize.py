@@ -33,15 +33,9 @@ class Recognize( VWorker ):
         '''
 
         try:
-            #import pdb
-            #pdb.set_trace()
-
             # How often should we poll Mechanical Turk to see if a job
             # is done.
             self.polling_secs = 10
-            
-            #import pdb
-            #pdb.set_trace()
             
             # When we find a face with a recognition confidence
             # greater than this we stop looking.
@@ -78,13 +72,6 @@ class Recognize( VWorker ):
                         'user_uuid' : user_uuid,
                         'message' : "Working on media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
                         } ) )
-
-            log.debug( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Heartbeating"
-                        } ) )
-            self.heartbeat()
 
             if tracks == None or len( tracks ) == 0:
                 log.info( json.dumps( { 
@@ -140,14 +127,6 @@ class Recognize( VWorker ):
                             } ) )
 
                 raise Exception( message )
-            else:
-                # We got the lock - proceed
-                log.debug( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : "Heartbeating"
-                            } ) )
-                self.heartbeat()
 
             # First we do quality control on the tracks, and merge
             # different tracks into one.
@@ -166,17 +145,7 @@ class Recognize( VWorker ):
                         'message' : "Recognizing faces"
                         } ) )
 
-            #import pdb
-            #pdb.set_trace()
-
             recognized_faces, new_faces, recognition_data = self._recognize_faces( merged_tracks )
-
-            log.debug( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Heartbeating"
-                        } ) )
-            self.heartbeat()
 
             # Then we persist our results.
             log.info( json.dumps( { 
@@ -248,31 +217,17 @@ class Recognize( VWorker ):
         log.debug( json.dumps( { 
                     'media_uuid' : media_uuid,
                     'user_uuid' : user_uuid,
-                    'message' : "Heartbeating"
-                    } ) )
-        self.heartbeat()
-
-        # DEBUG - Sort the incoming tracks with face recognition.
-
-        log.debug( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
                     'message' : "Creating merge hit"
                     } ) )
+        self.heartbeat()
         hit_id = mturk_utils.create_merge_hit( media_uuid, tracks )
+        self.heartbeat()
         log.info( json.dumps( { 
                     'media_uuid' : media_uuid,
                     'user_uuid' : user_uuid,
                     'hit_id' : hit_id,
                     'message' : "Created merge hit with HITId of %s" % hit_id
                     } ) )
-
-        log.debug( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'message' : "Heartbeating"
-                    } ) )
-        self.heartbeat()
 
         hit_completed = False
         
@@ -286,23 +241,9 @@ class Recognize( VWorker ):
 
             time.sleep( self.polling_secs )
 
-            log.debug( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Heartbeating"
-                        } ) )
-            self.heartbeat()
-
         answer_dict = mturk_utils.get_answer_dict_for_hit( hit_id )
 
         merged_tracks, bad_tracks = self._process_merge( answer_dict, tracks )
-
-        log.debug( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'message' : "Heartbeating"
-                    } ) )
-        self.heartbeat()
 
         return merged_tracks, bad_tracks
 
@@ -471,21 +412,7 @@ class Recognize( VWorker ):
         user_id = db_utils.get_user_id( user_uuid )
         media_uuid = self.media_uuid
 
-        log.debug( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'message' : "Heartbeating"
-                    } ) )
-        self.heartbeat()
-
         contacts = db_utils.get_picture_contacts_for_user_uuid( user_uuid )
-
-        log.debug( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'message' : "Heartbeating"
-                    } ) )
-        self.heartbeat()
 
         if len( contacts ) > 0:
             # There user has at least one contact with a picture
@@ -501,6 +428,7 @@ class Recognize( VWorker ):
                             for face in track['faces']:
                                 self.heartbeat()
                                 matches = rec.recognize_face( user_id, "%s%s" % ( config.ImageServer, face['s3_key'] ) )
+                                self.heartbeat()
                                 if matches is not None:
                                     if len( matches['faces'] ):
                                         current_guess = matches['faces'][0]
@@ -531,19 +459,14 @@ class Recognize( VWorker ):
 
             # hit_tracks is An array of hash elements with HITId and
             # merged_tracks keys.
+            self.heartbeat()
             hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guesses )
+            self.heartbeat()
             log.info( json.dumps( { 
                         'media_uuid' : media_uuid,
                         'user_uuid' : user_uuid,
                         'message' : "Created %d hits, HITIds are: %s" % ( len( hit_tracks ), hit_tracks )
                         } ) )
-
-            log.debug( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Heartbeating"
-                        } ) )
-            self.heartbeat()
 
             answer_dicts = {}
 
@@ -560,15 +483,7 @@ class Recognize( VWorker ):
                                 } ) )
 
                     time.sleep( self.polling_secs )
-                    self.heartbeat()
                 answer_dicts[hit_id] = mturk_utils.get_answer_dict_for_hit( hit_id )
-
-                log.debug( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : "Heartbeating"
-                            } ) )
-                self.heartbeat()
 
             recognized_faces, new_faces, recognition_data = self._process_recognized( answer_dicts, hit_tracks )
         else:
@@ -580,13 +495,6 @@ class Recognize( VWorker ):
                 contact_uuid = str( uuid.uuid4() )
                 new_faces[contact_uuid] = person_tracks
             
-        log.debug( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'message' : "Heartbeating"
-                    } ) )
-        self.heartbeat()
-
         return recognized_faces, new_faces, recognition_data
 
     def _process_recognized( self, answer_dicts, hit_tracks ):

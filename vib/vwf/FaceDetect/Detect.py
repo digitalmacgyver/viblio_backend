@@ -130,8 +130,10 @@ class Detect( VWorker ):
                     md5sum = hashlib.md5(data).hexdigest()
                     face['md5sum'] = md5sum
                     try:
+                        self.heartbeat()
                         bucket_contents.key = face['s3_key']
                         byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
+                        self.heartbeat()
                         if bucket_contents.md5 != md5sum:
                             log.error( json.dumps( { 
                                     'media_uuid' : media_uuid,
@@ -157,8 +159,8 @@ class Detect( VWorker ):
             file_handle = open(file_name, 'w')
             json.dump( faces_info, file_handle )
             s3_key = media_uuid + '/' + media_uuid + '_faces.json'
-            bucket_contents.key = s3_key
             self.heartbeat()
+            bucket_contents.key = s3_key
             byte_size = bucket_contents.set_contents_from_filename(filename=file_name)
             self.heartbeat()
         except Exception as e:

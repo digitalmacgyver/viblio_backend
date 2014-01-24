@@ -30,6 +30,7 @@ class Notify( VWorker ):
                         'message' : 'Notifying Cat server at %s' %  config.viblio_server_url
                     } ) )
             site_token = hmac.new( config.site_secret, user_uuid ).hexdigest()
+            self.heartbeat()
             res = requests.get( config.viblio_server_url, params={ 'uid': user_uuid, 'mid': media_uuid, 'site-token': site_token } )
             body = ''
             if hasattr( res, 'text' ):
