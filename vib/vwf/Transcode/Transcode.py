@@ -93,7 +93,7 @@ class Transcode( VWorker ):
                         'message' : "Transcoding and storing the result in S3 for user %s media %s : " % ( user_uuid, media_uuid )
                         } ) )
 
-            pdb.set_trace()
+            #pdb.set_trace()
             self.heartbeat()
             outputs = tutils.transcode_and_store( media_uuid, original_file, outputs, exif )
             self.heartbeat()
@@ -199,7 +199,7 @@ class Transcode( VWorker ):
                         'message' : "Committing rows to database for user %s, media %s" % ( user_uuid, media_uuid )
                         } ) )
 
-            pdb.set_trace()
+            #pdb.set_trace()
             self.heartbeat()
             orm.commit()
             self.heartbeat()
