@@ -210,8 +210,8 @@ while( offset < filesize ):
     for i in attempts():
         if ( upload(location, filename, offset=offset, upload_speed=upload_speed, cookie=cval) ):
             break
-    offset = get_offset(location)
-    if offset == filesize:
+    offset = offset + chunk_size;
+    if offset >= filesize:
         status = "upload success"
         break 
 die(status)
