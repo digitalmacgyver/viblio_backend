@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import pdb
-
 import boto.swf
 import boto.swf.layer2 as swf
 import json
@@ -70,14 +68,12 @@ class VPDecider( swf.Decider ):
         #    pprint.PrettyPrinter( indent=4, stream=f ).pprint( history_events )
             
         if len( history_events ) == 0:
-            log.debug( json.dumps( {
-                        'message' : 'Nothing to do.'
-                        } ) )
+            log.debug( json.dumps( { 'message' : 'Nothing to do.' } ) )
             return True
 
         #pprint.PrettyPrinter( indent=4 ).pprint( history_events )
 
-        tasks = [ 'Transcode', 'FaceDetect', 'FaceRecognize', 'NotifyComplete' ]
+        tasks = [ 'Transcode', 'ActivityDetect', 'FaceDetect', 'FaceRecognize', 'NotifyComplete' ]
 
         workflow_input = _get_workflow_input( history_events )
         media_uuid = workflow_input['media_uuid']
@@ -86,6 +82,7 @@ class VPDecider( swf.Decider ):
         no_lock_tasks = _get_failed_no_lock( history_events )
         timed_out_tasks = _get_timed_out_activities( history_events )
         completed_tasks = _get_completed( history_events )
+        scheduled_tasks = _get_scheduled( history_events )
 
         decisions = swf.Layer1Decisions()
 
@@ -104,33 +101,26 @@ class VPDecider( swf.Decider ):
             for task in tasks:
                 print "Evaluating %s" % task
                 if task in completed_tasks:
-                    log.info( json.dumps( {
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'task' : task,
-                                'message' : "Task %s is completed." % task
-                                } ) )
+                    log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                            'user_uuid' : user_uuid,
+                                            'task' : task,
+                                            'message' : "Task %s is completed." % task } ) )
                 elif task in failed_tasks:
                     details = failed_tasks[task]
                     # We hit a failure, see if we should restart a task.
-
-                    log.warning( json.dumps( {
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'task' : task,
-                                'message' : "Task %s has failed %d times, details were: %s" % ( task, len(details), details )
-                                } ) )
+                    log.warning( json.dumps( { 'media_uuid' : media_uuid,
+                                               'user_uuid' : user_uuid,
+                                               'task' : task,
+                                               'message' : "Task %s has failed %d times, details were: %s" % ( task, len(details), details ) } ) )
 
                     if len( details ) > VPW[task]['failure_retries']:
                         reason = "Task %s has exceeded maximum failure retries, terminating workflow." % task
 
-                        log.error( json.dumps( {
-                                    'media_uuid' : media_uuid,
-                                    'user_uuid' : user_uuid,
-                                    'task' : task,
-                                    'error_code' : 'max_failures',
-                                    'message' : reason
-                                    } ) )
+                        log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                                 'user_uuid' : user_uuid,
+                                                 'task' : task,
+                                                 'error_code' : 'max_failures',
+                                                 'message' : reason } ) )
 
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity': task, 'type' : 'max_retries' } )
 
@@ -245,15 +235,12 @@ class VPDecider( swf.Decider ):
                             heartbeat_timeout         = heartbeat_timeout
                             )
 
-                elif _all_prerequisites_complete( task, completed_tasks ):
+                elif _all_prerequisites_complete( task, completed_tasks ) and task not in scheduled_tasks:
                     # We can start a new task.
-
-                    log.info( json.dumps( {
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'task' : task,
-                                'message' : "Starting %s for the first time" % task
-                                } ) )
+                    log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                            'user_uuid' : user_uuid,
+                                            'task' : task,
+                                            'message' : "Starting %s for the first time" % task } ) )
 
                     task_input = workflow_input
                     for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
@@ -277,12 +264,10 @@ class VPDecider( swf.Decider ):
                         heartbeat_timeout         = heartbeat_timeout
                         )
                 else:
-                    log.debug( json.dumps( {
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'task' : task,
-                                'message' : "Can't start %s due to missing prerequisites." % task
-                                } ) )
+                    log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                             'user_uuid' : user_uuid,
+                                             'task' : task,
+                                             'message' : "Can't start %s due to missing prerequisites." % task } ) )
 
         self.complete( decisions=decisions )
             
@@ -371,6 +356,19 @@ def _get_completed( history_events ):
                 raise Exception("AcivityTaskCompleted scheduled event attribute not an activity task!")
     
     return completed
+
+def _get_scheduled( history_events ):
+    '''Goes through a set of events and returns all the ActivityTasks
+    which have been scheduled prior to this decision'''
+    scheduled = {}
+    for event in history_events:
+        if event.get( 'eventType', 'Unknown' ) == 'ActivityTaskScheduled':
+            scheduled_event_name =  event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
+
+            scheduled[ scheduled_event_name ] = True
+    
+    return scheduled
+
 
 def _get_failed( history_events ):
     '''Goes through a set of events and returns a hash of the failed

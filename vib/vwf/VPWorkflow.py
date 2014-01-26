@@ -59,6 +59,23 @@ VPW = {
         'lock_wait_secs' : 300
         },
 
+    'ActivityDetect' : {
+        'name'            : 'ActivityDetect',
+        'domain'          : domain,
+        'version'         : version,
+        'task_list'       : 'ActivityDetectTask',
+        'prerequisites'   : [ 'Transcode' ],
+        'failure_retries' : 1,
+        'timeout_retries' : [1, 2, 4],
+        'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
+        'default_task_schedule_to_start_timeout' : str( 15*60*60),
+        'default_task_start_to_close_timeout' : str( 10*60*60 ),
+        'default_task_heartbeat_timeout' : str( 300 ),
+        'lock_retries' : 2,
+        'lock_heartbeat_secs' : 90,
+        'lock_wait_secs' : 300
+        },
+
     'FaceDetect' : {
         'name'            : 'FaceDetect',
         'domain'          : domain,

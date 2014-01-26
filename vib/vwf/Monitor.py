@@ -65,11 +65,13 @@ class Monitor( swf.Domain ):
     def set_queue_depth_for_scaling(self):
         trans_name = self.task_list_name('Transcode', VPW, config)
         faced_name = self.task_list_name('FaceDetect', VPW, config)
+        activity_name = self.task_list_name( 'ActivityDetect', VPW, config )
         dec_name = self.decider_task_list_name(config)
         ntrans = self.count_pending_activity_tasks(trans_name)['count']
         nfaced = self.count_pending_activity_tasks(faced_name)['count']
+        nactivity = self.count_pending_activity_tasks( activity_name )['count']
         ndec = self.count_pending_decision_tasks(dec_name)['count']
-        mx = max(ndec, ntrans, nfaced)
+        mx = max(nactivity, ndec, ntrans, nfaced)
         dom = config.swf_domain
         self.cw.put_metric_data(dom, 'queue_depth_for_scaling', mx, dimensions = { 'Deployment' : config.VPWSuffix })
 

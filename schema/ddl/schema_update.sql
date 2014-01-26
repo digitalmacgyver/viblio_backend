@@ -1,3 +1,7 @@
+insert into feature_types ( type ) values ( 'activity' );
+
+
+==
 
 alter table asset_types modify column type varchar(32);
 alter table media_assets modify column asset_type varchar( 32 );
