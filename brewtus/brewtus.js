@@ -267,7 +267,10 @@
 		if ( config.popeye != "none" ) {
 		    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
 		    request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
-			if ( res.statusCode != 200 ) {
+			if ( err ) {
+			    winston.error( "Popeye error: " + err.message );
+			}
+			else if ( res.statusCode != 200 ) {
 			    winston.error( "Popeye error: " + res.statusCode );
 			}
 			else {
