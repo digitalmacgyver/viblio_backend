@@ -35,11 +35,16 @@ class Detect( VWorker ):
                 self.heartbeat()
                 orm = vib.db.orm.get_session()
                 media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
+
                 ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == media.id, MediaAssets.asset_type == 'main' ) ).one()
                 maf = MediaAssetFeatures( feature_type = 'activity',
                                           coordinates = activity,
                                           detection_confidence = 1 )
                 ma.media_asset_features.append( maf )
+
+                mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
+                media.media_workflow_stages.append( mwfs )
+
                 orm.commit()
                 self.heartbeat()
 

@@ -8,6 +8,9 @@ import mixpanel
 import pprint
 import time
 
+import vib.db.orm
+from vib.db.models import * 
+
 import vib.vwf.VPWorkflow
 from vib.vwf.VPWorkflow import VPW
 
@@ -95,6 +98,7 @@ class VPDecider( swf.Decider ):
                         } ) )
             _mp_log( "Workflow_Complete", media_uuid, user_uuid )
             decisions.complete_workflow_execution()
+            _update_media_status( media_uuid, 'WorkflowComplete' )
         else:
             # We are not done.  See if we can start anything or if we
             # are in an error state and need to terminate.
@@ -125,6 +129,7 @@ class VPDecider( swf.Decider ):
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity': task, 'type' : 'max_retries' } )
 
                         decisions.fail_workflow_execution( reason=reason[:250] )
+                        _update_media_status( media_uuid, 'WorkflowFailed' )
 
                     elif not details[-1].get( 'retry', False ):
                         reason = "Most recent failure for task %s said not to retry, terminating workflow." % task
@@ -140,6 +145,7 @@ class VPDecider( swf.Decider ):
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task, 'type' : 'fatal_error' } )
 
                         decisions.fail_workflow_execution( reason=reason[:250] )
+                        _update_media_status( media_uuid, 'WorkflowFailed' )
                     else:
 
                         log.info( json.dumps( {
@@ -191,6 +197,7 @@ class VPDecider( swf.Decider ):
 
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.fail_workflow_execution( reason=reason[:250] )
+                        _update_media_status( media_uuid, 'WorkflowFailed' )
                     else:
                         log.warning( json.dumps( {
                                     'media_uuid' : media_uuid,
@@ -290,6 +297,7 @@ class VPDecider( swf.Decider ):
             log.error( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'error_code' : 'max_timeouts', 'message' : reason}))
             _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'no_lock retries exceeded', 'activity' : task, 'type' : 'fatal_error' } )
             decisions.fail_workflow_execution(reason = reason[:250])
+            _update_media_status( media_uuid, 'WorkflowFailed' )
         else:
             message = 'Retrying task %s for time %d out of %d allowed retries' % (task, len(details), VPW[task]['lock_retries'])
             log.warning( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'message' : message}))
@@ -487,6 +495,20 @@ def _get_input( task, completed_tasks ):
         task_input[prerequisite] = completed_tasks.get( prerequisite, {} )
     return task_input
         
-    
+def _update_media_status( media_uuid, status ):
+    orm = vib.db.orm.get_session()
+
+    media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
+
+    if status == 'WorkflowComplete':
+        media.status = 'complete'
+    elif status == 'WorkflowFailed':
+        media.status = 'failed'
+
+    mwfs = MediaWorkflowStages( workflow_stage = status )
+    media.media_workflow_stages.append( mwfs )
+
+    orm.commit()
+    return
 
            

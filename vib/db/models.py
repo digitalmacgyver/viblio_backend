@@ -92,6 +92,12 @@ class Profiles( BaseModel, Serializer ):
 class ProfileFields( BaseModel, Serializer ):
     pass
 
+class WorkflowStages( BaseModel, Serializer ):
+    pass
+
+class MediaWorkflowStages( BaseModel, Serializer ):
+    pass
+
 """
 Well, reflection really only gives us the column definitions it
 seems.  We are still responsible for establishing the relationships
@@ -123,7 +129,10 @@ def db_map(engine):
     mappers["media"].add_properties({
             "assets": relationship(models.MediaAssets,
                                    backref="media",
-                                   cascade="all, delete-orphan")
+                                   cascade="all, delete-orphan"),
+            "media_workflow_stages": relationship( models.MediaWorkflowStages,
+                                                   backref="media",
+                                                   cascade="all, delete-orphan" )
             })
 
     mappers["media_assets"].add_properties({
@@ -137,8 +146,7 @@ def db_map(engine):
     mappers['profiles'].add_properties( {
             'profile_fields' : relationship( models.ProfileFields,
                                              backref = 'profiles',
-                                             cascade = 'all, delete-orphan' )
-            } )
+                                             cascade = 'all, delete-orphan' ) } )
 
     # return (mappers, tables, Session)
     return SessionFactory

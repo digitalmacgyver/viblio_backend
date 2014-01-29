@@ -5,6 +5,8 @@ import json
 import logging
 import requests
 
+import vib.db.orm
+from vib.db.models import *
 from vib.vwf.VWorker import VWorker
 
 import vib.config.AppConfig
@@ -40,6 +42,14 @@ class Notify( VWorker ):
             else:
                 print 'Error: Cannot find body in response!'
             jdata = json.loads( body )
+
+            orm = vib.db.orm.get_session()
+            media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
+
+            mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
+            media.media_workflow_stages.append( mwfs )
+            orm.commit()
+
             if 'error' in jdata:
                 log.error( json.dumps( {
                             'media_uuid' : media_uuid,

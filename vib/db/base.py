@@ -100,6 +100,7 @@ def reflect( engine, models ):
         'media_comments' : True,
         'media_shares' : True,
         'media_types' : True,
+        'media_workflow_stages' : True,
         'media_workorders' : True,
         'password_resets' : True,
         'pending_users' : True,
@@ -112,6 +113,7 @@ def reflect( engine, models ):
         'share_types' : True,
         'user_roles' : True,
         'users' : True,
+        'workflow_stages' : True,
         'workorders' : True
         }
 

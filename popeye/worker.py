@@ -275,8 +275,11 @@ class Worker( Background ):
                            filename       = client_filename,
                            title          = media_title,
                            view_count     = 0,
-                           status         = 'PopeyeComplete',
+                           status         = 'pending',
                            unique_hash    = unique_hash )
+
+            mwfs = MediaWorkflowStages( workflow_stage = 'PopeyeComplete' )
+            media.media_workflow_stages.append( mwfs )
 
             # Associate media with user.
             user.media.append( media )

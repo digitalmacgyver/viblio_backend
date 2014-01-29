@@ -113,7 +113,10 @@ class Transcode( VWorker ):
 
             media.lat = exif['lat']
             media.lng = exif['lng']
-            media.status = self.task_name + 'Complete'
+            media.status = 'visible'
+
+            mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
+            media.media_workflow_stages.append( mwfs )
 
             # Calculate the recording date for video versions.
             recording_date = datetime.datetime.utcfromtimestamp( 0 )

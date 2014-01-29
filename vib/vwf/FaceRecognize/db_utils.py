@@ -80,7 +80,9 @@ def update_media_status( media_uuid, status ):
     orm = vib.db.orm.get_session()
 
     media = orm.query( Media ).filter( Media.uuid == media_uuid )[0]
-    media.status = status
+    
+    mwfs = MediaWorkflowStages( workflow_stage = status )
+    media.media_workflow_stages.append( mwfs )
 
     orm.commit()
     return

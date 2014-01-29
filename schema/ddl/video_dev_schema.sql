@@ -144,7 +144,7 @@ ENGINE = InnoDB;
 -- Table `video_dev_1`.`asset_types`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`asset_types` (
-  `type` VARCHAR(16) NOT NULL ,
+  `type` VARCHAR(32) NOT NULL ,
   `created_date` DATETIME NULL ,
   `updated_date` DATETIME NULL ,
   PRIMARY KEY (`type`) )
@@ -160,7 +160,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_assets` (
   `user_id` INT(11) NOT NULL ,
   `uuid` VARCHAR(36) NOT NULL ,
   `unique_hash` VARCHAR(32) NULL DEFAULT NULL ,
-  `asset_type` VARCHAR(16) NULL ,
+  `asset_type` VARCHAR(32) NOT NULL ,
   `mimetype` VARCHAR(40) NULL DEFAULT NULL ,
   `uri` TEXT NULL DEFAULT NULL ,
   `location` VARCHAR(28) NOT NULL DEFAULT 'fp' ,
@@ -639,6 +639,43 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_albums` (
     REFERENCES `video_dev_1`.`media` (`id` )
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`workflow_stages`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`workflow_stages` (
+  `stage` VARCHAR(64) NOT NULL ,
+  `created_date` DATETIME NULL ,
+  `updated_date` VARCHAR(45) NULL ,
+  PRIMARY KEY (`stage`) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`media_workflow_stages`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_workflow_stages` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `media_id` INT(11) NOT NULL ,
+  `user_id` INT(11) NOT NULL ,
+  `workflow_stage` VARCHAR(64) NOT NULL ,
+  `created_date` DATETIME NULL ,
+  `updated_date` DATETIME NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_media_workflow_stages_media1` (`media_id` ASC, `user_id` ASC) ,
+  INDEX `fk_media_workflow_stages_workflow_stages1` (`workflow_stage` ASC) ,
+  CONSTRAINT `fk_media_workflow_stages_media1`
+    FOREIGN KEY (`media_id` , `user_id` )
+    REFERENCES `video_dev_1`.`media` (`id` , `user_id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_media_workflow_stages_workflow_stages1`
+    FOREIGN KEY (`workflow_stage` )
+    REFERENCES `video_dev_1`.`workflow_stages` (`stage` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 USE `video_dev_1`;
@@ -1291,6 +1328,54 @@ $$
 
 DELIMITER ;
 
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER workflow_stage_created BEFORE INSERT ON workflow_stages FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER workflow_stage_updated BEFORE UPDATE ON workflow_stages FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER media_workflow_stage_created BEFORE INSERT ON media_workflow_stages FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER media_workflow_stage_updated BEFORE UPDATE ON media_workflow_stages FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
 CREATE USER `video_dev_1` IDENTIFIED BY 'video_dev_1';
 
 
@@ -1323,6 +1408,7 @@ COMMIT;
 START TRANSACTION;
 USE `video_dev_1`;
 INSERT INTO `video_dev_1`.`feature_types` (`type`, `created_date`, `updated_date`) VALUES ('face', NULL, NULL);
+INSERT INTO `video_dev_1`.`feature_types` (`type`, `created_date`, `updated_date`) VALUES ('activity', NULL, NULL);
 
 COMMIT;
 
@@ -1337,6 +1423,8 @@ INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`)
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('video', NULL, NULL);
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('image', NULL, NULL);
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('original', NULL, NULL);
+INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('thumbnail_animated', NULL, NULL);
+INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('poster_animated', NULL, NULL);
 
 COMMIT;
 
@@ -1360,5 +1448,21 @@ USE `video_dev_1`;
 INSERT INTO `video_dev_1`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (1, 'admin', NULL, NULL);
 INSERT INTO `video_dev_1`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (2, 'dbadmin', NULL, NULL);
 INSERT INTO `video_dev_1`.`roles` (`id`, `role`, `created_date`, `updated_date`) VALUES (3, 'instructor', NULL, NULL);
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `video_dev_1`.`workflow_stages`
+-- -----------------------------------------------------
+START TRANSACTION;
+USE `video_dev_1`;
+INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('PopeyeComplete', NULL, NULL);
+INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('TranscodeComplete', NULL, NULL);
+INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceDetectComplete', NULL, NULL);
+INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceRecognizeComplete', NULL, NULL);
+INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('WorkflowComplete', NULL, NULL);
+INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('WorkflowFailed', NULL, NULL);
+INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('ActivityDetectComplete', NULL, NULL);
+INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('NotifyCompleteComplete', NULL, NULL);
 
 COMMIT;
