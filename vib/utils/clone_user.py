@@ -107,7 +107,11 @@ def clone_user( user_uuid, new_email, verbose=False ):
             ms.uuid = str( uuid.uuid4() )
             user.media_shares.append( ms )
 
+        #import pdb
+        #pdb.set_trace()
+
         contacts = orm.query( Contacts ).filter( Contacts.user_id == old_user_id )
+        contact_old_new = {}
         # Add contacts ( not groups )
         for contact in contacts:
             if not contact.is_group:
@@ -125,10 +129,37 @@ def clone_user( user_uuid, new_email, verbose=False ):
 
                 user.contacts.append( contact )
 
+                orm.commit()
+                contact_old_new[old_contact_id] = contact.id
+
+        # Handle contact groups.
+        for group in contacts:
+            if group.is_group:
+                group_contacts = orm.query( ContactGroups ).filter( ContactGroups.group_id == group.id ).all()
+
+                sqlalchemy.orm.session.make_transient( group )
+                group.id = None
+                group.uuid = str( uuid.uuid4() )
+                user.contacts.append( group )
+                orm.commit()
+                
+                for group_member in group_contacts:
+                    if group_member.contact_id is None:
+                        new_contact_group = ContactGroups( group_id   = group.id, 
+                                                           contact_viblio_id = group.contact_viblio_id )
+                        group.contact_groups.append( new_contact_group )
+                    elif group_member.contact_id in contact_old_new:
+                        new_contact_group = ContactGroups( group_id   = group.id, 
+                                                           contact_id = contact_old_new[group_member.contact_id], 
+                                                           contact_viblio_id = group.contact_viblio_id )
+                        group.contact_groups.append( new_contact_group )
+
         media_files = orm.query( Media ).filter( Media.user_id == old_user_id )
+        media_old_new = {}
         # Add media ( not albums )
         for m in media_files:
             if not m.is_album:
+                old_media_id = m.id
                 assets = orm.query( MediaAssets ).filter( MediaAssets.media_id == m.id )[:]
 
                 sqlalchemy.orm.session.make_transient( m )
@@ -138,6 +169,9 @@ def clone_user( user_uuid, new_email, verbose=False ):
                 m.uuid = m_new_uuid
                 user.media.append( m )
                 
+                orm.commit()
+                media_old_new[old_media_id] = m.id
+
                 for asset in assets:
                     features = orm.query( MediaAssetFeatures ).filter( MediaAssetFeatures.media_asset_id == asset.id )[:]
 
@@ -167,6 +201,29 @@ def clone_user( user_uuid, new_email, verbose=False ):
                         asset.media_asset_features.append( feature )
                         if feature.contact_id is not None and feature.contact_id in contact_ids:
                             contact_ids[feature.contact_id].media_asset_features.append( feature )
+
+        #import pdb
+        #pdb.set_trace()
+
+        # Handle media albums
+        for album in media_files:
+            if album.is_album:
+                album_media = orm.query( MediaAlbums ).filter( MediaAlbums.album_id == album.id ).all()
+
+                sqlalchemy.orm.session.make_transient( album )
+                album.id = None
+                album.uuid = str( uuid.uuid4() )
+                user.media.append( album )
+                orm.commit()
+                
+                for album_item in album_media:
+                    if album_item.media_id is None:
+                        new_media_album = MediaAlbums( album_id   = album.id )
+                        album.media_albums.append( new_media_album )
+                    elif album_item.media_id in media_old_new:
+                        new_media_album = MediaAlbums( album_id   = album.id, 
+                                                       media_id = media_old_new[album_item.media_id] )
+                        album.media_albums.append( new_media_album )
                 
         orm.commit()
 
