@@ -637,8 +637,8 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`media_albums` (
   CONSTRAINT `fk_media_albums_media2`
     FOREIGN KEY (`media_id` )
     REFERENCES `video_dev`.`media` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
