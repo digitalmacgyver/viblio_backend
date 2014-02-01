@@ -95,6 +95,7 @@ def reflect( engine, models ):
         'feature_types' : True,
         'links' : True,
         'media' : True,
+        'media_albums' : True,
         'media_asset_features' : True,
         'media_assets' : True,
         'media_comments' : True,
