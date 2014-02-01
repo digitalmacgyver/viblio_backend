@@ -388,7 +388,7 @@
 	res.setHeader("Access-Control-Allow-Origin", "*");
 	res.setHeader("Access-Control-Allow-Methods", ALLOWED_METHODS_STR);
 	res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Final-Length, Offset, Content-Range, Content-Disposition");
-	return res.setHeader("Access-Control-Expose-Headers", "Location");
+	return res.setHeader("Access-Control-Expose-Headers", "Location, Offset");
     };
 
     tusHandler = function(req, res) {
