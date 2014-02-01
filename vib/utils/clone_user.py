@@ -156,6 +156,7 @@ def clone_user( user_uuid, new_email, verbose=False ):
 
         media_files = orm.query( Media ).filter( Media.user_id == old_user_id )
         media_old_new = {}
+        media_uri_old_new = {}
         # Add media ( not albums )
         for m in media_files:
             if not m.is_album:
@@ -181,6 +182,8 @@ def clone_user( user_uuid, new_email, verbose=False ):
                     old_uri = asset.uri
                     new_uri = old_uri.replace( m_old_uuid, m_new_uuid )
 
+                    media_uri_old_new[old_uri] = new_uri
+
                     if old_uri in picture_uris:
                         for contact in picture_uris[old_uri]:
                             contact.picture_uri = new_uri
@@ -202,20 +205,55 @@ def clone_user( user_uuid, new_email, verbose=False ):
                         if feature.contact_id is not None and feature.contact_id in contact_ids:
                             contact_ids[feature.contact_id].media_asset_features.append( feature )
 
-        #import pdb
-        #pdb.set_trace()
-
         # Handle media albums
         for album in media_files:
             if album.is_album:
                 album_media = orm.query( MediaAlbums ).filter( MediaAlbums.album_id == album.id ).all()
+                assets = orm.query( MediaAssets ).filter( MediaAssets.media_id == m.id )[:]
 
                 sqlalchemy.orm.session.make_transient( album )
                 album.id = None
-                album.uuid = str( uuid.uuid4() )
+                m_old_uuid = album.uuid
+                m_new_uuid = str( uuid.uuid4() )
+                album.uuid = m_new_uuid
                 user.media.append( album )
                 orm.commit()
-                
+
+                for asset in assets:
+                    features = orm.query( MediaAssetFeatures ).filter( MediaAssetFeatures.media_asset_id == asset.id )[:]
+
+                    sqlalchemy.orm.session.make_transient( asset )
+                    asset.id = None
+                    old_uuid = asset.uuid
+                    old_uri = asset.uri
+
+                    if old_uri in media_uri_old_new:
+                        new_uri = media_uri_old_new[old_uri]
+                    else:
+                        old_substr = old_uri[:36]
+                        new_uri = old_uri.replace( old_substr, m_new_uuid )
+
+                    if old_uri in picture_uris:
+                        for contact in picture_uris[old_uri]:
+                            contact.picture_uri = new_uri
+                        
+                    new_uuid = str( uuid.uuid4() )
+                    asset.uuid = new_uuid
+                    asset.uri = new_uri
+                    try:
+                        s3.copy_s3_file( config.bucket_name, old_uri, config.bucket_name, new_uri )
+                    except Exception as e:
+                        print "Error copying S3 file: %s" % ( e )
+
+                    album.assets.append( asset )
+
+                    for feature in features:
+                        sqlalchemy.orm.session.make_transient( feature )
+                        feature.id = None
+                        asset.media_asset_features.append( feature )
+                        if feature.contact_id is not None and feature.contact_id in contact_ids:
+                            contact_ids[feature.contact_id].media_asset_features.append( feature )
+
                 for album_item in album_media:
                     if album_item.media_id is None:
                         new_media_album = MediaAlbums( album_id   = album.id )
