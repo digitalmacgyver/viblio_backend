@@ -17,6 +17,17 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
+-- Table `video_dev_1`.`user_types`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`user_types` (
+  `type` VARCHAR(32) NOT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`type`) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
 -- Table `video_dev_1`.`users`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`users` (
@@ -30,14 +41,23 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`users` (
   `active` VARCHAR(32) NULL DEFAULT NULL ,
   `confirmed` TINYINT(1) NULL DEFAULT false ,
   `accepted_terms` TINYINT(1) NULL DEFAULT NULL ,
+  `api_key` VARCHAR(128) NULL DEFAULT NULL ,
+  `metadata` TEXT NULL DEFAULT NULL ,
+  `user_type` VARCHAR(32) NULL DEFAULT 'individual' ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
   PRIMARY KEY (`id`) ,
   INDEX `fk_users_providers1` (`provider` ASC) ,
   UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
+  INDEX `fk_users_user_types1` (`user_type` ASC) ,
   CONSTRAINT `fk_users_providers`
     FOREIGN KEY (`provider` )
     REFERENCES `video_dev_1`.`providers` (`provider` )
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_users_user_types1`
+    FOREIGN KEY (`user_type` )
+    REFERENCES `video_dev_1`.`user_types` (`type` )
     ON DELETE RESTRICT
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
@@ -373,51 +393,6 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_dev_1`.`workorders`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`workorders` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT ,
-  `name` TEXT NULL ,
-  `state` VARCHAR(24) NOT NULL DEFAULT 'WO_NEW' ,
-  `uuid` VARBINARY(16) NULL DEFAULT NULL ,
-  `user_id` INT(11) NULL ,
-  `submitted` VARCHAR(32) NULL DEFAULT NULL ,
-  `completed` VARCHAR(32) NULL DEFAULT NULL ,
-  `created_date` DATETIME NULL DEFAULT NULL ,
-  `updated_date` DATETIME NULL DEFAULT NULL ,
-  PRIMARY KEY (`id`) ,
-  INDEX `fk_workorder_user1` (`user_id` ASC) ,
-  CONSTRAINT `fk_workorder_user1`
-    FOREIGN KEY (`user_id` )
-    REFERENCES `video_dev_1`.`users` (`id` )
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `video_dev_1`.`media_workorders`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_workorders` (
-  `media_id` INT(11) NOT NULL ,
-  `workorder_id` INT(11) NOT NULL ,
-  PRIMARY KEY (`workorder_id`, `media_id`) ,
-  INDEX `fk_media_workorders_workorders1` (`workorder_id` ASC) ,
-  INDEX `fk_media_workorders_media1` (`media_id` ASC) ,
-  CONSTRAINT `fk_media_workorders_workorders1`
-    FOREIGN KEY (`workorder_id` )
-    REFERENCES `video_dev_1`.`workorders` (`id` )
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `fk_media_workorders_media1`
-    FOREIGN KEY (`media_id` )
-    REFERENCES `video_dev_1`.`media` (`id` )
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
 -- Table `video_dev_1`.`user_roles`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`user_roles` (
@@ -674,6 +649,82 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_workflow_stages` (
   CONSTRAINT `fk_media_workflow_stages_workflow_stages1`
     FOREIGN KEY (`workflow_stage` )
     REFERENCES `video_dev_1`.`workflow_stages` (`stage` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`organization_users`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`organization_users` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `organization_id` INT(11) NOT NULL ,
+  `user_id` INT(11) NOT NULL ,
+  `organization_uid` VARCHAR(128) NULL ,
+  `created_date` DATETIME NULL ,
+  `updated_date` DATETIME NULL ,
+  PRIMARY KEY (`id`, `organization_id`, `user_id`) ,
+  INDEX `fk_organization_users_users1` (`organization_id` ASC) ,
+  INDEX `fk_organization_users_users2` (`user_id` ASC) ,
+  CONSTRAINT `fk_organization_users_users1`
+    FOREIGN KEY (`organization_id` )
+    REFERENCES `video_dev_1`.`users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_organization_users_users2`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `video_dev_1`.`users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`communities`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`communities` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `uuid` VARCHAR(36) NOT NULL ,
+  `name` VARCHAR(128) NULL DEFAULT NULL ,
+  `webhook` TEXT NULL DEFAULT NULL ,
+  `members_id` INT(11) NOT NULL ,
+  `media_id` INT(11) NOT NULL ,
+  `curators_id` INT(11) NOT NULL ,
+  `pending_id` INT(11) NOT NULL ,
+  `is_curated` TINYINT(1) NOT NULL DEFAULT true ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`, `user_id`) ,
+  INDEX `fk_communities_users1` (`user_id` ASC) ,
+  INDEX `fk_communities_media1` (`media_id` ASC) ,
+  INDEX `fk_communities_media2` (`pending_id` ASC) ,
+  INDEX `fk_communities_contacts1` (`members_id` ASC) ,
+  INDEX `fk_communities_contacts2` (`curators_id` ASC) ,
+  CONSTRAINT `fk_communities_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `video_dev_1`.`users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_communities_media1`
+    FOREIGN KEY (`media_id` )
+    REFERENCES `video_dev_1`.`media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_communities_media2`
+    FOREIGN KEY (`pending_id` )
+    REFERENCES `video_dev_1`.`media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_communities_contacts1`
+    FOREIGN KEY (`members_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_communities_contacts2`
+    FOREIGN KEY (`curators_id` )
+    REFERENCES `video_dev_1`.`contacts` (`id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
@@ -1069,30 +1120,6 @@ USE `video_dev_1`$$
 
 
 CREATE
-	TRIGGER workorder_created BEFORE INSERT ON workorders FOR EACH ROW
-BEGIN
-	set NEW.created_date = NOW();
-END;
-$$
-
-USE `video_dev_1`$$
-
-
-CREATE
-	TRIGGER workorder_updated BEFORE UPDATE ON workorders FOR EACH ROW
-BEGIN
-	set NEW.updated_date = NOW();
-END;
-$$
-
-
-DELIMITER ;
-
-DELIMITER $$
-USE `video_dev_1`$$
-
-
-CREATE
 	TRIGGER profile_created BEFORE INSERT ON profiles FOR EACH ROW
 BEGIN
 	set NEW.created_date = NOW();
@@ -1376,6 +1403,78 @@ $$
 
 DELIMITER ;
 
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER user_type_created BEFORE INSERT ON user_types FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER user_type_updated BEFORE UPDATE ON user_types FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER organization_user_created BEFORE INSERT ON organization_types FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER organization_user_updated BEFORE UPDATE ON organization_users FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER community_created BEFORE INSERT ON communities FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER community_updated BEFORE UPDATE ON communities FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
 CREATE USER `video_dev_1` IDENTIFIED BY 'video_dev_1';
 
 
@@ -1390,6 +1489,16 @@ START TRANSACTION;
 USE `video_dev_1`;
 INSERT INTO `video_dev_1`.`providers` (`provider`, `created_date`, `updated_date`) VALUES ('facebook', NULL, NULL);
 INSERT INTO `video_dev_1`.`providers` (`provider`, `created_date`, `updated_date`) VALUES ('local', NULL, NULL);
+
+COMMIT;
+
+-- -----------------------------------------------------
+-- Data for table `video_dev_1`.`user_types`
+-- -----------------------------------------------------
+START TRANSACTION;
+USE `video_dev_1`;
+INSERT INTO `video_dev_1`.`user_types` (`type`, `created_date`, `updated_date`) VALUES ('individual', NULL, NULL);
+INSERT INTO `video_dev_1`.`user_types` (`type`, `created_date`, `updated_date`) VALUES ('organization', NULL, NULL);
 
 COMMIT;
 

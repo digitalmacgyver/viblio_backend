@@ -1,3 +1,158 @@
+drop table workorders;
+drop table media_workorders;
+
+CREATE  TABLE IF NOT EXISTS `user_types` (
+  `type` VARCHAR(32) NOT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`type`) )
+ENGINE = InnoDB;
+
+-- Trigger DDL Statements
+DELIMITER $$
+
+CREATE
+	TRIGGER user_type_created BEFORE INSERT ON user_types FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER user_type_updated BEFORE UPDATE ON user_types FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
+insert into user_types ( type ) values ( 'individual' );
+insert into user_types ( type ) values ( 'organization' );
+commit;
+
+alter table users add column api_key varchar(128) null default null after accepted_terms;
+alter table users add column metadata text null default null after api_key;
+alter table users add column user_type varchar(32) not null default 'individual' after metadata;
+
+alter table users add INDEX `fk_users_user_types1` (`user_type` ASC);
+alter table users add  CONSTRAINT `fk_users_user_types1`
+    FOREIGN KEY (`user_type` )
+    REFERENCES `user_types` (`type`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE;
+
+update users set user_type = 'individual';
+commit;
+
+
+CREATE  TABLE IF NOT EXISTS `organization_users` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `organization_id` INT(11) NOT NULL ,
+  `user_id` INT(11) NOT NULL ,
+  `organization_uid` VARCHAR(128) NULL ,
+  `created_date` DATETIME NULL ,
+  `updated_date` DATETIME NULL ,
+  PRIMARY KEY (`id`, `organization_id`, `user_id`) ,
+  INDEX `fk_organization_users_users1` (`organization_id` ASC) ,
+  INDEX `fk_organization_users_users2` (`user_id` ASC) ,
+  CONSTRAINT `fk_organization_users_users1`
+    FOREIGN KEY (`organization_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_organization_users_users2`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+-- Trigger DDL Statements
+DELIMITER $$
+
+CREATE
+	TRIGGER organization_user_created BEFORE INSERT ON organization_types FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER organization_user_updated BEFORE UPDATE ON organization_users FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
+
+CREATE  TABLE IF NOT EXISTS `communities` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `uuid` VARCHAR(36) NOT NULL ,
+  `name` VARCHAR(128) NULL DEFAULT NULL ,
+  `webhook` TEXT NULL DEFAULT NULL ,
+  `members_id` INT(11) NOT NULL ,
+  `media_id` INT(11) NOT NULL ,
+  `curators_id` INT(11) NOT NULL ,
+  `pending_id` INT(11) NOT NULL ,
+  `is_curated` TINYINT(1) NOT NULL DEFAULT true ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`, `user_id`) ,
+  INDEX `fk_communities_users1` (`user_id` ASC) ,
+  INDEX `fk_communities_media1` (`media_id` ASC) ,
+  INDEX `fk_communities_media2` (`pending_id` ASC) ,
+  INDEX `fk_communities_contacts1` (`members_id` ASC) ,
+  INDEX `fk_communities_contacts2` (`curators_id` ASC) ,
+  CONSTRAINT `fk_communities_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_communities_media1`
+    FOREIGN KEY (`media_id` )
+    REFERENCES `media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_communities_media2`
+    FOREIGN KEY (`pending_id` )
+    REFERENCES `media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_communities_contacts1`
+    FOREIGN KEY (`members_id` )
+    REFERENCES `contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_communities_contacts2`
+    FOREIGN KEY (`curators_id` )
+    REFERENCES `contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+-- Trigger DDL Statements
+DELIMITER $$
+
+CREATE
+	TRIGGER community_created BEFORE INSERT ON communities FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER community_updated BEFORE UPDATE ON communities FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
 insert into feature_types ( type ) values ( 'activity' );
 
 CREATE  TABLE IF NOT EXISTS `video_dev_1`.`workflow_stages` (
