@@ -99,7 +99,8 @@ class Transcode( VWorker ):
             self.heartbeat()
 
             orm = vib.db.orm.get_session()
-
+            orm.commit()
+            
             # Get the media object to which all our subordinate files relate.
             media = orm.query( Media ).filter( Media.uuid == media_uuid ).first()
             if media is None:

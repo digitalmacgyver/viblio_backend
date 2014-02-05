@@ -155,14 +155,14 @@ DELIMITER ;
 
 insert into feature_types ( type ) values ( 'activity' );
 
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`workflow_stages` (
+CREATE  TABLE IF NOT EXISTS `workflow_stages` (
   `stage` VARCHAR(64) NOT NULL ,
   `created_date` DATETIME NULL ,
   `updated_date` VARCHAR(45) NULL ,
   PRIMARY KEY (`stage`) )
 ENGINE = InnoDB;
 
-CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_workflow_stages` (
+CREATE  TABLE IF NOT EXISTS `media_workflow_stages` (
   `id` INT NOT NULL AUTO_INCREMENT ,
   `media_id` INT(11) NOT NULL ,
   `user_id` INT(11) NOT NULL ,
@@ -174,19 +174,17 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_workflow_stages` (
   INDEX `fk_media_workflow_stages_workflow_stages1` (`workflow_stage` ASC) ,
   CONSTRAINT `fk_media_workflow_stages_media1`
     FOREIGN KEY (`media_id` , `user_id` )
-    REFERENCES `video_dev_1`.`media` (`id` , `user_id` )
+    REFERENCES `media` (`id` , `user_id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_media_workflow_stages_workflow_stages1`
     FOREIGN KEY (`workflow_stage` )
-    REFERENCES `video_dev_1`.`workflow_stages` (`stage` )
+    REFERENCES `workflow_stages` (`stage` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 DELIMITER $$
-USE `video_dev_1`$$
-
 
 CREATE
 	TRIGGER workflow_stage_created BEFORE INSERT ON workflow_stages FOR EACH ROW
@@ -209,7 +207,6 @@ $$
 DELIMITER ;
 
 DELIMITER $$
-USE `video_dev_1`$$
 
 
 CREATE
@@ -234,15 +231,14 @@ DELIMITER ;
 
 
 START TRANSACTION;
-USE `video_dev_1`;
-INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('PopeyeComplete', NULL, NULL);
-INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('TranscodeComplete', NULL, NULL);
-INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceDetectComplete', NULL, NULL);
-INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceRecongizeComplete', NULL, NULL);
-INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('WorkflowComplete', NULL, NULL);
-INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('WorkflowFailed', NULL, NULL);
-INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('ActivityDetectComplete', NULL, NULL);
-INSERT INTO `video_dev_1`.`workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('NotifyCompleteComplete', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('PopeyeComplete', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('TranscodeComplete', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceDetectComplete', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceRecongizeComplete', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('WorkflowComplete', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('WorkflowFailed', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('ActivityDetectComplete', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('NotifyCompleteComplete', NULL, NULL);
 
 COMMIT;
 
