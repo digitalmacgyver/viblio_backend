@@ -14,7 +14,7 @@ PYPKGS=\
 	web.py \
 	wsgilog \
 	config \
-	sqlalchemy \
+	sqlalchemy==0.9.1 \
 	requests \
 	pytz \
 	mixpanel-py \
