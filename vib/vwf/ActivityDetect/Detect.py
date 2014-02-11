@@ -4,6 +4,7 @@ import json
 import logging
 import random
 from sqlalchemy import and_
+import uuid
 
 from vib.vwf.VWorker import VWorker
 
@@ -27,13 +28,19 @@ class Detect( VWorker ):
 
             activity = random.choice( ['soccer', 'birthday', None ] )
 
+            activity = 'soccer'
+
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
                                     'message' : 'Adding activity of %s to media %s' % ( activity, media_uuid ) } ) )
 
+            #import pdb
+            #pdb.set_trace()
+
             if activity is not None:
                 self.heartbeat()
                 orm = vib.db.orm.get_session()
+                orm.commit()
                 media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
 
                 ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == media.id, MediaAssets.asset_type == 'main' ) ).one()
@@ -41,6 +48,43 @@ class Detect( VWorker ):
                                           coordinates = activity,
                                           detection_confidence = 1 )
                 ma.media_asset_features.append( maf )
+
+                user_id = orm.query( Users ).filter( Users.uuid == user_uuid ).one().id
+
+                user_albums = orm.query( Media ).filter( and_( Media.user_id == user_id, Media.is_album == True ) )
+
+                album_names = {}
+                for album in user_albums:
+                    album_names[album.title] = album
+                if activity in album_names:
+                    album_group = orm.query( MediaAlbums ).filter( MediaAlbums.album_id == album_names[activity].id ).one()
+                    album = orm.query( Media ).filter( Media.id == album_group.album_id ).one()
+                    media_album = MediaAlbums( media_id = media.id,
+                                               album_id = album.id )
+                    orm.add( media_album )
+
+                else:
+                    album = Media( user_id = user_id,
+                                   uuid    = str( uuid.uuid4() ),
+                                   is_album = True,
+                                   media_type = 'original',
+                                   title = activity )
+                    orm.add( album )
+                    media_poster = orm.query( MediaAssets ).filter( and_( MediaAssets.asset_type == 'poster', MediaAssets.media_id == media.id ) ).one()
+                    poster = MediaAssets( user_id = user_id,
+                                          uuid = str( uuid.uuid4() ),
+                                          asset_type = 'poster',
+                                          mimetype = media_poster.mimetype,
+                                          location = media_poster.location,
+                                          uri = media_poster.uri, 
+                                          width = media_poster.width,
+                                          height = media_poster.height )
+                    album.assets.append( poster )
+                    orm.commit()
+                    media_album = MediaAlbums( media_id = media.id,
+                                               album_id = album.id )
+                    orm.add( media_album )
+                
 
                 mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
                 media.media_workflow_stages.append( mwfs )

@@ -1,3 +1,5 @@
+==
+
 drop table workorders;
 drop table media_workorders;
 
@@ -234,7 +236,7 @@ START TRANSACTION;
 INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('PopeyeComplete', NULL, NULL);
 INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('TranscodeComplete', NULL, NULL);
 INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceDetectComplete', NULL, NULL);
-INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceRecongizeComplete', NULL, NULL);
+INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('FaceRecognizeComplete', NULL, NULL);
 INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('WorkflowComplete', NULL, NULL);
 INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('WorkflowFailed', NULL, NULL);
 INSERT INTO `workflow_stages` (`stage`, `created_date`, `updated_date`) VALUES ('ActivityDetectComplete', NULL, NULL);

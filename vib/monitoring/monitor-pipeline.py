@@ -93,7 +93,7 @@ try:
 
         heartbeat_uuid = None
         if len( heartbeat_media ) == 1:
-            if heartbeat_media[0].status == 'FaceRecognizeComplete':
+            if heartbeat_media[0].status == 'complete':
                 log.debug( json.dumps( { 'message' : 'Pipeline OK' } ) )
                 log_status( 1 )
             else:
