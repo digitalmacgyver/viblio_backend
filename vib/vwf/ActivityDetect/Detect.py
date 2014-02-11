@@ -57,7 +57,7 @@ class Detect( VWorker ):
                 for album in user_albums:
                     album_names[album.title] = album
                 if activity in album_names:
-                    album_group = orm.query( MediaAlbums ).filter( MediaAlbums.album_id == album_names[activity].id ).one()
+                    album_group = orm.query( MediaAlbums ).filter( MediaAlbums.album_id == album_names[activity].id )[0]
                     album = orm.query( Media ).filter( Media.id == album_group.album_id ).one()
                     media_album = MediaAlbums( media_id = media.id,
                                                album_id = album.id )
