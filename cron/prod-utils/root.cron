@@ -3,6 +3,7 @@
 # Check and install vib package - note we don't run the supervisor.
 #
 */5 * * * * /usr/local/bin/check-and-install-software.pl -db prod -app vib
+*/5 * * * * sh -c "sleep 90 ; /etc/init.d/supervisor stop"
 #
 # Check for tools upgrade
 #
