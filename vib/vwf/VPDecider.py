@@ -498,17 +498,23 @@ def _get_input( task, completed_tasks ):
 def _update_media_status( media_uuid, status ):
     orm = vib.db.orm.get_session()
 
-    media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
+    try:
+        media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
 
-    if status == 'WorkflowComplete':
-        media.status = 'complete'
-    elif status == 'WorkflowFailed':
-        media.status = 'failed'
+        if status == 'WorkflowComplete':
+            media.status = 'complete'
+        elif status == 'WorkflowFailed':
+            media.status = 'failed'
+            
+        mwfs = MediaWorkflowStages( workflow_stage = status )
+        media.media_workflow_stages.append( mwfs )
+        
+        orm.commit()
 
-    mwfs = MediaWorkflowStages( workflow_stage = status )
-    media.media_workflow_stages.append( mwfs )
+    except Exception as e:
+        log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'message' : "Failed to update media status to %s for media_uuid %s, error was: %s" % ( status, media_uuid, e ) } ) )
 
-    orm.commit()
     return
 
            
