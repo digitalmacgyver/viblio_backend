@@ -19,6 +19,7 @@ def valid_session( sess ):
     try:
         q = sess.execute( 'select 1;' )
         if q.rowcount:
+            sess.commit()
             return True
         else:
             raise Exception( "DB Connection Error." )
