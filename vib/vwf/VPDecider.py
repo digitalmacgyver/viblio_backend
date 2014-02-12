@@ -497,6 +497,12 @@ def _get_input( task, completed_tasks ):
         
 def _update_media_status( media_uuid, status ):
     orm = vib.db.orm.get_session()
+    try:
+        orm.commit()
+    except Exception as e:
+        log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'message' : "Failed to pre-commit orm for media status to %s for media_uuid %s, error was: %s" % ( status, media_uuid, e ) } ) )
+        orm.rollback()
 
     try:
         media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
