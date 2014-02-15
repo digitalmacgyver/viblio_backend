@@ -2,11 +2,15 @@
 
 import json
 import logging
+import os
 import random
 from sqlalchemy import and_
 import uuid
 
+import vib.utils.s3 as s3
+
 from vib.vwf.VWorker import VWorker
+import vib.vwf.ActivityDetect.object_classification_driver as oc
 
 import vib.db.orm
 from vib.db.models import *
@@ -26,9 +30,26 @@ class Detect( VWorker ):
             media_uuid = options['media_uuid']
             user_uuid = options['user_uuid']
 
-            activity = random.choice( ['soccer', 'birthday', None ] )
+            #activity = random.choice( ['soccer', 'birthday', None ] )
+            #activity = 'soccer'
+            activity = None
 
-            activity = 'soccer'
+            s3_key = options['Transcode']['output_file']['s3_key']
+            s3_bucket = options['Transcode']['output_file']['s3_bucket']
+            
+            working_dir = os.path.abspath( config.activity_dir + '/' + media_uuid )
+            if not os.path.exists( working_dir ):
+                os.mkdir( working_dir )
+                
+            short_name = media_uuid + '/' + media_uuid + '.mp4'
+            file_name = os.path.abspath( config.activity_dir + '/' + short_name )
+
+            s3.download_file( file_name, s3_bucket, s3_key )
+
+            soccer_confidence = oc.get_confidence( file_name, working_dir, config.soccer_model_dir )
+
+            if soccer_confidence > 0.4:
+                activity = 'soccer'
 
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
