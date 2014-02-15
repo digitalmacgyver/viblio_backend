@@ -5,6 +5,8 @@
 */5 * * * * /etc/init.d/brewtus check_and_install
 */5 * * * * /etc/init.d/popeye  check_and_install
 */5 * * * * /etc/init.d/supervisor check_and_install
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app object_classification
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app soccer_model
 #
 # Check for vatools
 */5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app vatools
