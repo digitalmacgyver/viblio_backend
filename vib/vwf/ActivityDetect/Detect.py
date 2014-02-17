@@ -106,11 +106,11 @@ class Detect( VWorker ):
                     orm.add( media_album )
                 
 
-                mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
-                media.media_workflow_stages.append( mwfs )
+            mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
+            media.media_workflow_stages.append( mwfs )
 
-                orm.commit()
-                self.heartbeat()
+            orm.commit()
+            self.heartbeat()
 
             if False:
                 return { 'ACTIVITY_ERROR' : True, 'retry' : True }
