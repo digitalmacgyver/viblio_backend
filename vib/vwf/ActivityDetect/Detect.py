@@ -58,10 +58,11 @@ class Detect( VWorker ):
             #import pdb
             #pdb.set_trace()
 
+            self.heartbeat()
+            orm = vib.db.orm.get_session()
+            orm.commit()
+
             if activity is not None:
-                self.heartbeat()
-                orm = vib.db.orm.get_session()
-                orm.commit()
                 media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
 
                 ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == media.id, MediaAssets.asset_type == 'main' ) ).one()
@@ -105,7 +106,6 @@ class Detect( VWorker ):
                                                album_id = album.id )
                     orm.add( media_album )
                 
-
             mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
             media.media_workflow_stages.append( mwfs )
 
