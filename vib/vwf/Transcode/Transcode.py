@@ -37,7 +37,7 @@ class Transcode( VWorker ):
                       size: "640x360",
                       asset_type: "main",
                       thumbnails : [ {
-                        times : [0.5], size: "320x180", label: "poster",
+                        times : [0.5], size: "320x240", label: "poster",
                         format : "png",
                         output_file: { s3_bucket, s3_key } } ]
                      } ] }
@@ -184,7 +184,7 @@ class Transcode( VWorker ):
                                 'message' : "Creating image database row of uuid %s for user %s, media %s of asset_type %s and uri %s" % ( thumbnail_uuid, user_uuid, media_uuid, thumbnail['label'], thumbnail['output_file']['s3_key'] )
                                 } ) )
 
-                    thumbnail_size = thumbnail.get( 'size', "320x180" )
+                    thumbnail_size = thumbnail.get( 'size', "320x240" )
                     thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
                     thumbnail_asset = MediaAssets( uuid       = thumbnail_uuid,
                                                    asset_type = thumbnail['label'],
@@ -207,7 +207,7 @@ class Transcode( VWorker ):
             self.heartbeat()
             orm.commit()
             self.heartbeat()
-
+            
             self.cleanup_files( media_uuid, user_uuid, original_file, outputs )
             
             return_value = { 

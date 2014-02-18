@@ -205,7 +205,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
         ffmpeg_opts = ' -vframes 1 '
         ffmpeg_scale = ''
 
-        thumbnail_size = thumbnail.get( 'size', "320x180" )
+        thumbnail_size = thumbnail.get( 'size', "320x240" )
         thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
         thumbnail_x = int( thumbnail_x )
         thumbnail_y = int( thumbnail_y )
@@ -214,14 +214,34 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
         thumbnail_type = thumbnail.get( 'type', 'static' )
 
         if video_x and video_y:
+            scaled_x = 0
+            scaled_y = 0
+            scaling_factor = 0
+            if video_x < thumbnail_x:
+                scaling_factor = float( thumbnail_x ) / video_x
+            if video_y < thumbnail_y:
+                if float( thumbnail_y ) / video_y > scaling_factor:
+                    scaling_factor = float( thumbnail_y ) / video_y
+
+            if scaling_factor > 0:
+                scaled_x = int( video_x * scaling_factor ) + 1
+                if scaled_x % 2 != 0:
+                    scaled_x += 1
+                scaled_y = int( video_y * scaling_factor ) + 1
+                if scaled_y %2 != 0:
+                    scaled_y += 1
+            else:
+                scaled_x = thumbnail_x
+                scaled_y = thumbnail_y
+
             video_aspect_ratio = video_x / float( video_y )
     
-            if video_aspect_ratio < thumbnail_aspect_ratio:
-                ffmpeg_scale += ' -vf scale=-1:%s,pad="%s:%s:(ow-iw)/2:(oh-ih)/2"' % ( thumbnail_y, thumbnail_x, thumbnail_y )
+            if video_aspect_ratio > thumbnail_aspect_ratio:
+                ffmpeg_scale += ' -vf scale=-1:%s,crop=%s:%s' % ( scaled_y, thumbnail_x, thumbnail_y )
             else:
-                ffmpeg_scale += ' -vf scale=%s:-1,pad="%s:%s:(ow-iw)/2:(oh-ih)/2"' % ( thumbnail_x, thumbnail_x, thumbnail_y )
+                ffmpeg_scale += ' -vf scale=%s:-1,crop=%s:%s' % ( scaled_x, thumbnail_x, thumbnail_y )
         else:
-            ffmpeg_scale += ' -vf scale=%s:%s' % ( thumbnail_x, thumbnail_y )
+            ffmpeg_scale += ' -vf scale=%s:%s,crop=%s:%s' % ( thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y )
 
         thumbnail_file_fs = config.transcode_dir + "/" + media_uuid + "_%s_%s.%s" % ( thumbnail['label'], idx, thumbnail.get( 'format', 'png' ) )
 
@@ -241,7 +261,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                 log.warning( json.dumps( { 'media_uuid' : media_uuid,
                                            'message' : "Failed to generate scaled thumbnail for media_uuid %s, video file %s with command %s" % ( media_uuid, input_file_fs, cmd ) } ) )
 
-                cmd = '/usr/local/bin/ffmpeg -y -ss %s -i %s -vframes 1 -vf scale=%s:%s %s' %( time, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_file_fs )
+                cmd = '/usr/local/bin/ffmpeg -y -ss %s -i %s -vframes 1 -vf scale=%s:%s,crop=%s:%s %s' %( time, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y, thumbnail_file_fs )
 
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'message' : "Running safer command %s to generate thumbnail for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
@@ -294,7 +314,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                     log.warning( json.dumps( { 'media_uuid' : media_uuid,
                                                'message' : "Failed to generate scaled intermediate images for animated thumbnail, generating unscaled versions." } ) )
 
-                    cmd = 'cd %s ; /usr/local/bin/ffmpeg -i %s -vf scale=%s:%s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, thumbnail_x, thumbnail_y, output_fps, media_uuid )
+                    cmd = 'cd %s ; /usr/local/bin/ffmpeg -i %s -vf scale=%s:%s,crop=%s:%s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y, output_fps, media_uuid )
                     log.info( json.dumps( { 'media_uuid' : media_uuid,
                                             'message' : "Running safer command %s to create animated gif thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                     ( status, cmd_output ) = commands.getstatusoutput( cmd )

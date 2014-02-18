@@ -25,7 +25,7 @@ Required inputs
 		# An array of thumbnail images
                 thumbnails : [ {
                         times : [0.5], #***NOTE:*** Even though times is an array, only one value is supported
-                        size: "320x180", 
+                        size: "320x240", 
                         label: "poster", #***NOTE:*** A poster type is mandatory
                         format : "png",
                         output_file: { s3_bucket, s3_key } } ]

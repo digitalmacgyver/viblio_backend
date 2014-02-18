@@ -351,7 +351,7 @@ class Worker( Background ):
                                     'thumbnails' : [ {
                                             'times' : [ 0.5 ],
                                             'type'  : 'static',
-                                            'size'  : "320x180",
+                                            'size'  : "320x240",
                                             'label' : 'poster',
                                             'format' : 'png',
                                             'output_file' : {
@@ -373,7 +373,7 @@ class Worker( Background ):
                                                      {
                                             'times' : [ 0.5 ],
                                             'type'  : 'animated',
-                                            'size'  : "320x180",
+                                            'size'  : "320x240",
                                             'label' : 'poster_animated',
                                             'format' : 'gif',
                                             'output_file' : {
