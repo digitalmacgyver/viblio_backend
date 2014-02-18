@@ -61,10 +61,9 @@ class Detect( VWorker ):
             self.heartbeat()
             orm = vib.db.orm.get_session()
             orm.commit()
+            media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
 
             if activity is not None:
-                media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
-
                 ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == media.id, MediaAssets.asset_type == 'main' ) ).one()
                 maf = MediaAssetFeatures( feature_type = 'activity',
                                           coordinates = activity,
