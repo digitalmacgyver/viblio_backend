@@ -121,7 +121,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
             lat         = lat,
             lng         = lng,
             recording_date = recording_date,
-            status      = 'FaceRecognizeComplete'
+            status      = 'complete'
             )
 
         user.media.append( media )
