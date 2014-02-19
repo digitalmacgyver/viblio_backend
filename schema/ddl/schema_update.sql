@@ -1,3 +1,6 @@
+insert into asset_types ( type ) values ( 'poster_original' );
+
+
 ==
 
 drop table workorders;

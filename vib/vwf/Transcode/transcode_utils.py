@@ -205,10 +205,26 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
         ffmpeg_opts = ' -vframes 1 '
         ffmpeg_scale = ''
 
-        thumbnail_size = thumbnail.get( 'size', "320x240" )
-        thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
-        thumbnail_x = int( thumbnail_x )
-        thumbnail_y = int( thumbnail_y )
+        thumbnail_x = None
+        thumbnail_y = None
+
+        if thumbnail.get( 'original_size', False ):
+            if video_x and video_y:
+                thumbnail_x = video_x
+                thumbnail_y = video_y
+                thumbnail['size'] = "%sx%s" % ( video_x, video_y )
+            else:
+                log.warning( json.dumps( { 'media_uuid' : media_uuid,
+                                           'message' : "Couldn't determine original video size in in order to make an original thumbnail, using 320x240 for the thumbnail size." } ) )
+                thumbnail_x = 320
+                thumbnail_y = 240
+                thumbnail['size'] = "%sx%s" % ( 320, 240 )
+        else:
+            thumbnail_size = thumbnail.get( 'size', "320x240" )
+            thumbnail_x, thumbnail_y = thumbnail_size.split( 'x' )
+            thumbnail_x = int( thumbnail_x )
+            thumbnail_y = int( thumbnail_y )
+
         thumbnail_aspect_ratio = float( thumbnail_x ) / float( thumbnail_y )
 
         thumbnail_type = thumbnail.get( 'type', 'static' )
@@ -222,7 +238,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
             if video_y < thumbnail_y:
                 if float( thumbnail_y ) / video_y > scaling_factor:
                     scaling_factor = float( thumbnail_y ) / video_y
-
+                    
             if scaling_factor > 0:
                 scaled_x = int( video_x * scaling_factor ) + 1
                 if scaled_x % 2 != 0:

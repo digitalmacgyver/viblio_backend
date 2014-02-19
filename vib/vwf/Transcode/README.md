@@ -31,7 +31,7 @@ Required inputs
                         output_file: { s3_bucket, s3_key } } ]
                      },
                         times : [0.5], #***NOTE:*** Even though times is an array, only one value is supported
-                        size: "128x129", 
+                        size: "128x128", 
                         label: "thumbnail", #***NOTE:*** A thumbnail type is mandatory
                         format : "png",
                         output_file: { s3_bucket, s3_key } } ]
