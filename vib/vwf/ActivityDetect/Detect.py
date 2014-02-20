@@ -48,7 +48,7 @@ class Detect( VWorker ):
 
             soccer_confidence = oc.get_confidence( file_name, working_dir, config.soccer_model_dir )
 
-            if soccer_confidence > 0.4:
+            if soccer_confidence > 0.35:
                 activity = 'soccer'
 
             log.info( json.dumps( { 'media_uuid' : media_uuid,
