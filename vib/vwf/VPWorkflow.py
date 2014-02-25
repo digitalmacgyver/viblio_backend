@@ -56,7 +56,7 @@ VPW = {
         'default_task_heartbeat_timeout' : str( 300 ),
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 300
+        'lock_wait_secs' : 150
         },
 
     'ActivityDetect' : {
@@ -73,7 +73,7 @@ VPW = {
         'default_task_heartbeat_timeout' : str( 300 ),
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 300
+        'lock_wait_secs' : 150
         },
 
     'FaceDetect' : {
@@ -90,7 +90,7 @@ VPW = {
         'default_task_heartbeat_timeout' : str( 300 ),
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 300
+        'lock_wait_secs' : 150
         },
 
     'FaceRecognize' : {
@@ -113,7 +113,7 @@ VPW = {
         'default_task_heartbeat_timeout' : str( 5*60 ),
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 300
+        'lock_wait_secs' : 150
         },
 
     'NotifyComplete' : {
@@ -130,7 +130,7 @@ VPW = {
         'default_task_heartbeat_timeout' : 'NONE',
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 300
+        'lock_wait_secs' : 150
        },
 
 }
