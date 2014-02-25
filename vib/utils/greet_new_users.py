@@ -64,7 +64,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
     * lat                - 37.442174
     * lng                - -122.143199
     * poster_mimetype    - 'image/png'
-    * poster_size        - '320x180'
+    * poster_size        - '320x240'
     * recording_date     - The current time
     * title              - 'Viblio: Your Memories in Motion'
     * thumbnail_mimetype - 'image/png'
@@ -80,7 +80,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
         lat                 = options.get( 'lat', 37.442174 )
         lng                 = options.get( 'lat', -122.143199 )
         poster_mimetype     = options.get( 'poster_mimetype', 'image/png' )
-        poster_size         = options.get( 'poster_size', '320x180' )
+        poster_size         = options.get( 'poster_size', '320x240' )
         recording_date      = options.get( 'recording_date', datetime.datetime.now() )
         title               = options.get( 'title', 'Viblio: Your Memories in Motion' )
         thumbnail_mimetype  = options.get( 'thumbnail_mimetype', 'image/png' )
@@ -274,7 +274,7 @@ def run():
                 poster_file = {
                     's3_bucket' : 'viblio-external',
                     's3_key'    : 'media/video-001/poster.png',
-                    'bytes'     : 114244,
+                    'bytes'     : 174831,
                     'format'    : 'png'
                     },
                 face_files = [ {
@@ -305,7 +305,7 @@ def run():
                 poster_file = {
                     's3_bucket' : 'viblio-external',
                     's3_key'    : 'media/video-002/poster.png',
-                    'bytes'     : 95497,
+                    'bytes'     : 154269,
                     'format'    : 'png'
                     },
                 face_files = [ 
