@@ -1,1 +1,2 @@
 */5 * * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/monitoring/MonitorQueues-wrapper.py >> /tmp/MonitorQueues-staging-$(/bin/date +"\%F").log 2>&1
+0 0 * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/utils/cleanup_temp_files.py >> /tmp/cleanup_temp_files-staging-$(/bin/date +"\%F").log 2>&1

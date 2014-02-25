@@ -30,6 +30,24 @@ class Detect( VWorker ):
             media_uuid = options['media_uuid']
             user_uuid = options['user_uuid']
 
+            if config.VPWSuffix == 'Local':
+                # Right now activity detection is too resource
+                # intensive to run on development machines.
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : 'Skipping activity detection in %s environment.' % ( config.VPWSuffix ) } ) )
+                orm = vib.db.orm.get_session()
+                orm.commit()
+                media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
+                mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
+                media.media_workflow_stages.append( mwfs )
+
+                orm.commit()
+            
+                return { 'media_uuid' : media_uuid,
+                         'user_uuid'  : user_uuid }
+                
+
             #activity = random.choice( ['soccer', 'birthday', None ] )
             #activity = 'soccer'
             activity = None
@@ -46,6 +64,9 @@ class Detect( VWorker ):
 
             s3.download_file( file_name, s3_bucket, s3_key )
 
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Testing media %s for soccer activity.' % ( media_uuid ) } ) )
             soccer_confidence = oc.get_confidence( file_name, working_dir, config.soccer_model_dir )
 
             if soccer_confidence > 0.35:
@@ -55,10 +76,6 @@ class Detect( VWorker ):
                                     'user_uuid' : user_uuid,
                                     'message' : 'Adding activity of %s to media %s' % ( activity, media_uuid ) } ) )
 
-            #import pdb
-            #pdb.set_trace()
-
-            self.heartbeat()
             orm = vib.db.orm.get_session()
             orm.commit()
             media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
@@ -78,12 +95,17 @@ class Detect( VWorker ):
                 for album in user_albums:
                     album_names[album.title] = album
                 if activity in album_names:
+                    log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                            'user_uuid' : user_uuid,
+                                            'message' : 'Adding media %s to existing album called %s' % ( media_uuid, activity ) } ) )
                     album = album_names[activity]
                     media_album = MediaAlbums( media_id = media.id,
                                                album_id = album_names[activity].id )
                     orm.add( media_album )
-
                 else:
+                    log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                            'user_uuid' : user_uuid,
+                                            'message' : 'Creating new album called %s' % ( activity ) } ) )
                     album = Media( user_id = user_id,
                                    uuid    = str( uuid.uuid4() ),
                                    is_album = True,
@@ -101,21 +123,19 @@ class Detect( VWorker ):
                                           height = media_poster.height )
                     album.assets.append( poster )
                     orm.commit()
+                    log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                            'user_uuid' : user_uuid,
+                                            'message' : 'Adding media %s to newly created album called %s' % ( media_uuid, activity ) } ) )
                     media_album = MediaAlbums( media_id = media.id,
                                                album_id = album.id )
                     orm.add( media_album )
                 
             mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
             media.media_workflow_stages.append( mwfs )
-
             orm.commit()
-            self.heartbeat()
 
-            if False:
-                return { 'ACTIVITY_ERROR' : True, 'retry' : True }
-            else:
-                return { 'media_uuid' : media_uuid,
-                         'user_uuid'  : user_uuid }
+            return { 'media_uuid' : media_uuid,
+                     'user_uuid'  : user_uuid }
             
         except Exception as e:
             log.error( json.dumps( { 'media_uuid' : media_uuid,

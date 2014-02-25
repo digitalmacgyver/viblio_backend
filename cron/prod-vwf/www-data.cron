@@ -1,0 +1,1 @@
+0 0 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/cleanup_temp_files.py >> /tmp/cleanup_temp_files-prod-$(/bin/date +"\%F").log 2>&1
