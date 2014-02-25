@@ -204,7 +204,7 @@ class Worker( Background ):
                 log.info( 'File with hash %s for user uuid %s is unique, proceeding.' % ( unique_hash, self.data['info']['uid'] ) )
             else:
                 log.info( 'File with hash %s for user uuid %s is not unique, terminating.' % ( unique_hash, self.data['info']['uid'] ) )
-                self.handle_errors()
+                self.file_cleanup()
                 self.__release_lock()
                 if self.popeye_logging_handler:
                     self.popeye_log.removeHandler( self.popeye_logging_handler )
@@ -422,20 +422,7 @@ class Worker( Background ):
                 self.popeye_logging_handler = None
             raise
 
-        ######################################################################
-        # Cleanup files on success.
-        ######################################################################
-        try:
-            log.info( 'File successfully processed, removing temp files ...' )
-            for label in files:
-                # Iterate over the files data structure and remove
-                # anything with an ifile or ofile.
-                for file_type in [ 'ifile', 'ofile' ]:
-                    if files[label][file_type] and self.__valid_file( files[label][file_type] ):
-                        os.remove( files[label][file_type] )
-        except Exception as e:
-            self.__safe_log( self.popeye_log.exception, 'Some trouble removing temp files: %s' % str( e ) )
-            self.handle_errors()
+        self.file_cleanup()
 
         self.__release_lock()
 
@@ -447,6 +434,25 @@ class Worker( Background ):
             self.popeye_log.removeHandler( self.popeye_logging_handler )
             self.popeye_logging_handler = None
         return
+
+    ######################################################################
+    # File cleanup
+    def file_cleanup( self ):
+        log   = self.popeye_log
+        files = self.files
+
+        try:
+            log.info( 'File successfully processed, removing temp files ...' )
+            for label in files:
+                # Iterate over the files data structure and remove
+                # anything with an ifile or ofile.
+                for file_type in [ 'ifile', 'ofile' ]:
+                    if files[label][file_type] and self.__valid_file( files[label][file_type] ):
+                        os.remove( files[label][file_type] )
+            return
+        except Exception as e:
+            self.__safe_log( self.popeye_log.exception, 'Some trouble removing temp files: %s' % str( e ) )
+            self.handle_errors()
 
     ######################################################################
     # Error handling
