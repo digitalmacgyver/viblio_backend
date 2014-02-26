@@ -30,7 +30,7 @@ class Detect( VWorker ):
             media_uuid = options['media_uuid']
             user_uuid = options['user_uuid']
 
-            if config.VPWSuffix == 'Local':
+            if False and config.VPWSuffix == 'Local':
                 # Right now activity detection is too resource
                 # intensive to run on development machines.
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
@@ -67,9 +67,9 @@ class Detect( VWorker ):
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
                                     'message' : 'Testing media %s for soccer activity.' % ( media_uuid ) } ) )
-            soccer_confidence = oc.get_confidence( file_name, working_dir, config.soccer_model_dir )
+            ( is_soccer, confidence ) = oc.activity_present( file_name, working_dir, config.soccer_model_dir )
 
-            if soccer_confidence > 0.35:
+            if is_soccer:
                 activity = 'soccer'
 
             log.info( json.dumps( { 'media_uuid' : media_uuid,
@@ -84,7 +84,7 @@ class Detect( VWorker ):
                 ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == media.id, MediaAssets.asset_type == 'main' ) ).one()
                 maf = MediaAssetFeatures( feature_type = 'activity',
                                           coordinates = activity,
-                                          detection_confidence = 1 )
+                                          detection_confidence = confidence )
                 ma.media_asset_features.append( maf )
 
                 user_id = orm.query( Users ).filter( Users.uuid == user_uuid ).one().id
