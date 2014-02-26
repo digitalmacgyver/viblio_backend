@@ -27,13 +27,13 @@ PIP_PYPKGS=\
 install_deps:
 	/usr/bin/apt-get -y install python-pip python-dev
 	/usr/bin/easy_install $(PYPKGS)
-	/usr/bin/pip install $(PIP_PYPKGS)
+	/usr/local/bin/pip install $(PIP_PYPKGS)
 	/usr/bin/apt-get -y install python-mysqldb
 	/usr/bin/apt-get -y install apache2
 	/usr/bin/apt-get -y install libapache2-mod-wsgi
 	/usr/bin/apt-get -y install python-bs4
 	/usr/bin/apt-get -y install imagemagick
-	/usr/bin/pip install xmltodict
+	/usr/local/bin/pip install xmltodict
 
 # Build the image suitable for software upgrade
 package:
