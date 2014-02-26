@@ -1,9 +1,13 @@
+0) NOTE - THIS IS ONLY REQUIRED ON PRODUCTION WHERE WE NEED TO ASSIGN
+PUBLIC IPs AND BE IN THE VPC.  FOR STAGING JUST USE THE AWS CONSOLE
+WEB UI - IN FACT THIS PROCEDURE DOESN'T WORK FOR STAGING.
+
 1) Edit setup-env.sh to have the correct JAVA_HOME
 
 2) Run:
 
 source ./setup-env.sh
 
-3) 
+3) TO CREATE LAUNCH GROUP ON PRODUCTION:
 
 as-create-launch-config prod-vwf-launcher-0.1 --region us-west-2 --image-id "ami-9a1b7baa" --instance-type m1.medium --associate-public-ip-address 1 --spot-price "0.035" --group sg-2e000b4c
