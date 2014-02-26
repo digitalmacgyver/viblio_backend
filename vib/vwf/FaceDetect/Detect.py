@@ -57,7 +57,7 @@ class Detect( VWorker ):
         try:
             working_dir = os.path.abspath( config.faces_dir + media_uuid )
             if not os.path.exists(working_dir):
-                os.mkdir(working_dir)
+                os.makedirs(working_dir)
 
             short_name = media_uuid + '/' + media_uuid + '.mp4'
             file_name = os.path.abspath( config.faces_dir + short_name )   

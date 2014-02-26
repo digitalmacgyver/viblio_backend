@@ -68,6 +68,10 @@ _start() {
     chown $USER:$GROUP /mnt/faces
     chmod 777 /mnt/faces
 
+    mkdir -p /mnt/object_classification
+    chown $USER:$GROUP /mnt/object_classification
+    chmod 777 /mnt/object_classification
+
     start-stop-daemon --verbose --start --pidfile $PIDFILE \
     --chdir $APPDIR \
     ${USER:+"--chuid"} $USER ${GROUP:+"--group"} $GROUP \
