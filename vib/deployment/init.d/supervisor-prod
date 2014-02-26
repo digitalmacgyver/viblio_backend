@@ -120,6 +120,10 @@ start() {
     chown $USER:$GROUP /mnt/faces
     chmod 777 /mnt/faces
 
+    mkdir -p /mnt/object_classification
+    chown $USER:$GROUP /mnt/object_classification
+    chmod 777 /mnt/object_classification
+
     if check_running; then
         log_progress_msg "already running"
         log_end_msg 0
