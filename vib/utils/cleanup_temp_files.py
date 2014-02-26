@@ -29,6 +29,11 @@ log.addHandler( consolelog )
 
 def cleanup_dir( directory, days_old ):
     log.info( json.dumps( { "message" : "Cleaning up temp directories under: %s" % ( directory ) } ) )            
+
+    if not os.path.isdir( directory ):
+        log.info( json.dumps( { "message" : "Directory %s doesn't exist, skipping." % ( directory ) } ) )            
+        return
+
     for r, d, f in os.walk( directory ):
         for temp_dir in d:
             if temp_dir != 'errors':
