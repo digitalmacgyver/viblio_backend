@@ -310,7 +310,7 @@ class VPDecider( swf.Decider ):
             decisions.fail_workflow_execution(reason = reason[:250])
             _update_media_status( media_uuid, 'WorkflowFailed' )
         else:
-            message = 'Retrying task %s for time %d out of %d allowed retries' % (task, len(details), VPW[task]['lock_retries'])
+            message = 'Retrying task %s for time %d out of %d allowed lock retries' % (task, len(details), VPW[task]['lock_retries'])
             log.warning( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'message' : message}))
             task_input = workflow_input
             for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
