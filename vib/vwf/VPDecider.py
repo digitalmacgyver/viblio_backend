@@ -159,6 +159,9 @@ class VPDecider( swf.Decider ):
                         for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
                             task_input[prerequisite] = input_opts
 
+                        if task in no_lock_tasks:
+                            task_input['lock_wait'] = True
+
                         #_mp_log( task+" Retry", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity' : task } )
                         schedule_to_close_timeout = VPW[task]['default_task_schedule_to_close_timeout'] 
                         schedule_to_start_timeout = VPW[task]['default_task_schedule_to_start_timeout'] 
@@ -209,6 +212,9 @@ class VPDecider( swf.Decider ):
                         task_input = workflow_input
                         for prerequisite, input_opts in  _get_input( task, completed_tasks ).items():
                             task_input[prerequisite] = input_opts
+
+                        if task in no_lock_tasks:
+                            task_input['lock_wait'] = True
 
                         # Details is an array of all our past
                         # timeouts.  The N'th slot of the VPW
@@ -270,6 +276,11 @@ class VPDecider( swf.Decider ):
                         start_to_close_timeout    = start_to_close_timeout,
                         heartbeat_timeout         = heartbeat_timeout
                         )
+                elif task in scheduled_tasks:
+                    log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                             'user_uuid' : user_uuid,
+                                             'task' : task,
+                                             'message' : "%s has already been scheduled and is pending." % task } ) )                    
                 else:
                     log.debug( json.dumps( { 'media_uuid' : media_uuid,
                                              'user_uuid' : user_uuid,

@@ -121,7 +121,7 @@ VPW = {
         'domain'          : domain,
         'version'         : version,
         'task_list'       : 'NotifyCompleteTask',
-        'prerequisites'   : [ 'FaceRecognize' ],
+        'prerequisites'   : [ 'ActivityDetect', 'FaceRecognize' ],
         'failure_retries' : 2,
         'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 15*60 ),
