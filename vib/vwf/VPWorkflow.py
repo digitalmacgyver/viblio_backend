@@ -64,8 +64,8 @@ VPW = {
         'domain'          : domain,
         'version'         : version,
         'task_list'       : 'ActivityDetectTask',
-        # Should be transcode, but current bugs require it to be FD.
-        'prerequisites'   : [ 'FaceDetect' ],
+        # Should be just transcode, but current bugs require it to be FD.
+        'prerequisites'   : [ 'Transcode', 'FaceDetect' ],
         #'prerequisites'   : [ 'Transcode' ],
         'failure_retries' : 1,
         'timeout_retries' : [1, 2, 4],
