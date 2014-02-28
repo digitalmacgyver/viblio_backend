@@ -180,7 +180,7 @@ class VPDecider( swf.Decider ):
                             heartbeat_timeout         = heartbeat_timeout
                             )
 
-                elif task in no_lock_tasks:
+                elif task in no_lock_tasks and task not in timed_out_tasks:
                     self.process_no_lock_tasks(task, no_lock_tasks, completed_tasks, decisions, media_uuid, user_uuid, workflow_input, config)
                 elif task in timed_out_tasks:
                     details = timed_out_tasks[task]
