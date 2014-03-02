@@ -11,7 +11,8 @@
 	"request": "latest",
 	"konphyg": "1.2.x",
 	"node-syslog": "latest",
-	"mixpanel": "latest"
+	"mixpanel": "latest",
+	"formidable": "latest"
      },
     "keywords": [
         "upload",

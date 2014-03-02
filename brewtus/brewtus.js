@@ -15,6 +15,7 @@
     Config = require( "konphyg" )( __dirname );
     sys = require( "sys" );
     Mixpanel = require( "mixpanel" );
+    formidable = require( "formidable" );
 
     setup = new events.EventEmitter();
 
@@ -302,6 +303,102 @@
 	});
     };
 
+    batchFile = function(req, res, fid) {
+	var contentLength, fileId, filePath, info, offsetIn, status, u, ws;
+	fileId = fid;
+	if (fileId == null) {
+	    return httpStatus(res, 404, "Not Found");
+	}
+	filePath = path.join(config.files, fileId);
+	if (!fs.existsSync(filePath)) {
+	    return httpStatus(res, 404, "Not Found");
+	}
+	offsetIn = 0;
+	u = upload.Upload(config, fileId);
+	status = u.load();
+
+	var meta = {
+	    method: 'PATCH',
+	    fileId: fileId,
+	    uid: status.info.uid };
+
+	if (status.error != null) {
+	    return httpStatus(res, status.error[0], status.error[1], null, meta);
+	}
+	info = status.info;
+
+	info.offset = offsetIn;
+	info.state = "patched";
+	info.patchedOn = Date.now();
+	info.bytesReceived = 0;
+
+	var form = new formidable.IncomingForm();
+	var myfile;
+	form.uploadDir = config.files;
+	form.keepExtensions = false;
+	form.on( 'fileBegin', function( name, file ) {
+	    file.path = filePath;
+	    file.name = fileId;
+	    myfile = file;
+	});
+	form.on( 'progress', function( recv, total ) {
+	    if ( myfile ) {
+		info.bytesReceived = myfile.size;
+		info.offset = myfile.size;
+	    }
+	    if ( ! info.finalLength ) info.finalLength = total;
+	    u.save();
+	});
+	form.on( 'error', function( err ) {
+	    return httpStatus(res, 500, "File Error", null, meta);
+	});
+	form.on( 'aborted', function() {
+	    winston.error("client abort. close the file stream " + fileId);
+	});
+	form.on( 'end', function() {
+	    if (!res.headersSent) {
+		httpStatus(res, 200, "Ok", null, meta);
+	    }
+	    info.bytesReceived = myfile.size;
+	    info.offset = myfile.size;
+	    info.finalLength = myfile.size;
+	    return u.save( function() {
+		mixpanel.track( 'upload_completed', {
+		    distinct_id: info.fileId,
+		    media_uuid: info.fileId,
+		    user_uuid: info.uid,
+		    activity: 'brewtus',
+		    deployment: process.env.NODE_ENV || 'local'
+		});
+		if ( config.popeye != "none" ) {
+		    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
+		    request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
+			if ( err ) {
+			    winston.error( "Popeye error: " + err.message );
+			}
+			else if ( res.statusCode != 200 ) {
+			    winston.error( "Popeye error: " + res.statusCode );
+			}
+			else {
+			    try {
+				var r = JSON.parse( body );
+				if ( r.error ) {
+				    winston.error( "Popeye error: " + r.message );
+				}
+			    } catch( e ) {
+				winston.error( "Popeye error: " + e.message );
+			    }
+			}
+		    });
+		}
+		else {
+		    winston.debug( "Popeye disabled, not sending message." );
+		}
+	    });
+	});
+	form.parse( req );
+    };
+
     httpStatus = function(res, statusCode, reason, body, meta ) {
 
 	if (res.headersSent)
@@ -372,6 +469,13 @@
 	    return httpStatus(res, 405, "Not Allowed");
 	}
 	query = parsed.query;
+
+	if ( query['_method'] && query['_method'] == 'PATCH' ) {
+	    // This is an IE9 -style form-based upload.
+	    var i = urlPath.match( /files(\/(.+))*/ );
+	    return batchFile( req, res, i[2] );
+	}
+
 	for (_i = 0, _len = PATTERNS.length; _i < _len; _i++) {
 	    pattern = PATTERNS[_i];
 	    matches = urlPath.match(pattern.match);
