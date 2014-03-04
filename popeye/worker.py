@@ -1,5 +1,6 @@
 # Python librarie
 import boto.swf.layer2 as swf
+import codecs
 import datetime
 import fcntl
 import hashlib
@@ -597,7 +598,7 @@ class Worker( Background ):
         '''Load the contents of the metadata input file into the
         metadata field from JSON'''
         try:
-            f = open( ifile )
+            f = codecs.open( ifile, encoding='utf-8', errors='ignore' )
             self.data['metadata'] = json.load( f )
         except Exception as e:
             self.popeye_log.exception( 'Failed to open and parse %s as JSON error was %s' % ( ifile, str( e ) ) )
