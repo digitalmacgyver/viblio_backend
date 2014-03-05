@@ -65,8 +65,8 @@ VPW = {
         'version'         : version,
         'task_list'       : 'ActivityDetectTask',
         # Should be just transcode, but current bugs require it to be FD.
-        'prerequisites'   : [ 'Transcode', 'FaceDetect' ],
-        #'prerequisites'   : [ 'Transcode' ],
+        #'prerequisites'   : [ 'Transcode', 'FaceDetect' ],
+        'prerequisites'   : [ 'Transcode' ],
         'failure_retries' : 1,
         'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
@@ -134,5 +134,4 @@ VPW = {
         'lock_heartbeat_secs' : 90,
         'lock_wait_secs' : 150
        },
-
 }

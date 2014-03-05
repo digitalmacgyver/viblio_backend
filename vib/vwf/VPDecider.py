@@ -86,6 +86,7 @@ class VPDecider( swf.Decider ):
         timed_out_tasks = _get_timed_out_activities( history_events )
         completed_tasks = _get_completed( history_events )
         scheduled_tasks = _get_scheduled( history_events )
+        most_recent_event = _get_most_recent( history_events )
 
         decisions = swf.Layer1Decisions()
 
@@ -109,7 +110,7 @@ class VPDecider( swf.Decider ):
                                             'user_uuid' : user_uuid,
                                             'task' : task,
                                             'message' : "Task %s is completed." % task } ) )
-                elif task in failed_tasks:
+                elif task in failed_tasks and most_recent_event[task] == 'failed':
                     details = failed_tasks[task]
                     # We hit a failure, see if we should restart a task.
                     log.warning( json.dumps( { 'media_uuid' : media_uuid,
@@ -180,9 +181,9 @@ class VPDecider( swf.Decider ):
                             heartbeat_timeout         = heartbeat_timeout
                             )
 
-                elif task in no_lock_tasks and task not in timed_out_tasks:
+                elif task in no_lock_tasks and most_recent_event[task] == 'no_lock':
                     self.process_no_lock_tasks(task, no_lock_tasks, completed_tasks, decisions, media_uuid, user_uuid, workflow_input, config)
-                elif task in timed_out_tasks:
+                elif task in timed_out_tasks and most_recent_event[task] == 'timed_out':
                     details = timed_out_tasks[task]
                     # We hit a timeout, see if we should restart the
                     # task and if we should change the timeout values.
@@ -360,6 +361,59 @@ def _get_workflow_input( history_events ):
                 raise Exception( "Invalid workflow start event input, no media_uuid or user_uuid found in JSON" )
     raise Exception( "Could not find workflow start event!" )
 
+def _get_most_recent( history_events ):
+    '''Returns an arrah keyed off of Activity Task name with a value
+    of the most recent event for that activity task, which could be
+    one of:
+    * scheduled
+    * completed
+    * timed_out
+    * no_lock
+    * failed'''
+    most_recent_event_ids = {}
+    most_recent_events = {}
+
+    for event in history_events:
+        event_id = event['eventId']
+        event_name = event.get( 'eventType', 'Unknown' )
+        if event_name == 'ActivityTaskScheduled':
+            scheduled_event_name =  event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
+            if scheduled_event_name not in most_recent_events or most_recent_event_ids[scheduled_event_name] < event_id:
+                most_recent_events[scheduled_event_name] = 'scheduled'
+                most_recent_event_ids[scheduled_event_name] = event_id
+
+        elif event_name == 'ActivityTaskCompleted':
+            completed_event = history_events[ event['activityTaskCompletedEventAttributes']['scheduledEventId'] - 1 ]
+            if completed_event['eventType'] == 'ActivityTaskScheduled':
+                completed_event_name =  completed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
+                if completed_event_name not in most_recent_events or most_recent_event_ids[completed_event_name] < event_id:
+                    most_recent_events[completed_event_name] = 'completed'
+                    most_recent_event_ids[completed_event_name] = event_id
+                    
+        elif event_name == 'ActivityTaskFailed':
+            failed_event = history_events[ event['activityTaskFailedEventAttributes']['scheduledEventId'] - 1 ]
+            if failed_event['eventType'] == 'ActivityTaskScheduled':
+                failed_event_name = failed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
+                reason = event['activityTaskFailedEventAttributes'].get( 'reason' )
+                if reason == 'no_lock':
+                    event_type = 'no_lock'
+                else:
+                    event_type = 'failed'
+                if failed_event_name not in most_recent_events or most_recent_event_ids[failed_event_name] < event_id:
+                    most_recent_events[failed_event_name] = event_type
+                    most_recent_event_ids[failed_event_name] = event_id
+                    
+        elif event_name == 'ActivityTaskTimedOut':
+            timed_event = history_events[ event['activityTaskTimedOutEventAttributes']['scheduledEventId'] - 1 ]
+            if timed_event['eventType'] == 'ActivityTaskScheduled':
+                timed_event_name = timed_event['activityTaskScheduledEventAttributes']['activityType']['name'][:-len( config.VPWSuffix )]
+                if timed_event_name not in most_recent_events or most_recent_event_ids[timed_event_name] < event_id:
+                    most_recent_events[timed_event_name] = 'timed_out'
+                    most_recent_event_ids[timed_event_name] = event_id
+
+    return most_recent_events
+    
+
 def _get_completed( history_events ):
     '''Goes through a set of events and returns all the ActivityTasks
     which have been completed'''
@@ -468,19 +522,6 @@ def _get_timed_out_activities( history_events ):
             else:
                 raise Exception("AcivityTaskTimedOut scheduled event attribute not an activity task!")            
     return timed
-
-def _any_failed_activities( history_events ):
-    '''Goes through a set of events and returns true if we had an event of a sort of failure we deem to be fatal here.'''
-
-    failure_types = {
-        'ActivityTaskTimedOut' : True,
-        'ActivityTaskFailed' : True
-        }
-    
-    for event in history_events:
-        if event.get( 'eventType', 'Unknown' ) in failure_types:
-            return True
-    return False
 
 def _all_tasks_complete( tasks, completed_tasks ):
     '''If every task is a completed task return true, return false otherwise.'''
