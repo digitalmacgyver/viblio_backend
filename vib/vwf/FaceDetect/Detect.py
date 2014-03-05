@@ -30,7 +30,6 @@ class Detect( VWorker ):
 
         NOTE: The size of the return value is limited to 32 kB
         '''
-        
         media_uuid = options['media_uuid']
         user_uuid = options['user_uuid']
         s3_key = options['Transcode']['output_file']['s3_key']

@@ -103,7 +103,12 @@ class VPDecider( swf.Decider ):
         else:
             # We are not done.  See if we can start anything or if we
             # are in an error state and need to terminate.
+
+            failed = False
+
             for task in tasks:
+                if failed:
+                    break
                 print "Evaluating %s" % task
                 if task in completed_tasks:
                     log.info( json.dumps( { 'media_uuid' : media_uuid,
@@ -130,6 +135,7 @@ class VPDecider( swf.Decider ):
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_failed', 'activity': task, 'type' : 'max_retries' } )
 
                         decisions.fail_workflow_execution( reason=reason[:250] )
+                        failed = True
                         _update_media_status( media_uuid, 'WorkflowFailed' )
 
                     elif not details[-1].get( 'retry', False ):
@@ -146,6 +152,7 @@ class VPDecider( swf.Decider ):
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task, 'type' : 'fatal_error' } )
 
                         decisions.fail_workflow_execution( reason=reason[:250] )
+                        failed = True
                         _update_media_status( media_uuid, 'WorkflowFailed' )
                     else:
 
@@ -182,7 +189,7 @@ class VPDecider( swf.Decider ):
                             )
 
                 elif task in no_lock_tasks and most_recent_event[task] == 'no_lock':
-                    self.process_no_lock_tasks(task, no_lock_tasks, completed_tasks, decisions, media_uuid, user_uuid, workflow_input, config)
+                    failed = self.process_no_lock_tasks(task, no_lock_tasks, completed_tasks, decisions, media_uuid, user_uuid, workflow_input, config)
                 elif task in timed_out_tasks and most_recent_event[task] == 'timed_out':
                     details = timed_out_tasks[task]
                     # We hit a timeout, see if we should restart the
@@ -201,6 +208,7 @@ class VPDecider( swf.Decider ):
 
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.fail_workflow_execution( reason=reason[:250] )
+                        failed = True
                         _update_media_status( media_uuid, 'WorkflowFailed' )
                     else:
                         log.warning( json.dumps( {
@@ -310,6 +318,7 @@ class VPDecider( swf.Decider ):
             _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'no_lock retries exceeded', 'activity' : task, 'type' : 'fatal_error' } )
             decisions.fail_workflow_execution(reason = reason[:250])
             _update_media_status( media_uuid, 'WorkflowFailed' )
+            return True
         else:
             message = 'Retrying task %s for time %d out of %d allowed lock retries' % (task, len(details), VPW[task]['lock_retries'])
             log.warning( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'message' : message}))
@@ -332,6 +341,7 @@ class VPDecider( swf.Decider ):
                 start_to_close_timeout    = start_to_close_timeout,
                 heartbeat_timeout         = heartbeat_timeout
                 )
+            return False
     
 def _mp_log( event, media_uuid, user_uuid, properties = {} ):
     try:
