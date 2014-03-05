@@ -41,7 +41,7 @@ with this code.  I had a tough time getting it to
 do what I needed (i.e. work!)
 """
 
-conn = 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name
+conn = 'mysql+mysqldb://'+config.db_user+':'+config.db_pass+config.db_conn+config.db_name + '?charset=utf8&use_unicode=0'
 engine = create_engine( conn, pool_recycle=3600 )
 SessionFactory = db_map( engine )
 Session = scoped_session( SessionFactory )
