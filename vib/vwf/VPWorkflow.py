@@ -18,6 +18,11 @@
 # We'll err on the side of timeouts that are too short so we don't
 # wait to retry broken things that could be better now.
 
+# NOTE: To conform with certain other conding assumptions:
+# lock_heartbeat_secs*3 should be less than lock_wait_secs
+# lock_wait_secs should be a bit longer than the
+# default_task_heartbeat_timeout, if any
+
 domain = 'Viblio'
 version = '1.0.7'
 
@@ -56,7 +61,7 @@ VPW = {
         'default_task_heartbeat_timeout' : str( 300 ),
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 150
+        'lock_wait_secs' : 330
         },
 
     'ActivityDetect' : {
@@ -75,7 +80,7 @@ VPW = {
         'default_task_heartbeat_timeout' : str( 300 ),
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 150
+        'lock_wait_secs' : 330
         },
 
     'FaceDetect' : {
@@ -92,7 +97,7 @@ VPW = {
         'default_task_heartbeat_timeout' : str( 300 ),
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 150
+        'lock_wait_secs' : 330
         },
 
     'FaceRecognize' : {
@@ -115,7 +120,7 @@ VPW = {
         'default_task_heartbeat_timeout' : str( 5*60 ),
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 150
+        'lock_wait_secs' : 330
         },
 
     'NotifyComplete' : {
@@ -132,6 +137,6 @@ VPW = {
         'default_task_heartbeat_timeout' : 'NONE',
         'lock_retries' : 2,
         'lock_heartbeat_secs' : 90,
-        'lock_wait_secs' : 150
+        'lock_wait_secs' : 330
        },
 }
