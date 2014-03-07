@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import re
@@ -344,3 +345,31 @@ def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_d
     else:
         raise Exception( result['usage']['status'] )
 
+
+def detect_for_file( path ):
+    '''Calls the ReKognition FaceDetect API and returns a Python data
+    structure of the results.
+
+    Return value is a hash with a 'face_detection' array (which can
+    have multiple values).  Each face_detection element is a nested
+    data structure with may fields.
+
+    The outer structure is a hash, of particular interest is the:
+    * confidence
+
+    key.  If at most 1 face was expected, the face with highest
+    confidence is probably the one you were searching for.
+    '''
+    f = open( path )
+    image_data = f.read()
+    f.close()
+    
+    data =  {
+        "api_key"    : rekog_api_key, 
+        "api_secret" : rekog_api_secret,
+        "jobs"       : "face_aggressive_beauty",
+        "base64"     : base64.b64encode( image_data ),
+        }
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    return r.json()
+        
