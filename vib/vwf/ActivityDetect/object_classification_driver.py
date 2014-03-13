@@ -13,7 +13,7 @@ def activity_present(video_file,working_dir,model_dir):
         raise Exception( "Error, unexpected return status from viblio_classifier.sh, return value was %s output was: %s" % ( status, output ) )
 
     try:
-        condidence = float( output )
+        confidence = float( output )
     except:
         raise Exception( "Error, failed to convert viblio_classifier.sh output to float, output was: %s" % ( output ) )
 
