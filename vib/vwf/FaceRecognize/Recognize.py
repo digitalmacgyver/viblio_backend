@@ -57,7 +57,10 @@ class Recognize( VWorker ):
                 db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
                 self.heartbeat()
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
-
+            else:
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : 'Recognition input is at bucket: %s, key: %s' % ( recognition_input['s3_bucket'], recognition_input['s3_key'] ) } ) )
             
             input_bucket = recognition_input['s3_bucket']
             input_key = recognition_input['s3_key']

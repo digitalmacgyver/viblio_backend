@@ -49,7 +49,7 @@ class Detect( VWorker ):
 
             #activity = random.choice( ['soccer', 'birthday', None ] )
             #activity = 'soccer'
-            activity = None
+            activities = []
 
             s3_key = options['Transcode']['output_file']['s3_key']
             s3_bucket = options['Transcode']['output_file']['s3_bucket']
@@ -63,17 +63,53 @@ class Detect( VWorker ):
 
             s3.download_file( file_name, s3_bucket, s3_key )
 
+            ####################################################
+            # Soccer
+            ####################################################
+
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
                                     'message' : 'Testing media %s for soccer activity.' % ( media_uuid ) } ) )
             ( is_soccer, confidence ) = oc.activity_present( file_name, working_dir, config.soccer_model_dir )
 
             if is_soccer:
-                activity = 'soccer'
+                activities.append( 'soccer' )
 
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
-                                    'message' : 'Adding activity of %s to media %s' % ( activity, media_uuid ) } ) )
+                                    'message' : 'Adding activity of soccer to media %s' % ( media_uuid ) } ) )
+
+            ####################################################
+            # Basketball Shot
+            ####################################################
+
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Testing media %s for basketball shot activity.' % ( media_uuid ) } ) )
+            ( is_shot, confidence ) = oc.activity_present( file_name, working_dir, config.basketball_shot_model_dir )
+
+            if is_shot:
+                activities.append( 'basketball_shot' )
+
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Adding activity of basketball_shot to media %s' % ( media_uuid ) } ) )
+
+            ####################################################
+            # Christmas
+            ####################################################
+
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Testing media %s for christmas activity.' % ( media_uuid ) } ) )
+            ( is_christmas, confidence ) = oc.activity_present( file_name, working_dir, config.christmas_model_dir )
+
+            if is_christmas:
+                activities.append( 'christmas' )
+
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Adding activity of christmas to media %s' % ( media_uuid ) } ) )
 
             orm = vib.db.orm.get_session()
             orm.commit()
