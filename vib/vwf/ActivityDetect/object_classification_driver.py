@@ -6,7 +6,7 @@ def activity_present(video_file,working_dir,model_dir):
     path= os.path.dirname( __file__ ) + '/../../../object_classification/classification/viblio/projects/viblio_classification/'
     python_path = os.path.dirname( __file__ ) + '/../../../object_classification/classification/'
 
-    ( status, output ) = commands.getstatusoutput("cd %s; PYTHONPATH=$PYTHONPATH:%s ./video_classifier.sh %s %s %s" % (path,python_path,video_file,working_dir,model_dir) )
+    ( status, output ) = commands.getstatusoutput("cd %s; PYTHONPATH=$PYTHONPATH:%s ./video_classifier.py -v %s -t %s -d %s" % (path,python_path,video_file,working_dir,model_dir) )
     confidence = -1
 
     if status != 0 and status != 256:
@@ -15,6 +15,6 @@ def activity_present(video_file,working_dir,model_dir):
     try:
         confidence = float( output )
     except:
-        raise Exception( "Error, failed to convert viblio_classifier.sh output to float, output was: %s" % ( output ) )
+        raise Exception( "Error, failed to convert viblio_classifier.py output to float, output was: %s" % ( output ) )
 
     return ( status, confidence )

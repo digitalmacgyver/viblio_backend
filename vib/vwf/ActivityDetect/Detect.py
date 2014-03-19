@@ -72,17 +72,22 @@ class Detect( VWorker ):
                                     'message' : 'Testing media %s for soccer activity.' % ( media_uuid ) } ) )
             ( is_soccer, confidence ) = oc.activity_present( file_name, working_dir, config.soccer_model_dir )
 
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Value of is_soccer was %s, confidence was %s' % ( is_soccer, confidence ) } ) )
+
+
             if is_soccer:
                 activities.append( 'soccer' )
 
-            log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                    'user_uuid' : user_uuid,
-                                    'message' : 'Adding activity of soccer to media %s' % ( media_uuid ) } ) )
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : 'Adding activity of soccer to media %s' % ( media_uuid ) } ) )
 
             ####################################################
             # Basketball Shot
             ####################################################
-
+                '''
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
                                     'message' : 'Testing media %s for basketball shot activity.' % ( media_uuid ) } ) )
@@ -91,14 +96,14 @@ class Detect( VWorker ):
             if is_shot:
                 activities.append( 'basketball_shot' )
 
-            log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                    'user_uuid' : user_uuid,
-                                    'message' : 'Adding activity of basketball_shot to media %s' % ( media_uuid ) } ) )
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : 'Adding activity of basketball_shot to media %s' % ( media_uuid ) } ) )
+                                        '''
 
             ####################################################
             # Christmas
             ####################################################
-
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
                                     'message' : 'Testing media %s for christmas activity.' % ( media_uuid ) } ) )
@@ -107,15 +112,15 @@ class Detect( VWorker ):
             if is_christmas:
                 activities.append( 'christmas' )
 
-            log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                    'user_uuid' : user_uuid,
-                                    'message' : 'Adding activity of christmas to media %s' % ( media_uuid ) } ) )
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : 'Adding activity of christmas to media %s' % ( media_uuid ) } ) )
 
             orm = vib.db.orm.get_session()
             orm.commit()
             media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
 
-            if activity is not None:
+            for activity in activities:
                 ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == media.id, MediaAssets.asset_type == 'main' ) ).one()
                 maf = MediaAssetFeatures( feature_type = 'activity',
                                           coordinates = activity,
@@ -164,7 +169,8 @@ class Detect( VWorker ):
                     media_album = MediaAlbums( media_id = media.id,
                                                album_id = album.id )
                     orm.add( media_album )
-                
+                orm.commit()
+
             mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
             media.media_workflow_stages.append( mwfs )
             orm.commit()

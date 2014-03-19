@@ -10,4 +10,4 @@ source ./setup-env.sh
 
 3) TO CREATE LAUNCH GROUP ON PRODUCTION:
 
-as-create-launch-config prod-vwf-launcher-0.1 --region us-west-2 --image-id "ami-9a1b7baa" --instance-type m1.medium --associate-public-ip-address 1 --spot-price "0.035" --group sg-2e000b4c
+as-create-launch-config prod-vwf-launcher-0.1 --region us-west-2 --image-id "ami-9a1b7baa" --instance-type m3.medium --associate-public-ip-address 1 --spot-price "0.035" --group sg-2e000b4c
