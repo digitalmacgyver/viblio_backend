@@ -183,7 +183,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media_assets` (
   `asset_type` VARCHAR(32) NOT NULL ,
   `mimetype` VARCHAR(40) NULL DEFAULT NULL ,
   `uri` TEXT NULL DEFAULT NULL ,
-  `location` VARCHAR(28) NOT NULL DEFAULT 'fp' ,
+  `location` VARCHAR(28) NOT NULL DEFAULT 'us' ,
   `duration` DECIMAL(14,6) NULL DEFAULT NULL ,
   `bytes` INT(11) NULL DEFAULT NULL ,
   `width` INT NULL DEFAULT NULL ,
