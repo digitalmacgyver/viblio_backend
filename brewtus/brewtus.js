@@ -190,7 +190,7 @@
 	if (req.headers["content-type"] == null) {
 	    return httpStatus(res, 400, "Content-Type Required");
 	}
-	if (req.headers["content-type"] !== "application/offset+octet-stream") {
+	if (! req.headers["content-type"].match( /application\/offset\+octet-stream/ ) ) {
 	    return httpStatus(res, 400, "Content-Type Invalid");
 	}
 	if (req.headers["offset"] == null) {
