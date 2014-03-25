@@ -66,7 +66,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
     * poster_mimetype    - 'image/png'
     * poster_size        - '320x240'
     * recording_date     - The current time
-    * title              - 'Viblio: Your Memories in Motion'
+    * title              - 'Example Video'
     * thumbnail_mimetype - 'image/png'
     * thumnail_size      - '128x128'
     * video_mimetype     - 'video/mp4'
@@ -82,7 +82,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
         poster_mimetype     = options.get( 'poster_mimetype', 'image/png' )
         poster_size         = options.get( 'poster_size', '320x240' )
         recording_date      = options.get( 'recording_date', datetime.datetime.now() )
-        title               = options.get( 'title', 'Viblio: Your Memories in Motion' )
+        title               = options.get( 'title', 'Example Video' )
         thumbnail_mimetype  = options.get( 'thumbnail_mimetype', 'image/png' )
         thumbnail_size      = options.get( 'thumbnail_size', '128x128' )
         video_mimetype      = options.get( 'video_mimetype', 'video/mp4' )
@@ -258,6 +258,7 @@ def run():
                         } ) )
 
             welcome_video_for_user(
+                title = 'Example Video 1',
                 user_uuid = user_uuid,
                 video_file = { 
                     's3_bucket' : 'viblio-external',
@@ -287,7 +288,7 @@ def run():
                 )
 
             welcome_video_for_user(
-                title = 'Watch What Matters',
+                title = 'Example Video 2',
                 description = 'Rediscover your favorite family videos with Viblio and watch what matters. Reserve your spot now for the revolutionary video-storing and sharing platform at https://viblio.com/signup/',
                 user_uuid = user_uuid,
                 video_file = { 

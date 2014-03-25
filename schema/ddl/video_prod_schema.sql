@@ -155,8 +155,8 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`contacts` (
   CONSTRAINT `fk_contacts_users2`
     FOREIGN KEY (`contact_viblio_id` )
     REFERENCES `video_dev`.`users` (`id` )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL)
 ENGINE = InnoDB;
 
 

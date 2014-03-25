@@ -1,3 +1,24 @@
+/*STILL NEEDS TO BE DONE ON PROD - HITTING DML LOCK*/
+
+alter table contact_groups drop foreign key fk_contact_groups_contacts3;
+alter table contacts drop foreign key fk_contacts_users2;
+alter table contacts drop index fk_contacts_users2;
+alter table contacts add  INDEX `fk_contacts_users2` (`contact_viblio_id` ASC);
+alter table contacts add  CONSTRAINT `fk_contacts_users2`
+    FOREIGN KEY (`contact_viblio_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE SET NULL
+    ON UPDATE SET NULL;
+alter table contact_groups add CONSTRAINT fk_contact_groups_contacts3
+      FOREIGN KEY ( contact_viblio_id )
+      REFERENCES contacts ( contact_viblio_id )
+      ON DELETE CASCADE
+      ON UPDATE CASCADE;
+
+
+
+==
+
 insert into asset_types ( type ) values ( 'poster_original' );
 
 
