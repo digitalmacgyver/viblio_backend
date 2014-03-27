@@ -57,8 +57,6 @@ class Notify( VWorker ):
 
             # Check if this is special Viblio generated content, if so
             # maybe do something else.
-            import pdb
-            pdb.set_trace()
             try:
                 if options.get( 'viblio_added_content_type', '' ) == 'Smiling Faces':
                     orm = vib.db.orm.get_session()
