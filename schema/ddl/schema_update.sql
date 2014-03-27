@@ -1,5 +1,51 @@
 /*STILL NEEDS TO BE DONE ON PROD - HITTING DML LOCK*/
 
+
+alter table media add column is_viblio_created boolean not null default false after status;
+
+CREATE  TABLE IF NOT EXISTS `viblio_added_content` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `media_id` INT(11) NULL ,
+  `media_user_id` INT(11) NULL ,
+  `content_type` VARCHAR(32) NULL DEFAULT NULL ,
+  `status` VARCHAR(32) NULL DEFAULT NULL ,
+  `attempts` INT NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_viblio_added_content_users1` (`user_id` ASC) ,
+  INDEX `fk_viblio_added_content_media1` (`media_id` ASC, `media_user_id` ASC) ,
+  CONSTRAINT `fk_viblio_added_content_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_viblio_added_content_media1`
+    FOREIGN KEY (`media_id` , `media_user_id` )
+    REFERENCES `media` (`id` , `user_id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+DELIMITER $$
+
+CREATE
+	TRIGGER viblio_added_content_created BEFORE INSERT ON viblio_added_content FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER viblio_added_content_updated BEFORE UPDATE ON viblio_added_content FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
 alter table contact_groups drop foreign key fk_contact_groups_contacts3;
 alter table contacts drop foreign key fk_contacts_users2;
 alter table contacts drop index fk_contacts_users2;

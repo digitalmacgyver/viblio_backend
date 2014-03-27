@@ -1,65 +1,36 @@
 #!/usr/bin/env python
 
 '''
+Pass breadcrumbs through VWF system to get to NotifyComplete.
 
-recognition_input = media_uuid + '/' + media_uuid + '_recognition_input.json'
+Test email.
 
-General approach:
+Install a cron job to run call_build_smiling_faces.py once an hour or
+so.
 
-Options:
-
-2) This is kicked off by a selector script.
-
-We get in a user_uuid.
-
-1) Parametrzie everything:
-
-* user_uuid
-* min_clip_secs
-* max_clip_secs
-* max_input_videos
-* max_length_per_input_video
-* max_clips_per_input_video
-* min_output_length
-* max_output_length
-
-2) Clean up code / segment it.
-
-3) Design DB schema elements.
-
-First decide on the logic writ large: when do we try to send this ( 3 days, after 10 videos, what? )
-
-* Which videos are user videos and which are promotional
-* Which users have we attempted this for (even if they have deleted the summary)
-
-4) Write data into the users account.
-
-4) Design email.
-
-5) Communicate with Andy on how to do the email.
-
-First try this manually for an account like Mona's 418:
+Package / push to staging.
 '''
 
-
+import boto.swf.layer2 as swf
 import boto.sqs
 import boto.sqs.connection
 from boto.sqs.connection import Message
-from boto.sqs.message import RawMessage
 import commands
 import datetime
 import json
+import hashlib
 import logging
 from logging import handlers
 import math
 import os
+import shutil
 from sqlalchemy import and_
 import time
 import uuid
 
 import vib.db.orm
 from vib.db.models import *
-from vib.utils.s3 import download_string, download_file
+from vib.utils.s3 import download_string, download_file, upload_file
 from vib.vwf.Transcode.transcode_utils import get_exif
 
 import vib.config.AppConfig
@@ -124,7 +95,9 @@ def generate_clips( user_uuid,
     log.info( json.dumps( { 'user_uuid' : user_uuid, 
                             'message'   : 'Getting media_files for user_id %s' % ( user.id ) } ) )
     
-    media_files = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.status == 'complete' ) ).order_by( Media.recording_date )[:]
+    media_files = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.status == 'complete', Media.is_viblio_created == False ) ).order_by( Media.recording_date )[:]
+
+    orm.close()
 
     # Open the output file for storing concatenation data.
     cut_file_name = '%s/cuts.txt' % ( workdir )
@@ -215,7 +188,7 @@ def generate_clips( user_uuid,
                     input_clips += 1
                 
                 # If the current input had any cuts we wanted, add it to the master list.
-                if len( track_cuts ) > 1:
+                if len( track_cuts ) > 0:
                     cuts.append( track_cuts )
 
             log.debug( json.dumps( { 'user_uuid' : user_uuid, 
@@ -232,7 +205,7 @@ def generate_clips( user_uuid,
             # NOTE: We allow here cuts longer than our maximum.
             final_cuts = [ [ -1, -1 ] ]
             for cut in sorted_track_cuts:
-                if final_cuts[-1][0] <= cut[0] and final_cuts[-1][1] => cut[0]:
+                if final_cuts[-1][0] <= cut[0] and final_cuts[-1][1] >= cut[0]:
                     final_cut = max( cut[1], final_cuts[-1][1] )
                     final_cuts[-1][1] = final_cut
                 else:
@@ -240,7 +213,7 @@ def generate_clips( user_uuid,
             final_cuts = final_cuts[1:]
 
             log.debug( json.dumps( { 'user_uuid' : user_uuid, 
-                                     'message'   : 'Final cuts are: %s' % ( sorted_track_cuts ) } ) )
+                                     'message'   : 'Final cuts are: %s' % ( final_cuts ) } ) )
 
             # Stop working on this input video if there were no cuts of interest.
             if len( final_cuts ) == 0:
@@ -299,7 +272,7 @@ def generate_clips( user_uuid,
                                    'message'   : 'Summary video length of %s was too short, returning False.' % ( output_secs ) } ) )
         return False
                 
-def produce_summary_video( user_uuid, workdir ):
+def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
     # Open the output file for storing concatenation data.
     cut_file_name = '%s/cuts.txt' % ( workdir )
     output_file = '%s/summary.mp4' % ( workdir )
@@ -309,7 +282,7 @@ def produce_summary_video( user_uuid, workdir ):
 
     cmd = "ffmpeg -y -f concat -i %s %s" % ( cut_file_name, output_file )
     log.info( json.dumps( { 'user_uuid' : user_uuid, 
-                                'message'   : 'Generating summary with command: %s' % ( cmd ) } ) )
+                            'message'   : 'Generating summary with command: %s' % ( cmd ) } ) )
 
     ( status, output ) = commands.getstatusoutput( cmd )
 
@@ -319,16 +292,161 @@ def produce_summary_video( user_uuid, workdir ):
                                      'message'   : message } ) )
         raise Exception( message )
     else:
+        # Upload video to S3.
+        summary_uuid = str( uuid.uuid4() )
+        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                                'message'   : 'Uploading summary video from %s with uuid %s' % ( output_file, summary_uuid ) } ) )
+        upload_file( output_file, config.bucket_name, "%s/%s" % ( summary_uuid, summary_uuid ) )
+
+        # Write records to database
+        orm = vib.db.orm.get_session()
+        orm.commit()
+
+        unique_hash = None
+        f = open( output_file, 'rb' )
+        md5 = hashlib.md5()
+        while True:
+            file_data = f.read( 1048576 )
+            if not file_data:
+                break
+            md5.update( file_data )
+        unique_hash = md5.hexdigest()
+        f.close()
+
+        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                                'message'   : 'Creating database records for user_uuid %s, media_uuid %s, and viblio_added_contet_id %s ' % ( user_uuid, summary_uuid, viblio_added_content_id ) } ) )
+
+        user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
+        media = Media( uuid = summary_uuid,
+                       media_type = 'original',
+                       filename = 'Faces Summary',
+                       title = 'A Gift from Viblio',
+                       view_count = 0,
+                       status = 'pending',
+                       is_viblio_created = True,
+                       unique_hash = unique_hash )
+        user.media.append( media )
+
+        original_uuid = str( uuid.uuid4() )
+
+        video_asset = MediaAssets(
+            uuid = original_uuid,
+            asset_type = 'original',
+            bytes = os.path.getsize( output_file ),
+            uri = "%s/%s" % ( summary_uuid, summary_uuid ),
+            location = 'us',
+            view_count = 0 )
+        media.assets.append( video_asset )
+
+        vac = orm.query( ViblioAddedContent ).filter( ViblioAddedContent.id == viblio_added_content_id ).one()
+        vac.status = 'prepared'
+        media.viblio_added_content.append( vac )
+        
+        orm.commit()
+        orm.close()
+
+        # New pipeline callout
+        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                                'message'   : 'Starting VWF execution.' } ) )
+        execution = swf.WorkflowType( 
+            name = 'VideoProcessing' + config.VPWSuffix, 
+            domain = 'Viblio', version = '1.0.7' 
+            ).start( 
+            task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList, 
+            input = json.dumps( { 
+                        'viblio_added_content_type' : 'Smiling Faces',
+                        'media_uuid' : summary_uuid, 
+                        'user_uuid'  : user_uuid,
+                        'original_uuid' : original_uuid,
+                        'input_file' : {
+                            's3_bucket'  : config.bucket_name,
+                            's3_key' : "%s/%s" % ( summary_uuid, summary_uuid ),
+                            },
+                        'metadata_uri' : None,
+                        'outputs' : [ { 
+                                'output_file' : {
+                                    's3_bucket' : config.bucket_name,
+                                    's3_key' : "%s/%s_output.mp4" % ( summary_uuid, summary_uuid ),
+                                    },
+                                'format' : 'mp4',
+                                'max_video_bitrate' : 1500,
+                                'audio_bitrate' : 160,
+                                'asset_type' : 'main',
+                                'thumbnails' : [ {
+                                        'times' : [ 0.5 ],
+                                        'type'  : 'static',
+                                        'size'  : "320x240",
+                                        'label' : 'poster',
+                                        'format' : 'png',
+                                        'output_file' : {
+                                            's3_bucket' : config.bucket_name,
+                                            's3_key' : "%s/%s_poster.png" % ( summary_uuid, summary_uuid ),
+                                            }
+                                        }, 
+                                                 {
+                                        'times' : [ 0.5 ],
+                                        'type'  : 'static',
+                                        'original_size' : True,
+                                        'label' : 'poster_original',
+                                        'format' : 'png',
+                                        'output_file' : {
+                                            's3_bucket' : config.bucket_name,
+                                            's3_key' : "%s/%s_poster_original.png" % ( summary_uuid, summary_uuid ),
+                                            }
+                                        }, 
+                                                 {
+                                        'times' : [ 0.5 ],
+                                        'size': "128x128",
+                                        'type'  : 'static',
+                                        'label' : 'thumbnail',
+                                        'format' : 'png',
+                                        'output_file' : {
+                                            's3_bucket' : config.bucket_name,
+                                            's3_key' : "%s/%s_thumbnail.png" % ( summary_uuid, summary_uuid ),
+                                            }
+                                        },
+                                                 {
+                                        'times' : [ 0.5 ],
+                                        'type'  : 'animated',
+                                        'size'  : "320x240",
+                                        'label' : 'poster_animated',
+                                        'format' : 'gif',
+                                        'output_file' : {
+                                            's3_bucket' : config.bucket_name,
+                                            's3_key' : "%s/%s_poster_animated.gif" % ( summary_uuid, summary_uuid ),
+                                            }
+                                        },
+                                                 {
+                                        'times' : [ 0.5 ],
+                                        'size': "128x128",
+                                        'type'  : 'animated',
+                                        'label' : 'thumbnail_animated',
+                                        'format' : 'gif',
+                                        'output_file' : {
+                                            's3_bucket' : config.bucket_name,
+                                            's3_key' : "%s/%s_thumbnail_animated.gif" % ( summary_uuid, summary_uuid ),
+                                            }
+                                        } ]
+                                }
+                                      ]
+                        } ),
+            workflow_id=summary_uuid
+            )
+
+        # Clean up
+        if workdir[:4] == '/mnt':
+            log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                                    'message'   : 'Deleting temporary files at %s' % ( workdir ) } ) )
+            shutil.rmtree( workdir )
         return
         
 def __get_sqs():
     return boto.sqs.connect_to_region( config.sqs_region, aws_access_key_id = config.awsAccess, aws_secret_access_key = config.awsSecret )
 
-sqs = __get_sqs().get_queue( config.smile_creation_queue )
-#sqs.set_message_class( RawMessage )
-
 def run():
     try:
+        sqs = __get_sqs().get_queue( config.smile_creation_queue )
+
         message = None
         message = sqs.read( wait_time_seconds = 20 )
 
@@ -351,6 +469,7 @@ def run():
             log.debug( json.dumps( { 'message' : "Error converting options to string: %e" % e } ) )
         
         user_uuid           = options.get( 'user_uuid', None )
+        viblio_added_content_id = options['viblio_added_content_id']
         min_clip_secs       = float( options.get( 'min_clip_secs', 1 ) )
         max_clip_secs       = float( options.get( 'max_clip_secs', 3 ) )
         max_input_videos    = int( options.get( 'max_input_videos', 120 ) )
@@ -382,8 +501,9 @@ def run():
                                        output_x            = output_x, 
                                        output_y            = output_y )
             if clips_ok:
-                produce_summary_video( user_uuid, workdir )
+                produce_summary_video( user_uuid, workdir, viblio_added_content_id )
                 
+            log.info( json.dumps( { 'message' : "Completed succesfully for user_uuid: %s" % ( user_uuid ) } ) )
             sqs.delete_message( message )
             return True
         else:
