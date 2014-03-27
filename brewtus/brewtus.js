@@ -190,7 +190,8 @@
 	if (req.headers["content-type"] == null) {
 	    return httpStatus(res, 400, "Content-Type Required");
 	}
-	if (! req.headers["content-type"].match( /application\/offset\+octet-stream/ ) ) {
+	if (! (req.headers["content-type"].match( /application\/offset\+octet-stream/ ) ||
+	       req.headers["content-type"].match( /multipart/ ) ) ) {
 	    return httpStatus(res, 400, "Content-Type Invalid");
 	}
 	if (req.headers["offset"] == null) {
@@ -234,73 +235,141 @@
 	info.state = "patched";
 	info.patchedOn = Date.now();
 	info.bytesReceived = 0;
-	// This req.pipe(ws) was finishing before the req.on(end was getting
-	// the last bytes.  So do the write in req.on(end to keep things in
-	// sync.
-	//
-	req.pipe(ws);
-	req.on("data", function(buffer) {
-	    info.bytesReceived += buffer.length;
-	    info.offset += buffer.length;
-	    if (info.offset > info.finalLength) {
-		return httpStatus(res, 500, "Exceeded Final-Length", null, meta);
-	    }
-	    if (info.received > contentLength) {
-		return httpStatus(res, 500, "Exceeded Content-Length", null, meta);
-	    }
-	    // Do the write HERE
-	    // ws.write(buffer);
-	});
-	req.on("end", function() {
-	    winston.debug( "Request end: bytes received=" +  info.offset );
-	    if (!res.headersSent) {
-		// httpStatus(res, 200, "Ok", JSON.stringify(info));
-		httpStatus(res, 200, "Ok", null, meta);
-	    }
-	    return u.save( function() {
-		mixpanel.track( 'upload_completed', {
-		    distinct_id: info.fileId,
-		    media_uuid: info.fileId,
-		    user_uuid: info.uid,
-		    activity: 'brewtus',
-		    deployment: process.env.NODE_ENV || 'local'
+
+	if ( req.headers["content-type"].match( /multipart/ ) ) {
+	    // F'in IE again!!!
+	    var form = new formidable.IncomingForm();
+	    form.onPart = function(part) {
+		part.addListener('data', function( buffer ) {
+		    info.bytesReceived += buffer.length;
+		    info.offset += buffer.length;
+		    if (info.offset > info.finalLength) {
+			return httpStatus(res, 500, "Exceeded Final-Length", null, meta);
+		    }
+		    if (info.received > contentLength) {
+			return httpStatus(res, 500, "Exceeded Content-Length", null, meta);
+		    }
+		    // Do the write HERE
+		    ws.write(buffer);
 		});
-		if ( config.popeye != "none" ) {
-		    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
-		    request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
-			if ( err ) {
-			    winston.error( "Popeye error: " + err.message );
-			}
-			else if ( res.statusCode != 200 ) {
-			    winston.error( "Popeye error: " + res.statusCode );
+		part.addListener('end', function() {
+		    winston.debug( "Request end: bytes received=" +  info.offset );
+		    if (!res.headersSent) {
+			// httpStatus(res, 200, "Ok", JSON.stringify(info));
+			httpStatus(res, 200, "Ok", null, meta);
+		    }
+		    return u.save( function() {
+			mixpanel.track( 'upload_completed', {
+			    distinct_id: info.fileId,
+			    media_uuid: info.fileId,
+			    user_uuid: info.uid,
+			    activity: 'brewtus',
+			    deployment: process.env.NODE_ENV || 'local'
+			});
+			if ( config.popeye != "none" ) {
+			    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
+			    request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
+				if ( err ) {
+				    winston.error( "Popeye error: " + err.message );
+				}
+				else if ( res.statusCode != 200 ) {
+				    winston.error( "Popeye error: " + res.statusCode );
+				}
+				else {
+				    try {
+					var r = JSON.parse( body );
+					if ( r.error ) {
+					    winston.error( "Popeye error: " + r.message );
+					}
+				    } catch( e ) {
+					winston.error( "Popeye error: " + e.message );
+				    }
+				}
+			    });
 			}
 			else {
-			    try {
-				var r = JSON.parse( body );
-				if ( r.error ) {
-				    winston.error( "Popeye error: " + r.message );
-				}
-			    } catch( e ) {
-				winston.error( "Popeye error: " + e.message );
-			    }
+			    winston.debug( "Popeye disabled, not sending message." );
 			}
 		    });
-		}
-		else {
-		    winston.debug( "Popeye disabled, not sending message." );
-		}
+		});
+		part.addListener("close", function() {
+		    winston.error("client abort. close the file stream " + fileId);
+		    return ws.end();
+		});
+	    }
+	    form.parse( req, function( err, fields, files ) {
 	    });
-	});
-	req.on("close", function() {
-	    winston.error("client abort. close the file stream " + fileId);
-	    return ws.end();
-	});
-	ws.on("close", function() {
-	    // winston.info("closed the file stream " + fileId);
-	});
-	return ws.on("error", function(e) {
-	    return httpStatus(res, 500, "File Error", null, meta);
-	});
+	}
+	else {
+	    //
+	    // This req.pipe(ws) was finishing before the req.on(end was getting
+	    // the last bytes.  So do the write in req.on(end to keep things in
+	    // sync.
+	    //
+	    req.pipe(ws);
+	    req.on("data", function(buffer) {
+		info.bytesReceived += buffer.length;
+		info.offset += buffer.length;
+		if (info.offset > info.finalLength) {
+		    return httpStatus(res, 500, "Exceeded Final-Length", null, meta);
+		}
+		if (info.received > contentLength) {
+		    return httpStatus(res, 500, "Exceeded Content-Length", null, meta);
+		}
+		// Do the write HERE
+		// ws.write(buffer);
+	    });
+	    req.on("end", function() {
+		winston.debug( "Request end: bytes received=" +  info.offset );
+		if (!res.headersSent) {
+		    // httpStatus(res, 200, "Ok", JSON.stringify(info));
+		    httpStatus(res, 200, "Ok", null, meta);
+		}
+		return u.save( function() {
+		    mixpanel.track( 'upload_completed', {
+			distinct_id: info.fileId,
+			media_uuid: info.fileId,
+			user_uuid: info.uid,
+			activity: 'brewtus',
+			deployment: process.env.NODE_ENV || 'local'
+		    });
+		    if ( config.popeye != "none" ) {
+			winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
+			request( {url: config.popeye, qs: { path: filePath }}, function( err, res, body ) {
+			    if ( err ) {
+				winston.error( "Popeye error: " + err.message );
+			    }
+			    else if ( res.statusCode != 200 ) {
+				winston.error( "Popeye error: " + res.statusCode );
+			    }
+			    else {
+				try {
+				    var r = JSON.parse( body );
+				    if ( r.error ) {
+					winston.error( "Popeye error: " + r.message );
+				    }
+				} catch( e ) {
+				    winston.error( "Popeye error: " + e.message );
+				}
+			    }
+			});
+		    }
+		    else {
+			winston.debug( "Popeye disabled, not sending message." );
+		    }
+		});
+	    });
+	    req.on("close", function() {
+		winston.error("client abort. close the file stream " + fileId);
+		return ws.end();
+	    });
+	    ws.on("close", function() {
+		// winston.info("closed the file stream " + fileId);
+	    });
+	    return ws.on("error", function(e) {
+		return httpStatus(res, 500, "File Error", null, meta);
+	    });
+	}
     };
 
     batchFile = function(req, res, fid) {
