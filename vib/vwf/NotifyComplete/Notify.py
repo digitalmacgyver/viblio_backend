@@ -92,7 +92,7 @@ class Notify( VWorker ):
                     m = Message()
                     m.set_body( json.dumps( message ) )
                     status = sqs.write( m )
-                    log.error( json.dumps( { 'media_uuid' : media_uuid,
+                    log.info( json.dumps( { 'media_uuid' : media_uuid,
                                              'user_uuid' : user_uuid,
                                              'message' : "Message status was: %s" % ( status ) } ) )
             except Exception as e:
