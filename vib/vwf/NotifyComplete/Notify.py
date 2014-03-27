@@ -3,6 +3,7 @@
 import boto.sqs
 import boto.sqs.connection
 from boto.sqs.connection import Message
+from boto.sqs.message import RawMessage
 import hmac
 import json
 import logging
@@ -67,6 +68,8 @@ class Notify( VWorker ):
                     sqs = boto.sqs.connect_to_region( config.sqs_region, 
                                                       aws_access_key_id = config.awsAccess, 
                                                       aws_secret_access_key = config.awsSecret ).get_queue( config.email_queue )
+                    sqs.set_message_class( RawMessage )
+
                     message = {
                         'subject' : 'Viblio Made You a Present',
                         'to' : [ { 'email' : user.email,
@@ -89,7 +92,7 @@ class Notify( VWorker ):
                                             'user_uuid' : user_uuid,
                                             'message' : "Sending message format of: %s" % ( message ) } ) )
 
-                    m = Message()
+                    m = RawMessage()
                     m.set_body( json.dumps( message ) )
                     status = sqs.write( m )
                     log.info( json.dumps( { 'media_uuid' : media_uuid,

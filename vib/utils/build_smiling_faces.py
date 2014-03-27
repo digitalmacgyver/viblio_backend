@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
 '''
-Pass breadcrumbs through VWF system to get to NotifyComplete.
-
-Test email.
-
 Install a cron job to run call_build_smiling_faces.py once an hour or
 so.
 
@@ -245,7 +241,7 @@ def generate_clips( user_uuid,
                     ffmpeg_opts = ' -vf scale=-1:%s,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_y, output_x, output_y )
                 else:
                     ffmpeg_opts = ' -vf scale=%s:-1,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_x, output_x, output_y )
-                cmd = "ffmpeg -i %s -ss %s -t %s -r 24 %s %s" % ( movie_file, track_cut[0], track_cut[1]-track_cut[0], ffmpeg_opts, cut_video )
+                cmd = "ffmpeg -y -i %s -ss %s -t %s -r 24 %s %s" % ( movie_file, track_cut[0], track_cut[1]-track_cut[0], ffmpeg_opts, cut_video )
 
                 log.info( json.dumps( { 'user_uuid' : user_uuid, 
                                          'message'   : 'Generating clip with command: %s' % ( cmd ) } ) )
