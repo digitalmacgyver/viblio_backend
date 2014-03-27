@@ -91,6 +91,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`media` (
   `lat` DECIMAL(11,8) NULL DEFAULT NULL ,
   `lng` DECIMAL(11,8) NULL DEFAULT NULL ,
   `status` VARCHAR(32) NULL DEFAULT NULL ,
+  `is_viblio_created` TINYINT(1) NOT NULL DEFAULT false ,
   `created_date` DATETIME NULL DEFAULT NULL ,
   `updated_date` DATETIME NULL DEFAULT NULL ,
   PRIMARY KEY (`id`, `user_id`) ,
@@ -725,6 +726,35 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`communities` (
   CONSTRAINT `fk_communities_contacts2`
     FOREIGN KEY (`curators_id` )
     REFERENCES `video_dev`.`contacts` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev`.`viblio_added_content`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev`.`viblio_added_content` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `media_id` INT(11) NULL ,
+  `media_user_id` INT(11) NULL ,
+  `content_type` VARCHAR(32) NULL DEFAULT NULL ,
+  `status` VARCHAR(32) NULL DEFAULT NULL ,
+  `attempts` INT NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_viblio_added_content_users1` (`user_id` ASC) ,
+  INDEX `fk_viblio_added_content_media1` (`media_id` ASC, `media_user_id` ASC) ,
+  CONSTRAINT `fk_viblio_added_content_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `video_dev`.`users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_viblio_added_content_media1`
+    FOREIGN KEY (`media_id` , `media_user_id` )
+    REFERENCES `video_dev`.`media` (`id` , `user_id` )
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
@@ -1467,6 +1497,30 @@ USE `video_dev`$$
 
 CREATE
 	TRIGGER community_updated BEFORE UPDATE ON communities FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER viblio_added_content_created BEFORE INSERT ON viblio_added_content FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev`$$
+
+
+CREATE
+	TRIGGER viblio_added_content_updated BEFORE UPDATE ON viblio_added_content FOR EACH ROW
 BEGIN
 	set NEW.updated_date = NOW();
 END;
