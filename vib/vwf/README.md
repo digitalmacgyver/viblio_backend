@@ -137,7 +137,7 @@ The [VPDecider](./VPDecider.py) module listens for workflow
 invocations and events occurring on existing workflows.  It interprets
 the contents of the VPWorkflow data structure and starts stages when
 all their prerequisites are met, and completes workflows when all the
-tasks in it's run_helper.tasks array are competed, or fails them if a
+tasks in its run_helper.tasks array are competed, or fails them if a
 given task times out too many times or fails too many times (as
 determined by configuration in VPWorkflow).
 

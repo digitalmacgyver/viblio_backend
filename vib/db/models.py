@@ -101,6 +101,9 @@ class MediaWorkflowStages( BaseModel, Serializer ):
 class MediaAlbums( BaseModel, Serializer ):
     pass
 
+class ViblioAddedContent( BaseModel, Serializer ):
+    pass
+
 """
 Well, reflection really only gives us the column definitions it
 seems.  We are still responsible for establishing the relationships
@@ -127,6 +130,9 @@ def db_map(engine):
             'profiles': relationship( models.Profiles,
                                       lazy='dynamic',
                                       backref='user' ),
+            'viblio_added_content' : relationship( models.ViblioAddedContent,
+                                                   lazy='dynamic',
+                                                   backref='user' ),
             })
 
     mappers["media"].add_properties({
@@ -140,7 +146,10 @@ def db_map(engine):
                                            lazy="dynamic",
                                            backref="media",
                                            foreign_keys=models.MediaAlbums.album_id,
-                                           cascade="all, delete-orphan" )
+                                           cascade="all, delete-orphan" ),
+            'viblio_added_content' : relationship( models.ViblioAddedContent,
+                                                   lazy='dynamic',
+                                                   backref='media' )
             })
 
     mappers["media_assets"].add_properties({

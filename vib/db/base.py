@@ -114,6 +114,7 @@ def reflect( engine, models ):
         'share_types' : True,
         'user_roles' : True,
         'users' : True,
+        'viblio_added_content' : True,
         'workflow_stages' : True,
         'workorders' : True
         }
