@@ -159,6 +159,17 @@ def generate_clips( user_uuid,
                 track_cuts = [ ]
 
                 for vi in track['visiblity_info']:
+                    # Stop working on this input if we've got all we need from it.
+                    if input_secs >= max_secs_per_input:
+                        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                                                'message'   : 'max_secs_per_input limit reached, skipping additional tracks for media_uuid: %s' % ( media_uuid ) } ) )
+                        break
+                    if input_clips >= max_clips_per_input:
+                        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                                                'message'   : 'max_clips_per_input limit reached, skipping additional tracks for media_uuid: %s' % ( media_uuid ) } ) )
+                        break
+
+
                     start = float( vi['start_frame'] )/1000
                     end = float( vi['end_frame'] )/1000
 

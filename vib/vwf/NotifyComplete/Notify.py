@@ -75,7 +75,7 @@ class Notify( VWorker ):
                         'to' : [ { 'email' : user.email,
                                    'name' : user.displayname } ],
                         'template': "email/21-mashupGiftForYou.tt",
-                        'stash' : { 'user' : { 'displaynanme' : user.displayname },
+                        'stash' : { 'user' : { 'displayname' : user.displayname },
                                     'model' : { 'media' : [ { 'uuid' : media_uuid,
                                                               'views' : {
                                             'poster' : {
