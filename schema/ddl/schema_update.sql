@@ -24,7 +24,7 @@ CREATE  TABLE IF NOT EXISTS `viblio_added_content` (
   CONSTRAINT `fk_viblio_added_content_media1`
     FOREIGN KEY (`media_id` , `media_user_id` )
     REFERENCES `media` (`id` , `user_id` )
-    ON DELETE CASCADE
+    ON DELETE SET NULL
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 

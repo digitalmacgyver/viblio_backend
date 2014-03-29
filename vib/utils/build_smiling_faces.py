@@ -19,6 +19,7 @@ import logging
 from logging import handlers
 import math
 import os
+import random
 import shutil
 from sqlalchemy import and_
 import time
@@ -51,8 +52,8 @@ log.addHandler( consolelog )
 
 def generate_clips( user_uuid, 
                     workdir,
-                    min_clip_secs       = 1,
-                    max_clip_secs       = 3,
+                    min_clip_secs       = 2.5,
+                    max_clip_secs       = 5,
                     max_input_videos    = 120,
                     max_secs_per_input  = 9,
                     max_clips_per_input = 3,
@@ -63,8 +64,8 @@ def generate_clips( user_uuid,
     '''Takes the input parameters:
     user_uuid, 
     workdir             = Temporary directory to store videos and clips
-    min_clip_secs       = Default 1. No clips shorter than this will be included
-    max_clip_secs       = Default 3. No clips longer than this will be included
+    min_clip_secs       = Default 2.5. No clips shorter than this will be included
+    max_clip_secs       = Default 5. No clips longer than this will be included
     max_input_videos    = Default 120. At most this many videos with faces will be considered
     max_secs_per_input  = Default 9. Once this threshold is reached, no
                           more clips will be added from this input
@@ -95,9 +96,7 @@ def generate_clips( user_uuid,
 
     orm.close()
 
-    # Open the output file for storing concatenation data.
-    cut_file_name = '%s/cuts.txt' % ( workdir )
-    cut_file = open( cut_file_name, 'w' )
+    cut_lines = []
 
     output_secs = 0
     output_clips = 0
@@ -260,7 +259,7 @@ def generate_clips( user_uuid,
 
                 if status == 0:
                     # Store the fact that we made this cut for later concatenation.
-                    cut_file.write( "file %s\n" % ( cut_video ) )
+                    cut_lines.append( "file %s\n" % ( cut_video ) )
                 else:
                     log.error( json.dumps( { 'user_uuid' : user_uuid, 
                                              'message'   : 'Something went wrong generating clip, output was: %s' % ( output ) } ) )
@@ -271,7 +270,15 @@ def generate_clips( user_uuid,
                                      'message'   : 'Unexpected error processing file %s: %s' % ( media_uuid, e ) } ) )
             # Note - we just keep going if we hit an error and hope for the best.
 
+    # Open the output file for storing concatenation data.
+    cut_file_name = '%s/cuts.txt' % ( workdir )
+    cut_file = open( cut_file_name, 'w' )
+
+    for line in random.shuffle( cut_lines ):
+        cut_file.write( line )
+
     cut_file.close()
+
     if output_secs > min_output_secs:
         return True
     else:
@@ -477,8 +484,8 @@ def run():
         
         user_uuid           = options.get( 'user_uuid', None )
         viblio_added_content_id = options['viblio_added_content_id']
-        min_clip_secs       = float( options.get( 'min_clip_secs', 1 ) )
-        max_clip_secs       = float( options.get( 'max_clip_secs', 3 ) )
+        min_clip_secs       = float( options.get( 'min_clip_secs', 2.5 ) )
+        max_clip_secs       = float( options.get( 'max_clip_secs', 5 ) )
         max_input_videos    = int( options.get( 'max_input_videos', 120 ) )
         max_secs_per_input  = int( options.get( 'max_secs_per_input', 30 ) )
         max_clips_per_input = int( options.get( 'max_clips_per_input', 3 ) )

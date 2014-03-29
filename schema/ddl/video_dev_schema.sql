@@ -755,7 +755,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`viblio_added_content` (
   CONSTRAINT `fk_viblio_added_content_media1`
     FOREIGN KEY (`media_id` , `media_user_id` )
     REFERENCES `video_dev_1`.`media` (`id` , `user_id` )
-    ON DELETE CASCADE
+    ON DELETE SET NULL
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
