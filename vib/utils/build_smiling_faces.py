@@ -274,7 +274,8 @@ def generate_clips( user_uuid,
     cut_file_name = '%s/cuts.txt' % ( workdir )
     cut_file = open( cut_file_name, 'w' )
 
-    for line in random.shuffle( cut_lines ):
+    random.shuffle( cut_lines )
+    for line in cut_lines:
         cut_file.write( line )
 
     cut_file.close()
