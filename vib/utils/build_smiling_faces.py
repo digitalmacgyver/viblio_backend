@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 
-'''
-Install a cron job to run call_build_smiling_faces.py once an hour or
-so.
-
-Package / push to staging.
-'''
-
 import boto.swf.layer2 as swf
 import boto.sqs
 import boto.sqs.connection
@@ -52,7 +45,7 @@ log.addHandler( consolelog )
 
 def generate_clips( user_uuid, 
                     workdir,
-                    min_clip_secs       = 2.5,
+                    min_clip_secs       = 4.5,
                     max_clip_secs       = 5,
                     max_input_videos    = 120,
                     max_secs_per_input  = 9,
@@ -64,7 +57,7 @@ def generate_clips( user_uuid,
     '''Takes the input parameters:
     user_uuid, 
     workdir             = Temporary directory to store videos and clips
-    min_clip_secs       = Default 2.5. No clips shorter than this will be included
+    min_clip_secs       = Default 4.5. No clips shorter than this will be included
     max_clip_secs       = Default 5. No clips longer than this will be included
     max_input_videos    = Default 120. At most this many videos with faces will be considered
     max_secs_per_input  = Default 9. Once this threshold is reached, no
@@ -485,7 +478,7 @@ def run():
         
         user_uuid           = options.get( 'user_uuid', None )
         viblio_added_content_id = options['viblio_added_content_id']
-        min_clip_secs       = float( options.get( 'min_clip_secs', 2.5 ) )
+        min_clip_secs       = float( options.get( 'min_clip_secs', 4.5 ) )
         max_clip_secs       = float( options.get( 'max_clip_secs', 5 ) )
         max_input_videos    = int( options.get( 'max_input_videos', 120 ) )
         max_secs_per_input  = int( options.get( 'max_secs_per_input', 30 ) )
