@@ -45,11 +45,11 @@ log.addHandler( consolelog )
 
 def generate_clips( user_uuid, 
                     workdir,
-                    min_clip_secs       = 4.5,
-                    max_clip_secs       = 5,
+                    min_clip_secs       = 2,
+                    max_clip_secs       = 3,
                     max_input_videos    = 120,
                     max_secs_per_input  = 9,
-                    max_clips_per_input = 3,
+                    max_clips_per_input = 1,
                     min_output_secs     = 6,
                     max_output_secs     = 120,
                     output_x            = 640,
@@ -57,12 +57,12 @@ def generate_clips( user_uuid,
     '''Takes the input parameters:
     user_uuid, 
     workdir             = Temporary directory to store videos and clips
-    min_clip_secs       = Default 4.5. No clips shorter than this will be included
-    max_clip_secs       = Default 5. No clips longer than this will be included
+    min_clip_secs       = Default 2. No clips shorter than this will be included
+    max_clip_secs       = Default 3. No clips longer than this will be included
     max_input_videos    = Default 120. At most this many videos with faces will be considered
     max_secs_per_input  = Default 9. Once this threshold is reached, no
                           more clips will be added from this input
-    max_clips_per_input = Default 3. At most this many clips will be included per input
+    max_clips_per_input = Default 1. At most this many clips will be included per input
     min_output_secs     = Default 6. If this threshold is not reached, return false
     max_output_secs     = Default 120.  One this threshold is reached, no more clips will 
                           be added
@@ -478,11 +478,11 @@ def run():
         
         user_uuid           = options.get( 'user_uuid', None )
         viblio_added_content_id = options['viblio_added_content_id']
-        min_clip_secs       = float( options.get( 'min_clip_secs', 4.5 ) )
-        max_clip_secs       = float( options.get( 'max_clip_secs', 5 ) )
+        min_clip_secs       = float( options.get( 'min_clip_secs', 2 ) )
+        max_clip_secs       = float( options.get( 'max_clip_secs', 3 ) )
         max_input_videos    = int( options.get( 'max_input_videos', 120 ) )
         max_secs_per_input  = int( options.get( 'max_secs_per_input', 30 ) )
-        max_clips_per_input = int( options.get( 'max_clips_per_input', 3 ) )
+        max_clips_per_input = int( options.get( 'max_clips_per_input', 1 ) )
         min_output_secs     = int( options.get( 'min_output_secs', 6 ) )
         max_output_secs     = int( options.get( 'max_output_secs', 120 ) )
         output_x            = int( options.get( 'output_x', 640 ) )
