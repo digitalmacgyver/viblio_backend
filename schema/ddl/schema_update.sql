@@ -1,5 +1,23 @@
-/*STILL NEEDS TO BE DONE ON PROD - HITTING DML LOCK*/
 
+CREATE  TABLE IF NOT EXISTS `user_devices` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `network` VARCHAR(64) NOT NULL ,
+  `device_id` VARCHAR(1024) NOT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_user_devices_users1` (`user_id` ASC) ,
+  CONSTRAINT `fk_user_devices_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+
+==
 
 alter table media add column is_viblio_created boolean not null default false after status;
 

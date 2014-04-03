@@ -759,6 +759,26 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`viblio_added_content` (
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
+
+-- -----------------------------------------------------
+-- Table `video_dev_1`.`user_devices`
+-- -----------------------------------------------------
+CREATE  TABLE IF NOT EXISTS `video_dev_1`.`user_devices` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `network` VARCHAR(64) NOT NULL ,
+  `device_id` VARCHAR(1024) NOT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_user_devices_users1` (`user_id` ASC) ,
+  CONSTRAINT `fk_user_devices_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `video_dev_1`.`users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
 USE `video_dev_1`;
 
 DELIMITER $$
@@ -1521,6 +1541,30 @@ USE `video_dev_1`$$
 
 CREATE
 	TRIGGER viblio_added_content_updated BEFORE UPDATE ON viblio_added_content FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+
+DELIMITER ;
+
+DELIMITER $$
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER user_devices_created BEFORE INSERT ON user_devices FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev_1`$$
+
+
+CREATE
+	TRIGGER user__devices_updated BEFORE UPDATE ON user_devices FOR EACH ROW
 BEGIN
 	set NEW.updated_date = NOW();
 END;
