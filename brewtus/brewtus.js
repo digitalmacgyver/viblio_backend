@@ -16,12 +16,25 @@
     sys = require( "sys" );
     Mixpanel = require( "mixpanel" );
     formidable = require( "formidable" );
+    useragent = require( "useragent" );
 
     setup = new events.EventEmitter();
 
     config = {};
 
     var mixpanel;  // set in initApp
+
+    function getTech( req ) {
+	var ua = useragent.parse( req.headers[ 'user-agent' ] );
+	var device = ua.device.toString();
+	var os = ua.os.toString();
+	if ( device == 'Other' ) device = ua.family;
+	if ( ua.source.match( /^Viblio/ ) ) {
+	    device = 'ViblioApp';
+	    os = ua.source;
+	}
+	return device + ' ' + os;
+    }
 
     // Custom Transport so we can log into syslog, so it goes to loggly
     var SysLogger = winston.transports.SysLogger = function( options ) {
@@ -147,6 +160,7 @@
 		media_uuid: meta.fileId,
 		user_uuid: meta.uid,
 		activity: 'brewtus',
+		tech: getTech( req ),
 		deployment: process.env.NODE_ENV || 'local'
 	    });
 	    var proto = 'http';
@@ -264,6 +278,7 @@
 			    media_uuid: info.fileId,
 			    user_uuid: info.uid,
 			    activity: 'brewtus',
+			    tech: getTech( req ),
 			    deployment: process.env.NODE_ENV || 'local'
 			});
 			if ( config.popeye != "none" ) {
@@ -331,6 +346,7 @@
 			media_uuid: info.fileId,
 			user_uuid: info.uid,
 			activity: 'brewtus',
+			tech: getTech( req ),
 			deployment: process.env.NODE_ENV || 'local'
 		    });
 		    if ( config.popeye != "none" ) {
@@ -437,6 +453,7 @@
 		    media_uuid: info.fileId,
 		    user_uuid: info.uid,
 		    activity: 'brewtus',
+		    tech: getTech( req ),
 		    deployment: process.env.NODE_ENV || 'local'
 		});
 		if ( config.popeye != "none" ) {

@@ -1,25 +1,26 @@
 {
-    "name": "brewtus",
-    "author": "Naren Venkataraman <naren@doorul.com>",
-    "description": "TUS Server Implementation for coffee lovers",
-    "version": "0.0.1",
-    "main": "brewtus.coffee",
-    "dependencies": {
-        "coffee-script": "latest",
-        "node-uuid": "latest",
-        "winston": "latest",
-	"request": "latest",
-	"konphyg": "1.2.x",
-	"node-syslog": "latest",
-	"mixpanel": "latest",
-	"formidable": "latest"
-     },
-    "keywords": [
-        "upload",
-        "tus"
-     ],
-    "repository": "git://github.com/vayam/brewtus",
-    "engines": {
-        "node": "0.10.x"
-    }
+  "name": "brewtus",
+  "author": "Naren Venkataraman <naren@doorul.com>",
+  "description": "TUS Server Implementation for coffee lovers",
+  "version": "0.0.1",
+  "main": "brewtus.coffee",
+  "dependencies": {
+    "coffee-script": "1.7.1",
+    "node-uuid": "1.4.1",
+    "winston": "0.7.2",
+    "request": "2.34.0",
+    "konphyg": "1.2.0",
+    "node-syslog": "1.1.7",
+    "mixpanel": "0.0.18",
+    "formidable": "1.0.14",
+    "useragent": "2.0.8"
+  },
+  "keywords": [
+    "upload",
+    "tus"
+  ],
+  "repository": "git://github.com/vayam/brewtus",
+  "engines": {
+    "node": "0.10.x"
+  }
 }
