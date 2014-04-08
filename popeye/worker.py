@@ -99,7 +99,7 @@ class Worker( Background ):
             print "ERROR: " + str( e )
             raise
 
-    def mp_log( self, event, properties = {} ):
+    def mp_log( self, event, properties = {}, pipeline_increment={}, user_increment={} ):
         try:
             if hasattr( self, 'data' ) and 'info' in self.data and 'uid' in self.data['info']:
                 properties['user_uuid'] = self.data['info']['uid']  
@@ -119,6 +119,13 @@ class Worker( Background ):
             self.mp.track( self.uuid, event, properties )
             if 'user_uuid' in properties:
                 self.mp_web.track( properties['user_uuid'], event, properties )
+                
+            if pipeline_increment:
+                self.mp.people_increment( self.uuid, pipeline_increment )
+                
+            if user_increment and 'user_uuid' in properties:
+                self.mp_web.people_increment( properties['user_uuid'], user_increment )
+
 
         except Exception as e:
             self.__safe_log( self.popeye_log.warning, "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( self.uuid, event, properties, e ) )
@@ -413,7 +420,7 @@ class Worker( Background ):
                 
             log.info( 'External Video Processing Workflow %s initiated' % execution.workflowId )
 
-            self.mp_log( '090_new_pipeline_callout' )
+            self.mp_log( '090_new_pipeline_callout', user_increment= {'Video Stored' : 1 } )
 
         except Exception as e:
             log.warning( "Failed to launch External Video Processing Workflow, error was: %s" % e )
