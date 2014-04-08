@@ -6,6 +6,4 @@
 
 0 */6 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/fail_orphan_workflows.py >> /tmp/fail-orphan-workflows-$(/bin/date +"\%F").log 2>&1
 
-# Delete and recreate demo accounts
-0 8 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/manage_demo_accounts.py >> /tmp/manage-demo-accounts-$(/bin/date +"\%F").log 2>&1
 0 0 * * * export PYTHONPATH=/deploy/prod/; export DEPLOYMENT=prod; /deploy/prod/vib/utils/call_build_smiling_faces.py >> /tmp/call_build_smiling_faces-$(/bin/date +"\%F").log 2>&1
