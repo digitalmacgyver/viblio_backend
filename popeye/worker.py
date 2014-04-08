@@ -1,4 +1,4 @@
-# Python librarie
+# Python libraries
 import boto.swf.layer2 as swf
 import codecs
 import datetime
@@ -205,6 +205,7 @@ class Worker( Background ):
                 log.info( 'File with hash %s for user uuid %s is unique, proceeding.' % ( unique_hash, self.data['info']['uid'] ) )
             else:
                 log.info( 'File with hash %s for user uuid %s is not unique, terminating.' % ( unique_hash, self.data['info']['uid'] ) )
+                self.mp_log( 'Duplicate Video Skipped' )
                 self.file_cleanup()
                 self.__release_lock()
                 if self.popeye_logging_handler:
