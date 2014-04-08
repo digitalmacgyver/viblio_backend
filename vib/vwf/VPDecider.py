@@ -97,7 +97,7 @@ class VPDecider( swf.Decider ):
                         'user_uuid' : user_uuid,
                         'message' : "Workflow for user %s video %s completed successfully." % ( user_uuid, media_uuid )
                         } ) )
-            _mp_log( "Workflow_Complete", media_uuid, user_uuid )
+            _mp_log( "Workflow_Complete", media_uuid, user_uuid, user_increment = { 'Video Completed' : 1 } )
             decisions.complete_workflow_execution()
             _update_media_status( media_uuid, 'WorkflowComplete' )
         else:
@@ -343,7 +343,7 @@ class VPDecider( swf.Decider ):
                 )
             return False
     
-def _mp_log( event, media_uuid, user_uuid, properties = {} ):
+def _mp_log( event, media_uuid, user_uuid, properties = {}, user_increment = {} ):
     try:
         properties['media_uuid'] = media_uuid
         properties['user_uuid'] = user_uuid
@@ -353,6 +353,8 @@ def _mp_log( event, media_uuid, user_uuid, properties = {} ):
 
         if 'user_uuid' in properties:
             mp_web.track( properties['user_uuid'], event, properties )  
+            if user_increment:
+                mp_web.people_increment( properties['user_uuid'], user_increment )
 
     except Exception as e:
         print "Error sending instrumentation ( %s, %s, %s ) to mixpanel: %s" % ( media_uuid, event, properties, e )

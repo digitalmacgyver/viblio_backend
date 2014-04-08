@@ -88,7 +88,12 @@ class VWorker( swf.ActivityWorker ):
                     self.fail( details = json.dumps( { 'retry' : result.get( 'retry', False ) } ) )
                 else:
                     log.info( json.dumps( {  'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'message' : 'Task completed.' } ) )
-                    _mp_log( self.task_name + " Completed", media_uuid, user_uuid, { 'activity' : self.task_name } )
+                    if self.task_name == 'Transcode':
+                        # Special call here for transcode to increment the per user count on visible videos.
+                        _mp_log( self.task_name + " Completed", media_uuid, user_uuid, { 'activity' : self.task_name }, user_increment = { 'Video Visible' : 1 } )
+                    else:
+                        _mp_log( self.task_name + " Completed", media_uuid, user_uuid, { 'activity' : self.task_name } )
+
                     self.complete( result = json.dumps( result ) )
                 return True
         except Exception as error:
@@ -194,7 +199,7 @@ class VWorker( swf.ActivityWorker ):
         if delay_secs <= 0:
             raise ValueError('delay_secs must be > 0')
 
-def _mp_log( event, media_uuid, user_uuid, properties = {} ):
+def _mp_log( event, media_uuid, user_uuid, properties = {}, user_increment = {} ):
     try:
         properties['media_uuid'] = media_uuid
         properties['user_uuid'] = user_uuid
@@ -204,6 +209,8 @@ def _mp_log( event, media_uuid, user_uuid, properties = {} ):
 
         if 'user_uuid' in properties:
             mp_web.track( properties['user_uuid'], event, properties )
+            if user_increment:
+                mp_web.people_increment( properties['user_uuid'], user_increment )
 
     except Exception as e:
         logger.warning( json.dumps( { 
