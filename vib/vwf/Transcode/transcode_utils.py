@@ -302,7 +302,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
 
             if input_frames is not None:
                 frames = float( input_frames[-1] )
-                cmd = '/usr/local/bin/ffmpeg -i %s' % ( input_file_fs )
+                cmd = '/usr/local/bin/ffmpeg -y -i %s' % ( input_file_fs )
 
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'message' : "Running command %s to determine fps for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
@@ -319,7 +319,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                 input_length = float( frames ) / fps 
                 output_fps = float( 30 ) / input_length
 
-                cmd = 'cd %s ; /usr/local/bin/ffmpeg -i %s %s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, ffmpeg_scale, output_fps, media_uuid )
+                cmd = 'cd %s ; /usr/local/bin/ffmpeg -y -i %s %s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, ffmpeg_scale, output_fps, media_uuid )
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'message' : "Running command %s to create animated gif thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
@@ -330,7 +330,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                     log.warning( json.dumps( { 'media_uuid' : media_uuid,
                                                'message' : "Failed to generate scaled intermediate images for animated thumbnail, generating unscaled versions." } ) )
 
-                    cmd = 'cd %s ; /usr/local/bin/ffmpeg -i %s -vf scale=%s:%s,crop=%s:%s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y, output_fps, media_uuid )
+                    cmd = 'cd %s ; /usr/local/bin/ffmpeg -y -i %s -vf scale=%s:%s,crop=%s:%s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y, output_fps, media_uuid )
                     log.info( json.dumps( { 'media_uuid' : media_uuid,
                                             'message' : "Running safer command %s to create animated gif thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                     ( status, cmd_output ) = commands.getstatusoutput( cmd )

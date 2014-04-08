@@ -572,7 +572,10 @@ def _update_media_status( media_uuid, status ):
         if status == 'WorkflowComplete':
             media.status = 'complete'
         elif status == 'WorkflowFailed':
-            media.status = 'failed'
+            # If the video is already visible and we've had a failure,
+            # leave it as visible, otherwise set it to failed.
+            if media.status is not None and media.status != 'visible':
+                media.status = 'failed'
             
         mwfs = MediaWorkflowStages( workflow_stage = status )
         media.media_workflow_stages.append( mwfs )
