@@ -257,6 +257,7 @@ def run():
                         'message' : "Starting greet_new_users, message body was %s: " % body
                         } ) )
 
+            '''
             welcome_video_for_user(
                 title = 'Example Video 1',
                 user_uuid = user_uuid,
@@ -285,6 +286,41 @@ def run():
                         'format'    : 'png',
                         'face_size' : '800x800'
                         } ]
+                )
+                '''
+
+            welcome_video_for_user(
+                title = 'Welcome to Viblio',
+                description = 'Your INTELLIGENT Video Library',
+                user_uuid = user_uuid,
+                video_file = { 
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-003/video.mp4', 
+                    'bytes'     : 15820189,
+                    'format'    : 'mp4'
+                    },
+                thumbnail_file = {
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-003/thumbnail.png',
+                    'bytes'     : 3571,
+                    'format'    : 'png'
+                    },
+                poster_file = {
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-003/poster.png',
+                    'bytes'     : 10148,
+                    'format'    : 'png'
+                    },
+                face_files = [ 
+                    {
+                        'contact_name' : 'Mona',
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-003/face.png',
+                        'bytes'     : 8954,
+                        'format'    : 'png',
+                        'face_size' : '128x128'
+                        }, 
+                    ]
                 )
 
             welcome_video_for_user(
