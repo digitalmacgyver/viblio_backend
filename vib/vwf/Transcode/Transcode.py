@@ -138,6 +138,8 @@ class Transcode( VWorker ):
                 return { 'ACTIVITY_ERROR' : True, 'retry' : False }
 
             original.mimetype = 'video/%s' % exif.get( 'format', 'mp4' )
+            original.width = exif.get( 'width', None )
+            original.height = exif.get( 'height', None )
 
             # We will return to the next stage the key/bucket of the
             # "main" asset_type.
@@ -170,6 +172,8 @@ class Transcode( VWorker ):
                     uri          = output['output_file']['s3_key'],
                     location     = 'us',
                     view_count   = 0,
+                    width        = output_exif.get( 'width', None ),
+                    height       = output_exif.get( 'height', None ),
                     duration     = output_exif['duration'] )
                 media.assets.append( video_asset )
 
