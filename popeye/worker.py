@@ -348,7 +348,8 @@ class Worker( Background ):
                                 's3_key' : files['main']['key']
                                 },
                             'metadata_uri' : files['metadata']['key'],
-                            'outputs' : [ { 
+                            'outputs' : [ 
+                                { 
                                     'output_file' : {
                                         's3_bucket' : config.bucket_name,
                                         's3_key' : "%s_output.mp4" % ( files['main']['key'] ),
@@ -412,9 +413,19 @@ class Worker( Background ):
                                                 's3_key' : "%s_thumbnail_animated.gif" % ( files['main']['key'] )
                                                 }
                                             } ]
+                                    },
+                                { 
+                                    'output_file' : {
+                                        's3_bucket' : config.bucket_name,
+                                        's3_key' : "%s_output_sd.mp4" % ( files['main']['key'] ),
+                                        },
+                                    'format' : 'mp4',
+                                    'scale' : "640:-1",
+                                    'max_video_bitrate' : 1500,
+                                    'audio_bitrate' : 160,
+                                    'asset_type' : 'main_sd'
                                     }
-                                          ]
-                            } ),
+                                ] } ),
                 workflow_id=self.uuid 
                 )
                 

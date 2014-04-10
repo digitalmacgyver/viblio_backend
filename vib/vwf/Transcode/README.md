@@ -20,6 +20,7 @@ Required inputs
                 format : "mp4", 
                 max_video_bitrate: 1500, # Units are kilobits per second
                 audio_bitrate : 160,
+		scale: "640:-1", # Passed to the ffmpeg -vf scale= argument if present
                 size: "640x360", # ***NOTE:*** Presently this is ignored
                 asset_type: "main", # ***NOTE:*** There can only be one main asset type, the rest should be video
 		# An array of thumbnail images

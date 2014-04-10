@@ -1,3 +1,8 @@
+insert into asset_types ( type ) values ( 'main_sd' );
+
+
+
+==
 
 CREATE  TABLE IF NOT EXISTS `user_devices` (
   `id` INT NOT NULL AUTO_INCREMENT ,

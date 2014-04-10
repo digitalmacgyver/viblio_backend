@@ -125,6 +125,8 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     output_files_fs = []
     for idx, output in enumerate( outputs ):
         output_cmd += ffopts
+        if output.get( 'scale', None ) is not None:
+            output_cmd += ' -vf scale="%s" ' % ( output.get( 'scale' ) )
         video_bit_rate = " -crf 22 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
         audio_bit_rate = " -b:a %sk " % output.get( 'audio_bitrate', 160 )
         output_file_fs = "%s/%s_%s.%s" % ( config.transcode_dir, media_uuid, idx, output.get( 'format', 'mp4' ) )
@@ -165,14 +167,15 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                     } ) )
         s3.upload_file( output_files_fs[idx], output['output_file']['s3_bucket'], output['output_file']['s3_key'] )
 
-        thumbnails = generate_thumbnails( media_uuid, output_files_fs[idx], output['thumbnails'], input_frames )
-        output['thumbnails'] = thumbnails
-        for idx, thumbnail in enumerate( output['thumbnails'] ):
-            log.info( json.dumps( {
-                        'media_uuid' : media_uuid,
-                        'message' : "Uploading thumbnail for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
-                        } ) )
-            s3.upload_file( thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
+        if 'thumbnails' in output:
+            thumbnails = generate_thumbnails( media_uuid, output_files_fs[idx], output['thumbnails'], input_frames )
+            output['thumbnails'] = thumbnails
+            for idx, thumbnail in enumerate( output['thumbnails'] ):
+                log.info( json.dumps( {
+                            'media_uuid' : media_uuid,
+                            'message' : "Uploading thumbnail for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
+                            } ) )
+                s3.upload_file( thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
 
     return outputs
 

@@ -34,13 +34,15 @@ class Transcode( VWorker ):
                       format : "mp4", 
                       max_video_bitrate: 1500,
                       audio_bitrate : 160,
-                      size: "640x360",
+                      scale: "640:-1", # Passed to ffmpeg -vf scale argument, overrides size
+                      size: "640x360", # Currently ignored
                       asset_type: "main",
                       thumbnails : [ {
                         times : [0.5], size: "320x240", label: "poster",
                         format : "png",
                         output_file: { s3_bucket, s3_key } } ]
                      } ] }
+                     # If multiple output_files are present, only one need have thumbnails.
         '''
         try:
             media_uuid = options['media_uuid']
@@ -177,7 +179,7 @@ class Transcode( VWorker ):
                     duration     = output_exif['duration'] )
                 media.assets.append( video_asset )
 
-                for thumbnail in output['thumbnails']:
+                for thumbnail in output.get( 'thumbnails', [] ):
                     thumbnail_uuid = str( uuid.uuid4() )
 
                     log.info( json.dumps( {
@@ -278,7 +280,7 @@ class Transcode( VWorker ):
                                         } ) )
                             os.remove( exif_file )
 
-                for thumbnail in output['thumbnails']:
+                for thumbnail in output.get( 'thumbnails', [] ):
                     if 'output_file_fs' in thumbnail:
                         if os.path.exists( thumbnail['output_file_fs'] ):
                             log.debug( json.dumps( {
