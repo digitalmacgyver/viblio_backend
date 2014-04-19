@@ -1,3 +1,8 @@
+
+
+
+==
+
 insert into asset_types ( type ) values ( 'main_sd' );
 
 
