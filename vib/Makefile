@@ -10,7 +10,7 @@ FILES = $(shell git ls-tree -r master --name-only)
 #   sudo make install_deps
 #
 PYPKGS=\
-	boto \
+	boto==2.25.0 \
 	web.py \
 	wsgilog \
 	sqlalchemy==0.9.1 \
