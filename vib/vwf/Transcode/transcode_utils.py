@@ -256,9 +256,9 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
             video_aspect_ratio = video_x / float( video_y )
     
             if video_aspect_ratio > thumbnail_aspect_ratio:
-                ffmpeg_scale += ' -vf scale=-1:%s,crop=%s:%s' % ( scaled_y, thumbnail_x, thumbnail_y )
+                ffmpeg_scale += ' -vf "scale=trunc(oh/a/2)*2:%s,crop=%s:%s"' % ( scaled_y, thumbnail_x, thumbnail_y )
             else:
-                ffmpeg_scale += ' -vf scale=%s:-1,crop=%s:%s' % ( scaled_x, thumbnail_x, thumbnail_y )
+                ffmpeg_scale += ' -vf "scale=%s:trunc(ow/a/2)*2,crop=%s:%s"' % ( scaled_x, thumbnail_x, thumbnail_y )
         else:
             ffmpeg_scale += ' -vf scale=%s:%s,crop=%s:%s' % ( thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y )
 

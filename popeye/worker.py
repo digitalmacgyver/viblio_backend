@@ -420,7 +420,7 @@ class Worker( Background ):
                                         's3_key' : "%s_output_sd.mp4" % ( files['main']['key'] ),
                                         },
                                     'format' : 'mp4',
-                                    'scale' : "640:-1",
+                                    'scale' : "640:trunc(ow/a/2)*2",
                                     'max_video_bitrate' : 1500,
                                     'audio_bitrate' : 160,
                                     'asset_type' : 'main_sd'
