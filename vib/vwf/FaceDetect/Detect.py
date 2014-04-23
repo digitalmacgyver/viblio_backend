@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import boto
+import commands
 import hashlib
 import json
 import logging
@@ -59,16 +60,19 @@ class Detect( VWorker ):
         try:
             cmd = 'LD_LIBRARY_PATH=/deploy/vatools/lib /deploy/vatools/bin/viblio_video_analyzer'
             opts = ' -f %s --analyzers FaceAnalysis --face_thumbnail_path %s  --filename_prefix %s' % ( file_name, working_dir, media_uuid )
-            os.system( cmd + opts )
-            log.info( json.dumps( {  'media_uuid' : media_uuid,
-                                     'user_uuid'  : user_uuid,
-                                     'FD command' : cmd + opts,
-                                     'message' : "Face Detect Program successful for media_uuid: %s for user: %s" % ( media_uuid, user_uuid ) } ) )
+            ( status, output ) = commands.getstatusoutput( cmd + opts )
+            if status == 0 and ( output.find( "NleDetectFaces() failed" ) == -1 ):
+                log.info( json.dumps( {  'media_uuid' : media_uuid,
+                                         'user_uuid'  : user_uuid,
+                                         'FD command' : cmd + opts,
+                                         'message' : "Face Detect Program successful for media_uuid: %s for user: %s" % ( media_uuid, user_uuid ) } ) )
+            else:
+                raise Exception( "Error running %s, message was: %s" % ( cmd + opts, output ) )
         except Exception as e:
             log.error( json.dumps( { 'media_uuid' : media_uuid,
                                      'user_uuid' : user_uuid,
                                      'Face Detect Command' : cmd,
-                                     'message' : "Face Detect Program failed for media_uuid: %s for user: %s" % ( media_uuid, user_uuid ) } ) )
+                                     'message' : "Face Detect Program failed for media_uuid: %s for user: %s, error: %s" % ( media_uuid, user_uuid, e ) } ) )
             raise
 
         # Process output json file from Face Detection program
