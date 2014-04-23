@@ -4,7 +4,7 @@ import datetime
 import json
 import logging
 from optparse import OptionParser
-from sqlalchemy import and_, func, not_
+from sqlalchemy import and_, func, not_, or_
 import sys
 import time
 import uuid
@@ -63,7 +63,7 @@ def update_orphan_faces( hours=24*3 ):
                 MediaAssetFeatures.contact_id == None, 
                 MediaAssets.asset_type == 'face',
                 MediaAssetFeatures.feature_type == 'face',
-                not_( MediaAssetFeatures.recognition_result.in_( [ 'bad_track', 'bad_face', 'two_face', 'not_face' ] ) ),
+                or_( MediaAssetFeatures.recognition_result == None, not_( MediaAssetFeatures.recognition_result.in_( [ 'bad_track', 'bad_face', 'two_face', 'not_face' ] ) ) ),
                 MediaAssetFeatures.created_date <= from_when
                 ) ).group_by(
                 MediaAssetFeatures.media_id,
