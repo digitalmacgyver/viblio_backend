@@ -25,7 +25,7 @@ PIP_PYPKGS=\
 	config
 
 install_deps:
-	/usr/bin/apt-get -y install python-pip python-dev
+	/usr/bin/apt-get -y install python-pip python-dev python-scipy
 	/usr/bin/easy_install $(PYPKGS)
 	/usr/local/bin/pip install $(PIP_PYPKGS)
 	/usr/bin/apt-get -y install python-mysqldb
