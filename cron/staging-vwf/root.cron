@@ -6,6 +6,7 @@
 */5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app object_classification
 */5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app soccer_model
 */5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app christmas_model
+*/5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app utils
 #
 # Check for vatools
 */5 * * * * /usr/local/bin/check-and-install-software.pl -db staging -app vatools
