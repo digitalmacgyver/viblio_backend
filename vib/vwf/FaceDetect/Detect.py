@@ -97,7 +97,15 @@ class Detect( VWorker ):
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid'  : user_uuid,
                                     'message' : "Face Detect didn't find faces for media_uuid: %s for user: %s" % ( media_uuid, user_uuid ) } ) )
-            db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+            try:
+                db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
+            except Exception as e:
+                log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid'  : user_uuid,
+                                        'message' : "Failed to update media status, error was: %s" % ( e ) } ) )
+                
+                return { 'ACTIVITY_ERROR' : True, 'retry' : False }
+            
             return faces_info
         else:
             # Process faces
