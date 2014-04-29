@@ -89,7 +89,7 @@ VPW = {
         'version'         : version,
         'task_list'       : 'FaceDetectTask',
         'prerequisites'   : [ 'Transcode' ],
-        'failure_retries' : 3,
+        'failure_retries' : 2,
         'timeout_retries' : [1, 2, 4],
         'default_task_schedule_to_close_timeout' : str( 15*60*60 ),
         'default_task_schedule_to_start_timeout' : str( 15*60*60),
