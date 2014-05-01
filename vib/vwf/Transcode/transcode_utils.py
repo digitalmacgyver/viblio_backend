@@ -320,9 +320,9 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                     raise Exception( 'Could not determine fps to generate animated thumbnail.' )
 
                 input_length = float( frames ) / fps 
-                output_fps = float( 30 ) / input_length
+                output_fps = float( 10 ) / input_length
 
-                cmd = 'cd %s ; /usr/local/bin/ffmpeg -y -i %s %s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, ffmpeg_scale, output_fps, media_uuid )
+                cmd = 'cd %s ; /usr/local/bin/ffmpeg -y -i %s %s,fps=%s -f image2 %s-thumb-%%04d.png' % ( config.transcode_dir, input_file_fs, ffmpeg_scale, output_fps, media_uuid )
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'message' : "Running command %s to create animated gif thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
@@ -333,7 +333,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                     log.warning( json.dumps( { 'media_uuid' : media_uuid,
                                                'message' : "Failed to generate scaled intermediate images for animated thumbnail, generating unscaled versions." } ) )
 
-                    cmd = 'cd %s ; /usr/local/bin/ffmpeg -y -i %s -vf scale=%s:%s,crop=%s:%s,fps=%s -f image2 %s-thumb-%%04d.jpg' % ( config.transcode_dir, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y, output_fps, media_uuid )
+                    cmd = 'cd %s ; /usr/local/bin/ffmpeg -y -i %s -vf scale=%s:%s,crop=%s:%s,fps=%s -f image2 %s-thumb-%%04d.png' % ( config.transcode_dir, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y, output_fps, media_uuid )
                     log.info( json.dumps( { 'media_uuid' : media_uuid,
                                             'message' : "Running safer command %s to create animated gif thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                     ( status, cmd_output ) = commands.getstatusoutput( cmd )
@@ -345,14 +345,14 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                                                  'message' : "Failed to generate imtermediate images for animated thumbnail for media_uuid %s, video file %s with command %s, error was ...%s" % ( media_uuid, input_file_fs, cmd, cmd_output[-256:] ) } ) )
                         raise Exception( 'Failed to generate animated thumbnail ...%s' % cmd_output[-256:] )
 
-                cmd = 'cd %s ; /usr/bin/convert -delay 100 -loop 0 %s-thumb-*.jpg %s' % ( config.transcode_dir, media_uuid, thumbnail_file_fs )
+                cmd = 'cd %s ; /usr/bin/convert -delay 60 -loop 0 %s-thumb-*.png %s' % ( config.transcode_dir, media_uuid, thumbnail_file_fs )
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'message' : "Running command %s to produce animated gif for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
                 log.debug( json.dumps( { 'media_uuid' : media_uuid,
                                          'message' : "Animated gif thumbnail composition command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, cmd_output ) } ) )
 
-                cmd = 'cd %s ; rm %s-thumb-*.jpg' % ( config.transcode_dir, media_uuid )
+                cmd = 'cd %s ; rm %s-thumb-*.png' % ( config.transcode_dir, media_uuid )
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'message' : "Running command %s to clean up thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )          
