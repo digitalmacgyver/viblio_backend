@@ -1618,6 +1618,8 @@ START TRANSACTION;
 USE `video_dev`;
 INSERT INTO `video_dev`.`feature_types` (`type`, `created_date`, `updated_date`) VALUES ('face', NULL, NULL);
 INSERT INTO `video_dev`.`feature_types` (`type`, `created_date`, `updated_date`) VALUES ('activity', NULL, NULL);
+INSERT INTO `video_dev`.`feature_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_face', NULL, NULL);
+INSERT INTO `video_dev`.`feature_types` (`type`, `created_date`, `updated_date`) VALUES ('tag', NULL, NULL);
 
 COMMIT;
 
