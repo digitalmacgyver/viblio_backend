@@ -1,4 +1,6 @@
+alter table media add column geo_city varchar(128) null default null after lng;
 
+alter table media add column geo_address varchar(256) null default null after lng;
 
 
 ==

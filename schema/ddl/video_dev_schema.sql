@@ -90,6 +90,8 @@ CREATE  TABLE IF NOT EXISTS `video_dev_1`.`media` (
   `view_count` INT NULL DEFAULT NULL ,
   `lat` DECIMAL(11,8) NULL DEFAULT NULL ,
   `lng` DECIMAL(11,8) NULL DEFAULT NULL ,
+  `geo_city` VARCHAR(128) NULL DEFAULT NULL ,
+  `geo_address` VARCHAR(256) NULL DEFAULT NULL ,
   `status` VARCHAR(32) NULL DEFAULT NULL ,
   `is_viblio_created` TINYINT(1) NOT NULL DEFAULT false ,
   `created_date` DATETIME NULL DEFAULT NULL ,
