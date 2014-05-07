@@ -26,11 +26,6 @@ if not os.path.exists(folder_name):
 	os.makedirs(folder_name)
 error_media_uuids = set(map(lambda x: x['event']['json']['activity_log']['media_uuid'], errors))
 
-print(errors)
-
-import sys
-sys.exit(0)
-
 print(str(len(error_media_uuids)) + ' error logs found.')
 for media_uuid in error_media_uuids:
 	print('Fetching logs of media_uuid:`'+media_uuid+'`.')
