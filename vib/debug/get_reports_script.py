@@ -10,7 +10,7 @@ print = logging.info
 ##############################################################
 
 # Search parameters
-n_hours = 24*1
+n_hours = 24*3
 user = 'mehran'
 password = '87kE8V56'
 quiet = False # Log info
@@ -25,6 +25,11 @@ folder_name = './reports'
 if not os.path.exists(folder_name):
 	os.makedirs(folder_name)
 error_media_uuids = set(map(lambda x: x['event']['json']['activity_log']['media_uuid'], errors))
+
+print(errors)
+
+import sys
+sys.exit(0)
 
 print(str(len(error_media_uuids)) + ' error logs found.')
 for media_uuid in error_media_uuids:

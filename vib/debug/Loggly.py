@@ -31,7 +31,7 @@ class Loggly:
 #Returns all ERROR logs from 'n' hours ago until now
 # output is a JSON object (actually dict)
 	def get_errors(self, n_hours):
-		query_string = 'logtype:json AND json.level:ERROR AND json.activity_log.media_uuid:*'
+		query_string = 'logtype:json AND json.level:ERROR AND json.activity_log.media_uuid:* AND NOT json.activity_log.message:"*committed suicide" and not json.activity_log.user_uuid:"7CA48DDC-6D13-11E3-87C9-D6BD866DC9DF"'
 		n_hours = '-' + str(n_hours)+'h'
 		event_endpoint_obj = self.query(self.username, self.password, n_hours, self.n, query_string)
 		if event_endpoint_obj['total_events'] > self.n:

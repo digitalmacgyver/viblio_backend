@@ -99,7 +99,7 @@ class VPDecider( swf.Decider ):
                         } ) )
             _mp_log( "Workflow_Complete", media_uuid, user_uuid, user_increment = { 'Video Completed' : 1 } )
             decisions.complete_workflow_execution()
-            _update_media_status( media_uuid, 'WorkflowComplete' )
+            _update_media_status( media_uuid, 'WorkflowComplete', user_uuid )
         else:
             # We are not done.  See if we can start anything or if we
             # are in an error state and need to terminate.
@@ -136,7 +136,7 @@ class VPDecider( swf.Decider ):
 
                         decisions.fail_workflow_execution( reason=reason[:250] )
                         failed = True
-                        _update_media_status( media_uuid, 'WorkflowFailed' )
+                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid )
 
                     elif not details[-1].get( 'retry', False ):
                         reason = "Most recent failure for task %s said not to retry, terminating workflow." % task
@@ -153,7 +153,7 @@ class VPDecider( swf.Decider ):
 
                         decisions.fail_workflow_execution( reason=reason[:250] )
                         failed = True
-                        _update_media_status( media_uuid, 'WorkflowFailed' )
+                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid )
                     else:
 
                         log.info( json.dumps( {
@@ -209,7 +209,7 @@ class VPDecider( swf.Decider ):
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.fail_workflow_execution( reason=reason[:250] )
                         failed = True
-                        _update_media_status( media_uuid, 'WorkflowFailed' )
+                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid )
                     else:
                         log.warning( json.dumps( {
                                     'media_uuid' : media_uuid,
@@ -317,7 +317,7 @@ class VPDecider( swf.Decider ):
             log.error( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'error_code' : 'max_timeouts', 'message' : reason}))
             _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'no_lock retries exceeded', 'activity' : task, 'type' : 'fatal_error' } )
             decisions.fail_workflow_execution(reason = reason[:250])
-            _update_media_status( media_uuid, 'WorkflowFailed' )
+            _update_media_status( media_uuid, 'WorkflowFailed', user_uuid )
             return True
         else:
             message = 'Retrying task %s for time %d out of %d allowed lock retries' % (task, len(details), VPW[task]['lock_retries'])
@@ -559,12 +559,13 @@ def _get_input( task, completed_tasks ):
         task_input[prerequisite] = completed_tasks.get( prerequisite, {} )
     return task_input
         
-def _update_media_status( media_uuid, status ):
+def _update_media_status( media_uuid, status, user_uuid ):
     orm = vib.db.orm.get_session()
     try:
         orm.commit()
     except Exception as e:
         log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'user_uuid' : user_uuid,
                                  'message' : "Failed to pre-commit orm for media status to %s for media_uuid %s, error was: %s" % ( status, media_uuid, e ) } ) )
         orm.rollback()
 
@@ -586,6 +587,7 @@ def _update_media_status( media_uuid, status ):
 
     except Exception as e:
         log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'user_uuid' : user_uuid,
                                  'message' : "Failed to update media status to %s for media_uuid %s, error was: %s" % ( status, media_uuid, e ) } ) )
 
     return
