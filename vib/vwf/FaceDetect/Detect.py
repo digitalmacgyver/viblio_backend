@@ -59,7 +59,7 @@ class Detect( VWorker ):
         # Run Viblio Face Detection and Tracking Program
         try:
             cmd = 'LD_LIBRARY_PATH=/deploy/vatools/lib /deploy/vatools/bin/viblio_video_analyzer'
-            opts = ' -f %s --analyzers FaceAnalysis --face_thumbnail_path %s  --filename_prefix %s' % ( file_name, working_dir, media_uuid )
+            opts = ' -f %s --analyzers FaceAnalysis --face_thumbnail_path %s  --filename_prefix %s  --discarded_tracker_frequency 5000 --maximum_concurrent_trackers 10 ' % ( file_name, working_dir, media_uuid )
             ( status, output ) = commands.getstatusoutput( cmd + opts )
             if status == 0 and ( output.find( "failed (result = -200)" ) == -1 ):
                 log.info( json.dumps( {  'media_uuid' : media_uuid,
