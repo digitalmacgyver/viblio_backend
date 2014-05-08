@@ -61,6 +61,8 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
  
     * description        - 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.'
     * filename           - ''
+    * geo_address        - '1561-1599 Middlefield Road, Palo Alto, CA 94301, USA'
+    * geo_city           - 'Palo Alto'
     * lat                - 37.442174
     * lng                - -122.143199
     * poster_mimetype    - 'image/png'
@@ -77,6 +79,8 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
     try:
         description         = options.get( 'description', 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.' )
         filename            = options.get( 'filename', '' )
+        geo_address         = options.get( 'geo_address', '1561-1599 Middlefield Road, Palo Alto, CA 94301, USA' )
+        geo_city            = options.get( 'geo_city', 'Palo Alto' )
         lat                 = options.get( 'lat', 37.442174 )
         lng                 = options.get( 'lat', -122.143199 )
         poster_mimetype     = options.get( 'poster_mimetype', 'image/png' )
