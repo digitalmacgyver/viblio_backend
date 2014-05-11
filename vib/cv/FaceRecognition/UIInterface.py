@@ -39,7 +39,7 @@ def delete_contact( user_id, contact_id ):
     except Exception as e:
         log.error( json.dumps( { 'user_id' : user_id,
                                  'contact_id' : contact_id, 
-                                 'message' : "Failed to delete contact: %e" % ( e ) } ) )
+                                 'message' : "Failed to delete contact: %s" % ( e ) } ) )
         raise
 
 def delete_faces_for_contact( user_id, contact_id, media_asset_feature_ids ):
@@ -72,7 +72,7 @@ def delete_faces_for_contact( user_id, contact_id, media_asset_feature_ids ):
     except Exception as e:
         log.error( json.dumps( { 'user_id' : user_id,
                                  'contact_id' : contact_id, 
-                                 'message' : "Failed to delete faces for contact: %e" % ( e ) } ) )
+                                 'message' : "Failed to delete faces for contact: %s" % ( e ) } ) )
         raise
 
 def move_faces( user_id, old_contact_id, new_contact_id, media_asset_feature_ids ):
