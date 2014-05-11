@@ -260,9 +260,6 @@ def recognize_for_user( user_id, url, namespace = None ):
     r = requests.post( "http://rekognition.com/func/api/", data )
     result = r.json()
 
-    print "RECOGNITION RESULT: %s" % ( result )
-
-
     if result['usage']['status'] != 'Succeed.':
         return None
     elif ( len( result['face_detection'] ) == 1 ) and ( 'matches' in result['face_detection'][0] ):

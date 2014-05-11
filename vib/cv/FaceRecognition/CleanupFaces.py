@@ -47,7 +47,7 @@ def run():
     try:
         orm = vib.db.orm.get_session()
 
-        missing_contacts = orm.query( Faces ).filter( not_( Faces.contact_id.in_( orm.query( Contacts.id ) ) ) )
+        missing_contacts = orm.query( Faces2 ).filter( not_( Faces2.contact_id.in_( orm.query( Contacts.id ) ) ) )
 
         deleted_contacts = {}
 
