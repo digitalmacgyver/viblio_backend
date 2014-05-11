@@ -19,7 +19,7 @@ def _add_face( user_id, contact_id, face ):
     try:
         log.info( json.dumps( { 'user_id'    : user_id,
                                 'contact_id' : contact_id,
-                                'message'    : 'Adding face: %s' % ( face ) } ) )
+                                'message'    : 'DBUTILS Adding face: %s' % ( face ) } ) )
 
         orm = vib.db.orm.get_session()
 
@@ -205,8 +205,10 @@ def _get_all_faces_for_user( user_id ):
     names.'''
 
     try:
+        '''
         log.info( json.dumps( { 'user_id'    : user_id,
                                 'message'    : 'Getting list of faces for user_id %s' % ( user_id ) } ) )
+        '''
 
         orm = vib.db.orm.get_session()
     
@@ -230,9 +232,11 @@ def _get_contact_faces_for_user( user_id, contact_id ):
     names.'''
 
     try:
+        '''
         log.info( json.dumps( { 'user_id'    : user_id,
                                 'contact_id' : contact_id,
                                 'message'    : 'Getting list of faces for user_id %s, contact_id %s' % ( user_id, contact_id ) } ) )
+        '''
 
         orm = vib.db.orm.get_session()
     

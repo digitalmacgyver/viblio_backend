@@ -137,21 +137,17 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
             bad_reason = element['reason']
             bad_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == bad_track['track_id'] ) )
             for bad_feature in bad_features:
-                log.info( json.dumps( {
-                            'user_uuid' : user_uuid,
-                            'media_uuid' : media_uuid,
-                            'message' : "Labeling media_asset_feature.id %d of track %d as a %s track." % ( bad_feature.id, bad_track['track_id'], bad_reason )
-                            } ) )
+                log.info( json.dumps( { 'user_uuid' : user_uuid,
+                                        'media_uuid' : media_uuid,
+                                        'message' : "Labeling media_asset_feature.id %d of track %d as a %s track." % ( bad_feature.id, bad_track['track_id'], bad_reason ) } ) )
                 bad_feature.recognition_result = bad_reason
 
         # Handle new contacts
         for uuid, tracks in new_faces.items():
-            log.info( json.dumps( {
-                        'user_uuid' : user_uuid,
-                        'media_uuid' : media_uuid,
-                        'contact_uuid' : uuid,
-                        'message' : "Creating new contact with uuid %s for user_id %s " % ( uuid, user_id )
-                        } ) )
+            log.info( json.dumps( { 'user_uuid' : user_uuid,
+                                    'media_uuid' : media_uuid,
+                                    'contact_uuid' : uuid,
+                                    'message' : "Creating new contact with uuid %s for user_id %s " % ( uuid, user_id ) } ) )
 
             new_contact = Contacts( 
                 uuid        = uuid, 
@@ -160,13 +156,12 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
                 )
 
             for track in tracks:
-                log.info( json.dumps( {
-                            'user_uuid' : user_uuid,
-                            'media_uuid' : media_uuid,
-                            'contact_uuid' : uuid,
-                            'track_id' : track['track_id'],
-                            'message' : "Associating new user %s with track_id %d" % ( uuid, track['track_id'] )
-                        } ) )
+                log.info( json.dumps( { 'user_uuid' : user_uuid,
+                                        'media_uuid' : media_uuid,
+                                        'contact_uuid' : uuid,
+                                        'track_id' : track['track_id'],
+                                        'message' : "Associating new user %s with track_id %d" % ( uuid, track['track_id'] ) } ) )
+
                 new_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == track['track_id'] ) )[:]
                 new_contact.media_asset_features.extend( new_features )
                 for feature in new_features:

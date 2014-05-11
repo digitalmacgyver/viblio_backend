@@ -92,7 +92,7 @@ def _delete_db_mismatch( user_id, contact_id, db_faces, contact_faces ):
         if face['idx'] not in rec_indices:
             log.info( json.dumps( { 'user_id'    : user_id,
                                     'contact_id' : contact_id,
-                                    'message'    : "DB: Deleting face: %s" % ( _format_face( face ) ) } ) )
+                                    'message'    : "RECONCILITAION Deleting db only face: %s" % ( _format_face( face ) ) } ) )
             recog_db._delete_faces( [ face ] )
 
     return
@@ -120,7 +120,7 @@ def _delete_rekog_mismatch( user_id, contact_id, db_faces, contact_faces ):
                 result = rekog.delete_face_for_user( user_id, face['tag'], idx, config.recog_v2_namespace )
                 log.info( json.dumps( { 'user_id'    : user_id,
                                         'contact_id' : contact_id,
-                                        'message'    : "Deleted ReKog only face with idx: %s tag: %s" % ( idx, face['tag'] ) } ) )
+                                        'message'    : "RECONCILIATION Deleted ReKog only face with idx: %s tag: %s" % ( idx, face['tag'] ) } ) )
 
     return deleted
 
