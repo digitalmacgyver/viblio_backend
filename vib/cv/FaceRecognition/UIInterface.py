@@ -115,7 +115,7 @@ def move_faces( user_id, old_contact_id, new_contact_id, media_asset_feature_ids
         return
     except Exception as e:
         log.error( json.dumps( { 'user_id' : user_id,
-                                 'message' : "Failed to move faces: %e" % ( e ) } ) )
+                                 'message' : "Failed to move faces: %s" % ( e ) } ) )
         raise
 
 def __get_sqs():
@@ -145,7 +145,7 @@ def run():
         try:
             log.debug( json.dumps( { 'message' : "Options are %s: " % options } ) )
         except Exception as e:
-            log.debug( json.dumps( { 'message' : "Error converting options to string: %e" % e } ) )
+            log.debug( json.dumps( { 'message' : "Error converting options to string: %s" % e } ) )
 
         action = options['action']
         user_id = int( options['user_id'] )
