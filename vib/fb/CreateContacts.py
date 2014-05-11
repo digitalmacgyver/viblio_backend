@@ -19,8 +19,6 @@ from sqlalchemy import and_
 import time
 import uuid
 
-import vib.cv.FaceRecognition.api as rec
-
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
