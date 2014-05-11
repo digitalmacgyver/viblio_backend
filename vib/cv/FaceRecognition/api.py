@@ -57,7 +57,7 @@ def add_faces( user_id, contact_id, faces ):
     unchanged return value.
     
     Not all faces will be added, if a face can not be detected, or the
-    face properties are not amenible to recognitino due to quality or
+    face properties are not amenible to recognition due to quality or
     pose, this face will be returned in the unchanged return value.
 
     In the return value faces for which the recognition system did not
@@ -137,7 +137,7 @@ def add_faces( user_id, contact_id, faces ):
                     else:
                         log.debug( json.dumps( { 'user_id'    : user_id,
                                                  'contact_id' : contact_id,
-                                                 'message'    : "No face found by ReKognition, skipping." } ) )
+                                                 'message'    : "No face found by Recognition, skipping." } ) )
                         unchanged.append( face )
 
             except Exception as e:
@@ -421,7 +421,7 @@ def recognize_face( user_id, face_url ):
 
     Otherwise, an array with 0-3 augmented faces is returned, in
     descending order of match confidence.  Each such face corresponds
-    to a disntinct contact_id and has an additional
+    to a distinct contact_id and has an additional
     'recognition_confidence' key which is a floating point value from
     0-1, where higher values indicate more confidence. 
 

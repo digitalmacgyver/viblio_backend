@@ -15,10 +15,6 @@ The face recognition system uses the following terminology:
   one user, and consider only faces and contacts for that user.
   * Users offer a way to partition the face recognition system into
     independent pieces.
-* Score: Each face added to the system must include a score.  This
-  score is used by the face recognition system to identify the "best"
-  faces to be used internally for recognition.  Higher values indicate
-  better faces.
 
 Efficiency / Performance
 ------------------------
@@ -91,6 +87,8 @@ All these calls globally serialize on the user in question.
   * Returns either None or the following data structure
     * Returns None if no face was detected in the image at ```face_url```
     * If a face was detected, returns this data structure: ```{ 'recognize_id' : 123, 'faces' : [ array of 0-3 face data structures ] }```
+      * Each returned face is an arbitrary face for the
+        ```contact_id``` which was the 1st, 2nd, or 3rd best match
       * ```recognize_id``` is an integer that is used to provide
         feedback to FaceRecognition system for reporting, see
         ```recognize_feedback``` and ```recognize_stats``` below
@@ -191,9 +189,6 @@ during ```add_faces```.
 * external_id - Either None, or an integer value - this is a
   convenience variable that allows a caller of the recognition API to
   label a particular face in some way meaningful to them
-* score - floating point value specifying how "good" this face is,
-  higher values are better - will be used by face recognition to
-  select the best faces to use for matching
 
 *Public fields set by the Recognition System:* Once a face has been added, it
  will have these additional fields (available through the return
@@ -206,9 +201,9 @@ during ```add_faces```.
 *Private fields set by the Recognition System:*
 
 The Recognition System will set a number of additional fields in the
-Face data structure for its own purposes, these include: l1_id,
-l1_tag, l2_id, l2_tag, \_sa_instance_state, created_date, updated_date.
-These values should not be relied upon or changed by API callers.
+Face data structure for its own purposes, these include: idx,
+\_sa_instance_state, created_date, updated_date.  These values should
+not be relied upon or changed by API callers.
 
 
 ### Side Effects

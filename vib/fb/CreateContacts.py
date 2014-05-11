@@ -19,6 +19,8 @@ from sqlalchemy import and_
 import time
 import uuid
 
+import vib.cv.FaceRecognition.api as rec
+
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
@@ -49,10 +51,9 @@ def get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token ):
     'name':... } pairs.'''
 
     try:
-        data = {
-            'access_token' : fb_access_token,
-            'fields' : 'id,name,friends'
-            }
+        data = { 'access_token' : fb_access_token,
+                 'fields' : 'id,name,friends' 
+                 }
 
         r = requests.get( config.fb_endpoint + '%s/' % fb_user_id, params=data )
     
@@ -64,10 +65,8 @@ def get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token ):
         return friends
 
     except Exception as e:
-        log.error( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "Exception was: %s" % e
-                    } ) )
+        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                 'message' : "Exception was: %s" % e } ) )
         raise
 
 def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_token ):
@@ -90,36 +89,21 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
 
         if fb_user_id in existing_contacts:
             skip_self = True
-            log.warning( json.dumps( {
-                        'user_uuid' : user_uuid,
-                        'message' : "Found self %s in contact list, skipping." % fb_user_id
-                        } ) )
-
+            log.warning( json.dumps( { 'user_uuid' : user_uuid,
+                                       'message' : "Found self %s in contact list, skipping." % fb_user_id } ) )
 
         for friend in fb_friends:
             if friend['id'] in existing_contacts:
-                log.warning( json.dumps( {
-                            'user_uuid' : user_uuid,
-                            'message' : "Found existing contact %s in friend list, skipping." % friend['id']
-                            } ) )
+                log.warning( json.dumps( { 'user_uuid' : user_uuid,
+                                           'message' : "Found existing contact %s in friend list, skipping." % friend['id'] } ) )
             else:
                 crawl_friends.append( friend )
 
                 
         crawl_results = rekog.crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, crawl_friends, skip_self=skip_self )
 
-        log.debug( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "ReKognition FaceCrawl results: %s" % crawl_results
-                    } ) )
-
-        # Train on those people (and anyone else present)
-        train_results = rekog.train_for_user( user_uuid )
-    
-        log.debug( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "ReKognition FaceTrain results: %s" % train_results
-                    } ) )
+        log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                 'message' : "ReKognition FaceCrawl results: %s" % crawl_results } ) )
 
         # Get a list of all the people in { tag, url, index : [#,
         # #...] } format
@@ -128,10 +112,8 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
         # where name has spaces replace with underscores
         tagged_people = rekog.visualize_for_user( user_uuid )
     
-        log.debug( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "ReKognition FaceVisualize results: %s" % tagged_people
-                    } ) )
+        log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                 'message' : "ReKognition FaceVisualize results: %s" % tagged_people } ) )
 
         results = []
 
@@ -153,20 +135,16 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
 
             rename_result = rekog.rename_tag_for_user( user_uuid, old_tag, facebook_id )
 
-            log.debug( json.dumps( {
-                        'user_uuid' : user_uuid,
-                        'message' : "Found name: %s, facebook_id: %s, url: %s" % ( name, facebook_id, person['url'] )
-                        } ) )
+            log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                     'message' : "Found name: %s, facebook_id: %s, url: %s" % ( name, facebook_id, person['url'] ) } ) )
 
             results.append( { 'name' : name, 'facebook_id' : facebook_id, 'rekog_url' : person['url'] } )
 
         return results
     
     except Exception as e:
-        log.error( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "Exception was: %s" % e
-                    } ) )
+        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                 'message' : "Exception was: %s" % e } ) )
         raise
 
 def download_faces_for_user( user_uuid, people, directory='/tmp/fb_faces' ):
@@ -260,10 +238,8 @@ def get_existing_fb_contacts_for_user( user_uuid ):
         existing_contacts = {}
         for contact in contacts:
             if contact.provider_id is None:
-                log.error( json.dumps( {
-                            'user_uuid' : user_uuid,
-                            'message' : "Found contact id %s for user_uuid %s with provider of facebook but no provider_id" % ( contact.id, user_uuid )
-                            } ) )
+                log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                         'message' : "Found contact id %s for user_uuid %s with provider of facebook but no provider_id" % ( contact.id, user_uuid ) } ) )
             else:
                 existing_contacts[ contact.provider_id ] = contact
 
@@ -272,10 +248,8 @@ def get_existing_fb_contacts_for_user( user_uuid ):
         return existing_contacts
     except Exception as e:
         orm.rollback()
-        log.error( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "Exception was: %s" % e
-                    } ) )
+        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                 'message' : "Exception was: %s" % e } ) )
         raise
 
 def add_contacts_for_user( user_uuid, people, fb_friends ):
@@ -307,10 +281,8 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
 
         user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
 
-        log.debug( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "Existing contacts keys are: %s" % existing_contacts.keys()
-                    } ) )
+        log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                 'message' : "Existing contacts keys are: %s" % existing_contacts.keys() } ) )
 
         created_picture_contacts = []
         picture_created = {}
@@ -321,10 +293,8 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
         for friend in people:
             if friend['facebook_id'] not in existing_contacts:
 
-                log.debug( json.dumps( {
-                            'user_uuid' : user_uuid,
-                            'message' : "Inserting new picture contact for id/uuid %s/%s on %s: " % ( user.id, user.uuid, friend['facebook_id'] )
-                            } ) )
+                log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                         'message' : "Inserting new picture contact for id/uuid %s/%s on %s: " % ( user.id, user.uuid, friend['facebook_id'] ) } ) )
 
                 picture_created[ friend['facebook_id'] ] = True
                 media_uuid = str( uuid.uuid4() )
@@ -431,24 +401,16 @@ def run():
         body = message.get_body()
         
         try:
-            log.debug( json.dumps( {
-                        'message' : "Starting CreateContacts, message body was %s: " % body
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Starting CreateContacts, message body was %s: " % body } ) )
         except Exception as e:
-            log.debug( json.dumps( {
-                        'message' : "Error converting body to string, error was: %s" % e
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Error converting body to string, error was: %s" % e } ) )
 
         options = json.loads( body )
 
         try:
-            log.debug( json.dumps( {
-                        'message' : "Options are %s: " % options
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Options are %s: " % options } ) )
         except Exception as e:
-            log.debug( json.dumps( {
-                        'message' : "Error converting options to string: %e" % e
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Error converting options to string: %s" % e } ) )
         
         fb_access_token = options['fb_access_token']
         fb_user_id      = options['facebook_id']
@@ -458,39 +420,29 @@ def run():
         if fb_recent_link_request( user_uuid ):
         #if True:
             friends = get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token )
-            log.debug( json.dumps( {
-                        'user_uuid' : user_uuid,
-                        'message' : "Facebook friends for user %s/%s were %s" % ( user_uuid, fb_user_id, friends ) 
-                        } ) )
+            log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                     'message' : "Facebook friends for user %s/%s were %s" % ( user_uuid, fb_user_id, friends ) } ) )
 
             people = update_rekognition_for_user( user_uuid, fb_user_id, friends, fb_access_token )
             # DEBUG - keep our API limits low for testing.
             #people = update_rekognition_for_user( user_uuid, fb_user_id, [] )
-            log.debug( json.dumps( {
-                        'user_uuid' : user_uuid,
-                        'message' : "People from ReKognition for user %s/%s were %s" % ( user_uuid, fb_user_id, people ) 
-                        } ) )
+            log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                     'message' : "People from ReKognition for user %s/%s were %s" % ( user_uuid, fb_user_id, people ) } ) )
     
             people_files = download_faces_for_user( user_uuid, people )
-            log.debug( json.dumps( {
-                        'user_uuid' : user_uuid,
-                        'message' : "Downloaded files for user %s/%s were %s" % ( user_uuid, fb_user_id, people_files ) 
-                        } ) )
+            log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                     'message' : "Downloaded files for user %s/%s were %s" % ( user_uuid, fb_user_id, people_files )  } ) )
             
             ( added_picture_contacts, added_empty_contacts ) = add_contacts_for_user( user_uuid, people_files, friends )
-            log.debug( json.dumps( {
-                        'user_uuid' : user_uuid,
-                        'message' : "For user %s/%s added picture contacts %s and non-picture contacts %s" % ( user_uuid, fb_user_id, added_picture_contacts, added_empty_contacts ) 
-                        } ) )
+            log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                     'message' : "For user %s/%s added picture contacts %s and non-picture contacts %s" % ( user_uuid, fb_user_id, added_picture_contacts, added_empty_contacts ) } ) )
 
         sqs.delete_message( message )
 
         return True
 
     except Exception as e:
-        log.error( json.dumps( {
-                    'message' : "Exception was: %s" % e
-                    } ) )
+        log.error( json.dumps( { 'message' : "Exception was: %s" % e } ) )
         raise
     finally:
         if message != None:
