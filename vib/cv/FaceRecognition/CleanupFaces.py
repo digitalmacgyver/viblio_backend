@@ -40,7 +40,7 @@ def delete_contact( user_id, contact_id ):
     except Exception as e:
         log.error( json.dumps( { 'user_id' : user_id,
                                  'contact_id' : contact_id, 
-                                 'message' : "Failed to delete contact: %e" % ( e ) } ) )
+                                 'message' : "Failed to delete contact: %s" % ( e ) } ) )
         raise
 
 def run():
