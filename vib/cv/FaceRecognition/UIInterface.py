@@ -93,8 +93,7 @@ def move_faces( user_id, old_contact_id, new_contact_id, media_asset_feature_ids
                             'contact_id'  : new_contact_id,
                             'face_id'     : face['face_id'],
                             'face_url'    : face['face_url'],
-                            'external_id' : face['external_id'],
-                            'score'       : face['score']
+                            'external_id' : face['external_id']
                             } )
                     delete_faces.append( face )
 
