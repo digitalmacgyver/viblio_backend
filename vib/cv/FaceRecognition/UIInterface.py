@@ -39,7 +39,7 @@ def delete_contact( user_id, contact_id ):
     except Exception as e:
         log.error( json.dumps( { 'user_id' : user_id,
                                  'contact_id' : contact_id, 
-                                 'message' : "Failed to delete contact: %e" % ( e ) } ) )
+                                 'message' : "Failed to delete contact: %s" % ( e ) } ) )
         raise
 
 def delete_faces_for_contact( user_id, contact_id, media_asset_feature_ids ):
@@ -72,7 +72,7 @@ def delete_faces_for_contact( user_id, contact_id, media_asset_feature_ids ):
     except Exception as e:
         log.error( json.dumps( { 'user_id' : user_id,
                                  'contact_id' : contact_id, 
-                                 'message' : "Failed to delete faces for contact: %e" % ( e ) } ) )
+                                 'message' : "Failed to delete faces for contact: %s" % ( e ) } ) )
         raise
 
 def move_faces( user_id, old_contact_id, new_contact_id, media_asset_feature_ids ):
@@ -93,8 +93,7 @@ def move_faces( user_id, old_contact_id, new_contact_id, media_asset_feature_ids
                             'contact_id'  : new_contact_id,
                             'face_id'     : face['face_id'],
                             'face_url'    : face['face_url'],
-                            'external_id' : face['external_id'],
-                            'score'       : face['score']
+                            'external_id' : face['external_id']
                             } )
                     delete_faces.append( face )
 
@@ -115,7 +114,7 @@ def move_faces( user_id, old_contact_id, new_contact_id, media_asset_feature_ids
         return
     except Exception as e:
         log.error( json.dumps( { 'user_id' : user_id,
-                                 'message' : "Failed to move faces: %e" % ( e ) } ) )
+                                 'message' : "Failed to move faces: %s" % ( e ) } ) )
         raise
 
 def __get_sqs():
@@ -145,7 +144,7 @@ def run():
         try:
             log.debug( json.dumps( { 'message' : "Options are %s: " % options } ) )
         except Exception as e:
-            log.debug( json.dumps( { 'message' : "Error converting options to string: %e" % e } ) )
+            log.debug( json.dumps( { 'message' : "Error converting options to string: %s" % e } ) )
 
         action = options['action']
         user_id = int( options['user_id'] )

@@ -19,19 +19,17 @@ def _add_face( user_id, contact_id, face ):
     try:
         log.info( json.dumps( { 'user_id'    : user_id,
                                 'contact_id' : contact_id,
-                                'message'    : 'Adding face: %s' % ( face ) } ) )
+                                'message'    : 'DBUTILS Adding face: %s' % ( face ) } ) )
 
         orm = vib.db.orm.get_session()
 
-        face = Faces( 
+        face = Faces2( 
             user_id     = face['user_id'],
             contact_id  = face['contact_id'],
             face_id     = face['face_id'],
             face_url    = face['face_url'],
             external_id = face['external_id'],
-            score       = face['score'],
-            l2_idx      = face['l2_idx'],
-            l2_tag      = face['l2_tag']
+            idx         = face['idx'],
             )
 
         orm.add( face )
@@ -70,7 +68,7 @@ def _add_recognition_feedback( user_id, face_url, faces ):
             face3_id = faces[2]['id']
             face3_confidence = faces[2]['recognition_confidence']
 
-        feedback = RecognitionFeedback( 
+        feedback = RecognitionFeedback2( 
             user_id          = user_id,
             face_url         = face_url,
             face1_id         = face1_id,
@@ -101,7 +99,7 @@ def _check_face_exists( user_id, contact_id, face_id ):
 
         orm = vib.db.orm.get_session()
 
-        result = orm.query( Faces ).filter( and_( Faces.user_id == user_id, Faces.contact_id == contact_id, Faces.face_id == face_id ) )[:]
+        result = orm.query( Faces2 ).filter( and_( Faces2.user_id == user_id, Faces2.contact_id == contact_id, Faces2.face_id == face_id ) )[:]
 
         if len( result ) == 1:
             return True
@@ -133,7 +131,7 @@ def _delete_all_user_faces( user_id ):
 
         orm = vib.db.orm.get_session()
     
-        query = orm.query( Faces ).filter( Faces.user_id == user_id ).delete()
+        query = orm.query( Faces2 ).filter( Faces2.user_id == user_id ).delete()
 
         orm.commit()
 
@@ -158,7 +156,7 @@ def _delete_contact_faces_for_user( user_id, contact_id ):
 
         orm = vib.db.orm.get_session()
     
-        query = orm.query( Faces ).filter( and_( Faces.user_id == user_id, Faces.contact_id == contact_id ) ).delete()
+        query = orm.query( Faces2 ).filter( and_( Faces2.user_id == user_id, Faces2.contact_id == contact_id ) ).delete()
 
         orm.commit()
     
@@ -188,7 +186,7 @@ def _delete_faces( faces ):
 
             orm = vib.db.orm.get_session()
     
-            query = orm.query( Faces ).filter( Faces.id == face_id ).delete()
+            query = orm.query( Faces2 ).filter( Faces2.id == face_id ).delete()
 
             orm.commit()
 
@@ -207,12 +205,14 @@ def _get_all_faces_for_user( user_id ):
     names.'''
 
     try:
+        '''
         log.info( json.dumps( { 'user_id'    : user_id,
                                 'message'    : 'Getting list of faces for user_id %s' % ( user_id ) } ) )
+        '''
 
         orm = vib.db.orm.get_session()
     
-        query = orm.query( Faces ).filter( Faces.user_id == user_id )
+        query = orm.query( Faces2 ).filter( Faces2.user_id == user_id )
 
         result = [ u.__dict__.copy() for u in query.all() ]
         
@@ -232,14 +232,15 @@ def _get_contact_faces_for_user( user_id, contact_id ):
     names.'''
 
     try:
-
+        '''
         log.info( json.dumps( { 'user_id'    : user_id,
                                 'contact_id' : contact_id,
                                 'message'    : 'Getting list of faces for user_id %s, contact_id %s' % ( user_id, contact_id ) } ) )
+        '''
 
         orm = vib.db.orm.get_session()
     
-        query = orm.query( Faces ).filter( and_( Faces.user_id == user_id, Faces.contact_id == contact_id ) )
+        query = orm.query( Faces2 ).filter( and_( Faces2.user_id == user_id, Faces2.contact_id == contact_id ) )
 
         result = [ u.__dict__.copy() for u in query.all() ]
         
@@ -264,7 +265,7 @@ def _get_face_by_id( face_id ):
 
         orm = vib.db.orm.get_session()
     
-        result = orm.query( Faces ).filter( Faces.id == face_id )
+        result = orm.query( Faces2 ).filter( Faces2.id == face_id )
 
         if result.count() == 1:
             face = result[0].__dict__.copy()
@@ -277,20 +278,21 @@ def _get_face_by_id( face_id ):
         log.error( json.dumps( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } ) )
         raise
 
-def _get_face_by_l1_tag( user_id, l1_tag ):
+def _get_face_for_contact_id( user_id, contact_id ):
     '''Returns either a dictionary like object representing the row
-    for in the recognition database for this face, or None if the face
-    is not found.'''
+    for in the recognition database for a face associated with this
+    contact id, or None if no faces are associated with that
+    contact_id'''
 
     try:
 
-        log.info( json.dumps( { 'message'    : 'Getting face data for user_id %s, l1_tag %s' % ( user_id, l1_tag ) } ) )
+        log.info( json.dumps( { 'message'    : 'Getting face data for user_id, contact_id: %s, %s' % ( user_id, contact_id ) } ) )
 
         orm = vib.db.orm.get_session()
     
-        result = orm.query( Faces ).filter( and_( Faces.user_id == user_id, Faces.l1_tag == l1_tag ) )
+        result = orm.query( Faces2 ).filter( and_( Faces2.user_id == user_id, Faces2.contact_id == contact_id ) )
 
-        if result.count() == 1:
+        if result.count() >= 1:
             face = result[0].__dict__.copy()
             orm.commit()
             return face
@@ -312,11 +314,11 @@ def _get_recognition_stats( user_id=None ):
             log.info( json.dumps( { 'user_id' : user_id,
                                     'message' : 'Getting recognition stats for user %s' % ( user_id ) } ) )
             
-            stats = orm.query( RecognitionFeedback ).filter( RecognitionFeedback.user_id == user_id )
+            stats = orm.query( RecognitionFeedback2 ).filter( RecognitionFeedback2.user_id == user_id )
         else:
             log.info( json.dumps( { 'message' : 'Getting all recognition stats' } ) )
             
-            stats = orm.query( RecognitionFeedback )
+            stats = orm.query( RecognitionFeedback2 )
 
         result = [ s.__dict__.copy() for s in stats.all() ]
 
@@ -327,35 +329,6 @@ def _get_recognition_stats( user_id=None ):
     except Exception as e:
         log.error( json.dumps( { 'message' : 'Error getting recognition stats: %s' % ( e ) } ) )
         raise        
-
-def _update_layer_settings( face, l1_idx, l1_tag, l2_idx, l2_tag ):
-    '''Update the l1/l2 settings for the face in question'''
-
-    orm = None
-    try:
-        face_id = face['id']
-        user_id = face['user_id']
-        contact_id = face['contact_id']
-        log.info( json.dumps( { 'user_id'    : user_id,
-                                'contact_id' : contact_id,
-                                'message'    : 'Updating face_id %s with l1_idx-tag: %s-%s and l2_idx-tag: %s-%s' % ( face_id, l1_idx, l1_tag, l2_idx, l2_tag ) } ) )
-
-        orm = vib.db.orm.get_session()
-    
-        face = orm.query( Faces ).filter( Faces.id == face_id )[0]
-
-        face.l1_idx = l1_idx
-        face.l1_tag = l1_tag
-        face.l2_idx = l2_idx
-        face.l2_tag = l2_tag
-        
-        orm.commit()
-
-        return
-
-    except Exception as e:
-        log.error( json.dumps( { 'message'    : 'Error updating face l1/2 data: %s' % ( e ) } ) )
-        raise
 
 def _update_recognition_result( recognize_id, result ):
     '''Sets the feedback_received, recognized, and feedback_result
@@ -373,7 +346,7 @@ def _update_recognition_result( recognize_id, result ):
 
         orm = vib.db.orm.get_session()
 
-        feedback = orm.query( RecognitionFeedback ).filter( RecognitionFeedback.id == recognize_id )[0]
+        feedback = orm.query( RecognitionFeedback2 ).filter( RecognitionFeedback2.id == recognize_id )[0]
 
         if result is not None:
             feedback.feedback_received = True

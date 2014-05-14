@@ -122,10 +122,11 @@ class Detect( VWorker ):
                             detection = vib.rekog.utils.detect_for_file( face_file_name )
                             max_confidence = -1
                             current_rekog_face = None
-                            for rekog_face in detection['face_detection']:
-                                if rekog_face['confidence'] > max_confidence:
-                                    current_rekog_face = rekog_face
-                                    max_confidence = rekog_face['confidence']
+                            if 'face_detectin' in detection:
+                                for rekog_face in detection['face_detection']:
+                                    if rekog_face['confidence'] > max_confidence:
+                                        current_rekog_face = rekog_face
+                                        max_confidence = rekog_face['confidence']
                             if current_rekog_face is not None and current_rekog_face.get( 'beauty', -1 ) > best_face_score:
                                 best_face = face
                                 best_face_score = current_rekog_face.get( 'beauty', -1 )

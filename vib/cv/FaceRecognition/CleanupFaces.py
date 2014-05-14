@@ -17,7 +17,7 @@ log.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
 
-format_string = 'fb: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
+format_string = 'CleanupFaces: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
 
 sys_formatter = logging.Formatter( format_string )
 
@@ -40,14 +40,14 @@ def delete_contact( user_id, contact_id ):
     except Exception as e:
         log.error( json.dumps( { 'user_id' : user_id,
                                  'contact_id' : contact_id, 
-                                 'message' : "Failed to delete contact: %e" % ( e ) } ) )
+                                 'message' : "Failed to delete contact: %s" % ( e ) } ) )
         raise
 
 def run():
     try:
         orm = vib.db.orm.get_session()
 
-        missing_contacts = orm.query( Faces ).filter( not_( Faces.contact_id.in_( orm.query( Contacts.id ) ) ) )
+        missing_contacts = orm.query( Faces2 ).filter( not_( Faces2.contact_id.in_( orm.query( Contacts.id ) ) ) )
 
         deleted_contacts = {}
 

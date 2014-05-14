@@ -80,6 +80,12 @@ class Faces( BaseModel, Serializer ):
 class RecognitionFeedback( BaseModel, Serializer ):
     pass
 
+class Faces2( BaseModel, Serializer ):
+    pass
+
+class RecognitionFeedback2( BaseModel, Serializer ):
+    pass
+
 class EmailUsers( BaseModel, Serializer ):
     pass
 

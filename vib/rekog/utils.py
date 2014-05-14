@@ -12,15 +12,18 @@ rekog_api_secret = config.rekog_api_secret
 
 default_namespace = config.rekog_namespace
 
-def add_face_for_user( user_id, url, tag=None, namespace=None ):
+def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min_confidence=0.8, max_yaw=45, max_pitch=45 ):
     '''Adds face at URL for specified user.  If tag is specified the
     name is added with that tag.
 
     Returns either the index of the face in ReKognition (a string), or
     None in the case that:
     a. ReKognition found no faces
-    b. ReKognition found more than one face
     c. There was an error
+
+    If strict is True then we also reject faces and return None if:
+    * Recognition confidence score is less than confidence_threshold
+    * Absolut value of yaw or pitch is more than max_yaw or max_pitch
     '''
 
     if namespace == None:
@@ -29,7 +32,7 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
     data = {
         'api_key'      : rekog_api_key,
         'api_secret'   : rekog_api_secret,
-        'jobs'         : 'face_add',
+        'jobs'         : 'face_add_beauty',
         'name_space'   : namespace,
         'user_id'      : user_id,
         'tag'          : tag,
@@ -43,7 +46,22 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
     if result['usage']['status'] != 'Succeed.':
         return None
     elif len( result['face_detection'] ) == 1:
-        return result['face_detection'][0]['img_index']
+        if not strict:
+            return result['face_detection'][0]['img_index']
+        else:
+            bad_face = False
+            if result['face_detection'][0]['confidence'] < min_confidence:
+                bad_face = True
+            if abs( result['face_detection'][0]['pose']['yaw'] ) > max_yaw:
+                bad_face = True
+            if abs( result['face_detection'][0]['pose']['pitch'] ) > max_pitch:
+                bad_face = True
+                
+            if bad_face:
+                delete_face_for_user( user_id, '_x_all', result['face_detection'][0]['img_index'], namespace )
+                return None
+            else:
+                return result['face_detection'][0]['img_index']
     elif len( result['face_detection'] ) > 1:
         # Sometimes ReKognition detects multiple faces when there is
         # only one face.  Keep only the best face.
@@ -62,7 +80,23 @@ def add_face_for_user( user_id, url, tag=None, namespace=None ):
 
         for face in delete:
             delete_face_for_user( user_id, '_x_all', face['img_index'], namespace )
-        return best['img_index']
+
+        if not strict:
+            return best['img_index']
+        else:
+            bad_face = False
+            if best['confidence'] < min_confidence:
+                bad_face = True
+            if abs( best['pose']['yaw'] ) > max_yaw:
+                bad_face = True
+            if abs( best['pose']['pitch'] ) > max_pitch:
+                bad_face = True
+                
+            if bad_face:
+                delete_face_for_user( user_id, '_x_all', best['img_index'], namespace )
+                return None
+            else:
+                return best['img_index']
     else:
         return None
 
