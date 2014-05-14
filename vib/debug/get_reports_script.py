@@ -10,7 +10,7 @@ print = logging.info
 ##############################################################
 
 # Search parameters
-n_hours = 24*3
+n_hours = 24*2
 user = 'mehran'
 password = '87kE8V56'
 quiet = False # Log info
