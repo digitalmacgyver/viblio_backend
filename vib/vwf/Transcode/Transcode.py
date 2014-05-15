@@ -84,21 +84,15 @@ class Transcode( VWorker ):
                 log.warning( json.dumps( {
                             'media_uuid' : media_uuid,
                             'user_uuid' : user_uuid,
-                            'message' : "Exception thrown while running qt-faststart for user %s media %s : %s" % ( user_uuid, media_uuid, e )
-                    } ) )
+                            'message' : "Exception thrown while running qt-faststart for user %s media %s : %s" % ( user_uuid, media_uuid, e ) } ) )
                 # Explicitly do nothing upon error in this case.
             
             # Process files into S3
-            log.debug( json.dumps( {
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Transcoding and storing the result in S3 for user %s media %s : " % ( user_uuid, media_uuid )
-                        } ) )
+                log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid' : user_uuid,
+                                         'message' : "Transcoding and storing the result in S3 for user %s media %s : " % ( user_uuid, media_uuid ) } ) )
 
-            #pdb.set_trace()
-            self.heartbeat()
             outputs = tutils.transcode_and_store( media_uuid, original_file, outputs, exif )
-            self.heartbeat()
 
             orm = vib.db.orm.get_session()
             orm.commit()
@@ -106,23 +100,33 @@ class Transcode( VWorker ):
             # Get the media object to which all our subordinate files relate.
             media = orm.query( Media ).filter( Media.uuid == media_uuid ).first()
             if media is None:
-                log.error( json.dumps( {
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : 'Failed to locate database record for media %s, perhaps it has been deleted?' % ( media_uuid ) } ) )
+                log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid' : user_uuid,
+                                         'message' : 'Failed to locate database record for media %s, perhaps it has been deleted?' % ( media_uuid ) } ) )
                 # Terminate execution permanently, if there is no
                 # database record for this we can't possibly proceed.
                 return { 'ACTIVITY_ERROR' : True, 'retry' : False }
 
-            media.lat = exif['lat']
-            media.lng = exif['lng']
+            if options.get( 'viblio_added_content_type', '' ) != '':
+                # This is a viblio generated video, set it's location to Palo Alto
+                media.lat = 37.442174
+                media.lng = -122.143199
+            else:
+                media.lat = exif['lat']
+                media.lng = exif['lng']
+
             media.status = 'visible'
 
             mwfs = MediaWorkflowStages( workflow_stage = self.task_name + 'Complete' )
             media.media_workflow_stages.append( mwfs )
 
             # Calculate the recording date for video versions.
-            recording_date = datetime.datetime.utcfromtimestamp( 0 )
+            if options.get( 'viblio_added_content_type', '' ) != '':
+                # This is a viblio generated video, the recording date should be now.
+                recording_date = datetime.datetime.now()
+            else:
+                recording_date = datetime.datetime.utcfromtimestamp( 0 )
+
             if exif['create_date'] and exif['create_date'] != '' and exif['create_date'] != '0000:00:00 00:00:00':
                 recording_date = exif['create_date']
             log.debug( 'Setting recording date to ' + str( recording_date ) )
