@@ -160,7 +160,7 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
                                         'media_uuid' : media_uuid,
                                         'contact_uuid' : uuid,
                                         'track_id' : track['track_id'],
-                                        'message' : "Associating new user %s with track_id %d" % ( uuid, track['track_id'] ) } ) )
+                                        'message' : "Associating new contact_uuid %s with track_id %d" % ( uuid, track['track_id'] ) } ) )
 
                 new_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == track['track_id'] ) )[:]
                 new_contact.media_asset_features.extend( new_features )
@@ -199,7 +199,7 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
                                 'media_uuid' : media_uuid,
                                 'contact_uuid' : existing_contact.uuid,
                                 'track_id' : track['track_id'],
-                                'message' : "Associating existing user %s with track_id %d" % ( existing_contact.uuid, track['track_id'] )
+                                'message' : "Associating existing contact_uuid %s with track_id %d" % ( existing_contact.uuid, track['track_id'] )
                                 } ) )
                     existing_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == track['track_id'] ) )[:]
                     existing_contact.media_asset_features.extend( existing_features )

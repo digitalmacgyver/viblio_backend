@@ -46,7 +46,9 @@ def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min
     if result['usage']['status'] != 'Succeed.':
         return None
     elif len( result['face_detection'] ) == 1:
-        if not strict:
+        if 'img_index' not in result['face_detection'][0]:
+            return None
+        elif not strict:
             return result['face_detection'][0]['img_index']
         else:
             bad_face = False
@@ -69,19 +71,24 @@ def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min
         best_confidence = 0
         delete = []
         for face in result['face_detection']:
-            face_confidence = face['confidence']
-            if face_confidence > best_confidence:
-                if best is not None:
-                    delete.append( best )
-                best_confidence = face_confidence
-                best = face
+            if 'img_index' not in face:
+                continue
             else:
-                delete.append( face )
+                face_confidence = face['confidence']
+                if face_confidence > best_confidence:
+                    if best is not None:
+                        delete.append( best )
+                    best_confidence = face_confidence
+                    best = face
+                else:
+                    delete.append( face )
 
         for face in delete:
             delete_face_for_user( user_id, '_x_all', face['img_index'], namespace )
 
-        if not strict:
+        if best is None:
+            return None
+        elif not strict:
             return best['img_index']
         else:
             bad_face = False
@@ -356,8 +363,11 @@ def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_d
         namespace = default_namespace
 
     jobs = 'face_visualize'
-    if no_image:
-        jobs += '_no_image'
+
+    # ReKognition introduced a bug whereby visualization doesn't work
+    # if you add the no_image tag, so just always get images.
+    #if no_image:
+    #    jobs += '_no_image'
     if show_default:
         jobs += '_show_default_tag'
 

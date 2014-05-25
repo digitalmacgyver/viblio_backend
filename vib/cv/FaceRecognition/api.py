@@ -107,10 +107,26 @@ def add_faces( user_id, contact_id, faces ):
                 if face['contact_id'] != contact_id:
                     raise Exception( "Error, face for contact_id %s had contact_id of %s " % ( contact_id, face['contact_id'] ) )
 
+                # DEBUG
+                #import sys
+                #import pdb
+                #pdb.set_trace()
+
+
                 log.debug( json.dumps( { 'user_id'    : user_id,
                                          'contact_id' : contact_id,
                                          'message'    : "Working on face %s" % ( helpers._format_face( face ) ) } ) )
 
+
+                #try:
+                #    CHECK_VALUE = recog_db._check_face_exists( face['user_id'], face['contact_id'], face['face_id'] )
+                #except Exception as e:
+                #    log.error( json.dumps( { 'user_id'    : user_id,
+                #                             'contact_id' : contact_id,
+                #                             'message'    : "_CHECK_FACE_EXISTS FAILED: %s" % ( e ) } ) )
+                #    sys.exit(0)
+
+                #if CHECK_VALUE:
                 if recog_db._check_face_exists( face['user_id'], face['contact_id'], face['face_id'] ):
                     log.debug( json.dumps( { 'user_id'    : user_id,
                                              'contact_id' : contact_id,
@@ -119,6 +135,13 @@ def add_faces( user_id, contact_id, faces ):
                     unchanged.append( face )
                 else:
                     idx = rekog.add_face_for_user( user_id, face['face_url'], contact_id, config.recog_v2_namespace, strict=True )
+                    #try:
+                    #    idx = rekog.add_face_for_user( user_id, face['face_url'], contact_id, config.recog_v2_namespace, strict=True )
+                    #except Exception as e:
+                    #    log.error( json.dumps( { 'user_id'    : user_id,
+                    #                             'contact_id' : contact_id,
+                    #                             'message'    : "ADD_FACE_FOR_USER FAILED: %s" % ( e ) } ) )
+                    #    sys.exit(0)
                 
                     log.debug( json.dumps( { 'user_id'    : user_id,
                                              'contact_id' : contact_id,
@@ -128,6 +151,14 @@ def add_faces( user_id, contact_id, faces ):
                         face['idx'] = idx
                         
                         recog_db._add_face( user_id, contact_id, face )
+
+                        #try:
+                        #    recog_db._add_face( user_id, contact_id, face )
+                        #except Exception as e:
+                        #    log.error( json.dumps( { 'user_id'    : user_id,
+                        #                             'contact_id' : contact_id,
+                        #                             'message'    : "_ADD_FACE FAILED: %s" % ( e ) } ) )
+                        #    sys.exit(0)
 
                         log.debug( json.dumps( { 'user_id'    : user_id,
                                                  'contact_id' : contact_id,
