@@ -143,7 +143,7 @@ def generate_clips( user_uuid,
                     break
 
                 # Skip tracks where the person isn't happy.
-                if not track['faces'][0]['isHappy']:
+                if 'isHappy' in track['faces'][0] and not track['faces'][0]['isHappy']:
                     log.info( json.dumps( { 'user_uuid' : user_uuid, 
                                             'message'   : 'Skipping track where person is not happy for media_uuid: %s' % ( media_uuid ) } ) )
                     continue
@@ -474,7 +474,7 @@ def run():
         try:
             log.debug( json.dumps( { 'message' : "Options are %s: " % options } ) )
         except Exception as e:
-            log.debug( json.dumps( { 'message' : "Error converting options to string: %e" % e } ) )
+            log.debug( json.dumps( { 'message' : "Error converting options to string: %s" % e } ) )
         
         user_uuid           = options.get( 'user_uuid', None )
         viblio_added_content_id = options['viblio_added_content_id']
@@ -494,7 +494,7 @@ def run():
                 if not os.path.isdir( workdir ):
                     os.makedirs( workdir )
             except Exception as e:
-                log.error( json.dumps( { 'message' : "Error creating workdir %s: %e" % ( workdir, e ) } ) )
+                log.error( json.dumps( { 'message' : "Error creating workdir %s: %s" % ( workdir, e ) } ) )
                 raise
 
             clips_ok = generate_clips( user_uuid, 
