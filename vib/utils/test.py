@@ -83,7 +83,7 @@ def generate_clips_for_contact( user_uuid,
     log.info( json.dumps( { 'user_uuid' : user_uuid, 
                             'message'   : 'Getting media_files for user_id %s' % ( user.id ) } ) )
     
-    media_files = orm.query( Media.uuid, Media.track_id ).filter( and_( Media.user_id == user.id, Media.status == 'complete', Media.is_viblio_created == False, Media.id == MediaAssetFeatures.media_id, MediaAssetFeatures.contact_id == contact_id, Media.id == 28528 ) ).order_by( Media.recording_date )[:]
+    media_files = orm.query( Media.uuid, MediaAssetFeatures.track_id ).filter( and_( Media.user_id == user.id, Media.status == 'complete', Media.is_viblio_created == False, Media.id == MediaAssetFeatures.media_id, MediaAssetFeatures.contact_id == contact_id, Media.id == 28528 ) ).order_by( Media.recording_date )[:]
 
     orm.close()
 
