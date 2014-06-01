@@ -489,10 +489,10 @@ contacts = [ [ 5738,  999 ] ]
 contacts = [ [ 17934,  999 ] ]
 
 min_clip_secs       = 1
-max_clip_secs       = 999
+max_clip_secs       = 5
 max_input_videos    = 999
 max_secs_per_input  = 999
-max_clips_per_input = 999
+max_clips_per_input = 1
 min_output_secs     = 0
 max_output_secs     = 999
 output_x            = 640
