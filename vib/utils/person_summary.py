@@ -83,7 +83,7 @@ def generate_clips_for_contact( user_uuid,
     log.info( json.dumps( { 'user_uuid' : user_uuid, 
                             'message'   : 'Getting media_files for user_id %s' % ( user.id ) } ) )
     
-    media_files = orm.query( Media.uuid ).filter( and_( Media.user_id == user.id, Media.status == 'complete', Media.is_viblio_created == False, Media.id == MediaAssetFeatures.media_id, MediaAssetFeatures.contact_id == contact_id ) ).order_by( Media.recording_date )[:]
+    media_files = orm.query( Media.uuid, MediaAssetFeatures.track_id ).filter( and_( Media.user_id == user.id, Media.status == 'complete', Media.is_viblio_created == False, Media.id == MediaAssetFeatures.media_id, MediaAssetFeatures.contact_id == contact_id ) ).order_by( Media.recording_date )[:]
 
     orm.close()
 
@@ -92,8 +92,15 @@ def generate_clips_for_contact( user_uuid,
     output_secs = 0
     output_clips = 0
 
+    media_tracks = {}
     for media in media_files:
-        media_uuid = media.uuid
+        if media.uuid in media_tracks:
+            media_tracks[media.uuid][media.track_id] = True
+        else:
+            media_tracks[media.uuid] = { media.track_id : True, "media" : media }
+
+    for media_uuid in media_tracks.keys():
+        media = media_tracks[media_uuid]["media"]
 
         if output_secs >= max_output_secs:
             log.info( json.dumps( { 'user_uuid' : user_uuid, 
@@ -130,6 +137,11 @@ def generate_clips_for_contact( user_uuid,
             cuts = [ ]
 
             for track in tracks:
+                if track["track_id"] not in media_tracks[media_uuid]:
+                    log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                                            'message'   : "Skipping track %s which does not have contact %s in it." % ( track["track_id"], contact_id ) } ) ) 
+                    continue
+
                 # Stop working on this input if we've got all we need from it.
                 if input_secs >= max_secs_per_input:
                     log.info( json.dumps( { 'user_uuid' : user_uuid, 
@@ -150,8 +162,8 @@ def generate_clips_for_contact( user_uuid,
 
                 track_cuts = [ ]
 
-                #for vi in track['visiblity_info']:
-                for vi in track['visibility_info']:
+                for vi in track['visiblity_info']:
+                #for vi in track['visibility_info']:
                     # Stop working on this input if we've got all we need from it.
                     if input_secs >= max_secs_per_input:
                         log.info( json.dumps( { 'user_uuid' : user_uuid, 
@@ -446,7 +458,7 @@ def produce_summary_video( user_uuid, workdir ):
         if workdir[:4] == '/mnt':
             log.info( json.dumps( { 'user_uuid' : user_uuid, 
                                     'message'   : 'Deleting temporary files at %s' % ( workdir ) } ) )
-            #shutil.rmtree( workdir )
+            shutil.rmtree( workdir )
         return
         
 # Get the list of movies for the current user.
@@ -465,6 +477,8 @@ user_uuid = 'D4335982-78B4-11E3-906D-7FF3866DC9DF'
 
 user_uuid = '203BE01A-D6E8-11E3-8023-14FD918B7424'
 
+user_uuid = '4F909FD2-E722-11E3-A391-79938B55516E'
+
 user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
 user_id = user.id
 
@@ -472,8 +486,10 @@ user_id = user.id
 
 contacts = [ [ 5738,  999 ] ]
 
+contacts = [ [ 17934,  999 ] ]
+
 min_clip_secs       = 1
-max_clip_secs       = 5
+max_clip_secs       = 999
 max_input_videos    = 999
 max_secs_per_input  = 999
 max_clips_per_input = 999
