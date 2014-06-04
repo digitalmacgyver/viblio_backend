@@ -209,7 +209,10 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
                     orm.commit()
                 try:
                     if recognition_data is not None and recognition_data[uuid]['recognize_id'] is not None:
-                        rec.recognition_feedback( recognition_data[uuid]['recognize_id'], 1 )
+                        if recognition_data[uuid]['recognition_result'] == 'machine_recognized':
+                            rec.recognition_feedback( recognition_data[uuid]['recognize_id'], 1 )
+                        elif recognition_data[uuid]['recognition_result'] == 'human_recognized':
+                            rec.recognition_feedback( recognition_data[uuid]['recognize_id'], None )
                     _add_recognition_faces( orm, user_id, existing_contact.id, media_id, tracks )
                 except Exception as e:
                     log.error( json.dumps( {'user_uuid' : user_uuid,
