@@ -63,7 +63,7 @@ class Detect( VWorker ):
             #opts = ' -f %s --analyzers FaceAnalysis --face_thumbnail_path %s  --filename_prefix %s  --discarded_tracker_frequency 5000 --maximum_concurrent_trackers 10 ' % ( file_name, working_dir, media_uuid )
 
             # Orbeus face detection
-            opts = ' -f %s --face_thumbnail_path %s --filename_prefix %s --analyzers FaceAnalysis --discarded_tracker_frequency 45000 --maximum_concurrent_trackers 10 --face_detector orbeus --orbeus_api_key zdN9xO1srMEFoEsq --orbeus_secret_key bvi5Li9bcQPE3W5S --orbeus_namespace fd_test_2 --orbeus_user_id test ' % ( file_name, working_dir, media_uuid )
+            opts = ' -f %s --face_thumbnail_path %s --filename_prefix %s --analyzers FaceAnalysis --discarded_tracker_frequency 30000 --maximum_concurrent_trackers 7 --face_detector orbeus --orbeus_api_key zdN9xO1srMEFoEsq --orbeus_secret_key bvi5Li9bcQPE3W5S --orbeus_namespace fd_test_2 --orbeus_user_id test ' % ( file_name, working_dir, media_uuid )
             ( status, output ) = commands.getstatusoutput( cmd + opts )
             if status == 0 and ( output.find( "failed (result = -200)" ) == -1 ):
                 log.info( json.dumps( {  'media_uuid' : media_uuid,
