@@ -48,7 +48,7 @@ def detect_faces( url ):
 
 orm = vib.db.orm.get_session()
 
-from_when = datetime.datetime.utcnow() - datetime.timedelta( days=10 )
+from_when = datetime.datetime.utcnow() - datetime.timedelta( days=30 )
 
 faces = orm.query( Media.filename, 
                    MediaAssets.uri,
