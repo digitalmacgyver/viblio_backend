@@ -104,9 +104,9 @@ for f in faces:
         sys.exit( 1 )
 
 print "Good confidence: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( good_confidence ), numpy.median( good_confidence ), numpy.std( good_confidence ) )
-print "Good beauty: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( good_confidence ), numpy.median( good_confidence ), numpy.std( good_confidence ) )
-print "Bad confidence: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( good_confidence ), numpy.median( good_confidence ), numpy.std( good_confidence ) )
-print "Bad beauty: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( good_confidence ), numpy.median( good_confidence ), numpy.std( good_confidence ) )
+print "Good beauty: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( good_beauty ), numpy.median( good_beauty ), numpy.std( good_beauty ) )
+print "Bad confidence: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( bad_confidence ), numpy.median( bad_confidence ), numpy.std( bad_confidence ) )
+print "Bad beauty: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( bad_beauty ), numpy.median( bad_beauty ), numpy.std( bad_beauty ) )
 
 def get_col_lists( values, cols ):
     return [ values[i:i+cols] for i in range( 0, len( values ), cols ) ]
