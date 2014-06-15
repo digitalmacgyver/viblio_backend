@@ -97,14 +97,18 @@ for f in faces:
         bad_faces.append( { "url" : url,
                             "confidence" : confidence,
                             "beauty" : beauty } )
-        bad_confidence.append( confidence )
-        bad_beauty.append( beauty )
+        if confidence > -1:
+            bad_confidence.append( confidence )
+        if beauty > -1:
+            bad_beauty.append( beauty )
     elif f.recognition_result in [ 'machine_recognized', 'human_recognized', 'two_face' ]:
         good_faces.append( { "url" : url,
                             "confidence" : confidence,
                             "beauty" : beauty } )
-        good_confidence.append( confidence )
-        good_beauty.append( beauty) 
+        if confidence > -1:
+            good_confidence.append( confidence )
+        if beauty > -1:
+            good_beauty.append( beauty) 
     else:
         print "ERROR - unexpected recognition result: %s" % ( f.recognition_result )
         sys.exit( 1 )
