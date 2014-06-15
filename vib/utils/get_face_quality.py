@@ -36,15 +36,19 @@ def detect_faces( url ):
     key.  If at most 1 face was expected, the face with highest
     confidence is probably the one you were searching for.
     '''
-    data =  {
-        "api_key"    : rekog_api_key, 
-        "api_secret" : rekog_api_secret,
-        "jobs"       : "face_beauty",
-        "urls"       : url
-        }
-    r = requests.post( "http://rekognition.com/func/api/", data )
-    return r.json()
-
+    try:
+        data =  {
+            "api_key"    : rekog_api_key, 
+            "api_secret" : rekog_api_secret,
+            "jobs"       : "face_beauty",
+            "urls"       : url
+            }
+        r = requests.post( "http://rekognition.com/func/api/", data )
+        return r.json()
+    except Exception as e:
+        print r.reason
+        print r.text
+        return None
 
 orm = vib.db.orm.get_session()
 
@@ -83,9 +87,11 @@ for f in faces:
     url = "https://%sviblio.com/s/ip/%s" % ( prefix, f.uri )
 
     result = detect_faces( url )
-    if len( result['face_detection'] ) > 0:
+    if result is not None and len( result['face_detection'] ) > 0:
         confidence = result['face_detection'][0]['confidence']
         beauty = result['face_detection'][0]['beauty']
+    else:
+        print "NO FACE FOUND!"
 
     if f.recognition_result in [ 'bad_face', 'not_face' ]:
         bad_faces.append( { "url" : url,
