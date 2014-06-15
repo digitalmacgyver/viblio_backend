@@ -411,7 +411,7 @@ def detect_for_file( path ):
     data =  {
         "api_key"    : rekog_api_key, 
         "api_secret" : rekog_api_secret,
-        "jobs"       : "face_aggressive_beauty",
+        "jobs"       : "face_beauty",
         "base64"     : base64.b64encode( image_data ),
         }
     r = requests.post( "http://rekognition.com/func/api/", data )
