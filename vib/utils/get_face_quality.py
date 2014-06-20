@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import commands
 import datetime
 from PIL import Image
 from operator import itemgetter
@@ -7,6 +8,7 @@ import numpy
 import os
 import json
 import pprint
+import re
 import requests
 from sqlalchemy import and_, not_, or_
 from StringIO import StringIO
@@ -74,17 +76,35 @@ good_faces = []
 
 bad_confidence = []
 bad_beauty = []
+bad_blur = []
 good_confidence = []
 good_beauty = []
+good_blur = []
 
-prefix = ""
+prefix = "staging."
 
 for f in faces:
     print "Working on %s" % ( f.id )
     confidence = -1
     beauty = -1
+    blur = -1
 
     url = "https://%sviblio.com/s/ip/%s" % ( prefix, f.uri )
+    filename = "/wintmp/blur-test/%s.jpg" % ( f.id )
+
+    try:
+        image_file = requests.get( url, stream=True )
+        if image_file.status_code == 200:
+            with open( filename, 'wb' ) as fo:
+                for chunk in image_file.iter_content():
+                    fo.write( chunk )
+
+        ( status, output ) = commands.getstatusoutput( "/home/viblio/viblio/faces-working/faces/BlurDetector/blurDetector %s" % ( filename ) )
+        print "Working on: %s %s" % ( url, filename )
+        print status, output
+        blur = float( output )
+    except Exception as e:
+        print "ERROR: %s" % ( e )
 
     result = detect_faces( url )
     if result is not None and len( result['face_detection'] ) > 0:
@@ -96,27 +116,33 @@ for f in faces:
     if f.recognition_result in [ 'bad_face', 'not_face' ]:
         bad_faces.append( { "url" : url,
                             "confidence" : confidence,
-                            "beauty" : beauty } )
+                            "beauty" : beauty,
+                            "blur" : blur } )
         if confidence > -1:
             bad_confidence.append( confidence )
         if beauty > -1:
             bad_beauty.append( beauty )
+        bad_blur.append( blur )
     elif f.recognition_result in [ 'machine_recognized', 'human_recognized', 'two_face' ]:
         good_faces.append( { "url" : url,
                             "confidence" : confidence,
-                            "beauty" : beauty } )
+                            "beauty" : beauty,
+                             "blur" : blur } )
         if confidence > -1:
             good_confidence.append( confidence )
         if beauty > -1:
             good_beauty.append( beauty) 
+        good_blur.append( beauty )
     else:
         print "ERROR - unexpected recognition result: %s" % ( f.recognition_result )
         sys.exit( 1 )
 
 print "Good confidence: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( good_confidence ), numpy.median( good_confidence ), numpy.std( good_confidence ) )
 print "Good beauty: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( good_beauty ), numpy.median( good_beauty ), numpy.std( good_beauty ) )
+print "Good blur: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( good_blur ), numpy.median( good_blur ), numpy.std( good_blur ) )
 print "Bad confidence: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( bad_confidence ), numpy.median( bad_confidence ), numpy.std( bad_confidence ) )
 print "Bad beauty: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( bad_beauty ), numpy.median( bad_beauty ), numpy.std( bad_beauty ) )
+print "Bad blur: \n\tavg: %0.02f\n\tmed: %0.02f\n\tsdv: %0.02f\n" % ( numpy.mean( bad_blur ), numpy.median( bad_blur ), numpy.std( bad_blur ) )
 
 def get_col_lists( values, cols ):
     return [ values[i:i+cols] for i in range( 0, len( values ), cols ) ]
@@ -143,28 +169,28 @@ back_html = '''
 '''
 
 # Display bad faces ordered by confidence, beauty:
-b = open( "bad_faces.html", 'w' )
+b = open( "bad_faces_blur.html", 'w' )
 body_html = ""
 bad_cols = get_col_lists( bad_faces, cols )
 
 for bad_col in bad_cols:
     body_html += "<tr>\n"
     for elem in bad_col:
-        body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>%0.02f</li><li>%0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'] )
+        body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>%0.02f</li><li>%0.02f</li><li>%0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'], elem['blur'] )
     body_html += "</tr>\n"
         
 b.write( head_html )
 b.write( body_html )
 b.write( back_html )
 
-g = open( "good_faces.html", 'w' )
+g = open( "good_faces_blur.html", 'w' )
 body_html = ""
 good_cols = get_col_lists( good_faces, cols )
 
 for good_col in good_cols:
     body_html += "<tr>\n"
     for elem in good_col:
-        body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>%0.02f</li><li>%0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'] )
+        body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>%0.02f</li><li>%0.02f</li><li>%0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'], elem['blur'] )
     body_html += "</tr>\n"
         
 g.write( head_html )
