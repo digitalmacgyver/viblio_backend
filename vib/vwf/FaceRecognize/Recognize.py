@@ -7,10 +7,10 @@ import uuid
 
 import vib.cv.FaceRecognition.api as rec
 from vib.utils import Serialize
+import vib.rekog.utils
 from vib.vwf.VPWorkflow import VPW
 from vib.vwf.VWorker import VWorker
 
-import vib.vwf.FaceRecognize.mturk_utils as mturk_utils
 import vib.vwf.FaceRecognize.db_utils as db_utils
 import vib.utils.s3 as s3
 
@@ -33,14 +33,14 @@ class Recognize( VWorker ):
         '''
 
         try:
-            # How often should we poll Mechanical Turk to see if a job
-            # is done.
-            self.polling_secs = 10
+            # If the detection_confidence is less than this we set the
+            # face as bad face.
+            self.detection_threshold = 0.8
             
-            # When we find a face with a recognition confidence
-            # greater than this we stop looking.
-            self.recognition_threshold = 0.9
-
+            # If the recognition_confidence is greater than this we
+            # set the face as machine recognized.
+            self.recognition_threshold = 0.7
+            
             self.lock_acquired = False
 
             user_uuid  = options['user_uuid']
@@ -48,12 +48,9 @@ class Recognize( VWorker ):
             recognition_input = options['FaceDetect'].get( 'recognition_input', None )
 
             if recognition_input is None:
-                log.info( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
-                            } ) )
-                self.heartbeat()
+                log.info( json.dumps( {  'media_uuid' : media_uuid,
+                                         'user_uuid' : user_uuid,
+                                         'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid ) } ) )
                 db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
                 
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
@@ -70,18 +67,14 @@ class Recognize( VWorker ):
             self.user_uuid = user_uuid
             self.media_uuid = media_uuid
 
-            log.info( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Working on media_uuid: %s for user: %s" % ( media_uuid, user_uuid )
-                        } ) )
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : "Working on media_uuid: %s for user: %s" % ( media_uuid, user_uuid ) } ) )
 
             if tracks == None or len( tracks ) == 0:
-                log.info( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid )
-                            } ) )
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : "No tracks for media/user_uuid %s/%s, returning." % ( media_uuid, user_uuid ) } ) )
                 
                 db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
                 
@@ -100,11 +93,9 @@ class Recognize( VWorker ):
                                                    heartbeat = 30,
                                                    timeout = 120 )
 
-            log.debug( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Attempting to acquire serialization lock for %s" % user_uuid
-                        } ) )
+            log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                     'user_uuid' : user_uuid,
+                                     'message' : "Attempting to acquire serialization lock for %s" % user_uuid } ) )
 
             # This will wait for up to 2 minutes trying to get the
             # lock.
@@ -113,7 +104,7 @@ class Recognize( VWorker ):
             if not self.lock_acquired:
                 # We didn't get the lock - we want this task to be
                 # terminated, and we want another task the chance to
-                # get in and use it's slot in our limited number of
+                # get in and use its slot in our limited number of
                 # workers who can handle these jobs.
                 #
                 # We achieve this by sleeping until the timeout for
@@ -123,452 +114,131 @@ class Recognize( VWorker ):
                 # Attempting a heartbeat now results in an exception
                 # being thrown.
                 message = "media_uuid: %s, user_uuid %s committed suicide after failing to get lock" % ( media_uuid, user_uuid )
-                log.info( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : message
-                            } ) )
-
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : message } ) )
                 raise Exception( message )
 
-            # First we do quality control on the tracks, and merge
-            # different tracks into one.
+            # Tracks data structure is like:
+            # { "tracks" : [ { 
+            #                  "track_id" : 0,
+            #                  "faces" : [ {
+            #                               "s3_bucket" : ...,
+            #                               "s3_key" : ..., }, ],
+            #                 }, ]
+            #   "user_uuid" : ...,
+            #   "media_uuid" : ... }
+            for track in tracks:
+                if 'faces' in track:
+                    for track_face in track['faces']:
+                        self._handle_face( track['track_id'], track_face, user_uuid, media_uuid )
+
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
-                                    'message' : "Getting merged tracks" } ) )
-            merged_tracks, bad_tracks = self._get_merged_tracks( tracks )
-
-            # Then we go through each face post merge and try to
-            # recognize them
-            log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                    'user_uuid' : user_uuid,
-                                    'message' : "Recognizing faces" } ) )
-
-            recognized_faces, new_faces, recognition_data = self._recognize_faces( merged_tracks )
-
-            # Then we persist our results.
-            log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                    'user_uuid' : user_uuid,
-                                    'message' : "Updating contacts" } ) )
+                                    'message' : "Returning successfully" } ) )
             
-            result = db_utils.update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tracks, recognition_data )
-            
-            if not result:
-                # We had an error updating the DB contacts, most
-                # likely there was a race condition and a face we
-                # recognized no longer exists due to user behavior in
-                # the UI.  Retry the entire task from scratch.
-                return { 'ACTIVITY_ERROR' : True, 'retry' : True }
-            else:
-                log.info( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : "Returning successfully"
-                            } ) )
+            db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
                 
-                db_utils.update_media_status( media_uuid, self.task_name + 'Complete' )
-                
-                return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
+            return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
             
         except Exception as e:
             # We had an unknown error, fail the job - it will be
             # retried if we're under max_failures.
-            log.error( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Exception was: %s" % ( e )
-                        } ) )
+            log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                     'user_uuid' : user_uuid,
+                                     'message' : "Exception was: %s" % ( e ) } ) )
             raise
         finally:
             # On the way out let go of our lock if we've got it.
             if self.lock_acquired:
                 self.faces_lock.release()
 
-    def _get_merged_tracks( self, tracks ):
+    def _handle_face( self, track_id, track_face, user_uuid, media_uuid ):
+        '''For each face, send it to Orbues for detection:
+        * If not a face, add it to the DB as a not_face
+        * If confidence < 0.8 add it to the DB as bad_face
+        * If two or more faces, add it to the DB as two_face
+        * Else attempt recognition:
+        *  If recognition > 0.8 add to DB as machine_recognized
+        *  else add as new_face
         '''
-        Input - the user and media_uuids we are working with, and an
-        array of tracks, each of which includes an array of faces.
-        Each Face has a URI for where it is in S3.
-        
-        This method:
-        1) Heartbeats Amazon SWF that it is working.
-        2) Creates a Mechanical Turk task.
-        3) Polls Mechanical Turk until that task is done.
-        4) Interprets the Mechanical Turk results.
+        try:
+            url = "%s%s" % ( config.ImageServer, track_face['s3_key'] )
+            detection = vib.rekog.utils.detect_face( url )
 
-        Returns two arrays:
-        merged_tracks, bad_tracks
-
-        The elements of merged_tracks are themselves arrays, each
-        element being a track that was merged with the others in the
-        same element.
-
-        The elements of bad_tracks are dictionaries, with keys
-        "reason" and "track" and values describing the reason this
-        track was bad, and the track itself that was bad.
-        '''
-
-        user_uuid = self.user_uuid
-        media_uuid = self.media_uuid
-
-        log.debug( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'message' : "Creating merge hit"
-                    } ) )
-        
-        hit_id = mturk_utils.create_merge_hit( media_uuid, tracks )
-        
-        log.info( json.dumps( { 
-                    'media_uuid' : media_uuid,
-                    'user_uuid' : user_uuid,
-                    'hit_id' : hit_id,
-                    'message' : "Created merge hit with HITId of %s" % hit_id
-                    } ) )
-
-        hit_completed = False
-        
-        while not mturk_utils.hit_completed( hit_id ):
-            log.debug( json.dumps( { 
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'hit_id' : hit_id,
-                        'message' : "Hit %s not complete, sleeping for %d seconds" % ( hit_id, self.polling_secs )
-                    } ) )
-
-            time.sleep( self.polling_secs )
-
-        answer_dict = mturk_utils.get_answer_dict_for_hit( hit_id )
-
-        merged_tracks, bad_tracks = self._process_merge( answer_dict, tracks )
-
-        return merged_tracks, bad_tracks
-
-    def _process_merge( self, answer_dict, tracks ):
-        '''Given a set of user answers, interpret the results and
-        return a merge_tracks, bad_tracks tuple.
-
-        Answers are in ['QuestionFormAnswers']['Answer']
-          * Label is ['QuestionIdentifier']
-          * Value is ['FreeText']
-        
-        Merge answers take the form:
-        answer_track# - Will be one of:
-        * track#_notface
-        * track#_twoface
-        * track#_new
-        
-        merge_track_track# - Will always be present, with a (hopefully)
-        # numeric value in our range of tracks, or None
-        '''
-        
-        user_uuid = self.user_uuid
-        media_uuid = self.media_uuid
-
-        track_disposition = {}
-        merge_dict = {}
-        bad_tracks = []
-
-        for track in tracks:
-            track_id = track['track_id']
-            track_disposition[track_id] = { 'track' : track }
-        
-        # Amazon's answer XML is a bit goofy - they give singleton
-        # elements instead of an array with one item.
-        answer_list = answer_dict['QuestionFormAnswers']['Answer']
-        if not isinstance( answer_list, list):
-            answer_list = [ answer_list ]
-
-        for answer in answer_list:
-            label = answer['QuestionIdentifier']
-            value = answer['FreeText']
-
-            track_id = int( label.rpartition( '_' )[2] )
-            if track_id not in track_disposition:
-                message = "Found answer for track %d which was not present in tracks: %s" % ( track_id, tracks )
-                log.error( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'track_id' : track_id,
-                            'message' : message
-                            } ) )
-                raise Exception( message )
-            
-            if label.startswith( 'answer_' ):
-                disposition = value.rpartition( '_' )[2]
-
-                if disposition == 'new':
-                    log.info( json.dumps( { 
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'track_id' : track_id,
-                                'message' : "Found new track %d" % track_id
-                                } ) )
-                    if track_id not in merge_dict:
-                        merge_dict[track_id] = [ track_disposition[track_id]['track'] ]
-                    else:
-                        merge_dict[track_id].append( track_disposition[track_id]['track'] )
-
-                elif disposition == 'notface':
-                    log.warning( json.dumps( { 
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'track_id' : track_id,
-                                'error_code' : 'not_face',
-                                'message' : "Not face track %d" % track_id
-                                } ) )
-                    bad_tracks.append( { 'reason' : 'not_face', 'track' : track_disposition[track_id]['track'] } )
-
-                elif disposition == 'badface':
-                    log.warning( json.dumps( { 
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'track_id' : track_id,
-                                'error_code' : 'bad_face',
-                                'message' : "Bad face track %d" % track_id
-                                } ) )
-                    bad_tracks.append( { 'reason' : 'bad_face', 'track' : track_disposition[track_id]['track'] } )
-
-                elif disposition == 'twoface':
-                    log.warning( json.dumps( { 
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'track_id' : track_id,
-                                'error_code' : 'two_face',
-                                'message' : "Two face track %d" % track_id
-                                } ) )
-                    bad_tracks.append( { 'reason' : 'two_face', 'track' : track_disposition[track_id]['track'] } )
-
-            elif label.startswith( 'merge_' ):
-                if value:
-                    log.info( json.dumps( { 
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'track_id' : track_id,
-                                'value' : value,
-                                'message' : "Merging track %d with %s" % ( track_id, value )
-                                } ) )
-                    merge_target = int( value )
-
-                    if merge_target not in track_disposition:
-                        message = "Asked to merge track %d with nonexistent track %d, tracks was: %s" % ( track_id, merge_target, tracks )
-                        log.error( json.dumps( { 
-                                    'media_uuid' : media_uuid,
-                                    'user_uuid' : user_uuid,
-                                    'track_id' : track_id,
-                                    'merge_target' : merge_target,
-                                    'message' : message
-                                    } ) )
-                        raise Exception( message )
-
-                    if merge_target not in merge_dict:
-                        merge_dict[merge_target] = [ track_disposition[track_id]['track'] ]
-                    else:
-                        merge_dict[merge_target].append( track_disposition[track_id]['track'] )
-
-            else:
-                message = "Unexpected answer label %s" % label
-                log.error( json.dumps( { 
-                            'media_uuid' : media_uuid,
-                            'user_uuid' : user_uuid,
-                            'message' : message
-                            } ) )
-                raise Exception( message )
-            
-        merged_tracks = []
-
-        for track_id in sorted( merge_dict.keys() ):
-            merged_tracks.append( merge_dict[track_id] )
-
-        return merged_tracks, bad_tracks
-
-    def _recognize_faces( self, merged_tracks ):
-        '''
-        Input: The media_uuid and user_uuid that we are working on,
-        and an array of merged tracks.  Each element of merged tracks
-        is itself an array of track data structures.
-
-        This method:
-        1) Creates one Mechanical Turk task for each element of merged_tracks.
-        2) Polls Mechanical Turk until all the Mechanical Turk tasks are done.
-        3) Interprets the Mechanical Turk results.
-
-        Returns two dictionaries:
-        recognized_faces, new_faces
-
-        The keys of both dictionaries are uuids, in the case of
-        recognized_faces they are the contact_uuids of the recognized
-        faces.
-
-        The values in both dictionaries are arrays of track data
-        structures which were determined to be for those faces.
-        '''
-
-        user_uuid = self.user_uuid
-        user_id = db_utils.get_user_id( user_uuid )
-        media_uuid = self.media_uuid
-
-        contacts = db_utils.get_picture_contacts_for_user_uuid( user_uuid )
-
-        if len( contacts ) > 0:
-            # There user has at least one contact with a picture
-            guesses = []
-            for person_track in merged_tracks:
-                guess = None
-                guess_confidence = None
-                recognize_id = None
-                done = False
-                if len( contacts ) > 1:
-                    for track in person_track:
-                        if not done:
-                            for face in track['faces']:
-                                
-                                matches = rec.recognize_face( user_id, "%s%s" % ( config.ImageServer, face['s3_key'] ) )
-                                
-                                if matches is not None:
-                                    if len( matches['faces'] ):
-                                        current_guess = matches['faces'][0]
-                                        current_confidence = current_guess['recognition_confidence']
-                                        if guess_confidence is None or current_confidence > guess_confidence:
-                                            guess = current_guess
-                                            guess_confidence = current_confidence
-                                            recognize_id = matches['recognize_id']
-                                            if guess_confidence >= self.recognition_threshold:
-                                                done = True
-                                                break
-                 
-                if guess is not None:
-                    guess_contact_id = db_utils.get_contact_uuid( guess['contact_id'] )
-                    if guess_contact_id is not None:
-                        guess['uuid'] = guess_contact_id
-                    else:
-                        guess = None
-
-                guesses.append( { 'guess'        : guess, 
-                                  'recognize_id' : recognize_id } )
-               
-            log.debug( json.dumps( {  'media_uuid' : media_uuid,
-                                      'user_uuid' : user_uuid,
-                                      'message' : "Creating %d recognition hits" % len( merged_tracks ) } ) )
-
-            # hit_tracks is an array of hash elements with HITId and
-            # merged_tracks keys.
-            hit_tracks = mturk_utils.create_recognize_hits( media_uuid, merged_tracks, contacts, guesses )
-            
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
-                                    'message' : "Created %d hits, HITIds are: %s" % ( len( hit_tracks ), hit_tracks ) } ) )
+                                    'message' : "Processing face at: %s" % ( url ) } ) )
 
-            answer_dicts = {}
+            result = 'not_face'
 
-            hit_completed = False
-        
-            for hit_track in hit_tracks:
-                hit_id = hit_track['HITId']
-                while not mturk_utils.hit_completed( hit_id ):
+            user_id = db_utils.get_user_id( user_uuid )
+
+            detection_confidence = None
+            recognition_confidence = None
+
+            if 'face_detection' in detection:
+                if len( detection['face_detection'] ) == 1:
+                    recog_face = detection['face_detection'][0]
+                    detection_confidence = recog_face['confidence']
+
                     log.info( json.dumps( { 'media_uuid' : media_uuid,
                                             'user_uuid' : user_uuid,
-                                            'hit_id' : hit_id,
-                                            'message' : "Hit %s not complete, sleeping for %d seconds" % ( hit_id, self.polling_secs ) } ) )
+                                            'message' : "Detection confidence was: %f" % ( detection_confidence ) } ) )
 
-                    time.sleep( self.polling_secs )
-                answer_dicts[hit_id] = mturk_utils.get_answer_dict_for_hit( hit_id )
+                    if detection_confidence >= self.detection_threshold:
+                        matches = rec.recognize_face( user_id, url )
+                        if matches is not None:
+                            if len( matches['faces'] ):
+                                recognition_confidence = matches['faces'][0]['recognition_confidence']
 
-            recognized_faces, new_faces, recognition_data = self._process_recognized( answer_dicts, hit_tracks )
-        else:
-            # The user has no contacts with pictures, so everyone here is new.
-            recognized_faces = {}
-            new_faces = {}
-            recognition_data = None
-            for person_tracks in merged_tracks:
-                contact_uuid = str( uuid.uuid4() )
-                new_faces[contact_uuid] = person_tracks
-            
-        return recognized_faces, new_faces, recognition_data
+                                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                                        'user_uuid' : user_uuid,
+                                                        'message' : "Matched contact %d with confidence %f" % ( matches['faces'][0]['contact_id'], recognition_confidence ) } ) )
 
-    def _process_recognized( self, answer_dicts, hit_tracks ):
-        '''Given sets of user answers, interpret the results to tag
-        users.  Return a recognized_faces, new_faces tuple.
-
-        Answers are in ['QuestionFormAnswers']['Answer']
-          * Label is ['QuestionIdentifier']
-          * Value is ['FreeText']
-        
-        Merge answers take the form:
-        answer - Will be one of:
-        * recognized_[uuid]
-        * new_face
-        '''
-
-        #import pdb
-        #pdb.set_trace()
-
-        user_uuid = self.user_uuid
-        media_uuid = self.media_uuid
-
-        recognized_faces = {}
-        new_faces = {}
-        recognition_data = {}
-
-        for hit_track in hit_tracks:
-            hit_id = hit_track['HITId']
-            person_tracks = hit_track['merged_tracks']
-
-            answer_dict = answer_dicts[ hit_id ]
-
-            # Amazon's answer XML is a bit goofy - they give singleton
-            # elements instead of an array with one item.
-            answer_list = answer_dict['QuestionFormAnswers']['Answer']
-            if not isinstance( answer_list, list):
-                answer_list = [ answer_list ]
-
-            # Get the recognize_id
-            recognize_id = None
-            for answer in answer_list:
-                label = answer['QuestionIdentifier']
-                value = answer['FreeText']
-
-                if label == 'recognize_id':
-                    if value != 'None':
-                        recognize_id = int( value )
-
-            # Get the rest of the data
-            data = None
-            for answer in answer_list:
-                label = answer['QuestionIdentifier']
-                value = answer['FreeText']
-
-                if label == 'answer':
-                    data = value
-
-            #value = answer_dict['QuestionFormAnswers']['Answer']['FreeText']
+                                if recognition_confidence >= self.recognition_threshold:
+                                    result = 'machine_recognized'
+                                    rec.recognition_feedback( matches['recognize_id'], 1 )
+                                else:
+                                    result = 'new_face'
+                                    rec.recognition_feedback( matches['recognize_id'], None )
+                            else:
+                                result = 'new_face'
+                        else:
+                            result = 'new_face'
+                    else:
+                        result = 'bad_face'
+                else:
+                    result = 'two_face'                    
+            else:
+                result = 'not_face'
 
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
-                                    'hit_id' : hit_id,
-                                    'data' : data,
-                                    'message' : "Found data %s for hit %s" % ( data, hit_id ) } ) )
+                                    'message' : "RESULT WAS: %s" % ( result ) } ) )
 
-            if data == 'new_face':
-                contact_uuid = str( uuid.uuid4() )
-                new_faces[contact_uuid] = person_tracks
-                recognition_data[contact_uuid] = { 'recognition_result' : 'new_face' }
-            elif data.startswith( 'human_recognized_' ):
-                contact_uuid = data.rpartition( '_' )[2]
-                recognized_faces[contact_uuid] = person_tracks
-                recognition_data[contact_uuid] = { 'recognition_result' : 'human_recognized' }
-            elif data.startswith( 'machine_recognized_' ):
-                contact_uuid = data.rpartition( '_' )[2]
-                recognized_faces[contact_uuid] = person_tracks
-                recognition_data[contact_uuid] = { 'recognition_result' : 'machine_recognized' }
-            else:
-                message = "Unexpected answer data %s" % data
-                log.error( json.dumps( { 'media_uuid' : media_uuid,
-                                         'user_uuid' : user_uuid,
-                                         'message' : message } ) )
-                raise Exception( message )
-
-            recognition_data[contact_uuid]['recognize_id'] = recognize_id
-                
-        return recognized_faces, new_faces, recognition_data
+            if result in [ 'bad_face', 'two_face', 'not_face' ]:
+                # Update DB record with appropriate data.
+                db_utils.update_face( user_uuid, media_uuid, track_id, track_face, result, None, None )
+            elif result == 'machine_recognized':
+                # Add to DB with contact ID of ['contact_id']
+                # Add to recog with that tag.
+                face_id = db_utils.update_face( user_uuid, media_uuid, track_id, track_face, result, recognition_confidence, matches['faces'][0]['contact_id'] )
+                rec.add_faces( user_id, matches['faces'][0]['contact_id'], [ { 'user_id'     : user_id,
+                                                                              'contact_id'   : matches['faces'][0]['contact_id'],
+                                                                              'face_id'      : face_id,
+                                                                              'face_url'     : url,
+                                                                               'external_id' : None } ] )
+            elif result == 'new_face':
+                # Add to DB as new face
+                # Add to recog with new contact_id
+                ( face_id, contact_id ) = db_utils.add_face( user_uuid, media_uuid, track_id, track_face, result, recognition_confidence )
+                rec.add_faces( user_id, contact_id, [ { 'user_id'     : user_id,
+                                                        'contact_id'  : contact_id,
+                                                        'face_id'     : face_id,
+                                                        'face_url'    : url,
+                                                        'external_id' : None } ] )
+        except Exception as e:
+            raise
+        
 

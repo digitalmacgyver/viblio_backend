@@ -260,7 +260,6 @@ def _get_face_by_id( face_id ):
     is not found.'''
 
     try:
-
         log.info( json.dumps( { 'message'    : 'Getting face data for face_id: %s' % ( face_id ) } ) )
 
         orm = vib.db.orm.get_session()
