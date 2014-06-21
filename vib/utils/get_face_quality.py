@@ -55,6 +55,7 @@ def detect_faces( url ):
 orm = vib.db.orm.get_session()
 
 from_when = datetime.datetime.utcnow() - datetime.timedelta( days=30 )
+end_when = datetime.datetime.utcnow() - datetime.timedelta( days=2 )
 
 faces = orm.query( Media.filename, 
                    MediaAssets.uri,
@@ -69,7 +70,8 @@ faces = orm.query( Media.filename,
         MediaAssets.id == MediaAssetFeatures.media_asset_id,
         MediaAssetFeatures.feature_type == 'face',
         MediaAssetFeatures.recognition_result.in_( [ 'bad_face', 'not_face', 'machine_recognized', 'human_recognized', 'two_face' ] ),
-        MediaAssetFeatures.created_date >= from_when ) )
+        MediaAssetFeatures.created_date >= from_when,
+        MediaAssetFeatures.created_date <= end_when ) )
 
 bad_faces = []
 good_faces = []
@@ -83,7 +85,7 @@ good_blur = []
 
 prefix = "staging."
 
-for f in faces:
+for f in faces[:500]:
     print "Working on %s" % ( f.id )
     confidence = -1
     beauty = -1
@@ -132,7 +134,7 @@ for f in faces:
             good_confidence.append( confidence )
         if beauty > -1:
             good_beauty.append( beauty) 
-        good_blur.append( beauty )
+        good_blur.append( blur )
     else:
         print "ERROR - unexpected recognition result: %s" % ( f.recognition_result )
         sys.exit( 1 )
@@ -151,9 +153,9 @@ cols = 5
 width = 128
 height = 128
 
-bad_faces.sort( key=itemgetter( 'confidence', 'beauty' ) )
+bad_faces.sort( key=itemgetter( 'blur', 'confidence', 'beauty' ) )
 bad_faces.reverse()
-good_faces.sort( key=itemgetter( 'confidence', 'beauty' ) )
+good_faces.sort( key=itemgetter( 'blur', 'confidence', 'beauty' ) )
 good_faces.reverse()
 
 head_html = '''
