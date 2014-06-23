@@ -39,7 +39,7 @@ class Recognize( VWorker ):
             
             # If the recognition_confidence is greater than this we
             # set the face as machine recognized.
-            self.recognition_threshold = 0.7
+            self.recognition_threshold = 0.8
             
             self.lock_acquired = False
 
