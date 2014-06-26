@@ -58,6 +58,7 @@ from_when = datetime.datetime.utcnow() - datetime.timedelta( days=30 )
 end_when = datetime.datetime.utcnow() - datetime.timedelta( days=2 )
 
 faces = orm.query( Media.filename, 
+                   Media.id,
                    MediaAssets.uri,
                    MediaAssetFeatures.id,
                    MediaAssetFeatures.media_id,
@@ -85,8 +86,8 @@ good_blur = []
 
 prefix = "staging."
 
-for f in faces[:500]:
-    print "Working on %s" % ( f.id )
+for f in faces[:256]:
+    print "Working on %s %s" % ( f.id, f[1] )
     confidence = -1
     beauty = -1
     blur = -1
@@ -104,7 +105,15 @@ for f in faces[:500]:
         ( status, output ) = commands.getstatusoutput( "/home/viblio/viblio/faces-working/faces/BlurDetector/blurDetector %s" % ( filename ) )
         print "Working on: %s %s" % ( url, filename )
         print status, output
+        #ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == f[1], MediaAssets.asset_type == 'main' ) ).one()
+        #scale = 1080
+        #if ma.width is not None and ma.width > 0:
+        #    scale = ma.width
+        #blur = ( float( scale ) / 1080 ) * float( output )
+        #print "Scale is: %s, output is: %s, blur is %s" % ( scale, float( output ), blur )
+        #blur = ( float( 1080 ) / scale ) * float( output )
         blur = float( output )
+
     except Exception as e:
         print "ERROR: %s" % ( e )
 
