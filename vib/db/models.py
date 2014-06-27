@@ -110,6 +110,12 @@ class MediaAlbums( BaseModel, Serializer ):
 class ViblioAddedContent( BaseModel, Serializer ):
     pass
 
+class Groups( BaseModel, Serializer ):
+    pass
+
+class UserGroups( BaseModel, Serializer ):
+    pass
+
 """
 Well, reflection really only gives us the column definitions it
 seems.  We are still responsible for establishing the relationships
@@ -139,7 +145,19 @@ def db_map(engine):
             'viblio_added_content' : relationship( models.ViblioAddedContent,
                                                    lazy='dynamic',
                                                    backref='user' ),
+            'groups' : relationship( models.Groups,
+                                     lazy='dynamic',
+                                     backref='user' ),
+            'user_groups' : relationship( models.UserGroups,
+                                          lazy='dynamic',
+                                          backref='user' ),
             })
+
+    mappers["groups"].add_properties( { 
+            "user_groups" : relationship( models.UserGroups,
+                                          lazy='dynamic',
+                                          backref='group' )
+            } )
 
     mappers["media"].add_properties({
             "assets": relationship(models.MediaAssets,

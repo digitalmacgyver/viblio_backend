@@ -94,6 +94,7 @@ def reflect( engine, models ):
         'faces' : True,
         'faces2' : True,
         'feature_types' : True,
+        'groups' : True,
         'links' : True,
         'media' : True,
         'media_albums' : True,
@@ -114,8 +115,8 @@ def reflect( engine, models ):
         'roles' : True,
         'sessions' : True,
         'share_types' : True,
-        'user_roles' : True,
         'users' : True,
+        'user_groups' : True,
         'viblio_added_content' : True,
         'workflow_stages' : True,
         'workorders' : True

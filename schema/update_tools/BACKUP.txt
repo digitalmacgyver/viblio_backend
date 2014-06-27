@@ -1,0 +1,3 @@
+Database backup / clone procedure:
+
+mysqldump -h testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com -u admin -pitonerol video_dev_1 | mysql -h testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com -u admin -pitonerol video_dev_2
