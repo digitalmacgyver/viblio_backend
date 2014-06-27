@@ -1,0 +1,450 @@
+TODO:
+
+3. Port media_shares - first understand why we get null values in
+user_id for various types, why we see shared albums, why we see
+hidden, what is a potential.
+
+4. Remove access to contacts, contact_groups, media_shares, communities.
+
+revoke all on video_dev_2.contacts from 'web_dev', 'vwf_dev', 'popeye_dev';
+revoke all on video_dev_2.contact_groups from 'web_dev', 'vwf_dev', 'popeye_dev';
+revoke all on video_dev_2.media_shares from 'web_dev', 'vwf_dev', 'popeye_dev';
+revoke all on video_dev_2.communities from 'web_dev', 'vwf_dev', 'popeye_dev';
+
+5. Remove those tables from the ORM.
+
+5. Merge autofr branch with master and this one, as it wipes out a ton of complexity in FaceRecognize.
+
+5. Re-implement back end to do the right stuff.
+
+grep for: 
+
+grep -ir contacts * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+
+TEST: cv/FaceRecognition/CleanupFaces.py
+
+TEST: utils/greet_new_users.py
+
+* Used similar logic to this all over.
+
+TEST: fb/CreateContacts.py
+
+* Include test case of two people adding the same FB contact, it
+  should result in only one new user.
+
+TEST: utils/delete_user.py
+
+TEST: utils/rescue_orphan_faces.py
+
+vwf/FaceRecognize/db_utils.py
+vwf/FaceRecognize/mturk_utils.py
+vwf/FaceRecognize/recognize_face_form.py
+vwf/FaceRecognize/Recognize.py
+
+grep -ir contact_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+
+vwf/FaceRecognize/db_utils.py
+vwf/FaceRecognize/Recognize.py
+
+DEPRECATED / FIX LATER:
+utils/clone_user.py
+utils/manage_demo_accounts.py
+utils/person_summary.py
+utils/test.py
+
+DONE:
+grep -ir media_share * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir community * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir communities * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir is_group * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir organization_users * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir media_share_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir member_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir members_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir curators_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir share_type * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+grep -ir view_count *  | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
+
+
+6. Come up with sample queries (paginated):
+
+All videos for user.
+
+All videos with faces, tags, actvities for user.
+
+All contacts for user.
+
+Adding a contact.
+
+Creating a share.
+
+Getting picture_uri's for user/user pair.
+
+
+6. For discussion - do we want a meta-album of all the users content?
+This would simplify some queries so we could just always look at
+albums and never ownership directly?
+
+8. Test in staging:
+
+
+
+
+CHALLENGES:
+
+1) What rights do we want users to have on shared albums - viewer,
+editor, admin, owner?
+
+2) The UI frequently wants to see "all videos I can see" - how is this
+query done?
+
+QUESTION: We we need a distinct groups and user_groups table, or is
+just user_groups onto users sufficient?
+
+All my shared content in the "groups, user_groups" scenario:
+
+select *
+from media, media_shares, media_albums, groups, user_groups
+where user_groups.member_id = 'my user id'
+and user_groups.group_id = groups.id
+and groups.id = media_shares.members_id
+and media_albums.album_id = media_shares.media_id
+and media_albums.media_id = media.id
+
+Wow this is a bad query, and further we're doing something fishy in
+joinin gfrom media_albums to media_shares.  Think if maybe the
+album_id shouldn't be the FK into the media_shares table instead.
+
+DEBUG - IF YOU CAN ONLY SHARE AN ALBUM, IT'S BAD FORM TO FK MEDIA.ID
+INTO COMMUNITIES.  ON THE OTHER HAND, IT's NICE THAT ALBUMS HAVE ALL
+THE CHARACTERISTICS OF MEDIA - ASSETS AND THE LIKE, SO BREAKING OUT
+INTO ALBUMS AND MEDIA MIGHT BE A PROBLEM.
+
+
+Order 10s of millions to billions of rows in the fulapt-get install neo4jl cartesian join.
+
+
+How could we unwind it:
+
+Each user has a list of content they are allowed to see.  When a share
+happens those users get added to the list.
+
+
+
+All my shared content in the "user_groups" only scenario:
+
+select * 
+from media, media_shares, media_albums, user_groups
+where user_groups.member_id = my user id
+and user_groups.groups_id = media_shares.members_id
+and ...
+
+Well - one less table.
+
+What is user_groups and groups getting us?
+
+It means we don't end up with "is_group" rows in the users table, or
+"user" libe objects that are just containers for groups of users,
+which are in reality owned by other users.
+
+
+--
+
+1) organization_users - this table is not used in production or dev.
+
+2) user_roles - this table is not used in production, in dev it has one
+row mapping vaadmin@viblio.com to the admin role. 
+
+This seems to be vestigal from the old "communities" project?
+
+3) user_types - this table was used to specify users as being
+"organization" users or "individuals."  Currently there are no
+"organization" users in development or production.
+
+4) contact_groups - There are a limited number (~100 prod, ~23 dev) of
+contact groups.  None have the contact_viblio_id set.
+
+These contact groups seem to relate to shared albums, in the
+"communities" sense.
+
+The "provider_id" column of contacts is set to _shared_album in some
+cases.
+
+A particular contact group is 17976 contact_id - Kairo Orange Belt test21.
+
+5) media_share_messages is not currently populated in development or prod.
+
+6) Communities are used a bit (<20) in development and prod, they seem
+to implement the "Shared group album" feature.
+
+The "member_id" column of a community album is the contact_group ID of
+a shared album it appears.
+
+All the "media_id" of communities are "album" type media rows.
+
+7) media_shares are widely used (hundreds of rows in each).
+
+--
+
+
+grant select, insert, update, delete, create temporary tables, lock tables, execute, trigger on video_dev_2.* to 'web_dev' with max_user_connections 200;
+
+grant select, insert, update, delete, create temporary tables, lock tables, execute, trigger on video_dev_2.* to 'vwf_dev' with max_user_connections 200;
+
+grant select, insert, update, delete, create temporary tables, lock tables, execute, trigger on video_dev_2.* to 'popeye_dev' with max_user_connections 200;
+
+
+
+4. Remove access to contacts, contact_groups, media_shares, communities.
+
+-- To avoid namespace collisions with recognition, we need to bump our
+-- users id up above the top possible contact so far.
+
+select max( id ) from contacts;
+select max( id ) from users;
+
+alter table users auto_increment = XXX;
+
+
+--
+
+drop table organization_users;
+drop table user_roles;
+
+update contacts set contact_email = null where contact_email = 'feedback@viblio.com';
+
+insert into user_types ( type ) values ( 'contact' );
+
+-- Create group_types, groups, user_groups:
+
+CREATE  TABLE IF NOT EXISTS `group_types` (
+  `type` VARCHAR(32) NOT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`type`) )
+ENGINE = InnoDB;
+
+-- Trigger DDL Statements
+DELIMITER $$
+
+CREATE
+	TRIGGER group_type_created BEFORE INSERT ON group_types FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER group_type_updated BEFORE UPDATE ON group_types FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
+insert into group_types ( type ) values ( 'contact' );
+insert into group_types ( type ) values ( 'share' );
+commit;
+
+
+CREATE  TABLE IF NOT EXISTS `groups` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `owner_id` INT(11) NOT NULL ,
+  `uuid` VARCHAR(36) NOT NULL ,
+  `group_type` VARCHAR(32) NOT NULL ,
+  `group_name` VARCHAR(128) NULL ,
+  `organization_uid` VARCHAR(128) NULL ,
+  `created_date` DATETIME NULL ,
+  `updated_date` DATETIME NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_groups_users1` (`owner_id` ASC) ,
+  INDEX `fk_groups_group_types1` (`group_type` ASC) ,
+  INDEX `fk_groups_user_groups1` (`id` ASC, `owner_id` ASC) ,
+  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
+  CONSTRAINT `fk_groups_users1`
+    FOREIGN KEY (`owner_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_groups_group_types1`
+    FOREIGN KEY (`group_type` )
+    REFERENCES `group_types` (`type` )
+    ON DELETE RESTRICT
+    ON UPDATE RESTRICT)
+ENGINE = InnoDB;
+
+-- Trigger DDL Statements
+DELIMITER $$
+
+
+
+CREATE
+	TRIGGER group_created BEFORE INSERT ON groups FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER group_updated BEFORE UPDATE ON groups FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
+
+CREATE  TABLE IF NOT EXISTS `user_groups` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT ,
+  `group_id` INT NOT NULL ,
+  `owner_id` INT(11) NOT NULL ,
+  `member_id` INT(11) NOT NULL ,
+  `uuid` VARCHAR(36) NOT NULL ,
+  `member_name` VARCHAR(128) NULL DEFAULT NULL ,
+  `member_role` VARCHAR(32) NULL DEFAULT NULL ,
+  `picture_uri` VARCHAR(2048) NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`) ,
+  INDEX `fk_user_groups_users1` (`member_id` ASC) ,
+  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
+  INDEX `fk_user_groups_groups1` (`group_id` ASC, `owner_id` ASC) ,
+  CONSTRAINT `fk_user_groups_users1`
+    FOREIGN KEY (`member_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_user_groups_groups1`
+    FOREIGN KEY (`group_id` , `owner_id` )
+    REFERENCES `groups` (`id` , `owner_id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+-- Trigger DDL Statements
+DELIMITER $$
+
+CREATE
+	TRIGGER user_group_created BEFORE INSERT ON user_groups FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER user_group_updated BEFORE UPDATE ON user_groups FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
+
+CREATE  TABLE IF NOT EXISTS `shared_album_groups` (
+  `id` INT NOT NULL AUTO_INCREMENT ,
+  `user_id` INT(11) NOT NULL ,
+  `uuid` VARCHAR(36) NOT NULL ,
+  `name` VARCHAR(128) NULL DEFAULT NULL ,
+  `share_type` VARCHAR(16) NOT NULL ,
+  `media_id` INT(11) NOT NULL ,
+  `pending_id` INT(11) NULL DEFAULT NULL ,
+  `members_id` INT(11) NOT NULL ,
+  `curators_id` INT(11) NULL DEFAULT NULL ,
+  `is_curated` TINYINT(1) NOT NULL DEFAULT true ,
+  `webhook` TEXT NULL DEFAULT NULL ,
+  `created_date` DATETIME NULL DEFAULT NULL ,
+  `updated_date` DATETIME NULL DEFAULT NULL ,
+  PRIMARY KEY (`id`, `user_id`) ,
+  INDEX `fk_shared_albums_users1` (`user_id` ASC) ,
+  INDEX `fk_shared_albums_groups1` (`members_id` ASC) ,
+  INDEX `fk_shared_albums_groups2` (`curators_id` ASC) ,
+  INDEX `fk_shared_albums_groups_media1` (`media_id` ASC) ,
+  INDEX `fk_shared_albums_groups_media2` (`pending_id` ASC) ,
+  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC) ,
+  INDEX `fk_shared_album_groups_share_types1` (`share_type` ASC) ,
+  CONSTRAINT `fk_shared_albums_users1`
+    FOREIGN KEY (`user_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_shared_albums_groups1`
+    FOREIGN KEY (`members_id` )
+    REFERENCES `groups` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_shared_albums_groups2`
+    FOREIGN KEY (`curators_id` )
+    REFERENCES `groups` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_shared_albums_groups_media1`
+    FOREIGN KEY (`media_id` )
+    REFERENCES `media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_shared_albums_groups_media2`
+    FOREIGN KEY (`pending_id` )
+    REFERENCES `media` (`id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_shared_album_groups_share_types1`
+    FOREIGN KEY (`share_type` )
+    REFERENCES `share_types` (`type` )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+-- Trigger DDL Statements
+DELIMITER $$
+
+CREATE
+	TRIGGER shared_album_group_created BEFORE INSERT ON shared_album_groups FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+CREATE
+	TRIGGER shared_album_group_updated BEFORE UPDATE ON shared_album_groups FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+DELIMITER ;
+
+alter table media_share_messages drop foreign key fk_media_share_messages_media_shares1;
+alter table media_share_messages drop foreign key fk_media_share_messages_contacts1;
+alter table media_share_messages drop index fk_media_share_messages_media_shares1;
+alter table media_share_messages drop index fk_media_share_messages_contacts1;
+alter table media_share_messages change contact_id user_id int;
+alter table media_share_messages change media_share_id shared_album_group_id int;
+alter table media_share_messages add INDEX `fk_media_share_messages_shared_albums1` (`shared_album_group_id` ASC, `user_id` ASC);
+alter table media_share_messages add  CONSTRAINT `fk_media_share_messages_shared_albums1`
+    FOREIGN KEY (`shared_album_group_id` , `user_id` )
+    REFERENCES `shared_album_groups` (`id` , `user_id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE;
+
+alter table media_asset_features add column face_user_id int null default null after feature_type;
+alter table media_asset_features add INDEX `fk_media_asset_features_users1` (`face_user_id` ASC);
+alter table media_asset_features add CONSTRAINT `fk_media_asset_features_users1`
+    FOREIGN KEY (`face_user_id` )
+    REFERENCES `users` (`id` )
+    ON DELETE SET NULL
+    ON UPDATE SET NULL;
+
+
+
+
+-- END OF TIME CLEANUP
+-- drop table communities;
+-- drop table media_shares;
+-- alter table media_asset_features drop foreign key fk_media_asset_features_contacts1;
+-- alter table media_asset_features drop index fk_media_asset_features_contacts1;
+-- alter table media_asset_features drop column contact_id;
+-- drop table contact_groups;
+-- drop table contacts;

@@ -79,13 +79,13 @@ def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
 
         media = orm.query( Media ).filter( Media.user_id == user[0].id )
         assets = orm.query( MediaAssets ).filter( MediaAssets.user_id == user_id )
-        contacts = orm.query( Contacts ).filter( Contacts.user_id == user_id )
+        contacts = orm.query( UserGrousp ).filter( UserGroups.owner_id == user_id )
     
         if verbose:
             print "About to delete all data for user %s with uuid %s" % ( user[0].email, user[0].uuid )
             print "User has:"
             print "\t%s videos" % media.count()
-            print "\t%s contacts" % contacts.count()
+            print "\t%s contacts and shares" % contacts.count()
             proceed = get_input( "Proceed?", "no" )
             if not proceed:
                 print "Canceling, no data will be deleted."
@@ -113,8 +113,7 @@ def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
         if verbose:
             print "Deleting all contacts for user %s" % ( user_uuid )
             
-        orm.query( Contacts ).filter( and_( Contacts.user_id == user_id, Contacts.is_group == True ) ).delete()
-        orm.query( Contacts ).filter( Contacts.user_id == user_id ).delete()
+        orm.query( UserGroups ).filter( UserGroups.owner_id == user_id ).delete()
 
         if delete_user:
             if verbose:
@@ -128,6 +127,7 @@ def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
                 print "Deleting all comments, shares, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
             orm.query( Media ).filter( and_( Media.user_id == user_id, Media.is_album == True ) ).delete()
             orm.query( Media ).filter( Media.user_id == user_id ).delete()
+            orm.query( Groups ).filter( Groups.owner_id == user_id ).delete()
         
         orm.commit()
 

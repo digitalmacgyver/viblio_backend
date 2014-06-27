@@ -54,8 +54,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
     * format
     * face_mimetype      - 'image/png'
     * face_size          - '128x128'
-    * contact_name       - 'Viblio Feedback'
-    * contact_email      - 'feedback@viblio.com'
+    * contact_name       - 'Viblio'
 
     Optional keyword arguments exist with the following defaults: 
  
@@ -113,7 +112,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
 
         orm = vib.db.orm.get_session()
 
-        user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
+        user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
 
         media = Media( 
             uuid        = media_uuid,
@@ -168,8 +167,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
         media.assets.append( poster_asset )
 
         for idx, face in enumerate( face_files ):
-            contact_name        = face.get( 'contact_name', 'Viblio Feedback' )
-            contact_email       = face.get( 'contact_email', 'feedback@viblio.com' )
+            contact_name        = face.get( 'contact_name', 'Viblio' )
 
             face_mimetype       = face.get( 'face_mimetype', 'image/png' )
             face_size           = face.get( 'face_size', '128x128' )
@@ -177,15 +175,33 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
             face_uri = '%s/%s_face_0_%s.%s' % ( media_uuid, media_uuid, idx, face['format'] )
             vib.utils.s3.copy_s3_file( face['s3_bucket'], face['s3_key'], config.bucket_name, face_uri )
 
-            contact = Contacts(
-                uuid          = str( uuid.uuid4() ),
-                user_id       = user.id,
-                contact_name  = contact_name,
-                contact_email = contact_email,
-                picture_uri   = face_uri
-                )
+            # First off, get or create a contact_group for this user.
+            contact_groups = user.groups.filter( Groups.group_type == 'contact' )[:]
+            contact_group = None
+            if len( contact_groups ) == 0:
+                # We need to create a contact group for this user.
+                contact_group = ContactGroups( uuid = str( uuid.uuid4() ),
+                                               group_type = 'contact',
+                                               group_name = 'Contacts' )
+                user.append( contact_group )
+            elif len( contact_groups ) > 1:
+                log.error( json.dumps( { 'user_uuid' : user.uuid,
+                                         'message' : "Found multiple contact groups for single user.id %s - there should be only one, mapping to the oldest one: %s" % ( user_id, contact_groups[0].id ) } ) )
+                contact_group = contact_groups[0]
+            else:
+                contact_group = contact_groups[0]
 
-            orm.add( contact )
+            contact_user = Users( uuid        = str( uuid.uuid4() ),
+                                  displayname = contact_name,
+                                  user_type   = 'contact' )
+            orm.add( contact_user )
+
+            contact_user_group = UserGroups( uuid        = str( uuid.uuid4() ),
+                                             member_name = contact_name
+                                             member_role = 'contact',
+                                             picture_uri = face_uri )
+            contact_user.user_groups.append( contact_user_group )
+            contact_group.user_groups.append( contact_user_group )
 
             face_uuid = str( uuid.uuid4() )
             face_asset = MediaAssets( uuid       = face_uuid,
@@ -204,7 +220,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
                 )
                 
             face_asset.media_asset_features.append( media_asset_feature )
-            contact.media_asset_features.append( media_asset_feature )
+            contact_user.media_asset_features.append( media_asset_feature )
         
         orm.commit()
     

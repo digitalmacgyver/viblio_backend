@@ -229,17 +229,19 @@ def get_existing_fb_contacts_for_user( user_uuid ):
     try:
         orm = vib.db.orm.get_session()
 
-        user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
-
-        contacts = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.provider == 'facebook' ) )
+        user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
 
         existing_contacts = {}
-        for contact in contacts:
-            if contact.provider_id is None:
-                log.error( json.dumps( { 'user_uuid' : user_uuid,
-                                         'message' : "Found contact id %s for user_uuid %s with provider of facebook but no provider_id" % ( contact.id, user_uuid ) } ) )
-            else:
-                existing_contacts[ contact.provider_id ] = contact
+
+        for group in user.groups.filter( Groups.group_type == 'contact' ):
+            for contact_ref in group.user_groups:
+                contact = contact_ref.user
+                if contact.provider == 'facebook':
+                    if contact.provider_id is None:
+                        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                                 'message' : "Found contact id %s for user_uuid %s with provider of facebook but no provider_id" % ( contact.id, user_uuid ) } ) )
+                    else:
+                        existing_contacts[ contact.provider_id ] = contact
 
         orm.commit()
 
@@ -277,14 +279,30 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
 
         orm = vib.db.orm.get_session()
 
-        user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
+        user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
 
         log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                  'message' : "Existing contacts keys are: %s" % existing_contacts.keys() } ) )
 
         created_picture_contacts = []
         picture_created = {}
-        
+
+        # First off, get or create a contact_group for this user.
+        contact_groups = user.groups.filter( Groups.group_type == 'contact' )[:]
+        contact_group = None
+        if len( contact_groups ) == 0:
+            # We need to create a contact group for this user.
+            contact_group = ContactGroups( uuid = str( uuid.uuid4() ),
+                                          group_type = 'contact',
+                                          group_name = 'Contacts' )
+            user.append( contact_group )
+        elif len( contact_groups ) > 1:
+            log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                     'message' : "Found multiple contact groups for single user.id %s - there should be only one, mapping to the oldest one: %s" % ( user_id, contact_groups[0].id ) } ) )
+            contact_group = contact_groups[0]
+        else:
+            contact_group = contact_groups[0]
+
         # Okay... Adding MAFs for this causes GUI server exceptions.
         # Maybe that's for the best.
         # For the time being just add a picture URI and forget the rest.
@@ -299,16 +317,33 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                 s3_key = "%s/%s_fb_face.png" % ( media_uuid, media_uuid )
                 upload_file_to_s3( friend['file'], s3_key )
 
-                contact = Contacts(
-                    uuid         = str( uuid.uuid4() ),
-                    user_id      = user.id,
-                    contact_name = friend['name'],
-                    provider     = 'facebook',
-                    provider_id  = friend['facebook_id'],
-                    picture_uri  = s3_key
-                    )
+                # Does this person already exist for us?
+                contact_users = orm.query( Users ).filter( Users.provider == 'facebook', Users.provider_id == friend['facebook_id'] )[:]
+                contact_user = None
 
-                orm.add( contact )
+                if len( contact_users == 0 ):
+                    # It's a new person.
+                    contact_user = Users( uuid        = str( uuid.uuid4() ),
+                                          provider    = 'facebook',
+                                          provider_id = friend['facebook_id'],
+                                          displayname = friend['name'],
+                                          user_type   = 'contact' )
+                    orm.add( contact_user )
+                elif len( contact_users > 1 ):
+                    log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                             'message' : "Found multiple users for single facebook_id %s - there should be only one, mapping to the oldest one: %s" % ( friend['facebook_id'], contact_users[0].id ) } ) )
+                    contact_user = contact_users[0]
+                else:
+                    contact_user = contact_users[0]
+
+
+                contact_user_group = UserGroups( uuid        = str( uuid.uuid4() ),
+                                                member_name = friend['name'],
+                                                member_role = 'contact',
+                                                picture_uri = s3_key )
+                contact_user.user_groups.append( contact_user_group )
+                contact_group.user_groups.append( contact_user_group )
+
                 #media = Media( 
                 #    uuid       = media_uuid,
                 #    media_type = 'fb_face'
@@ -331,7 +366,7 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                 #    )
                 
                 #media_asset.media_asset_features.append( media_asset_feature )
-                #contact.media_asset_features.append( media_asset_feature )
+                #contact_user.media_asset_features.append( media_asset_feature )
                 
                 created_picture_contacts.append( friend )
             else:
@@ -350,16 +385,32 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                             'message' : "Inserting new empty contact for id/uuid %s/%s on %s: " % ( user.id, user.uuid, friend['id'] )
                             } ) )
 
-                contact = Contacts(
-                    uuid         = str( uuid.uuid4() ),
-                    user_id      = user.id,
-                    contact_name = friend['name'],
-                    provider     = 'facebook',
-                    provider_id  = friend['id']
-                    )
+                # Does this person already exist for us?
+                contact_users = orm.query( Users ).filter( Users.provider == 'facebook', Users.provider_id == friend['facebook_id'] )[:]
+                contact_user = None
 
-                orm.add( contact )
-                
+                if len( contact_users == 0 ):
+                    # It's a new person.
+                    contact_user = Users( uuid        = str( uuid.uuid4() ),
+                                          provider    = 'facebook',
+                                          provider_id = friend['facebook_id'],
+                                          displayname = friend['name'],
+                                          user_type   = 'contact' )
+                    orm.add( contact_user )
+                elif len( contact_users > 1 ):
+                    log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                             'message' : "Found multiple users for single facebook_id %s - there should be only one, mapping to the oldest one: %s" % ( friend['facebook_id'], contact_users[0].id ) } ) )
+                    contact_user = contact_users[0]
+                else:
+                    contact_user = contact_users[0]
+
+
+                contact_user_group = UserGroups( uuid        = str( uuid.uuid4() ),
+                                                member_name = friend['name'],
+                                                member_role = 'contact' )
+                contact_user.user_groups.append( contact_user_group )
+                contact_group.user_groups.append( contact_user_group )
+
                 created_empty_contacts.append( friend )
             else:
                 log.debug( json.dumps( {
