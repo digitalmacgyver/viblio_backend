@@ -69,7 +69,7 @@ f = open( "contacts.txt", 'wb' );
 pickle.dump( contacts, f )
 f.close()
 
-# Get information about exsiting share groups.
+# Get information about existing share groups.
 # 
 # group_id
 # contact_id
@@ -86,4 +86,69 @@ for share_group in raw_share_groups:
 
 f = open( "share_groups.txt", 'wb' );
 pickle.dump( share_groups, f )
+f.close()
+
+
+# Get information about existing media_shares.
+# 
+# id
+# uuid
+# media_id
+# user_id
+# contact_id
+# share_type
+# is_group_share
+# view_count
+
+raw_media_shares = orm.query( MediaShares )
+media_shares = []
+
+for media_share in raw_media_shares:
+    media_shares.append( {
+            'id'             : media_share.id,
+            'uuid'           : media_share.uuid,
+            'media_id'       : media_share.media_id,
+            'user_id'        : media_share.user_id,
+            'contact_id'     : media_share.contact_id,
+            'share_type'     : media_share.share_type,
+            'is_group_share' : media_share.is_group_share,
+            'view_count'     : media_share.view_count
+            } )
+
+f = open( "media_shares.txt", 'wb' );
+pickle.dump( media_shares, f )
+f.close()
+
+# Get information about existing communities
+# 
+# id
+# user_id
+# uuid
+# name
+# webhook
+# members_id
+# media_id
+# curators_id
+# pending_id
+# is_curated
+
+raw_communities = orm.query( Communities )
+communities = []
+
+for community in raw_communities:
+    communities.append( {
+            'id'             : community.id,
+            'user_id'        : community.user_id,
+            'uuid'           : community.uuid,
+            'name'           : community.name,
+            'webhook'        : community.webhook,
+            'members_id'     : community.members_id,
+            'media_id'       : community.media_id,
+            'curators_id'    : community.curators_id,
+            'pending_id'     : community.pending_id,
+            'is_curated'     : community.is_curated,
+            } )
+
+f = open( "communities.txt", 'wb' );
+pickle.dump( communities, f )
 f.close()

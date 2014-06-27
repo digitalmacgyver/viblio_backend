@@ -88,6 +88,7 @@ def reflect( engine, models ):
 
     orm_tables = {
         'asset_types' : True,
+        'communities' : True,
         'contacts' : True,
         'contact_groups' : True,
         'email_users' : True,
@@ -115,6 +116,7 @@ def reflect( engine, models ):
         'roles' : True,
         'sessions' : True,
         'share_types' : True,
+        'shared_album_groups' : True,
         'users' : True,
         'user_groups' : True,
         'viblio_added_content' : True,

@@ -116,6 +116,12 @@ class Groups( BaseModel, Serializer ):
 class UserGroups( BaseModel, Serializer ):
     pass
 
+class Communities( BaseModel, Serializer ):
+    pass
+
+class SharedAlbumGroups( BaseModel, Serializer ):
+    pass
+
 """
 Well, reflection really only gives us the column definitions it
 seems.  We are still responsible for establishing the relationships
@@ -139,6 +145,9 @@ def db_map(engine):
             'media_shares': relationship( models.MediaShares,
                                           lazy='dynamic',
                                           backref='user' ),
+            'shared_album_groups' : relationship( models.SharedAlbumGroups,
+                                                  lazy='dynamic',
+                                                  backref='user' ),
             'profiles': relationship( models.Profiles,
                                       lazy='dynamic',
                                       backref='user' ),
@@ -151,12 +160,24 @@ def db_map(engine):
             'user_groups' : relationship( models.UserGroups,
                                           lazy='dynamic',
                                           backref='user' ),
+            'media_asset_features' : relationship( models.MediaAssetFeatures,
+                                                   lazy='dynamic',
+                                                   foreign_keys=models.MediaAssetFeatures.face_user_id,
+                                                   backref="user" )
             })
 
     mappers["groups"].add_properties( { 
             "user_groups" : relationship( models.UserGroups,
                                           lazy='dynamic',
-                                          backref='group' )
+                                          backref='group' ),
+            'shared_album_group_members' : relationship( models.SharedAlbumGroups,
+                                                         lazy='dynamic',
+                                                         foreign_keys=models.SharedAlbumGroups.members_id,
+                                                         backref='group_members' ),
+            'shared_album_group_curators' : relationship( models.SharedAlbumGroups,
+                                                         lazy='dynamic',
+                                                         foreign_keys=models.SharedAlbumGroups.curators_id,
+                                                         backref='group_curators' ),
             } )
 
     mappers["media"].add_properties({
@@ -173,13 +194,26 @@ def db_map(engine):
                                            cascade="all, delete-orphan" ),
             'viblio_added_content' : relationship( models.ViblioAddedContent,
                                                    lazy='dynamic',
-                                                   backref='media' )
+                                                   backref='media' ),
+            'shared_album_media' : relationship( models.SharedAlbumGroups,
+                                                 lazy='dynamic',
+                                                 foreign_keys=models.SharedAlbumGroups.media_id,
+                                                 backref='album_media' ),
+            'shared_album_pending' : relationship( models.SharedAlbumGroups,
+                                                   lazy='dynamic',
+                                                   foreign_keys=models.SharedAlbumGroups.pending_id,
+                                                   backref='pending_media' ),
             })
 
     mappers["media_assets"].add_properties({
             "media_asset_features": relationship( models.MediaAssetFeatures,
             backref="media_assets",
             cascade="all, delete-orphan" ) } )
+
+    mappers["media_asset_features"].add_properties( {
+            "users" : relationship( models.Users,
+                                    backref="user" )
+            } )
 
     mappers["contacts"].add_properties( {
             "media_asset_features" : relationship( models.MediaAssetFeatures, backref="contacts" ),
@@ -188,7 +222,6 @@ def db_map(engine):
                                              backref="contacts",
                                              foreign_keys=models.ContactGroups.contact_id,
                                              cascade="all, delete-orphan" )
-
             } )
 
     mappers['profiles'].add_properties( {
