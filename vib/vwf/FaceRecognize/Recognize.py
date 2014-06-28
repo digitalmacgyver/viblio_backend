@@ -223,13 +223,27 @@ class Recognize( VWorker ):
             elif result == 'machine_recognized':
                 # Add to DB with contact ID of ['contact_id']
                 # Add to recog with that tag.
-                face_id = db_utils.update_face( user_uuid, media_uuid, track_id, track_face, result, recognition_confidence, matches['faces'][0]['contact_id'] )
-                rec.add_faces( user_id, matches['faces'][0]['contact_id'], [ { 'user_id'     : user_id,
-                                                                              'contact_id'   : matches['faces'][0]['contact_id'],
-                                                                              'face_id'      : face_id,
-                                                                              'face_url'     : url,
-                                                                               'external_id' : None } ] )
-            elif result == 'new_face':
+                #
+                # First verify that the contact we recognized against still exists in our Viblio system.
+                if db_utils.contact_exists( matches['faces'][0]['contact_id'] ):
+                    face_id = db_utils.update_face( user_uuid, media_uuid, track_id, track_face, result, recognition_confidence, matches['faces'][0]['contact_id'] )
+                    rec.add_faces( user_id, matches['faces'][0]['contact_id'], [ { 'user_id'     : user_id,
+                                                                                   'contact_id'   : matches['faces'][0]['contact_id'],
+                                                                                   'face_id'      : face_id,
+                                                                                   'face_url'     : url,
+                                                                                   'external_id' : None } ] )
+                else:
+                    # We were recognized against a non-existint
+                    # contact - perhaps one that has been deleted.
+                    # 
+                    # Delete the bad informatino from recognition.
+                    log.warning( json.dumps( { 'media_uuid' : media_uuid,
+                                               'user_uuid' : user_uuid,
+                                               'message' : "Matched non-existant contact: %s - removing that contact from Recognition." % ( matches['faces'][0]['contact_id'] ) } ) )
+                    rec.delete_contact( user_id, maches['faces'][0]['contact_id'] )
+                    result = 'new_face'
+                                        
+            if result == 'new_face':
                 # Add to DB as new face
                 # Add to recog with new contact_id
                 ( face_id, contact_id ) = db_utils.add_face( user_uuid, media_uuid, track_id, track_face, result, recognition_confidence )

@@ -126,7 +126,8 @@ def update_face( user_uuid, media_uuid, track_id, track_face, recognition_result
         raise Exception( message )
 
     try:
-        contact = orm.query( Contacts ).filter( Contacts.id == contact_id ).one()
+        if contact_id is not None:
+            contact = orm.query( Contacts ).filter( Contacts.id == contact_id ).one()
     except Exception as e:
         message = 'Failed to find contact_id %s perhaps they have been deleted?' % ( contact_id )
         log.error( json.dumps( { 'user_uuid' : user_uuid,
