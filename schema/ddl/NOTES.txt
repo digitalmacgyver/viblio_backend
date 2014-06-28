@@ -1,8 +1,23 @@
+FIRST I SHARED TO matt@viblio.com FROM ALBUM DETAIL PAGE
+
+THEN I SHARED TO mjhayward@gmail.com FROM VIDEOS/ALBUM PAGE
+
+FURTHER MYSTERIES AWAIT! - BURN IT ALL DOWN AND TRY AGAIN.
+
+select * from contacts, contact_groups where group_id = 6810 and contacts.id = contact_id;
+select * from media_shares where media_id = 6501;
+
+
 TODO:
+
+1. Get approval to push out autorecognition, merge with master, merge
+with simplification.
 
 3. Port media_shares - first understand why we get null values in
 user_id for various types, why we see shared albums, why we see
 hidden, what is a potential.
+
+2. Popeye / VWF - add to all my videos album.
 
 4. Remove access to contacts, contact_groups, media_shares, communities.
 
@@ -22,6 +37,9 @@ grep for:
 grep -ir contacts * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
 
 TEST: cv/FaceRecognition/CleanupFaces.py
+
+* DO NOT TEST TILL EVERYTING IS PORTED, OR IT WILL WIPE OUT
+  RECOGNITION!
 
 TEST: utils/greet_new_users.py
 
@@ -80,15 +98,19 @@ Creating a share.
 
 Getting picture_uri's for user/user pair.
 
-
 6. For discussion - do we want a meta-album of all the users content?
 This would simplify some queries so we could just always look at
 albums and never ownership directly?
 
 8. Test in staging:
 
+9. BEFORE ACTUAL ROLLOUT, CHANGE UPDATE_RECOGNITION TO TRUE IN POPULATE_USER_GROUPS.
 
+9. IMPORTANT - ONCE EVERTYHING IS WORKING UPDATE MAF.CONTACT_ID to be
+NULL SO WHEN WE DELETE CONTACTS WE DON'T CASCADE DOWN DELETE ALL THE
+MAFS.
 
+IN THE NEARER TERM, WE CAN DROP THE FK.
 
 CHALLENGES:
 
@@ -185,6 +207,11 @@ All the "media_id" of communities are "album" type media rows.
 7) media_shares are widely used (hundreds of rows in each).
 
 --
+
+CREATE SCHEMA IF NOT EXISTS `video_dev_2` DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ;
+use video_dev_2;
+
+=====
 
 
 grant select, insert, update, delete, create temporary tables, lock tables, execute, trigger on video_dev_2.* to 'web_dev' with max_user_connections 200;
@@ -443,6 +470,7 @@ alter table media_asset_features add CONSTRAINT `fk_media_asset_features_users1`
 -- END OF TIME CLEANUP
 -- drop table communities;
 -- drop table media_shares;
+-- update media_asset_features set contact_id = null;
 -- alter table media_asset_features drop foreign key fk_media_asset_features_contacts1;
 -- alter table media_asset_features drop index fk_media_asset_features_contacts1;
 -- alter table media_asset_features drop column contact_id;

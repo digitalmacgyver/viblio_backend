@@ -8,16 +8,17 @@ from sqlalchemy import and_, distinct, func
 import time
 import uuid
 
+import vib.cv.FaceRecognition.UIInterface
 import vib.db.orm
 from vib.db.models import *
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger( 'vib' )
 log.setLevel( logging.DEBUG )
 
-format_string = 'serialize_contacts: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
+format_string = 'populate_user_groups: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
 
 sys_formatter = logging.Formatter( format_string )
 consolelog = logging.StreamHandler()
@@ -49,6 +50,9 @@ user_contact_group_map = {}
 # SQLAlchemy user that now represents that contact.
 contact_id_to_user_map = {}
 
+single_user = 482
+update_recognition = False
+
 for contact in contacts:
     # Skip groups, we'll handle them below.
     if contact['is_group']:
@@ -56,8 +60,8 @@ for contact in contacts:
 
     owner_id = contact['owner_id']
 
-    # DEBUG
-    if owner_id != 482:
+    # For ease of debugging.
+    if single_user and owner_id != single_user:
         continue
 
     print "Working on user:", owner_id
@@ -76,14 +80,20 @@ for contact in contacts:
         owner.groups.append( contact_group )
         print "\tCreating new contact_group:", contact_group.uuid
 
-                                
     contact_email = contact['contact_email']
 
-    existing_users = orm.query( Users ).filter( Users.email == contact_email )[:]
+    existing_users = []
     existing_user = None
+    
+    if contact_email is not None:
+        existing_users = orm.query( Users ).filter( Users.email == contact_email )[:]
 
-    if existing_users is not None and len( existing_users ) == 1:
+    if len( existing_users ) == 1:
         existing_user = existing_users[0]
+    elif len( existing_users ) > 1:
+        print "\tERROR! MULTIPLE USERS FOUND FOR EMAIL: %s" % ( contact_email )
+        orm.rollback()
+        continue
     else:
         existing_user = Users( uuid        = str( uuid.uuid4() ),
                                provider    = contact['provider'],
@@ -108,12 +118,21 @@ for contact in contacts:
 
     mafs = orm.query( MediaAssetFeatures ).filter( MediaAssetFeatures.contact_id == contact['id'] )
 
+    maf_ids = []
+
     for maf in mafs:
         print "\tAssigning media_asset_feature %s to user %s not contact %s" % ( maf.id, existing_user.uuid, maf.contact_id )
         existing_user.media_asset_features.append( maf )
-        maf.contact_id = None
-    
-orm.commit()
+        maf_ids.append( maf.id )
+
+    print "\tCommitting"
+    orm.commit()
+
+    if update_recognition:
+        print "\tAdjusting Recognition"
+        vib.cv.FaceRecognition.UIInterface.move_faces( owner_id, contact['id'], existing_user.id, maf_ids )
+
+    print "\tDONE"
 
 # FOR CONTACTS WITH IS_GROUP == 1
 
@@ -143,8 +162,8 @@ for contact in contacts:
 
     owner_id = contact['owner_id']
 
-    # DEBUG
-    if owner_id != 482:
+    # For ease of debugging.
+    if single_user and owner_id != single_user:
         continue
 
     print "Working on user:", owner_id
@@ -173,8 +192,10 @@ for contact in contacts:
             print "\tAdding %s to share group" % ( shared_to_user.id )
             shared_to_user.user_groups.append( user_share )
             share_group.user_groups.append( user_share )
+            
+    orm.commit()
+    print "\tDONE"
 
-orm.commit()
 
 # Get information about existing communities
 # 
@@ -197,7 +218,8 @@ f.close()
 # the share_groups created above.
 
 for community in communities:
-    if community['user_id'] != 482:
+    # For ease of debugging.
+    if single_user and community['user_id'] != single_user:
         continue
 
     members_id = community['members_id']
@@ -232,7 +254,8 @@ for community in communities:
 
     print "Creating SharedAlbumGroup %s with media %s and members %s" % ( shared_album_group.uuid, community['media_id'], members_id )
 
-orm.commit()
+    orm.commit()
+    print "\tDONE"
 
 # Get information about existing media_shares.
 # 
