@@ -40,6 +40,20 @@ def update_media_status( media_uuid, status ):
     orm.commit()
     return
 
+def contact_exists( contact_id ):
+    '''Returns true if the contact in question exists.'''
+    orm = vib.db.orm.get_session()
+
+    contacts = orm.query( Contacts ).filter( Contacts.id == contact_id )[:]
+    
+    result = False
+    
+    if len( contacts ) == 1:
+        result = True
+
+    orm.commit()
+    return result
+
 def add_face( user_uuid, media_uuid, track_id, track_face, recognition_result, recognition_confidence ):
     '''For the given user_uuid, media_uuid, track_id, track_face add a
     new contact and face with with the the recognition_result,
