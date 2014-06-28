@@ -240,7 +240,7 @@ class Recognize( VWorker ):
                     log.warning( json.dumps( { 'media_uuid' : media_uuid,
                                                'user_uuid' : user_uuid,
                                                'message' : "Matched non-existant contact: %s - removing that contact from Recognition." % ( matches['faces'][0]['contact_id'] ) } ) )
-                    rec.delete_contact( user_id, maches['faces'][0]['contact_id'] )
+                    rec.delete_contact( user_id, matches['faces'][0]['contact_id'] )
                     result = 'new_face'
                                         
             if result == 'new_face':
