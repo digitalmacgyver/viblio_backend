@@ -20,12 +20,6 @@ alter table communities rename deprecated_communities;
 
 TODO:
 
-4. Remove access to contacts, contact_groups, media_shares, communities.
-
-
-
-5. Remove those tables from the ORM.
-
 5. Re-implement back end to do the right stuff.
 
 grep for: 
@@ -40,6 +34,7 @@ TEST: cv/FaceRecognition/CleanupFaces.py
 TEST: utils/greet_new_users.py
 
 * Used similar logic to this all over.
+* Did some initial testing.
 
 TEST: fb/CreateContacts.py
 
@@ -50,15 +45,7 @@ TEST: utils/delete_user.py
 
 TEST: utils/rescue_orphan_faces.py
 
-vwf/FaceRecognize/db_utils.py
-vwf/FaceRecognize/mturk_utils.py
-vwf/FaceRecognize/recognize_face_form.py
-vwf/FaceRecognize/Recognize.py
-
-grep -ir contact_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
-
-vwf/FaceRecognize/db_utils.py
-vwf/FaceRecognize/Recognize.py
+TEST: vwf/FaceRecognize/db_utils.py, vwf/FaceRecognize/Recognize.py
 
 DEPRECATED / FIX LATER:
 utils/clone_user.py
@@ -94,9 +81,11 @@ Creating a share.
 
 Getting picture_uri's for user/user pair.
 
-6. For discussion - do we want a meta-album of all the users content?
-This would simplify some queries so we could just always look at
-albums and never ownership directly?
+6. Implement a cleanup tool to take out:
+
+A. 'contact' users with no email or facebook ID and no mapping to user_groups.
+B. 'contact' user_group records for users that have no associated email or name, and no MAF entries for that user.
+C. Decide whether or not to delete FR stuff when we do this too.
 
 8. Test in staging:
 

@@ -225,7 +225,7 @@ class Recognize( VWorker ):
                 # Add to recog with that tag.
                 #
                 # First verify that the contact we recognized against still exists in our Viblio system.
-                if db_utils.contact_exists( matches['faces'][0]['contact_id'] ):
+                if db_utils.user_exists( matches['faces'][0]['contact_id'] ):
                     face_id = db_utils.update_face( user_uuid, media_uuid, track_id, track_face, result, recognition_confidence, matches['faces'][0]['contact_id'] )
                     rec.add_faces( user_id, matches['faces'][0]['contact_id'], [ { 'user_id'     : user_id,
                                                                                    'contact_id'   : matches['faces'][0]['contact_id'],

@@ -35,9 +35,6 @@ class AssetTypes(BaseModel, Serializer):
 class FeatureTypes(BaseModel, Serializer):
     pass
 
-class Contacts(BaseModel, Serializer):
-    pass
-
 class MediaAssetFeatures(BaseModel, Serializer):
     pass
 
@@ -45,9 +42,6 @@ class MediaComments(BaseModel, Serializer):
     pass
 
 class ShareTypes(BaseModel, Serializer):
-    pass
-
-class MediaShares(BaseModel, Serializer):
     pass
 
 class Sessions(BaseModel, Serializer):
@@ -74,16 +68,7 @@ class UserRoles(BaseModel, Serializer):
 class Providers(BaseModel, Serializer):
     pass
 
-class Faces( BaseModel, Serializer ):
-    pass
-
-class RecognitionFeedback( BaseModel, Serializer ):
-    pass
-
 class EmailUsers( BaseModel, Serializer ):
-    pass
-
-class ContactGroups( BaseModel, Serializer ):
     pass
 
 class Profiles( BaseModel, Serializer ):
@@ -116,14 +101,6 @@ def db_map(engine):
                                   lazy="dynamic",
                                   backref="user",
                                   cascade="all, delete-orphan"),
-            "contacts": relationship(models.Contacts,
-                                     lazy="dynamic",
-                                     backref="user",
-                                     foreign_keys=models.Contacts.user_id,
-                                     cascade="all, delete-orphan"),
-            'media_shares': relationship( models.MediaShares,
-                                          lazy='dynamic',
-                                          backref='user' ),
             'profiles': relationship( models.Profiles,
                                       lazy='dynamic',
                                       backref='user' ),
@@ -152,9 +129,6 @@ def db_map(engine):
             "media_asset_features": relationship( models.MediaAssetFeatures,
             backref="media_assets",
             cascade="all, delete-orphan" ) } )
-
-    mappers["contacts"].add_properties( {
-            "media_asset_features" : relationship( models.MediaAssetFeatures, backref="contacts" ) } )
 
     mappers['profiles'].add_properties( {
             'profile_fields' : relationship( models.ProfileFields,

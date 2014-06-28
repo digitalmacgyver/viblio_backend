@@ -40,15 +40,15 @@ def update_media_status( media_uuid, status ):
     orm.commit()
     return
 
-def contact_exists( contact_id ):
-    '''Returns true if the contact in question exists.'''
+def user_exists( user_id ):
+    '''Returns true if the user in question exists.'''
     orm = vib.db.orm.get_session()
 
-    contacts = orm.query( Contacts ).filter( Contacts.id == contact_id )[:]
+    users = orm.query( Users ).filter( Users.id == user_id )[:]
     
     result = False
     
-    if len( contacts ) == 1:
+    if len( users ) == 1:
         result = True
 
     orm.commit()
@@ -87,11 +87,20 @@ def add_face( user_uuid, media_uuid, track_id, track_face, recognition_result, r
                                 'contact_uuid' : contact_uuid,
                                 'message' : "Creating new contact with uuid %s for user_id %s " % ( contact_uuid, user_id ) } ) )
 
-        new_contact = Contacts( 
-            uuid        = contact_uuid, 
-            user_id     = user_id,
-            picture_uri = track_face['s3_key']
-            )
+        # Create a new user.
+        new_user = Users( uuid        = str( uuid.uuid4() ),
+                          user_type   = 'contact' )
+
+        # Add them to the contact group for our user.
+        contact_group = orm.query( Groups ).filter( and_( Groups.owner_id == user_id, Groups.group_type == 'contact' ) ).one()
+
+        # New contact.
+        new_contact = UserGroups( uuid         = str( uuid.uuid4() ),
+                                  member_role  = 'contact',
+                                  picture_uri = track_face['s3_key'] )
+
+        new_user.user_groups.append( new_contact )
+        contact_group.user_groups.append( new_contact )
 
         log.info( json.dumps( { 'user_uuid' : user_uuid,
                                 'media_uuid' : media_uuid,
@@ -103,11 +112,11 @@ def add_face( user_uuid, media_uuid, track_id, track_face, recognition_result, r
 
         feature.recognition_result = recognition_result
         feature.recognition_confidence = recognition_confidence
-        new_contact.media_asset_features.append( feature )
+        new_user.media_asset_features.append( feature )
         
         orm.commit()
 
-        return ( feature.id, new_contact.id )
+        return ( feature.id, new_user.id )
     except Exception as e:
         log.warning( json.dumps( { 'user_uuid' : user_uuid,
                                    'media_uuid' : media_uuid,
@@ -141,7 +150,7 @@ def update_face( user_uuid, media_uuid, track_id, track_face, recognition_result
 
     try:
         if contact_id is not None:
-            contact = orm.query( Contacts ).filter( Contacts.id == contact_id ).one()
+            contact = orm.query( Users ).filter( Users.id == contact_id ).one()
     except Exception as e:
         message = 'Failed to find contact_id %s perhaps they have been deleted?' % ( contact_id )
         log.error( json.dumps( { 'user_uuid' : user_uuid,
@@ -154,7 +163,7 @@ def update_face( user_uuid, media_uuid, track_id, track_face, recognition_result
 
         feature.recognition_result = recognition_result
         feature.recognition_confidence = recognition_confidence
-        feature.contact_id = contact_id
+        feature.face_user_id = contact_id
 
         orm.commit()
         return feature.id

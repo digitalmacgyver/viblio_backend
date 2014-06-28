@@ -35,9 +35,6 @@ class AssetTypes(BaseModel, Serializer):
 class FeatureTypes(BaseModel, Serializer):
     pass
 
-class Contacts(BaseModel, Serializer):
-    pass
-
 class MediaAssetFeatures(BaseModel, Serializer):
     pass
 
@@ -45,9 +42,6 @@ class MediaComments(BaseModel, Serializer):
     pass
 
 class ShareTypes(BaseModel, Serializer):
-    pass
-
-class MediaShares(BaseModel, Serializer):
     pass
 
 class Sessions(BaseModel, Serializer):
@@ -74,12 +68,6 @@ class UserRoles(BaseModel, Serializer):
 class Providers(BaseModel, Serializer):
     pass
 
-class Faces( BaseModel, Serializer ):
-    pass
-
-class RecognitionFeedback( BaseModel, Serializer ):
-    pass
-
 class Faces2( BaseModel, Serializer ):
     pass
 
@@ -87,9 +75,6 @@ class RecognitionFeedback2( BaseModel, Serializer ):
     pass
 
 class EmailUsers( BaseModel, Serializer ):
-    pass
-
-class ContactGroups( BaseModel, Serializer ):
     pass
 
 class Profiles( BaseModel, Serializer ):
@@ -116,9 +101,6 @@ class Groups( BaseModel, Serializer ):
 class UserGroups( BaseModel, Serializer ):
     pass
 
-class Communities( BaseModel, Serializer ):
-    pass
-
 class SharedAlbumGroups( BaseModel, Serializer ):
     pass
 
@@ -137,14 +119,6 @@ def db_map(engine):
                                   lazy="dynamic",
                                   backref="user",
                                   cascade="all, delete-orphan"),
-            "contacts": relationship(models.Contacts,
-                                     lazy="dynamic",
-                                     backref="user",
-                                     foreign_keys=models.Contacts.user_id,
-                                     cascade="all, delete-orphan"),
-            'media_shares': relationship( models.MediaShares,
-                                          lazy='dynamic',
-                                          backref='user' ),
             'shared_album_groups' : relationship( models.SharedAlbumGroups,
                                                   lazy='dynamic',
                                                   backref='user' ),
@@ -192,6 +166,11 @@ def db_map(engine):
                                            backref="media",
                                            foreign_keys=models.MediaAlbums.album_id,
                                            cascade="all, delete-orphan" ),
+            "media_albums_media" : relationship( models.MediaAlbums,
+                                                 lazy="dynamic",
+                                                 backref="media_albums",
+                                                 foreign_keys=models.MediaAlbums.media_id,
+                                                 cascade="all, delete-orphan" ),
             'viblio_added_content' : relationship( models.ViblioAddedContent,
                                                    lazy='dynamic',
                                                    backref='media' ),
@@ -213,15 +192,6 @@ def db_map(engine):
     mappers["media_asset_features"].add_properties( {
             "users" : relationship( models.Users,
                                     backref="user" )
-            } )
-
-    mappers["contacts"].add_properties( {
-            "media_asset_features" : relationship( models.MediaAssetFeatures, backref="contacts" ),
-            "contact_groups" : relationship( models.ContactGroups,
-                                             lazy="dynamic",
-                                             backref="contacts",
-                                             foreign_keys=models.ContactGroups.contact_id,
-                                             cascade="all, delete-orphan" )
             } )
 
     mappers['profiles'].add_properties( {

@@ -130,7 +130,30 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
             )
 
         user.media.append( media )
-        
+
+        # Check of this user has the special album:
+        all_videos_album = None
+        all_videos = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.is_viblio_created == True, Media.title == 'My Videos' ) )[:]
+
+        if len( all_videos ) == 0:
+            all_videos_album = Media( user_id = user.id,
+                                     uuid = str( uuid.uuid4() ),
+                                     media_type = 'original',
+                                     is_album = True,
+                                     display_album = True,
+                                     title = 'My Videos',
+                                     is_viblio_created = True )
+            orm.add( all_video_album )
+        elif len( all_videos ) == 1:
+            all_videos_album = all_videos[0]
+        else:
+            raise Exception( "ERROR: Found multiple 'My Videos' albums for user: %s " % ( user.id ) )
+                
+        media_album_row = MediaAlbums()
+        orm.add( media_album_row )
+        media.media_albums_media.append( media_album_row )
+        all_videos_album.media_albums.append( media_album_row )
+
         video_uuid = str( uuid.uuid4() )
         video_asset = MediaAssets( 
             uuid         = video_uuid,
@@ -197,7 +220,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
             orm.add( contact_user )
 
             contact_user_group = UserGroups( uuid        = str( uuid.uuid4() ),
-                                             member_name = contact_name
+                                             member_name = contact_name,
                                              member_role = 'contact',
                                              picture_uri = face_uri )
             contact_user.user_groups.append( contact_user_group )
@@ -247,37 +270,27 @@ def run():
         if message == None:
             time.sleep( 10 )
             return True
-
+        
         body = message.get_body()
         
         try:
-            log.info( json.dumps( {
-                        'message' : "Reviewing candidate message with body was %s: " % body
-                        } ) )
+            log.info( json.dumps( { 'message' : "Reviewing candidate message with body was %s: " % body } ) )
         except Exception as e:
-            log.debug( json.dumps( {
-                        'message' : "Error converting body to string, error was: %s" % e
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Error converting body to string, error was: %s" % e } ) )
 
         options = json.loads( body )
 
         try:
-            log.debug( json.dumps( {
-                        'message' : "Options are %s: " % options
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Options are %s: " % options } ) )
         except Exception as e:
-            log.debug( json.dumps( {
-                        'message' : "Error converting options to string: %e" % e
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Error converting options to string: %e" % e } ) )
         
         user_uuid = options.get( 'user_uuid', None )
         action    = options.get( 'action', '' )
 
         if action == 'welcome_video' and user_uuid != None:
             # Process message
-            log.info( json.dumps( {
-                        'message' : "Starting greet_new_users, message body was %s: " % body
-                        } ) )
+            log.info( json.dumps( { 'message' : "Starting greet_new_users, message body was %s: " % body } ) )
 
             '''
             welcome_video_for_user(
@@ -394,7 +407,7 @@ def run():
                         } 
                     ]
                 )
-
+            
             sqs.delete_message( message )
             return True
         else:
@@ -405,9 +418,7 @@ def run():
         return True
 
     except Exception as e:
-        log.error( json.dumps( {
-                    'message' : "Exception was: %s" % e
-                    } ) )
+        log.error( json.dumps( { 'message' : "Exception was: %s" % e } ) )
         raise
     finally:
         if message != None and options != None and options.get( 'action', '' ) == 'welcome_video':

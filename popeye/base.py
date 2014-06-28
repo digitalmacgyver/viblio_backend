@@ -88,10 +88,7 @@ def reflect( engine, models ):
 
     orm_tables = {
         'asset_types' : True,
-        'contacts' : True,
-        'contact_groups' : True,
         'email_users' : True,
-        'faces' : True,
         'feature_types' : True,
         'links' : True,
         'media' : True,
@@ -99,7 +96,6 @@ def reflect( engine, models ):
         'media_asset_features' : True,
         'media_assets' : True,
         'media_comments' : True,
-        'media_shares' : True,
         'media_types' : True,
         'media_workflow_stages' : True,
         'media_workorders' : True,
@@ -108,7 +104,6 @@ def reflect( engine, models ):
         'profiles' : True,
         'profile_fields' : True,
         'providers' : True,
-        'recognition_feedback' : True,
         'roles' : True,
         'sessions' : True,
         'share_types' : True,
