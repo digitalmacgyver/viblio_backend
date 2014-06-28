@@ -3,6 +3,7 @@
 import json
 import logging
 from sqlalchemy import and_, func, distinct
+import uuid
 
 import vib.cv.FaceRecognition.api as rec
 import vib.db.orm
@@ -12,54 +13,6 @@ import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 log = logging.getLogger( __name__ )
-
-def get_picture_contacts_for_user_uuid( user_uuid ):
-    '''inputs: a user_uuid string
-
-    outputs: an array of Contacts data structures from SQLAlchemy
-    related to the input user_uuid who have pictures. Members of
-    contacts are accessed through dot notation, not indexing.'''
-
-    #import pdb
-    #pdb.set_trace()
-
-    log.debug( json.dumps( {
-                'user_uuid' : user_uuid,
-                'message' : 'Getting contacts with pictures for user %s' % user_uuid
-                } ) )
-
-    orm = vib.db.orm.get_session()
-
-    user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
-
-    popular_features = orm.query( MediaAssetFeatures.contact_id, func.count(distinct( MediaAssetFeatures.media_id ) ) ).filter( and_( MediaAssetFeatures.user_id == user.id, MediaAssetFeatures.contact_id != None ) ).group_by( MediaAssetFeatures.contact_id ).order_by( func.count( distinct( MediaAssetFeatures.media_id ) ).desc() )[:6]
-    
-    popular_contact_ids = {}
-    for feature in popular_features:
-        popular_contact_ids[feature.contact_id] = True
-
-    popular_contacts = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.picture_uri != None, Contacts.id.in_( popular_contact_ids.keys() ) ) ).order_by( Contacts.created_date.desc() ).all()
-
-    recent_contacts = orm.query( Contacts ).filter( and_( Contacts.user_id == user.id, Contacts.picture_uri != None ) ).order_by( Contacts.created_date.desc() )[:6]
-
-    return popular_contacts + recent_contacts
-
-def get_contact_uuid( contact_id ):
-    '''inputs: a contact_id integer
-
-    outputs: the uuid of that contact, or None'''
-
-    log.debug( json.dumps( { 'contact_id' : contact_id,
-                             'message' : 'Getting contact_uuid for contact_id %s' % contact_id } ) ) 
-
-    orm = vib.db.orm.get_session()
-
-    contact = orm.query( Contacts ).filter( Contacts.id == contact_id ).all()
-
-    if len( contact ) == 1:
-        return contact[0].uuid
-    else:
-        return None
 
 def get_user_id( user_uuid ):
     '''inputs: a user_uuid string
@@ -87,33 +40,30 @@ def update_media_status( media_uuid, status ):
     orm.commit()
     return
 
-def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tracks, recognition_data):
-    '''For the given user_uuid, media_uuid:
+def contact_exists( contact_id ):
+    '''Returns true if the contact in question exists.'''
+    orm = vib.db.orm.get_session()
+
+    contacts = orm.query( Contacts ).filter( Contacts.id == contact_id )[:]
     
-    For each new_face:
-      Add a new contact with the provided uuid
-      Associate the media_asset_features for those tracks with that contact
+    result = False
     
-    For each recognized_face:
-      Verify that the contact still exists (maybe the user merged it)
-      Associate the media_asset_features for those tracks with that contact
+    if len( contacts ) == 1:
+        result = True
 
-    For each new or recognized face:
-      An input is provided under recognition_data[contact_uuid] = 
-      { 'recognize_result' : { new_face, human_recognized, machine_recognized }, 
-        'recognize_id' : 123 }
+    orm.commit()
+    return result
 
-    For each bad tack:
-      Updates recognition_result to the string 'bad_track'
-
-    If a contact in recognized_faces no longer exists, we take no
-    action for that contact.
-
-    Returns True on success.
+def add_face( user_uuid, media_uuid, track_id, track_face, recognition_result, recognition_confidence ):
+    '''For the given user_uuid, media_uuid, track_id, track_face add a
+    new contact and face with with the the recognition_result,
+    recognition_confidence
+    
+    Returns the ( face_id, contact_id ) of the added face on success.
     '''
     log.debug( json.dumps( { 'user_uuid' : user_uuid,
                              'media_uuid' : media_uuid,
-                             'message' : 'Updating contacts in video %s for user %s' % ( media_uuid, user_uuid ) } ) )
+                             'message' : 'Adding new face in video %s for user %s' % ( media_uuid, user_uuid ) } ) )
 
     orm = vib.db.orm.get_session()
 
@@ -131,169 +81,87 @@ def update_contacts( user_uuid, media_uuid, recognized_faces, new_faces, bad_tra
         raise Exception( message )
 
     try:
-        # Handle bad tracks
-        for element in bad_tracks:
-            bad_track = element['track']
-            bad_reason = element['reason']
-            bad_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == bad_track['track_id'] ) )
-            for bad_feature in bad_features:
-                log.info( json.dumps( { 'user_uuid' : user_uuid,
-                                        'media_uuid' : media_uuid,
-                                        'message' : "Labeling media_asset_feature.id %d of track %d as a %s track." % ( bad_feature.id, bad_track['track_id'], bad_reason ) } ) )
-                bad_feature.recognition_result = bad_reason
-
-        # Handle new contacts
-        for uuid, tracks in new_faces.items():
-            log.info( json.dumps( { 'user_uuid' : user_uuid,
-                                    'media_uuid' : media_uuid,
-                                    'contact_uuid' : uuid,
-                                    'message' : "Creating new contact with uuid %s for user_id %s " % ( uuid, user_id ) } ) )
-
-            new_contact = Contacts( 
-                uuid        = uuid, 
-                user_id     = user_id,
-                picture_uri = _get_best_picture_uri( tracks )
-                )
-
-            for track in tracks:
-                log.info( json.dumps( { 'user_uuid' : user_uuid,
-                                        'media_uuid' : media_uuid,
-                                        'contact_uuid' : uuid,
-                                        'track_id' : track['track_id'],
-                                        'message' : "Associating new contact_uuid %s with track_id %d" % ( uuid, track['track_id'] ) } ) )
-
-                new_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == track['track_id'] ) )[:]
-                new_contact.media_asset_features.extend( new_features )
-                for feature in new_features:
-                    feature.recognition_result = 'new_face'
-
-                orm.commit()
-            try:
-                if recognition_data is not None and recognition_data[uuid]['recognize_id'] is not None:
-                    rec.recognition_feedback( recognition_data[uuid]['recognize_id'], None )
-                _add_recognition_faces( orm, user_id, new_contact.id, media_id, tracks )
-            except:
-                log.error( json.dumps( {'user_uuid' : user_uuid,
-                                       'media_uuid' : media_uuid,
-                                       'contact_uuid' : uuid,
-                                       'track_id' : track['track_id'],
-                                       'message' : "Updating recognition system failed: %s" % ( e ) } ) )
-                
-        # Handle existing contacts
-        for uuid, tracks in recognized_faces.items():
-            existing_contact = orm.query( Contacts ).filter( Contacts.uuid == uuid )
-            if existing_contact.count() == 0:
-                log.error( json.dumps( {
-                            'user_uuid' : user_uuid,
-                            'media_uuid' : media_uuid,
-                            'contact_uuid' : uuid,
-                            'message' : "Error existing contact %s no longer exists" % uuid
-                            } ) )
-                continue
-            else:
-                existing_contact = existing_contact[0]
-                existing_contact.picture_uri = _get_best_picture_uri( tracks )
-                for track in tracks:
-                    log.info( json.dumps( {
-                                'user_uuid' : user_uuid,
+        contact_uuid = str( uuid.uuid4() )
+        log.info( json.dumps( { 'user_uuid' : user_uuid,
                                 'media_uuid' : media_uuid,
-                                'contact_uuid' : existing_contact.uuid,
-                                'track_id' : track['track_id'],
-                                'message' : "Associating existing contact_uuid %s with track_id %d" % ( existing_contact.uuid, track['track_id'] )
-                                } ) )
-                    existing_features = orm.query( MediaAssetFeatures ).filter( and_( MediaAssetFeatures.media_id == media_id, MediaAssetFeatures.track_id == track['track_id'] ) )[:]
-                    existing_contact.media_asset_features.extend( existing_features )
-                    for feature in existing_features:
-                        feature.recognition_result = recognition_data[uuid]['recognition_result']
+                                'contact_uuid' : contact_uuid,
+                                'message' : "Creating new contact with uuid %s for user_id %s " % ( contact_uuid, user_id ) } ) )
 
-                    orm.commit()
-                try:
-                    if recognition_data is not None and recognition_data[uuid]['recognize_id'] is not None:
-                        if recognition_data[uuid]['recognition_result'] == 'machine_recognized':
-                            rec.recognition_feedback( recognition_data[uuid]['recognize_id'], 1 )
-                        elif recognition_data[uuid]['recognition_result'] == 'human_recognized':
-                            rec.recognition_feedback( recognition_data[uuid]['recognize_id'], None )
-                    _add_recognition_faces( orm, user_id, existing_contact.id, media_id, tracks )
-                except Exception as e:
-                    log.error( json.dumps( {'user_uuid' : user_uuid,
-                                            'media_uuid' : media_uuid,
-                                            'contact_uuid' : existing_contact.uuid,
-                                            'track_id' : track['track_id'],
-                                            'message' : "Updating recognition system failed: %s" % ( e ) } ) )
+        new_contact = Contacts( 
+            uuid        = contact_uuid, 
+            user_id     = user_id,
+            picture_uri = track_face['s3_key']
+            )
 
+        log.info( json.dumps( { 'user_uuid' : user_uuid,
+                                'media_uuid' : media_uuid,
+                                'contact_uuid' : contact_uuid,
+                                'track_id' : track_id,
+                                'message' : "Associating new contact_uuid %s with track_id %d face_id %d" % ( contact_uuid, track_id, track_face['face_id'] ) } ) )
+
+        feature = orm.query( MediaAssetFeatures ).filter( and_( MediaAssets.id == MediaAssetFeatures.media_asset_id, MediaAssets.uri == track_face['s3_key'] ) ).one()
+
+        feature.recognition_result = recognition_result
+        feature.recognition_confidence = recognition_confidence
+        new_contact.media_asset_features.append( feature )
+        
         orm.commit()
+
+        return ( feature.id, new_contact.id )
     except Exception as e:
-        log.warning( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'media_uuid' : media_uuid,
-                    'message' : "Exception in update_contacts: %s" % e
-                    } ) )
+        log.warning( json.dumps( { 'user_uuid' : user_uuid,
+                                   'media_uuid' : media_uuid,
+                                   'message' : "Exception in add_face: %s" % e } ) )
         orm.rollback()
         raise
 
-    return True
-
-def _get_best_picture_uri( tracks ):
-    '''Helper function, run through tracks and return the URI with the
-    best totalConfidence'''
-
-    best_score = -1
-    picture_uri = None
-
-    for track in tracks:
-        for face in track['faces']:
-            if face['totalConfidence'] > best_score:
-                picture_uri = face['s3_key']
-                best_score = face['totalConfidence']
-
-    return picture_uri
-        
-def _add_recognition_faces( orm, user_id, contact_id, media_id, tracks ):
-    '''Helper function that adds all new faces from this track to the
-    regonition system.
-
-    Each track has:
-    track_id, faces: [array of faces]
+def update_face( user_uuid, media_uuid, track_id, track_face, recognition_result, recognition_confidence, contact_id ):
+    '''For the given user_uuid, media_uuid, track_id, track_face, update the recognition_result, recognition_confidence, and contact_id
+    
+    Returns the face_id of the modified face on success.
     '''
+    log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                             'media_uuid' : media_uuid,
+                             'message' : 'Updating track %s face %s in video %s for user %s' % ( track_id, track_face['face_id'], media_uuid, user_uuid ) } ) )
+
+    orm = vib.db.orm.get_session()
 
     try:
-        if len( tracks ) == 0:
-            return
+        media = orm.query( Media ).filter( Media.uuid == media_uuid )[0]
+        media_id = media.id
 
-        track_dict = {}
-        for track in tracks:
-            track_dict[track['track_id']] = True
-
-        face_rows = orm.query( MediaAssets.uri,
-                               MediaAssetFeatures.id,
-                               MediaAssetFeatures.media_asset_id,
-                               MediaAssetFeatures.detection_confidence
-                               ).filter( and_( 
-                MediaAssets.id == MediaAssetFeatures.media_asset_id,
-                MediaAssets.media_id == media_id,
-                MediaAssetFeatures.media_id == media_id,
-                MediaAssetFeatures.track_id.in_( track_dict.keys() ) ) )
-                               
-        faces = []
-        
-        for face in face_rows:
-            faces.append( {
-                    'user_id'     : user_id,
-                    'contact_id'  : contact_id,
-                    'face_id'     : face.id,
-                    'face_url'    : "%s%s" % ( config.ImageServer, face.uri ),
-                    'external_id' : face.media_asset_id,
-                    'score'       : face.detection_confidence } )
-
-        rec.add_faces( user_id, contact_id, faces )
-
-        return
+        user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
+        user_id = user.id
     except Exception as e:
-        log.error( json.dumps( { 'user_id' : user_id,
-                                 'contact_id' : contact_id,
-                                 'message' : "Failed to update recognition system, error was: %s" % ( e ) } ) )
-        # Do not raise an exception here.
+        message = 'Failed to find media %s or user %s in database, perhaps they have been deleted?' % ( media_uuid, user_uuid )
+        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                 'media_uuid' : media_uuid,
+                                 'message' : message } ) )
+        raise Exception( message )
 
+    try:
+        if contact_id is not None:
+            contact = orm.query( Contacts ).filter( Contacts.id == contact_id ).one()
+    except Exception as e:
+        message = 'Failed to find contact_id %s perhaps they have been deleted?' % ( contact_id )
+        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                 'media_uuid' : media_uuid,
+                                 'message' : message } ) )
+        raise Exception( message )
 
-    
-    
+    try:
+        feature = orm.query( MediaAssetFeatures ).filter( and_( MediaAssets.id == MediaAssetFeatures.media_asset_id, MediaAssets.uri == track_face['s3_key'] ) ).one()
+
+        feature.recognition_result = recognition_result
+        feature.recognition_confidence = recognition_confidence
+        feature.contact_id = contact_id
+
+        orm.commit()
+        return feature.id
+    except Exception as e:
+        log.warning( json.dumps( { 'user_uuid' : user_uuid,
+                                   'media_uuid' : media_uuid,
+                                   'message' : "Exception in update_face: %s" % e } ) )
+        orm.rollback()
+        raise
+

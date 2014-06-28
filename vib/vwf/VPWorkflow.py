@@ -106,9 +106,7 @@ VPW = {
         'version'         : version,
         'task_list'       : 'FaceRecognizeTask',
         'prerequisites'   : [ 'FaceDetect' ],
-        # Lots of things could go wrong in Face Recognize, so we'll
-        # give it several attempts.
-        'failure_retries' : 5,
+        'failure_retries' : 1,
         # This is sort of ugly - we want to retry on heartbeat timeout
         # until we run out of time completely.  We allow this job to
         # run to 36 hours, with a 5 minute timeout.  So... up to 432

@@ -33,9 +33,10 @@ config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 #
 # face_url - a URL to an image of the face
 #
-# external_id - Optional, an arbitrary integer the external system
-# can set to further identify this face in the external system (if
-# user_id, contact_id, and face_id are not sufficient)
+# external_id - This key must be provided, it's value can be None or
+# an optional arbitrary integer the external system can set to further
+# identify this face in the external system (if user_id, contact_id,
+# and face_id are not sufficient)
 #
 # The return value for each function will be a hash with the following
 # keys:
@@ -112,11 +113,9 @@ def add_faces( user_id, contact_id, faces ):
                 #import pdb
                 #pdb.set_trace()
 
-
                 log.debug( json.dumps( { 'user_id'    : user_id,
                                          'contact_id' : contact_id,
                                          'message'    : "Working on face %s" % ( helpers._format_face( face ) ) } ) )
-
 
                 #try:
                 #    CHECK_VALUE = recog_db._check_face_exists( face['user_id'], face['contact_id'], face['face_id'] )
@@ -179,7 +178,7 @@ def add_faces( user_id, contact_id, faces ):
 
 
         if not helpers._reconcile_db_rekog( user_id, contact_id ):
-            result = rekog.train_for_user( user_id, config.recog_v2_namespace )
+            result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
             log.debug( json.dumps( { 'user_id'    : user_id,
                                      'contact_id' : contact_id,
                                      'rekog_result' : result,
@@ -239,7 +238,7 @@ def delete_contact( user_id, contact_id ):
             # ReKognition.  Note that we don't unconditionally retrain
             # because that is an expensive API call.
             recog_db._delete_contact_faces_for_user( user_id, contact_id )
-            result = rekog.train_for_user( user_id, config.recog_v2_namespace )
+            result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
             log.debug( json.dumps( { 'user_id'      : user_id,
                                      'contact_id'   : contact_id,
                                      'rekog_result' : result,
@@ -329,7 +328,7 @@ def delete_faces( user_id, contact_id, faces ):
         # If _reconcile returns true it means it did a training call
         # so we don't need to explicitly train ourselves.
         if not helpers._reconcile_db_rekog( user_id, contact_id ):
-            result = rekog.train_for_user( user_id, config.recog_v2_namespace )
+            result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
             log.debug( json.dumps( { 'user_id'    : user_id,
                                      'contact_id' : contact_id,
                                      'rekog_result' : result,
@@ -486,7 +485,7 @@ def recognize_face( user_id, face_url ):
 
         if matches is None:
             log.debug( json.dumps( { 'user_id'    : user_id,
-                                     'message'    : 'No face found in input image.' } ) )
+                                     'message'    : 'No recognition matches found.' } ) )
             return None
         else:
             faces = []
@@ -500,6 +499,8 @@ def recognize_face( user_id, face_url ):
                 if face is not None:
                     face['recognition_confidence'] = recognition_confidence
                     faces.append( face )
+                    if len( faces ) == 3:
+                        break
 
         result = {}
         result['faces'] = sorted( faces, key=lambda x: -x['recognition_confidence'] )[:3]

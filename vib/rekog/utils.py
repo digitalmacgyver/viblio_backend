@@ -12,6 +12,29 @@ rekog_api_secret = config.rekog_api_secret
 
 default_namespace = config.rekog_namespace
 
+def detect_face( url ):
+    '''Calls the ReKognition FaceDetect API and returns a Python data
+    structure of the results.
+
+    Return value is a hash with a 'face_detection' array (which can
+    have multiple values).  Each face_detection element is a nested
+    data structure with may fields.
+
+    The outer structure is a hash, of particular interest is the:
+    * confidence
+
+    key.  If at most 1 face was expected, the face with highest
+    confidence is probably the one you were searching for.
+    '''
+    data =  {
+        "api_key"    : rekog_api_key, 
+        "api_secret" : rekog_api_secret,
+        "jobs"       : "face_beauty",
+        "urls"       : url
+        }
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    return r.json()
+
 def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min_confidence=0.8, max_yaw=45, max_pitch=45 ):
     '''Adds face at URL for specified user.  If tag is specified the
     name is added with that tag.
@@ -340,6 +363,33 @@ def train_for_user( user_id, namespace = None ):
     else:
         raise Exception( result['usage']['status'] )
 
+def train_for_user_contact( user_id, contact_id, namespace = None ):
+    '''Call the ReKognition training API for all faces for the
+    user, contact.
+
+    Returns the request result in JSON format.
+
+    Raises an exception if the API call does not succeed.'''
+
+    if namespace == None:
+        namespace = default_namespace
+
+    data = {
+        'api_key'      : rekog_api_key,
+        'api_secret'   : rekog_api_secret,
+        'jobs'         : 'face_train_sync',
+        'name_space'   : namespace,
+        'user_id'      : user_id,
+        'tags'         : contact_id
+        }
+
+    r = requests.post( "http://rekognition.com/func/api/", data )
+    result = r.json()
+    if result['usage']['status'] == 'Succeed.':
+        return result
+    else:
+        raise Exception( result['usage']['status'] )
+
 
 def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_default=False, namespace = None ):
     '''Calls the ReKognition Visualize function and returns an array
@@ -388,7 +438,6 @@ def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_d
         return result['visualization']
     else:
         raise Exception( result['usage']['status'] )
-
 
 def detect_for_file( path ):
     '''Calls the ReKognition FaceDetect API and returns a Python data
