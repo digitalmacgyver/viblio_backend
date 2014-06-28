@@ -152,3 +152,20 @@ for community in raw_communities:
 f = open( "communities.txt", 'wb' );
 pickle.dump( communities, f )
 f.close()
+
+# Get information about exsiting media.
+# 
+# id
+# user_id
+raw_media = orm.query( Media ).filter( Media.is_album == False )
+media = []
+
+for m in raw_media:
+    media.append( {
+            'id' : m.id,
+            'user_id'  : m.user_id,
+            } )
+
+f = open( "media.txt", 'wb' );
+pickle.dump( media, f )
+f.close()

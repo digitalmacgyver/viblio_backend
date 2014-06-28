@@ -305,6 +305,32 @@ class Worker( Background ):
                 view_count   = 0 )
             media.assets.append( video_asset )
 
+            # Check of this user has the special album:
+            all_videos = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.is_viblio_created == True, Media.title == 'My Videos' ) )[:]
+            
+            if len( all_videos ) == 0:
+                all_video_album = Media( user_id = user.id,
+                                         uuid = str( uuid.uuid4() ),
+                                         media_type = 'original',
+                                         is_album = True,
+                                         display_album = True,
+                                         title = 'My Videos',
+                                         is_viblio_created = True )
+                orm.add( all_video_album )
+                
+                media_album_row = MediaAlbums()
+                orm.add( media_album_row )
+                media.media_albums_media.append( media_album_row )
+                all_video_album.media_albums.append( media_album_row )
+            elif len( all_videos ) == 1:
+                media_album_row = MediaAlbums()
+                orm.add( media_album_row )
+                media.media_albums_media.append( media_album_row )
+                all_videos[0].media_albums.append( media_album_row )
+            else:
+                raise Exception( "ERROR: Found multiple 'My Videos' albums for user: %s " % ( user.id ) )
+                
+
         except Exception as e:
             self.__safe_log( self.popeye_log.exception, 'Failed to add mediafile to database: %s' % str( e ) )
             self.handle_errors()

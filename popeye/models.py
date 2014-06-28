@@ -98,6 +98,9 @@ class WorkflowStages( BaseModel, Serializer ):
 class MediaWorkflowStages( BaseModel, Serializer ):
     pass
 
+class MediaAlbums( BaseModel, Serializer ):
+    pass
+
 """
 Well, reflection really only gives us the column definitions it
 seems.  We are still responsible for establishing the relationships
@@ -132,7 +135,17 @@ def db_map(engine):
                                    cascade="all, delete-orphan"),
             "media_workflow_stages": relationship( models.MediaWorkflowStages,
                                                    backref="media",
-                                                   cascade="all, delete-orphan" )
+                                                   cascade="all, delete-orphan" ),
+            "media_albums" : relationship( models.MediaAlbums,
+                                           lazy="dynamic",
+                                           backref="media",
+                                           foreign_keys=models.MediaAlbums.album_id,
+                                           cascade="all, delete-orphan" ),
+            "media_albums_media" : relationship( models.MediaAlbums,
+                                                 lazy="dynamic",
+                                                 backref="media_albums",
+                                                 foreign_keys=models.MediaAlbums.media_id,
+                                                 cascade="all, delete-orphan" ),
             })
 
     mappers["media_assets"].add_properties({

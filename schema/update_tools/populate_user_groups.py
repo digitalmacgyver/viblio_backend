@@ -54,6 +54,9 @@ single_user = 482
 update_recognition = False
 
 for contact in contacts:
+    # DEBUG
+    continue
+
     # Skip groups, we'll handle them below.
     if contact['is_group']:
         continue
@@ -156,6 +159,9 @@ for share_group in share_groups:
         contact_group_id_to_contacts[share_group['group_id']].append( share_group['contact_id'] )
 
 for contact in contacts:
+    # DEBUG
+    continue
+
     # We already handled all contacts that are not groups.
     if not contact['is_group']:
         continue
@@ -192,7 +198,7 @@ for contact in contacts:
             print "\tAdding %s to share group" % ( shared_to_user.id )
             shared_to_user.user_groups.append( user_share )
             share_group.user_groups.append( user_share )
-            
+
     orm.commit()
     print "\tDONE"
 
@@ -218,6 +224,9 @@ f.close()
 # the share_groups created above.
 
 for community in communities:
+    # DEBUG
+    continue
+
     # For ease of debugging.
     if single_user and community['user_id'] != single_user:
         continue
@@ -268,18 +277,25 @@ for community in communities:
 # is_group_share
 # view_count
 
-# DEBUG - we don't know what's going on here, don't change it till we
-# understand it better.
-
-# DEBUG - set media.view_count = media_shares.view_count.
-'''
-
 f = open( "media_shares.txt" )
 media_shares = pickle.load( f )
 f.close()
 
 # 1. For all public shares, create a new singleton public share with a singleton album.
 # 2. For the other shares, test if there is an existing share group, if so use it.
+
+# Potential shares -> single file shares (these records allow the URLs to be visited)
+#
+# Hidden shares -> single file shares that someone has viewed - we ignore these.
+#
+# Public shares -> single file shares (these are to FB, twitter, etc.)
+#
+# Private shares onto albums are ignored - these are artifacts of how
+# new users are created when a community is shared with a non-user
+# today.
+#
+# Private shares onto single files -> single user share group and single album file.
+#  display_album = false.
 
 # Key is owner_id
 #
@@ -288,14 +304,154 @@ f.close()
 user_id_group_map = {}
 
 for media_share in media_shares:
-    if media_share['user_id'] is None and media_share['share_type'] not in [ 'public', 'potential' ]:
-        log.warn( json.dumps( 'message' : "WARNING - no user_id for private or hidden share - skipping: %s" % ( media_share ) ) )
+    # DEBUG
+    continue
+
+    print "Working on media_share: %s" % ( media_share['id'] )
+
+    media = orm.query( Media ).filter( Media.id == media_share['media_id'] ).one()
+
+    if single_user and single_user != media.user_id:
+        continue
+    
+    # Fix view counts.
+    media_view_count = 0
+    if media.view_count is not None:
+        media_view_count = media.view_count
+        
+    media_share_view_count = media_share.get( 'view_count', 0 )
+    
+    if media_share_view_count > media_view_count:
+        media.view_count = media_share_view_count
+
+    share_type = media_share['share_type']
+
+    # Ignore hidden shares.
+    if share_type == 'hidden':
+        print "\tHidden share - skipping."
         continue
 
-    media = orm.query( Media ).filter( Media.id == media_share.media_id ).one()
+    # Ignore this type of private share.
+    if share_type == 'private' and media.is_album:
+        print "\tPrivate album share - skipping."
+        continue
 
-    
-    if media_share['user_id'] is None:
+    # Handle the rest.
+    if share_type in [ 'public', 'potential' ]:
+        # Single file share, just cram it into shared_album_groups.
+        sag = SharedAlbumGroups( user_id    = media.user_id,
+                                 uuid       = str( uuid.uuid4() ),
+                                 share_type = share_type,
+                                 media_id   = media.id,
+                                 is_curated = False )
+        orm.add( sag )
+
+        print "\tAdded single file %s share for media_id %s user %s." % ( share_type, media.id, media.user_id )
+    elif share_type == 'private':
+        # Create an album to hold the video.
+        album = Media( user_id = media.user_id,
+                       uuid = str( uuid.uuid4() ),
+                       media_type = 'original',
+                       is_album = True,
+                       display_album = False,
+                       is_viblio_created = True )
+        media_album = MediaAlbums( media_id = media.id )
+        album.media_albums.append( media_album )
+
+        # Create a share group to hold the user.
+        share_group = None
+        if media.user_id in user_id_group_map:
+            if media_share['user_id'] in user_id_group_map[media.user_id]:
+                share_group = user_id_group_map[media.user_id][media_share['user_id']]
+                print "\tAdding private share to existing group: %s" % ( share_group.id )
+            else:
+                share_group = Groups( owner_id   = media.user_id,
+                                      uuid       = str( uuid.uuid4() ),
+                                      group_type = 'share' )
+                user_share = UserGroups( member_id   = media_share['user_id'],
+                                         uuid        = str( uuid.uuid4() ),
+                                         member_role = 'editor' )
+                share_group.user_groups.append( user_share )
+                user_id_group_map[media.user_id][media_share['user_id']] = share_group
+                print "\tAdding private share to new group,user_group: %s, %s" % ( share_group.uuid, user_share.uuid )
+        else:
+            share_group = Groups( owner_id   = media.user_id,
+                                  uuid       = str( uuid.uuid4() ),
+                                  group_type = 'share' )
+            user_share = UserGroups( member_id   = media_share['user_id'],
+                                     uuid        = str( uuid.uuid4() ),
+                                     member_role = 'editor' )
+            share_group.user_groups.append( user_share )
+            user_id_group_map[media.user_id] = { media_share['user_id'] : share_group }                
+            print "\tAdding private share to new group,user_group: %s, %s" % ( share_group.uuid, user_share.uuid )
+
+        sag = SharedAlbumGroups( user_id    = media.user_id,
+                                 uuid       = str( uuid.uuid4() ),
+                                 share_type = share_type,
+                                 is_curated = False )
+        orm.add( sag )
+        album.shared_album_media.append( sag )
+        share_group.shared_album_group_members.append( sag )
+
+    orm.commit()
+    print "\tDONE"
+
+
+# Put all user videos in their special 'My Videos' album.
+f = open( "media.txt" )
+media_shares = pickle.load( f )
+f.close()
+
+# media_id
+# user_id
+
+user_id_to_user_map = {}
+user_id_to_album_map = {}
+
+for m in media_shares:
+    if single_user and single_user != m['user_id']:
+        continue
+
+    user = None
+
+    if m['user_id'] in user_id_to_user_map:
+        user = user_id_to_user_map[m['user_id']]
+    else:
+        user = orm.query( Users ).filter( Users.id == m['user_id'] ).one()
         
-'''    
-    
+    media = orm.query( Media ).filter( Media.id == m['id'] ).one()
+
+    print "Working on media %s for user %s" % ( media.id, user.id )
+
+    all_video_album = None
+
+    if user.id in user_id_to_album_map:
+        all_video_album = user_id_to_album_map[user.id]
+    else:
+        # Check of this user has the special album:
+        all_videos = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.is_viblio_created == True, Media.title == 'My Videos' ) )[:]
+            
+        if len( all_videos ) == 0:
+            all_video_album = Media( user_id = user.id,
+                                     uuid = str( uuid.uuid4() ),
+                                     media_type = 'original',
+                                     is_album = True,
+                                     display_album = True,
+                                     title = 'My Videos',
+                                     is_viblio_created = True )
+            orm.add( all_video_album )
+            user_id_to_album_map[user.id] = all_video_album
+            print "\tCreating all video album: %s" % ( all_video_album.uuid ) 
+        elif len( all_videos ) == 1:
+            all_video_album = all_videos[0]
+            user_id_to_album_map[user.id] = all_video_album
+        else:
+            print "WHAT?"
+            sys.exit( 0 )
+
+    media_album_row = MediaAlbums()
+    orm.add( media_album_row )
+    media.media_albums_media.append( media_album_row )
+    all_video_album.media_albums.append( media_album_row )
+    orm.commit()
+    print "\tDONE"
