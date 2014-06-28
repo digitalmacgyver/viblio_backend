@@ -66,7 +66,7 @@ def _reconcile_db_rekog( user_id, contact_id ):
     _delete_db_mismatch( user_id, contact_id, db_faces, contact_faces )
 
     if train:
-        result = rekog.train_for_user( user_id, config.recog_v2_namespace )
+        result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
         log.debug( json.dumps( { 'user_id'    : user_id,
                                  'contact_id' : contact_id,
                                  'rekog_result' : result,
