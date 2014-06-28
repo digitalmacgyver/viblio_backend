@@ -40,14 +40,12 @@ def _reconcile_db_rekog( user_id, contact_id ):
         if face_contact_id == contact_id:
             contact_faces.append( face )
             
-    '''
-    log.debug( json.dumps( { 'user_id'    : user_id,
+    log.info( json.dumps( { 'user_id'    : user_id,
                             'contact_id' : contact_id,
                             'message'    : "Reconciling DB for u:%s c:%s" % ( user_id, contact_id ) } ) )
-    log.debug( json.dumps( { 'user_id'    : user_id,
+    log.info( json.dumps( { 'user_id'    : user_id,
                             'contact_id' : contact_id,
                             'message'    : "contact_faces are: %s" % ( contact_faces ) } ) )
-    '''
 
     train = _delete_rekog_mismatch( user_id, contact_id, db_faces, contact_faces )
 
