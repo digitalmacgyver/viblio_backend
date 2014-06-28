@@ -66,10 +66,21 @@ grep -ir curators_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep
 grep -ir share_type * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
 grep -ir view_count *  | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
 
-
 6. Come up with sample queries (paginated):
 
 All videos for user.
+
+All albums shared with me:
+
+select media.id, media.uuid, media.user_id as owner_id, title, description, media.view_count, lat, lng, geo_address, geo_city, media_assets.uuid, asset_type, uri
+from user_groups, shared_album_groups, media_albums, media, media_assets
+where member_id = 482 
+and member_id = 'editor' 
+and group_id = shared_album_groups.members_id
+and shared_album_groups.media_id = media_albums.album_id
+and media_albums.media_id = media.id
+and media.id = media_assets.media_id
+and media.status in ( 'visible', 'complete' );
 
 All videos with faces, tags, actvities for user.
 
