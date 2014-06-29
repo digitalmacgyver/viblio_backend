@@ -292,9 +292,9 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
         contact_group = None
         if len( contact_groups ) == 0:
             # We need to create a contact group for this user.
-            contact_group = ContactGroups( uuid = str( uuid.uuid4() ),
-                                          group_type = 'contact',
-                                          group_name = 'Contacts' )
+            contact_group = Groups( uuid = str( uuid.uuid4() ),
+                                    group_type = 'contact',
+                                    group_name = 'Contacts' )
             user.append( contact_group )
         elif len( contact_groups ) > 1:
             log.error( json.dumps( { 'user_uuid' : user_uuid,
@@ -318,10 +318,10 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                 upload_file_to_s3( friend['file'], s3_key )
 
                 # Does this person already exist for us?
-                contact_users = orm.query( Users ).filter( Users.provider == 'facebook', Users.provider_id == friend['facebook_id'] )[:]
+                contact_users = orm.query( Users ).filter( Users.provider == 'facebook', Users.provider_id == friend['facebook_id'] ).order_by( Users.id )[:]
                 contact_user = None
 
-                if len( contact_users == 0 ):
+                if len( contact_users ) == 0:
                     # It's a new person.
                     contact_user = Users( uuid        = str( uuid.uuid4() ),
                                           provider    = 'facebook',
@@ -329,7 +329,7 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                                           displayname = friend['name'],
                                           user_type   = 'contact' )
                     orm.add( contact_user )
-                elif len( contact_users > 1 ):
+                elif len( contact_users ) > 1:
                     log.error( json.dumps( { 'user_uuid' : user_uuid,
                                              'message' : "Found multiple users for single facebook_id %s - there should be only one, mapping to the oldest one: %s" % ( friend['facebook_id'], contact_users[0].id ) } ) )
                     contact_user = contact_users[0]
@@ -386,20 +386,20 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                             } ) )
 
                 # Does this person already exist for us?
-                contact_users = orm.query( Users ).filter( Users.provider == 'facebook', Users.provider_id == friend['facebook_id'] )[:]
+                contact_users = orm.query( Users ).filter( Users.provider == 'facebook', Users.provider_id == friend['id'] ).order_by( Users.id )[:]
                 contact_user = None
 
-                if len( contact_users == 0 ):
+                if len( contact_users ) == 0:
                     # It's a new person.
                     contact_user = Users( uuid        = str( uuid.uuid4() ),
                                           provider    = 'facebook',
-                                          provider_id = friend['facebook_id'],
+                                          provider_id = friend['id'],
                                           displayname = friend['name'],
                                           user_type   = 'contact' )
                     orm.add( contact_user )
-                elif len( contact_users > 1 ):
+                elif len( contact_users ) > 1:
                     log.error( json.dumps( { 'user_uuid' : user_uuid,
-                                             'message' : "Found multiple users for single facebook_id %s - there should be only one, mapping to the oldest one: %s" % ( friend['facebook_id'], contact_users[0].id ) } ) )
+                                             'message' : "Found multiple users for single facebook_id %s - there should be only one, mapping to the oldest one: %s" % ( friend['id'], contact_users[0].id ) } ) )
                     contact_user = contact_users[0]
                 else:
                     contact_user = contact_users[0]
@@ -465,15 +465,14 @@ def run():
         fb_user_id      = options['facebook_id']
         user_uuid       = options['user_uuid']
 
-        # DEBUG
         if fb_recent_link_request( user_uuid ):
         #if True:
             friends = get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token )
             log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                      'message' : "Facebook friends for user %s/%s were %s" % ( user_uuid, fb_user_id, friends ) } ) )
 
-            people = update_rekognition_for_user( user_uuid, fb_user_id, friends, fb_access_token )
             # DEBUG - keep our API limits low for testing.
+            people = update_rekognition_for_user( user_uuid, fb_user_id, friends, fb_access_token )
             #people = update_rekognition_for_user( user_uuid, fb_user_id, [] )
             log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                      'message' : "People from ReKognition for user %s/%s were %s" % ( user_uuid, fb_user_id, people ) } ) )
@@ -496,4 +495,3 @@ def run():
     finally:
         if message != None:
             sqs.delete_message( message )
-
