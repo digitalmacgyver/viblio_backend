@@ -50,12 +50,12 @@ user_contact_group_map = {}
 # SQLAlchemy user that now represents that contact.
 contact_id_to_user_map = {}
 
-single_user = 482
+single_user = None
 update_recognition = False
 
 for contact in contacts:
     # DEBUG
-    continue
+    continue;
 
     # Skip groups, we'll handle them below.
     if contact['is_group']:
@@ -160,7 +160,7 @@ for share_group in share_groups:
 
 for contact in contacts:
     # DEBUG
-    continue
+    continue;
 
     # We already handled all contacts that are not groups.
     if not contact['is_group']:
@@ -225,7 +225,7 @@ f.close()
 
 for community in communities:
     # DEBUG
-    continue
+    continue;
 
     # For ease of debugging.
     if single_user and community['user_id'] != single_user:
@@ -305,7 +305,7 @@ user_id_group_map = {}
 
 for media_share in media_shares:
     # DEBUG
-    continue
+    continue;
 
     print "Working on media_share: %s" % ( media_share['id'] )
 

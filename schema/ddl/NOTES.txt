@@ -15,16 +15,11 @@ alter table contacts rename deprecated_contacts;
 alter table contact_groups rename deprecated_contact_groups;
 alter table media_shares rename deprecated_media_shares;
 alter table communities rename deprecated_communities;
+alter table media_asset_features change contact_id deprecated_contact_id int;
 
 9. Bring up new software and test.
 
 TODO:
-
-4. Remove access to contacts, contact_groups, media_shares, communities.
-
-
-
-5. Remove those tables from the ORM.
 
 5. Re-implement back end to do the right stuff.
 
@@ -40,6 +35,7 @@ TEST: cv/FaceRecognition/CleanupFaces.py
 TEST: utils/greet_new_users.py
 
 * Used similar logic to this all over.
+* Did some initial testing.
 
 TEST: fb/CreateContacts.py
 
@@ -50,15 +46,7 @@ TEST: utils/delete_user.py
 
 TEST: utils/rescue_orphan_faces.py
 
-vwf/FaceRecognize/db_utils.py
-vwf/FaceRecognize/mturk_utils.py
-vwf/FaceRecognize/recognize_face_form.py
-vwf/FaceRecognize/Recognize.py
-
-grep -ir contact_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
-
-vwf/FaceRecognize/db_utils.py
-vwf/FaceRecognize/Recognize.py
+TEST: vwf/FaceRecognize/db_utils.py, vwf/FaceRecognize/Recognize.py
 
 DEPRECATED / FIX LATER:
 utils/clone_user.py
@@ -79,24 +67,195 @@ grep -ir curators_id * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep
 grep -ir share_type * | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
 grep -ir view_count *  | cut -d ':' -f1 | sort -u | grep -v "Binary file" | grep -v '\~'
 
+Sample queries:
 
-6. Come up with sample queries (paginated):
+Note - the samples below have select * - but in reality we should pare
+it down to just the columns the UI cares about.
 
-All videos for user.
+All videos I own:
+=================
 
-All videos with faces, tags, actvities for user.
+Same as today - however the back end will also maintain a special
+album called "My Videos" with is_viblio_created = 1 for each user that
+has all the videos they upload.
 
-All contacts for user.
+All media/face/tag/etc information in videos I own (NULLs if there is no data):
+===============================================================================
 
-Adding a contact.
+select *
+from media inner join media_assets on media.id = media_assets.media_id
+inner join media_asset_features on media_assets.media_id = media_asset_features.media_id
+and media.user_id = 114
+left outer join users on media_asset_features.face_user_id = users.id;
 
-Creating a share.
+All contacts for user X.
+========================
 
-Getting picture_uri's for user/user pair.
+select * 
+from user_groups, users
+where user_groups.member_id = users.id
+and owner_id = 114
+and member_role = 'contact';
 
-6. For discussion - do we want a meta-album of all the users content?
-This would simplify some queries so we could just always look at
-albums and never ownership directly?
+A list of "Friends of friends" to populate drop downs with when people to go tag faces:
+=======================================================================================
+
+Note: the search here returns:
+* Any contacts of the current user
+* Any contacts of any user that the current user has shared to
+* Any contacts of any user that has shared to the current user
+
+select distinct( users.id ), users.email, member_name
+from user_groups, users
+where user_groups.member_id = users.id
+and member_role = 'contact'
+and owner_id in (
+  select 114 as owner_id from dual
+  union
+  select users.id as owner_id
+  from user_groups, users
+  where user_groups.member_id = users.id
+  and owner_id = 114
+  and member_role in ( 'viewer', 'editor', 'admin' )
+  union
+  select users.id as owner_id
+  from user_groups, users
+  where user_groups.owner_id = users.id
+  and user_groups.member_id = 114
+  and member_role in ( 'viewer', 'editor', 'admin' ) )
+and ( displayname is not null or ( owner_id = 114 and member_name is not null ) )
+group by users.id;
+
+
+Queries related to all videos shared with me:
+====================================================================================
+
+All information about videos shared with me, including faces and tags:
+select *
+from user_groups inner join shared_album_groups on user_groups.group_id = shared_album_groups.members_id
+inner join media_albums on shared_album_groups.media_id = media_albums.album_id
+inner join media on media_albums.media_id = media.id
+inner join media_assets on media.id = media_assets.media_id
+inner join media_asset_features on media_assets.media_id = media_asset_features.media_id
+and member_id = 114
+and member_role in ( 'viewer', 'editor', 'admin' )
+left outer join users on media_asset_features.face_user_id = users.id;
+
+Media assets associated with media in albums shared to groups user X is in:
+select *
+from user_groups, shared_album_groups, media_albums, media, media_assets
+where user_groups.group_id = shared_album_groups.members_id
+and shared_album_groups.media_id = media_albums.album_id
+and media_albums.media_id = media.id
+and media.id = media_assets.media_id
+and member_id = 114
+and member_role in ( 'viewer', 'editor', 'admin' );
+
+Share groups user X is in:
+select *
+from user_groups
+where member_id = 114
+and member_role in ( 'viewer', 'editor', 'admin' );
+
+Shares made to groups user X is in:
+select *
+from user_groups, shared_album_groups
+where user_groups.group_id = shared_album_groups.members_id
+and member_id = 114
+and member_role in ( 'viewer', 'editor', 'admin' );
+
+Albums shared to groups user X is in:
+select *
+from user_groups, shared_album_groups, media_albums
+where user_groups.group_id = shared_album_groups.members_id
+and shared_album_groups.media_id = media_albums.album_id
+and member_id = 114
+and member_role in ( 'viewer', 'editor', 'admin' );
+
+Media in albums shared to groups user X is in:
+select *
+from user_groups, shared_album_groups, media_albums, media
+where user_groups.group_id = shared_album_groups.members_id
+and shared_album_groups.media_id = media_albums.album_id
+and media_albums.media_id = media.id
+and member_id = 114
+and member_role in ( 'viewer', 'editor', 'admin' );
+
+Media asset features associated with media assets ... for user x:
+select *
+from user_groups, shared_album_groups, media_albums, media, media_assets, media_asset_features
+where user_groups.group_id = shared_album_groups.members_id
+and shared_album_groups.media_id = media_albums.album_id
+and media_albums.media_id = media.id
+and media.id = media_assets.media_id
+and media_assets.media_id = media_asset_features.media_id
+and member_id = 114
+and member_role in ( 'viewer', 'editor', 'admin' );
+
+Top Actors Query:
+=================
+
+select users.id, count( distinct( media_id ) )
+from users, media_asset_features
+where users.id = media_asset_features.face_user_id
+and media_asset_features.user_id = 114
+group by users.id;
+
+Creating a user - after standard user creation, create the following records:
+=============================================================================
+
+* The special "Contacts" group for that user:
+insert into groups ( owner_id, uuid, group_type, group_name ) values ( X, Y, 'contact', 'Contacts' );
+
+* The special "My Videos album for that user:
+insert into media ( user_id, uuid, media_type, is_album, display_album, title, is_viblio_created ) values ( X, Y, 'original', 1, 1, 'My Videos', 1 );
+
+Adding a contact to a user:
+===========================
+
+* If the contact has an email address, see if there is already a user
+  in users with that email.  Otherwise create a new user of type 'contact':
+insert into users ( uuid, email, displayname, user_type ) values ( X, Y, Z, 'contact' );
+
+* Determine the Groups.id of the special "contacts" group owned by the user in question: GID
+insert into groups ( group_id, owner_id, member_id, uuid, member_name, member_role, picture_uri ) values ( GID, ID_OF_ACTIVE_USER, ID_OF_USER_CREATED_OR_SELECTED_ABOVE, X, Y, 'contact', Z );
+
+Creating a share:
+=================
+
+* To create a potential / public / hidden share for media MID, user UID:
+insert into shared_album_groups ( user_id, uuid, share_type, media_id, is_curated ) values ( UID, X, 'potential/public/hidden', MID, 0 );
+
+* To create a shared album AKA community:
+  + Determine if the selected set of users the share will go to
+    already exists as a share group, if so call this GID, otherwise:
+    + For each email to share to, check if there is already a user with that email, if not create on as described above in "adding a contact to a user"
+    + Create a share group for this set of users with emails:
+insert into groups ( owner_id, uuid, group_type, group_name ) values ( ACTIVE_USER, X, 'share', Y );
+    + Add each user to this share group with:
+insert into user_groups ( group_id, owner_id, member_id, uuid, member_name, member_role ) values ( GROUP_FROM_LAST_STEP, ACTIVE_USER, EMAIL_USER, X, ?TBD?, 'editor' )
+  + Associate an album AID with the group GID created above:
+insert into shared_album_groups ( user_id, uuid, share_type, media_id, members_id, is_curated ) values ( UID, X, 'private', AID, GID, 0 );
+
+TBD: Getting the name for a user.
+
+Each contact is a mapping to a user, each user has a displayname.
+Each user_group 'contact' mapping also has a member_name.  This allows
+us to have nicknames for users, and for each user to pick the picture
+they want associated with another user who appears in their videos.
+
+So - we have to make a choice about how to display names for contacts
+- we could use a nickname system, or a single name for any email, or
+some hybrid approach depending on whether the user in question has
+logged into their Viblio account.
+
+
+
+6. Implement a cleanup tool to take out:
+
+A. 'contact' users with no email or facebook ID and no mapping to user_groups.
+B. 'contact' user_group records for users that have no associated email or name, and no MAF entries for that user.
+C. Decide whether or not to delete FR stuff when we do this too.
 
 8. Test in staging:
 
