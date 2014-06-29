@@ -41,12 +41,19 @@ TEST: fb/CreateContacts.py
 
 * Include test case of two people adding the same FB contact, it
   should result in only one new user.
-
-TEST: utils/delete_user.py
+* Did some initial testing
 
 TEST: utils/rescue_orphan_faces.py
 
+* Did some initial testing.
+
+TEST: utils/delete_user.py
+
+* Did some initial testing.
+
 TEST: vwf/FaceRecognize/db_utils.py, vwf/FaceRecognize/Recognize.py
+
+* Did some initial testing - retest.
 
 DEPRECATED / FIX LATER:
 utils/clone_user.py

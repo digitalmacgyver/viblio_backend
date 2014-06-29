@@ -79,10 +79,10 @@ def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
 
         media = orm.query( Media ).filter( Media.user_id == user[0].id )
         assets = orm.query( MediaAssets ).filter( MediaAssets.user_id == user_id )
-        contacts = orm.query( UserGrousp ).filter( UserGroups.owner_id == user_id )
+        contacts = orm.query( UserGroups ).filter( UserGroups.owner_id == user_id )
     
         if verbose:
-            print "About to delete all data for user %s with uuid %s" % ( user[0].email, user[0].uuid )
+            print "About to delete all data for user and about user %s with uuid %s" % ( user[0].email, user[0].uuid )
             print "User has:"
             print "\t%s videos" % media.count()
             print "\t%s contacts and shares" % contacts.count()
@@ -117,16 +117,18 @@ def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
 
         if delete_user:
             if verbose:
-                print "Deleting user and all comments, shares, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
+                print "Deleting user and all comments, shares to and from, all contacts that refer to the user, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
             orm.query( Media ).filter( and_( Media.user_id == user_id, Media.is_album == True ) ).delete()
+            orm.query( UserGroups ).filter( UserGroups.member_id == user_id ).delete()
             orm.query( Users ).filter( Users.id == user_id ).delete()
         else:
             # Delete everything about this user, but leave the user in
             # tact.
             if verbose:
-                print "Deleting all comments, shares, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
+                print "Deleting all comments, shares to and from, all contacts that refer to the user, media, media_assets, media_asset_features, and the user %s itself" % ( user_uuid )            
             orm.query( Media ).filter( and_( Media.user_id == user_id, Media.is_album == True ) ).delete()
             orm.query( Media ).filter( Media.user_id == user_id ).delete()
+            orm.query( UserGroups ).filter( UserGroups.member_id == user_id ).delete()
             orm.query( Groups ).filter( Groups.owner_id == user_id ).delete()
         
         orm.commit()

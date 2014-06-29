@@ -71,9 +71,7 @@ def update_orphan_faces( hours=24*3 ):
                 MediaAssetFeatures.track_id
                 ).all()
 
-        log.debug( json.dumps( {
-                    'message' : "Found %d orphan faces." % len( orphan_faces )
-                    } ) )
+        log.debug( json.dumps( { 'message' : "Found %d orphan faces." % len( orphan_faces ) } ) )
 
         for orphan in orphan_faces:
             user = orm.query( Users ).filter( Users.id == orphan.user_id ).one()
