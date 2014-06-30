@@ -14,10 +14,10 @@ import vib.rekog.utils as rekog
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-video_input_dirs = [ '/wintmp/collage/school_input' ]
+video_input_dirs = [ '/wintmp/wedding-album/' ]
 
-workdir = '/wintmp/collage/workdir'
-outdir = '/wintmp/collage/outdir'
+workdir = '/wintmp/wedding-album/workdir'
+outdir = '/wintmp/wedding-album/outdir'
 
 def get_frames( input_filename, output_file, uid, frame_count ):
 
@@ -63,7 +63,7 @@ def get_face_score( filename ):
     return face_score
 
 def get_blur_score( filename ):
-    cmd = '/home/viblio/viblio/collage/blurDetector %s' % ( filename )
+    cmd = '/home/viblio/viblio/faces-working/faces/BlurDetector/blurDetector %s' % ( filename )
 
     print "Running:", cmd
     ( status, cmd_output ) = commands.getstatusoutput( cmd )
@@ -78,7 +78,7 @@ def get_best_images( images, count ):
     
     # Within each group, return the highest face score, and the least
     # blurry not already returned.
-    groups = count / 2
+    groups = max( count / 2, 1 )
     images_per_group = len( images ) / groups
 
     scored_images = {}
@@ -120,18 +120,18 @@ def get_best_images( images, count ):
 
     return results
 
-total_frames = 100
+total_frames = 150
 output_frames = 20
 
 for video_dir in video_input_dirs:
     i = 1
-    videos = glob.glob( "%s/*.mov" % ( video_dir ) )
+    videos = glob.glob( "%s/*.mp4" % ( video_dir ) )
 
     best_images = []
 
     for video in videos:
         print "Found: %s" % ( video )
-        #get_frames( video, "%s/%s.mp4" % ( workdir, i ), i, total_frames / len( videos ) )
+        get_frames( video, "%s/%s.mov" % ( workdir, i ), i, total_frames / len( videos ) )
 
         images = sorted( glob.glob( "%s/%s-thumb*.png" % ( workdir, i ) ) )
         
@@ -147,7 +147,6 @@ for video_dir in video_input_dirs:
         best_i += 1
 
 sys.exit( 0 )
-
 
 #indirs = [ '/wintmp/collage/10', '/wintmp/collage/20', '/wintmp/collage/100' ]
 indirs = [ '/wintmp/collage/100' ]
