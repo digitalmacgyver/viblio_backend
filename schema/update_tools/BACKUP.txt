@@ -1,3 +1,30 @@
 Database backup / clone procedure:
 
+Dev:
+
 mysqldump -h testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com -u admin -pitonerol video_dev_1 | mysql -h testpub.c9azfz8yt9lz.us-west-2.rds.amazonaws.com -u admin -pitonerol video_dev_2
+
+
+Prod:
+
+mysqldump -h videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com -u admin -pitonerol video_dev | mysql -h videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com -u admin -pitonerol video_backup
+
+Conversion process:
+
+1. Get the current data:
+
+mysqldump -h videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com -u admin -pitonerol --set-charset --skip-set-charset video_dev > backup.sql
+
+2. Edit the file, search and replace:
+
+CHARSET=latin1
+CHARSET=utf8 COLLATE=utf8_bin
+
+3. Create the new database.
+
+CREATE SCHEMA IF NOT EXISTS video_utf8 DEFAULT CHARACTER SET utf8 COLLATE utf8_bin ;
+
+4. Load the data:
+
+mysql -u admin -pitonerol --default-character-set=utf8 -h videos.c9azfz8yt9lz.us-west-2.rds.amazonaws.com video_utf8 < backup.sql 
+
