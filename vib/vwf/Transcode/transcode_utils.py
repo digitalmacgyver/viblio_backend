@@ -126,7 +126,10 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     for idx, output in enumerate( outputs ):
         output_cmd += ffopts
         if output.get( 'scale', None ) is not None:
-            output_cmd += ',scale="%s" ' % ( output.get( 'scale' ) )
+            if rotation in [ '90', '180', '270' ]:
+                output_cmd += ',scale="%s" ' % ( output.get( 'scale' ) )
+            else:
+                output_cmd += ' -vf scale="%s" ' % ( output.get( 'scale' ) )
         else:
             output_cmd += ' '
         video_bit_rate = " -crf 22 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
