@@ -99,34 +99,36 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     rotation = exif['rotation']
     mimetype = exif['mime_type']
 
-    ffopts = ' -c:a libfdk_aac '
+    output_frame_rate = ' -r 30000/1001 '
+
+    ffopts = ' -c:a libfdk_aac ' + output_frame_rate
     
     log_message = ''
     cmd_output = ''
 
     if rotation == '90':
         log_message = 'Video is rotated 90 degrees, rotating.'
-        ffopts += ' -vf transpose=1 -metadata:s:v:0 rotate=0 '
+        ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=1'
     elif rotation == '180':
         log_message = 'Video is rotated 180 degrees, rotating.'
-        ffopts += ' -vf hflip,vflip -metadata:s:v:0 rotate=0 '
+        ffopts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip'
     elif rotation == '270':
         log_message = 'Video is rotated 270 degrees, rotating.'
-        ffopts += ' -vf transpose=2 -metadata:s:v:0 rotate=0 '
+        ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=2'
     else:
         log_message = 'Video is not rotated.'
 
-    log.debug( json.dumps( {
-                'media_uuid' : media_uuid,
-                'message' : log_message
-                } ) )
+    log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                             'message' : log_message } ) )
 
     output_cmd = ""
     output_files_fs = []
     for idx, output in enumerate( outputs ):
         output_cmd += ffopts
         if output.get( 'scale', None ) is not None:
-            output_cmd += ' -vf scale="%s" ' % ( output.get( 'scale' ) )
+            output_cmd += ',scale="%s" ' % ( output.get( 'scale' ) )
+        else:
+            output_cmd += ' '
         video_bit_rate = " -crf 22 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
         audio_bit_rate = " -b:a %sk " % output.get( 'audio_bitrate', 160 )
         output_file_fs = "%s/%s_%s.%s" % ( config.transcode_dir, media_uuid, idx, output.get( 'format', 'mp4' ) )
