@@ -207,6 +207,27 @@ class Transcode( VWorker ):
                                                    view_count = 0 )
                     media.assets.append( thumbnail_asset )
 
+                for image in output.get( 'images', [] ):
+                    image_uuid = str( uuid.uuid4() )
+
+                    log.info( json.dumps( {
+                                'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
+                                'asset_type' : 'image',
+                                'output_uuid' : image_uuid,
+                                'message' : "Creating image database row of uuid %s for user %s, media %s of asset_type %s and uri %s" % ( image_uuid, user_uuid, media_uuid, 'image', image['output_file']['s3_key'] )
+                                } ) )
+
+                    image_asset = MediaAssets( uuid       = image_uuid,
+                                               asset_type = 'image',
+                                               mimetype   = 'image/%s' % image.get( 'format', 'png' ),
+                                               bytes      = os.path.getsize( image['output_file_fs'] ),
+                                               uri        = image['output_file']['s3_key'],
+                                               location   = 'us',
+                                               timecode   = image['timecode'],
+                                               view_count = 0 )
+                    media.assets.append( image_asset )
+
             log.info( json.dumps( {
                         'media_uuid' : media_uuid,
                         'user_uuid' : user_uuid,
@@ -214,9 +235,7 @@ class Transcode( VWorker ):
                         } ) )
 
             #pdb.set_trace()
-            self.heartbeat()
             orm.commit()
-            self.heartbeat()
             
             self.cleanup_files( media_uuid, user_uuid, original_file, outputs )
             
@@ -293,6 +312,16 @@ class Transcode( VWorker ):
                                         'message' : "Deleting temporary file %s for user %s, media %s" % ( thumbnail['output_file_fs'], user_uuid, media_uuid )
                                         } ) )
                             os.remove( thumbnail['output_file_fs'] )
+
+                for image in output.get( 'images', [] ):
+                    if 'output_file_fs' in image:
+                        if os.path.exists( image['output_file_fs'] ):
+                            log.debug( json.dumps( {
+                                        'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : "Deleting temporary file %s for user %s, media %s" % ( image['output_file_fs'], user_uuid, media_uuid )
+                                        } ) )
+                            os.remove( image['output_file_fs'] )
 
         except Exception as e:
             log.error( json.dumps( {

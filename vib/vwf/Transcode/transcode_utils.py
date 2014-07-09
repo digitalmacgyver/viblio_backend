@@ -1,4 +1,5 @@
 import commands
+import glob
 import json
 import logging
 import os
@@ -47,8 +48,12 @@ def get_exif( media_uuid, filename ):
                 ( hours, minutes, secs ) = match.groups()
                 duration = int( hours )*60*60 + int( minutes )*60 + int( secs )
             else:
-                duration = None
-
+                match = re.match( r'([\d\.]+)\s+s', duration )
+                if match is not None:
+                    duration = float( match.groups()[0] )
+                else:
+                    duration = None
+        
         return {  'file_ext'    : file_ext, 
                   'mime_type'   : mime_type, 
                   'lat'         : lat, 
@@ -62,10 +67,8 @@ def get_exif( media_uuid, filename ):
                   }
 
     except Exception as e:
-        log.error( json.dumps( {
-                    'media_uuid' : media_uuid,
-                    'message' : 'EXIF extraction failed, error was: %s' % e
-                    } ) )
+        log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'message' : 'EXIF extraction failed, error was: %s' % e } ) )
         raise
 
 def move_atom( media_uuid, filename ):
@@ -106,20 +109,36 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     log_message = ''
     cmd_output = ''
 
+    duration = exif.get( 'duration', None )
+    image_fps = .2
+    if duration and duration < 20:
+        image_fps = 4.0 / duration
+    elif duration and duration > 150:
+        image_fps = 30.0 / duration
+
+    image_opts = ''
+
     if rotation == '90':
         log_message = 'Video is rotated 90 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=1'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=1,'
     elif rotation == '180':
         log_message = 'Video is rotated 180 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip,'
     elif rotation == '270':
         log_message = 'Video is rotated 270 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=2'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=2,'
     else:
         log_message = 'Video is not rotated.'
+        image_opts += ' -vf '
+
+    image_opts += 'fps=%s ' % ( image_fps )
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
                              'message' : log_message } ) )
+
 
     output_cmd = ""
     output_files_fs = []
@@ -139,6 +158,10 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
         output_files_fs.append( output_file_fs )
         output['output_file_fs'] = output_file_fs
         
+    # Add in a hard coded command to get some high resolution, rotated
+    # images for making albums.
+    output_cmd += image_opts + ' -f image2 %s/%s-image-%%04d.png' % ( config.transcode_dir, media_uuid )
+
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s' % ( input_filename, output_cmd )
     log.info( json.dumps( {
                 'media_uuid' : media_uuid,
@@ -181,6 +204,28 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                             'message' : "Uploading thumbnail for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
                             } ) )
                 s3.upload_file( thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
+
+        # Store the images we generated for album purposes.
+        if output['asset_type'] == 'main':
+            images = []
+            for filename in glob.glob( '%s/%s-image-*.png' % ( config.transcode_dir, media_uuid ) ):
+                sequence = int( re.search( r'image-(\d+).png', filename ).groups()[0] )
+                # FFMPEG for some reason generates a garbage first frame, and
+                # then starts making frames every FPS at FPS/2 in video when
+                # the -vf fps=X option is used (different, crazier behavior
+                # results from usage of -r).
+                if sequence == 1:
+                    continue
+                timecode = ( sequence - 2 ) * ( 1.0 / image_fps )  + ( 1.0 / ( 2 * image_fps ) )
+                image_key = "%s/%s-image-%s.png" % ( media_uuid, media_uuid, timecode )
+                s3.upload_file( filename, config.bucket_name, image_key )
+                images.append( { 
+                        'output_file' : { 's3_key' : image_key },
+                        'output_file_fs' : filename,
+                        'format' : 'png',
+                        'timecode' : timecode
+                        } )
+            output['images'] = images
 
     return outputs
 
