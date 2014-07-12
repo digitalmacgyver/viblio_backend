@@ -434,11 +434,11 @@ def _get_cv_features( filename ):
     
     cv_bin = os.path.dirname( __file__ ) + '/../../cv/'
     
-    blur_cmd = "%s/BlurDetector/blurDetector %s" % ( cv_bin, filename )
+    blur_cmd = "%s/BlurDetector/blurDetector %s 2> /dev/null" % ( cv_bin, filename )
     ( status, output ) = commands.getstatusoutput( blur_cmd )
     blur_score = float( output )
 
-    rgb_hist_cmd = "%s/ImageDiff/imagediff %s" % ( cv_bin, filename )
+    rgb_hist_cmd = "%s/ImageDiff/imagediff %s 2> /dev/null" % ( cv_bin, filename )
     ( status, output ) = commands.getstatusoutput( rgb_hist_cmd )
     rgb_hist = output
 
