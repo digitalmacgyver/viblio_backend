@@ -2,7 +2,7 @@ ROOT ?= /deploy
 LVL  ?= staging
 APP   = vib
 
-FILES = $(shell git ls-tree -r --name-only `git branch`)
+FILES = $(shell git ls-tree -r --name-only `git rev-parse --abbrev-ref HEAD`)
 
 # Install the dependencies required for Popeye
 #
