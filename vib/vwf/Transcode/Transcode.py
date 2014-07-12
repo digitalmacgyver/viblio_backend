@@ -225,6 +225,9 @@ class Transcode( VWorker ):
                                                uri        = image['output_file']['s3_key'],
                                                location   = 'us',
                                                timecode   = image['timecode'],
+                                               blur_score = image['blur_score'],
+                                               face_score = image['face_score'],
+                                               cv_metrics = image['cv_metrics'],
                                                view_count = 0 )
                     media.assets.append( image_asset )
 

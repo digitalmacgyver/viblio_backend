@@ -1,5 +1,12 @@
 
+
+
 alter table media_assets add column timecode decimal( 14, 6 ) null default null after duration;
+
+alter table media_assets add column face_score decimal( 14, 6 ) null default null after timecode;
+alter table media_assets add column blur_score decimal( 14, 6 ) null default null after face_score;
+
+alter table media_assets add column cv_metrics text null default null after blur_score;
 
 ==
 
