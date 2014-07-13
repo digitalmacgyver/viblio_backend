@@ -1,6 +1,4 @@
 
-
-
 alter table media_assets add column timecode decimal( 14, 6 ) null default null after duration;
 
 alter table media_assets add column face_score decimal( 14, 6 ) null default null after timecode;
