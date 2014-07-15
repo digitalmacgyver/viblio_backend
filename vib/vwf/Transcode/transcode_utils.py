@@ -152,7 +152,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                 output_cmd += ' -vf scale="%s" ' % ( output.get( 'scale' ) )
         else:
             output_cmd += ' '
-        video_bit_rate = " -crf 22 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
+        video_bit_rate = " -crf 18 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
         audio_bit_rate = " -b:a %sk " % output.get( 'audio_bitrate', 160 )
         output_file_fs = "%s/%s_%s.%s" % ( config.transcode_dir, media_uuid, idx, output.get( 'format', 'mp4' ) )
         output_cmd += video_bit_rate + audio_bit_rate + output_file_fs
