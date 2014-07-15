@@ -96,28 +96,35 @@ for f in faces[:256]:
     filename = "/wintmp/blur-test/%s.jpg" % ( f.id )
 
     try:
-        image_file = requests.get( url, stream=True )
-        if image_file.status_code == 200:
-            with open( filename, 'wb' ) as fo:
-                for chunk in image_file.iter_content():
-                    fo.write( chunk )
+        if not os.path.isfile( filename ):
+            image_file = requests.get( url, stream=True )
+            if image_file.status_code == 200:
+                with open( filename, 'wb' ) as fo:
+                    for chunk in image_file.iter_content():
+                        fo.write( chunk )
 
-        ( status, output ) = commands.getstatusoutput( "/home/viblio/viblio/faces-working/faces/BlurDetector/blurDetector %s" % ( filename ) )
+        ( status, output ) = commands.getstatusoutput( "/home/viblio/viblio/faces-working/faces/BlurDetector/blurDetector %s 1" % ( filename ) )
         print "Working on: %s %s" % ( url, filename )
         print status, output
-        #ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == f[1], MediaAssets.asset_type == 'main' ) ).one()
-        #scale = 1080
-        #if ma.width is not None and ma.width > 0:
-        #    scale = ma.width
-        #blur = ( float( scale ) / 1080 ) * float( output )
+
+        if True:
+            ma = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == f[1], MediaAssets.asset_type == 'main' ) ).one()
+            scale = 720
+            if ma.height is not None and ma.height > 0:
+                scale = ma.height
+            blur = ( float( scale ) / 1080 ) * float( output )
+        else:
+            blur = float( output )
+
         #print "Scale is: %s, output is: %s, blur is %s" % ( scale, float( output ), blur )
-        #blur = ( float( 1080 ) / scale ) * float( output )
-        blur = float( output )
+        #blur = ( float( 720 ) / scale ) * float( output )
 
     except Exception as e:
         print "ERROR: %s" % ( e )
 
-    result = detect_faces( url )
+    # DEBUG
+    result = None
+    #result = detect_faces( url )
     if result is not None and len( result['face_detection'] ) > 0:
         confidence = result['face_detection'][0]['confidence']
         beauty = result['face_detection'][0]['beauty']
