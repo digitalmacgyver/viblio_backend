@@ -157,7 +157,6 @@ class Recognize( VWorker ):
         '''For each face, send it to Orbues for detection:
         * If not a face, add it to the DB as a not_face
         * If confidence < 0.8 add it to the DB as bad_face
-        * If two or more faces, add it to the DB as two_face
         * Else attempt recognition:
         *  If recognition > 0.8 add to DB as machine_recognized
         *  else add as new_face
@@ -177,41 +176,39 @@ class Recognize( VWorker ):
             detection_confidence = None
             recognition_confidence = None
 
-            if 'face_detection' in detection:
-                if len( detection['face_detection'] ) == 1:
-                    recog_face = detection['face_detection'][0]
-                    detection_confidence = recog_face['confidence']
-
-                    log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                            'user_uuid' : user_uuid,
-                                            'message' : "Detection confidence was: %f" % ( detection_confidence ) } ) )
-
-                    if detection_confidence >= self.detection_threshold:
-                        matches = rec.recognize_face( user_id, url )
-                        if matches is not None:
-                            if len( matches['faces'] ):
-                                recognition_confidence = matches['faces'][0]['recognition_confidence']
-
-                                log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                                        'user_uuid' : user_uuid,
-                                                        'message' : "Matched contact %d with confidence %f" % ( matches['faces'][0]['contact_id'], recognition_confidence ) } ) )
-
-                                if recognition_confidence >= self.recognition_threshold:
-                                    result = 'machine_recognized'
-                                    rec.recognition_feedback( matches['recognize_id'], 1 )
-                                else:
-                                    result = 'new_face'
-                                    rec.recognition_feedback( matches['recognize_id'], None )
-                            else:
-                                result = 'new_face'
+            if 'face_detection' not in detection:
+                result = 'not_face'
+            elif len( detection['face_detection'] ) < 1:
+                result = 'not_face'
+            else:
+                recog_face = detection['face_detection'][0]
+                detection_confidence = recog_face['confidence']
+                
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : "Detection confidence was: %f" % ( detection_confidence ) } ) )
+                
+                if detection_confidence < self.detection_threshold:
+                    result = 'bad_face'
+                else:
+                    matches = rec.recognize_face( user_id, url )
+                    if matches is None:
+                        result = 'new_face'
+                    elif len( matches['faces'] ) == 0:
+                        result = 'new_face'
+                    else:
+                        recognition_confidence = matches['faces'][0]['recognition_confidence']
+                            
+                        log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                                'user_uuid' : user_uuid,
+                                                'message' : "Matched contact %d with confidence %f" % ( matches['faces'][0]['contact_id'], recognition_confidence ) } ) )
+                        
+                        if recognition_confidence >= self.recognition_threshold:
+                            result = 'machine_recognized'
+                            rec.recognition_feedback( matches['recognize_id'], 1 )
                         else:
                             result = 'new_face'
-                    else:
-                        result = 'bad_face'
-                else:
-                    result = 'two_face'                    
-            else:
-                result = 'not_face'
+                            rec.recognition_feedback( matches['recognize_id'], None )
 
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,

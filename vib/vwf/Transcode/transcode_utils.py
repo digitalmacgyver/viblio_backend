@@ -1,9 +1,11 @@
 import commands
+import glob
 import json
 import logging
 import os
 import re
 
+import vib.rekog.utils as rekog
 import vib.utils.s3 as s3
 
 log = logging.getLogger( __name__)
@@ -47,8 +49,12 @@ def get_exif( media_uuid, filename ):
                 ( hours, minutes, secs ) = match.groups()
                 duration = int( hours )*60*60 + int( minutes )*60 + int( secs )
             else:
-                duration = None
-
+                match = re.match( r'([\d\.]+)\s+s', duration )
+                if match is not None:
+                    duration = float( match.groups()[0] )
+                else:
+                    duration = None
+        
         return {  'file_ext'    : file_ext, 
                   'mime_type'   : mime_type, 
                   'lat'         : lat, 
@@ -62,10 +68,8 @@ def get_exif( media_uuid, filename ):
                   }
 
     except Exception as e:
-        log.error( json.dumps( {
-                    'media_uuid' : media_uuid,
-                    'message' : 'EXIF extraction failed, error was: %s' % e
-                    } ) )
+        log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'message' : 'EXIF extraction failed, error was: %s' % e } ) )
         raise
 
 def move_atom( media_uuid, filename ):
@@ -106,20 +110,36 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     log_message = ''
     cmd_output = ''
 
+    duration = exif.get( 'duration', None )
+    image_fps = .2
+    if duration and duration < 20:
+        image_fps = 4.0 / duration
+    elif duration and duration > 150:
+        image_fps = 30.0 / duration
+
+    image_opts = ''
+
     if rotation == '90':
         log_message = 'Video is rotated 90 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=1'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=1,'
     elif rotation == '180':
         log_message = 'Video is rotated 180 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip,'
     elif rotation == '270':
         log_message = 'Video is rotated 270 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=2'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=2,'
     else:
         log_message = 'Video is not rotated.'
+        image_opts += ' -vf '
+
+    image_opts += 'fps=%s ' % ( image_fps )
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
                              'message' : log_message } ) )
+
 
     output_cmd = ""
     output_files_fs = []
@@ -132,18 +152,20 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                 output_cmd += ' -vf scale="%s" ' % ( output.get( 'scale' ) )
         else:
             output_cmd += ' '
-        video_bit_rate = " -crf 22 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
+        video_bit_rate = " -crf 18 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
         audio_bit_rate = " -b:a %sk " % output.get( 'audio_bitrate', 160 )
         output_file_fs = "%s/%s_%s.%s" % ( config.transcode_dir, media_uuid, idx, output.get( 'format', 'mp4' ) )
         output_cmd += video_bit_rate + audio_bit_rate + output_file_fs
         output_files_fs.append( output_file_fs )
         output['output_file_fs'] = output_file_fs
         
+    # Add in a hard coded command to get some high resolution, rotated
+    # images for making albums.
+    output_cmd += image_opts + ' -f image2 %s/%s-image-%%04d.png' % ( config.transcode_dir, media_uuid )
+
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s' % ( input_filename, output_cmd )
-    log.info( json.dumps( {
-                'media_uuid' : media_uuid,
-                'message' : "Running FFMPEG command %s" % cmd
-                } ) )
+    log.info( json.dumps( { 'media_uuid' : media_uuid,
+                            'message' : "Running FFMPEG command %s" % cmd } ) )
     ( status, cmd_output ) = commands.getstatusoutput( cmd )
     cmd_output = cmd_output.decode( 'utf-8' )
 
@@ -158,29 +180,66 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
             valid_outputs = False
             break
     if not valid_outputs or status != 0:
-        log.error( json.dumps( {
-                    'media_uuid' : media_uuid,
-                    'message' : 'Failed to generate transcoded video with: %s, error was ...%s' % ( cmd, cmd_output[-256:])
-                    } ) )
+        log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'message' : 'Failed to generate transcoded video with: %s, error was ...%s' % ( cmd, cmd_output[-256:]) } ) )
         raise Exception( 'Failed to generate transcoded video: ...%s' % cmd_output[-256:] )
 
     # Generate posters and upload to S3
     for idx, output in enumerate( outputs ):
-        log.info( json.dumps( {
-                    'media_uuid' : media_uuid,
-                    'message' : "Uploading video for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, output_files_fs[idx], output['output_file']['s3_bucket'], output['output_file']['s3_key'] )
-                    } ) )
+        log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                'message' : "Uploading video for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, output_files_fs[idx], output['output_file']['s3_bucket'], output['output_file']['s3_key'] ) } ) )
+
         s3.upload_file( output_files_fs[idx], output['output_file']['s3_bucket'], output['output_file']['s3_key'] )
 
         if 'thumbnails' in output:
             thumbnails = generate_thumbnails( media_uuid, output_files_fs[idx], output['thumbnails'], input_frames )
             output['thumbnails'] = thumbnails
             for idx, thumbnail in enumerate( output['thumbnails'] ):
-                log.info( json.dumps( {
-                            'media_uuid' : media_uuid,
-                            'message' : "Uploading thumbnail for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
-                            } ) )
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'message' : "Uploading thumbnail for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] ) } ) )
+
                 s3.upload_file( thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
+
+        # Store our generic images in S3, and compute various metrics
+        # and store the results in a hash to be stored in the database
+        # by our caller.
+        if output['asset_type'] == 'main':
+            images = []
+            for filename in sorted( glob.glob( '%s/%s-image-*.png' % ( config.transcode_dir, media_uuid ) ) ):
+                try:
+                    # Calculate the timecode metric.
+                    #
+                    # FFMPEG for some reason generates a garbage first frame, and
+                    # then starts making frames every FPS at FPS/2 in video when
+                    # the -vf fps=X option is used (different, crazier behavior
+                    # results from usage of -r).
+                    sequence = int( re.search( r'image-(\d+).png', filename ).groups()[0] )
+                    if sequence == 1:
+                        continue
+                    timecode = ( sequence - 2 ) * ( 1.0 / image_fps )  + ( 1.0 / ( 2 * image_fps ) )
+                    image_key = "%s/%s-image-%s.png" % ( media_uuid, media_uuid, timecode )
+                    
+                    blur_score, face_score, rgb_hist = _get_cv_features( filename )
+                    
+                    cv_metrics = json.dumps( { 'rgb_hist' : json.loads( rgb_hist ) } )
+
+                    # Upload the file
+                    s3.upload_file( filename, config.bucket_name, image_key )
+                    
+                    # Inform the caller abour the metrics.
+                    images.append( { 'output_file'    : { 's3_key' : image_key },
+                                     'output_file_fs' : filename,
+                                     'format'         : 'png',
+                                     'timecode'       : timecode,
+                                     'blur_score'     : blur_score,
+                                     'face_score'     : face_score,
+                                     'cv_metrics'     : cv_metrics } )
+                except Exception as e:
+                    # Just proceed on exception.
+                    log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                             'message' : "ERROR getting features for image %s: %s" % ( filename, e ) } ) )
+                    
+            output['images'] = images
 
     return outputs
 
@@ -367,3 +426,30 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                 thumbnail['output_file_fs'] = thumbnail_file_fs 
 
     return thumbnails
+
+def _get_cv_features( filename ):
+    '''Helper function, returns a triple of:
+    blur_score, face_score, rgb_hist
+    Where blur_score and face_score are floating point numbers, and rgb_hist is JSON'''
+    
+    cv_bin = os.path.dirname( __file__ ) + '/../../cv/'
+    
+    blur_cmd = "%s/BlurDetector/blurDetector %s 2> /dev/null" % ( cv_bin, filename )
+    ( status, output ) = commands.getstatusoutput( blur_cmd )
+    blur_score = float( output )
+
+    rgb_hist_cmd = "%s/ImageDiff/imagediff %s 2> /dev/null" % ( cv_bin, filename )
+    ( status, output ) = commands.getstatusoutput( rgb_hist_cmd )
+    rgb_hist = output
+
+    face_result = rekog.detect_for_file( filename )
+    face_score = 0
+    if 'face_detection' in face_result:
+        for face in face_result['face_detection']:
+            face_score += face['confidence']
+
+    return ( blur_score, face_score, rgb_hist )
+        
+    
+    
+    
