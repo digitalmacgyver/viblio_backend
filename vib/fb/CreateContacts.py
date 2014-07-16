@@ -23,6 +23,7 @@ import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 import vib.rekog.utils as rekog
+import vib.cv.FaceRecognition.api as rec
 
 import vib.db.orm
 from vib.db.models import *
@@ -309,36 +310,46 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                     )
 
                 orm.add( contact )
-                #media = Media( 
-                #    uuid       = media_uuid,
-                #    media_type = 'fb_face'
-                #    )
+                media = Media( uuid       = media_uuid,
+                               media_type = 'fb_face' )
 
-                #user.media.append( media )
+                user.media.append( media )
 
-                #media_asset = MediaAssets(
-                #    uuid       = str( uuid.uuid4() ),
-                #    asset_type = 'fb_face',
-                #    mimetype   = 'image/png',
-                #    bytes      = os.path.getsize( friend['file'] ),
-                #    uri        = s3_key,
-                #    location   = 'us'
-                #    )
-                #media.assets.append( media_asset )
+                media_asset = MediaAssets(
+                    uuid       = str( uuid.uuid4() ),
+                    asset_type = 'fb_face',
+                    mimetype   = 'image/png',
+                    bytes      = os.path.getsize( friend['file'] ),
+                    uri        = s3_key,
+                    location   = 'us'
+                    )
+                media.assets.append( media_asset )
 
-                #media_asset_feature = MediaAssetFeatures(
-                #    feature_type = 'fb_face',
-                #    )
+                media_asset_feature = MediaAssetFeatures(
+                    feature_type = 'fb_face',
+                    )
                 
-                #media_asset.media_asset_features.append( media_asset_feature )
-                #contact.media_asset_features.append( media_asset_feature )
+                media_asset.media_asset_features.append( media_asset_feature )
+                contact.media_asset_features.append( media_asset_feature )
                 
                 created_picture_contacts.append( friend )
+
+                orm.commit()
+
+                try:
+                    face_url = "%s%s" % ( config.ImageServer, s3_key )
+                    rec.add_faces( user.id, contact.id, [ { 'user_id'     : user.id,
+                                                            'contact_id'  : contact.id,
+                                                            'face_id'     : media_asset_feature.id,
+                                                            'face_url'    : face_url,
+                                                            'external_id' : None } ] )
+                except Exception as e:
+                    log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                             'message' : "Failed to add recognition data for user: %s, contact: %s, face: %s, error was: %s" % ( user.id, contact.id, media_asset_feature.id, e ) } ) )
+                    # No further actino on error here.
             else:
-                log.debug( json.dumps( {
-                            'user_uuid' : user_uuid,
-                            'message' : "Contact for facebook friend %s / %s already exists, skipping." % ( friend['name'], friend['facebook_id'] )
-                            } ) )
+                log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                         'message' : "Contact for facebook friend %s / %s already exists, skipping." % ( friend['name'], friend['facebook_id'] ) } ) )
 
         created_empty_contacts = []
 
