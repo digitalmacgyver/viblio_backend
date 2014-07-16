@@ -14,10 +14,13 @@ import vib.rekog.utils as rekog
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-video_input_dirs = [ '/wintmp/wedding-album/' ]
+root_dir = '/wintmp/youtube-test/beautifymeehtv/'
+video_input_dirs = glob.glob( '%s*' % ( root_dir ) )
 
-workdir = '/wintmp/wedding-album/workdir'
-outdir = '/wintmp/wedding-album/outdir'
+#video_input_dirs = [ '/wintmp/wedding-album/' ]
+
+workdir = '/wintmp/youtube-test/workdir'
+outdir = '/wintmp/youtube-test/outdir'
 
 def get_frames( input_filename, output_file, uid, frame_count ):
 
@@ -121,20 +124,26 @@ def get_best_images( images, count ):
     return results
 
 total_frames = 150
-output_frames = 20
+output_frames = 120
 
 for video_dir in video_input_dirs:
+    if not os.path.isdir( video_dir ):
+        continue
+    
     i = 1
-    videos = glob.glob( "%s/*.mp4" % ( video_dir ) )
+    videos = glob.glob( "%s/../*.flv" % ( video_dir ) )
 
     best_images = []
 
+    '''
     for video in videos:
         print "Found: %s" % ( video )
         get_frames( video, "%s/%s.mov" % ( workdir, i ), i, total_frames / len( videos ) )
 
         images = sorted( glob.glob( "%s/%s-thumb*.png" % ( workdir, i ) ) )
-        
+        '''
+    if True:
+        images = sorted( glob.glob( "%s/*.png" % ( video_dir ) ) )
         best_images += get_best_images( images, output_frames / len( videos ) )
 
         i += 1
@@ -143,7 +152,7 @@ for video_dir in video_input_dirs:
 
     best_i = 1
     for image in best_images:
-        shutil.copy( image['image'], "%s/%s.png" % ( outdir, best_i ) )
+        shutil.copy( image['image'], "%s/%s-%s.png" % ( outdir, os.path.split( video_dir )[-1], best_i ) )
         best_i += 1
 
 sys.exit( 0 )
@@ -153,9 +162,12 @@ indirs = [ '/wintmp/collage/100' ]
 #indirs = [ '/wintmp/collage/10' ]
 #indirs = [ '/wintmp/collage/20', '/wintmp/collage/100' ]
 
+oot_dir = '/wintmp/youtube-test/beautifymeehtv/'
+indirs = glob.glob( '%s*' % ( root_dir ) )
+
 for indir in indirs:
     face_scores = {}
-    for filename in glob.glob( "%s/*jpg" % ( indir ) ):
+    for filename in glob.glob( "%s/*.png" % ( indir ) ):
         #print "Working on %s" % ( filename )
         face_score = 0
         result = rekog.detect_for_file( filename )

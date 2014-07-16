@@ -127,6 +127,9 @@ class Detect( VWorker ):
                             max_confidence = -1
                             current_rekog_face = None
                             if 'face_detection' in detection:
+                                # If multiple faces were returned,
+                                # consider only the one with the
+                                # highest confidence.
                                 for rekog_face in detection['face_detection']:
                                     if rekog_face['confidence'] > max_confidence:
                                         current_rekog_face = rekog_face

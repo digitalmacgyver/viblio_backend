@@ -1,3 +1,14 @@
+
+alter table media_assets add column timecode decimal( 14, 6 ) null default null after duration;
+
+alter table media_assets add column face_score decimal( 14, 6 ) null default null after timecode;
+alter table media_assets add column blur_score decimal( 14, 6 ) null default null after face_score;
+
+alter table media_assets add column cv_metrics text null default null after blur_score;
+
+==
+
+
 alter table media add column geo_city varchar(128) null default null after lng;
 
 alter table media add column geo_address varchar(256) null default null after lng;
