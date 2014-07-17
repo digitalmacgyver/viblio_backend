@@ -55,22 +55,8 @@ for image in images:
         asset_id = image.id
         filename = '%s/%s.png' % ( workdir, asset_id )
 
-        stats[asset_id]['filename'] = filename
-        
-        if not os.path.isfile( filename ):
-            s3.download_file( filename, config.bucket_name, uri )
-
-        r = rekog.detect_face( "https://%sviblio.com/s/ip/%s" % ( url_prefix, uri ) )
-        
-        face_score = 0
-        if 'face_detection' in r:
-            for face in r['face_detection']:
-                face_score += float( face['confidence'] )
-
-        blur_score = 999
-        ( status, output ) = commands.getstatusoutput( "%s %s/%s.png 1" % ( blur, workdir, asset_id ) )
-        if output:
-            blur_score = float( output )
+        face_score = image.face_score
+        blur_score = image.blur_score
 
         print "Face score: %s, blur score: %s" % ( face_score, blur_score )
         stats[asset_id] = { 'url' : "https://%sviblio.com/s/ip/%s" % ( url_prefix, uri ),
