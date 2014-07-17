@@ -46,7 +46,7 @@ def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min
 
     If strict is True then we also reject faces and return None if:
     * Recognition confidence score is less than confidence_threshold
-    * Absolut value of yaw or pitch is more than max_yaw or max_pitch
+    * Absolute value of yaw or pitch is more than max_yaw or max_pitch
     '''
 
     if namespace == None:
@@ -171,8 +171,10 @@ def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, name
 
     results = []
 
-    # Compose the list of faces to crawl, no more than 20 at a time.
-    max_friends_per_call = 19
+    # Compose the list of faces to crawl, set to 5 - if the number is
+    # too large ReKognition can return a failure (presumably due to
+    # timeout).
+    max_friends_per_call = 5
     for idx in range( 0, max( len( fb_friends ), 1 ), max_friends_per_call ):
         jobs = ''
         if idx == 0 and not skip_self:

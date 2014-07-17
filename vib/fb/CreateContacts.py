@@ -83,6 +83,9 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
         # Crawl facebook for images of the friends.
         crawl_friends = []
 
+        orm = vib.db.orm.get_session()
+        user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
+
         existing_contacts = get_existing_fb_contacts_for_user( user_uuid )
         skip_self = False
 
@@ -97,9 +100,8 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
                                            'message' : "Found existing contact %s in friend list, skipping." % friend['id'] } ) )
             else:
                 crawl_friends.append( friend )
-
                 
-        crawl_results = rekog.crawl_faces_for_user( user_uuid, fb_access_token, fb_user_id, crawl_friends, skip_self=skip_self )
+        crawl_results = rekog.crawl_faces_for_user( user.id, fb_access_token, fb_user_id, crawl_friends, config.recog_v2_namespace, skip_self=skip_self )
 
         log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                  'message' : "ReKognition FaceCrawl results: %s" % crawl_results } ) )
@@ -109,7 +111,7 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
         # 
         # tags for the face_crawled users are like name-facebook_id
         # where name has spaces replace with underscores
-        tagged_people = rekog.visualize_for_user( user_uuid )
+        tagged_people = rekog.visualize_for_user( user.id, namespace = config.recog_v2_namespace )
     
         log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                  'message' : "ReKognition FaceVisualize results: %s" % tagged_people } ) )
@@ -132,12 +134,7 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
             name = old_tag.rpartition( '-' )[0]
             name = name.replace( '_', ' ' )
 
-            rename_result = rekog.rename_tag_for_user( user_uuid, old_tag, facebook_id )
-
-            log.debug( json.dumps( { 'user_uuid' : user_uuid,
-                                     'message' : "Found name: %s, facebook_id: %s, url: %s" % ( name, facebook_id, person['url'] ) } ) )
-
-            results.append( { 'name' : name, 'facebook_id' : facebook_id, 'rekog_url' : person['url'] } )
+            results.append( { 'name' : name, 'facebook_id' : facebook_id, 'rekog_url' : person['url'], 'rekog_tag' : person['tag'] } )
 
         return results
     
@@ -337,12 +334,26 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                 orm.commit()
 
                 try:
-                    face_url = "%s%s" % ( config.ImageServer, s3_key )
-                    rec.add_faces( user.id, contact.id, [ { 'user_id'     : user.id,
-                                                            'contact_id'  : contact.id,
-                                                            'face_id'     : media_asset_feature.id,
-                                                            'face_url'    : face_url,
-                                                            'external_id' : None } ] )
+                    #face_url = "%s%s" % ( config.ImageServer, s3_key )
+                    #rec.add_faces( user.id, contact.id, [ { 'user_id'     : user.id,
+                    #                                        'contact_id'  : contact.id,
+                    #                                        'face_id'     : media_asset_feature.id,
+                    #                                        'face_url'    : face_url,
+                    #                                        'external_id' : None } ] )
+                    
+                    # Rename the existing faces from the face crawl.
+                    old_tag = friend['rekog_tag']        
+
+                    # Check if we've already processed this tag, or if it
+                    # doesn't conform to our expected format.
+                    if not re.search( r'\-\d+$', old_tag ):
+                        continue
+
+                    rekog.rename_tag_for_user( user.id, old_tag, contact.id, config.recog_v2_namespace )
+                    rekog.train_for_user_contact( user.id, contact.id, config.recog_v2_namespace )
+                    log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                             'message' : "Changed tag: %s to %s" % ( old_tag, contact.id ) } ) )
+
                 except Exception as e:
                     log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                              'message' : "Failed to add recognition data for user: %s, contact: %s, face: %s, error was: %s" % ( user.id, contact.id, media_asset_feature.id, e ) } ) )
@@ -428,6 +439,9 @@ def run():
         # DEBUG
         if fb_recent_link_request( user_uuid ):
         #if True:
+            # DEBUG
+            #import pdb
+            #pdb.set_trace()
             friends = get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token )
             log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                      'message' : "Facebook friends for user %s/%s were %s" % ( user_uuid, fb_user_id, friends ) } ) )
