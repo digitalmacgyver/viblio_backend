@@ -33,7 +33,7 @@ diff = os.path.dirname( __file__ ) + "/../cv/ImageDiff/imagediff"
 orm = vib.db.orm.get_session()
 
 # Also 887
-images = orm.query( MediaAssets ).filter( and_( MediaAssets.asset_type == 'image', MediaAssets.user_id == 886 ) )
+images = orm.query( MediaAssets ).filter( and_( MediaAssets.asset_type == 'image', MediaAssets.user_id == 887 ) )
 
 workdir = '/tmp/album/workdir/'
 
@@ -78,7 +78,7 @@ f.close()
 # Create a new album.
 url = ENDPOINT + "/me/albums?access_token=%s" % ( ACCESS_TOKEN )
 data = { 
-    'name' : 'Example Album 1',
+    'name' : 'Example Album 2',
 }
 
 r = requests.post( url, data )
