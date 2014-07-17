@@ -43,9 +43,10 @@ url_prefix = "staging."
 url_prefix = ''
 
 import pickle
-f = open( '%s/stats.txt' % ( workdir ), 'r' )
-stats = pickle.load( f )
-f.close()
+if ( os.path.isfile( "%s/stats.txt" % ( workdir ) ) ):
+    f = open( '%s/stats.txt' % ( workdir ), 'r' )
+    stats = pickle.load( f )
+    f.close()
 
 for image in images:
     try:
