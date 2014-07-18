@@ -113,7 +113,7 @@ def generate_clips( user_uuid,
 
             # If there is a valid data structure for us to see faces in this video.
             #
-            # NOTE: Many videos will not have this data strucure, that
+            # NOTE: Many videos will not have this data structure, that
             # is fine, just skip those.
             try: 
                 tracks = json.loads( download_string( config.bucket_name, visibility_key ) )['tracks']
@@ -223,7 +223,7 @@ def generate_clips( user_uuid,
             movie_file = '%s/%s.mp4' % ( workdir, media_uuid )
             download_file( movie_file, config.bucket_name, movie_key )
             log.info( json.dumps( { 'user_uuid' : user_uuid, 
-                                    'message'   : 'Dowloaded input video to %s' % ( movie_file ) } ) )
+                                    'message'   : 'Downloaded input video to %s' % ( movie_file ) } ) )
 
 
             exif = get_exif( media_uuid, movie_file )
@@ -286,7 +286,7 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
     output_file = '%s/summary.mp4' % ( workdir )
 
     if not os.path.isfile( cut_file_name ):
-        raise Exception( "Coudn't find expected cut file at: %s" % ( cut_file_name ) )
+        raise Exception( "Couldn't find expected cut file at: %s" % ( cut_file_name ) )
 
     cmd = "ffmpeg -y -f concat -i %s %s" % ( cut_file_name, output_file )
     log.info( json.dumps( { 'user_uuid' : user_uuid, 
@@ -322,7 +322,7 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
         f.close()
 
         log.info( json.dumps( { 'user_uuid' : user_uuid, 
-                                'message'   : 'Creating database records for user_uuid %s, media_uuid %s, and viblio_added_contet_id %s ' % ( user_uuid, summary_uuid, viblio_added_content_id ) } ) )
+                                'message'   : 'Creating database records for user_uuid %s, media_uuid %s, and viblio_added_content_id %s ' % ( user_uuid, summary_uuid, viblio_added_content_id ) } ) )
 
         user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
         media = Media( uuid = summary_uuid,
@@ -497,6 +497,14 @@ def run():
                 log.error( json.dumps( { 'message' : "Error creating workdir %s: %s" % ( workdir, e ) } ) )
                 raise
 
+            # We need to delete the message here or it will reach it's
+            # visibility timeout and be processed again by other
+            # systems.  If there is a failure we will get another
+            # chance because call_build_smiling_faces.py will note
+            # that the last attempt was unsuccessful and schedule a
+            # new attempt up to max_retries times.     
+            sqs.delete_message( message )
+
             clips_ok = generate_clips( user_uuid, 
                                        workdir             = workdir,
                                        min_clip_secs       = min_clip_secs,
@@ -511,8 +519,7 @@ def run():
             if clips_ok:
                 produce_summary_video( user_uuid, workdir, viblio_added_content_id )
                 
-            log.info( json.dumps( { 'message' : "Completed succesfully for user_uuid: %s" % ( user_uuid ) } ) )
-            sqs.delete_message( message )
+            log.info( json.dumps( { 'message' : "Completed successfully for user_uuid: %s" % ( user_uuid ) } ) )
             return True
         else:
             # This message is not for us or is malformed, someone else
