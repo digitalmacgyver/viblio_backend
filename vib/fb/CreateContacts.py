@@ -334,13 +334,6 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                 orm.commit()
 
                 try:
-                    #face_url = "%s%s" % ( config.ImageServer, s3_key )
-                    #rec.add_faces( user.id, contact.id, [ { 'user_id'     : user.id,
-                    #                                        'contact_id'  : contact.id,
-                    #                                        'face_id'     : media_asset_feature.id,
-                    #                                        'face_url'    : face_url,
-                    #                                        'external_id' : None } ] )
-                    
                     # Rename the existing faces from the face crawl.
                     old_tag = friend['rekog_tag']        
 
@@ -357,7 +350,7 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
                 except Exception as e:
                     log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                              'message' : "Failed to add recognition data for user: %s, contact: %s, face: %s, error was: %s" % ( user.id, contact.id, media_asset_feature.id, e ) } ) )
-                    # No further actino on error here.
+                    # No further action on error here.
             else:
                 log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                          'message' : "Contact for facebook friend %s / %s already exists, skipping." % ( friend['name'], friend['facebook_id'] ) } ) )
@@ -436,6 +429,13 @@ def run():
         fb_user_id      = options['facebook_id']
         user_uuid       = options['user_uuid']
 
+        # Prevent other processes from starting in on this user after
+        # the default 30 second visibility timeout.  If there is a
+        # failure we just abandon the operation rather than
+        # potentially getting stuck in a high API call look for Orbeus
+        # and Facebook.
+        sqs.delete_message( message )
+
         # DEBUG
         if fb_recent_link_request( user_uuid ):
         #if True:
@@ -459,8 +459,6 @@ def run():
             ( added_picture_contacts, added_empty_contacts ) = add_contacts_for_user( user_uuid, people_files, friends )
             log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                      'message' : "For user %s/%s added picture contacts %s and non-picture contacts %s" % ( user_uuid, fb_user_id, added_picture_contacts, added_empty_contacts ) } ) )
-
-        sqs.delete_message( message )
 
         return True
 
