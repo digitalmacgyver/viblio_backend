@@ -225,15 +225,25 @@ class Recognize( VWorker ):
                 if db_utils.contact_exists( matches['faces'][0]['contact_id'] ):
                     face_id = db_utils.update_face( user_uuid, media_uuid, track_id, track_face, result, recognition_confidence, matches['faces'][0]['contact_id'] )
                     rec.add_faces( user_id, matches['faces'][0]['contact_id'], [ { 'user_id'     : user_id,
-                                                                                   'contact_id'   : matches['faces'][0]['contact_id'],
-                                                                                   'face_id'      : face_id,
-                                                                                   'face_url'     : url,
+                                                                                   'contact_id'  : matches['faces'][0]['contact_id'],
+                                                                                   'face_id'     : face_id,
+                                                                                   'face_url'    : url,
                                                                                    'external_id' : None } ] )
+
+                    # We want to fix up the photo of this user in a
+                    # special set of circumstances:
+                    #  * If this is the only video this user appears in.
+                    #  * The current profile picture of this contact is from facebook.
+                    #
+                    # Then we update the photo to be one of the ones
+                    # from this video.  Otherwise we don't change it.
+                    db_utils.update_contact_picture_uri( user_uuid, media_uuid, matches['faces'][0]['contact_id'], picture_uri=track_face['s3_key'] )
+
                 else:
                     # We were recognized against a non-existint
                     # contact - perhaps one that has been deleted.
                     # 
-                    # Delete the bad informatino from recognition.
+                    # Delete the bad information from recognition.
                     log.warning( json.dumps( { 'media_uuid' : media_uuid,
                                                'user_uuid' : user_uuid,
                                                'message' : "Matched non-existant contact: %s - removing that contact from Recognition." % ( matches['faces'][0]['contact_id'] ) } ) )

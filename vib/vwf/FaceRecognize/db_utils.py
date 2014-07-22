@@ -165,3 +165,60 @@ def update_face( user_uuid, media_uuid, track_id, track_face, recognition_result
         orm.rollback()
         raise
 
+def update_contact_picture_uri( user_uuid, media_uuid, contact_id, picture_uri ):
+    '''We want to fix up the photo of this user in a special set of
+    circumstances:
+
+      * If this is the only video this user appears in.
+      * The current profile picture of this contact is from facebook.
+
+    Then we update the photo to be one of the ones from this video.
+    Otherwise we don't change it.
+    '''
+    log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                             'media_uuid' : media_uuid,
+                             'message' : 'Checking whether to update picture uri for contact id: %s' % ( contact_id ) } ) )
+    
+    try:
+        orm = vib.db.orm.get_session()
+
+        media = orm.query( Media ).filter( Media.uuid == media_uuid ).one()
+        
+        contact = orm.query( Contacts ).filter( Contacts.id == contact_id ).one()
+
+        # Get all occurences of this face other than those in the current video.
+        features = orm.query( MediaAssetFeatures.id, 
+                              MediaAssetFeatures.media_id, 
+                              MediaAssetFeatures.feature_type,
+                              MediaAssets.uri ).filter( and_( MediaAssets.id == MediaAssetFeatures.media_asset_id,
+                                                              MediaAssetFeatures.contact_id == contact_id,
+                                                              MediaAssetFeatures.media_id != media.id ) )
+        
+        update_uri = False
+        for feature in features:
+            if feature[2] == 'fb_face':
+                if feature[3] == contact.picture_uri:
+                    # If the current image is a facebook face, then
+                    # potentially we want to update it.
+                    update_uri = True
+            else:
+                # If this face is in videos other than the current
+                # video, then leave the URI alone.
+                log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                         'media_uuid' : media_uuid,
+                                         'message' : 'This face is in other videos, skipping: %s' % ( contact_id ) } ) )
+                return
+
+        if update_uri:
+            log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                     'media_uuid' : media_uuid,
+                                     'message' : 'Updating contact_id: %s\'s profile picture away from Facebook image to: %s' % ( contact_id, picture_uri ) } ) )
+            contact.picture_uri = picture_uri
+            orm.commit()
+
+    except Exception as e:
+        log.debug( json.dumps( { 'user_uuid' : user_uuid,
+                                 'media_uuid' : media_uuid,
+                                 'message' : 'Error in update_contact_picture_uri: %s' % ( e ) } ) )
+        orm.rollback()
+        raise
