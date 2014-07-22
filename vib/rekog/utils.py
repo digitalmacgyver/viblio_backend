@@ -416,10 +416,8 @@ def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_d
 
     jobs = 'face_visualize'
 
-    # ReKognition introduced a bug whereby visualization doesn't work
-    # if you add the no_image tag, so just always get images.
-    #if no_image:
-    #    jobs += '_no_image'
+    if no_image:
+        jobs += '_no_image'
     if show_default:
         jobs += '_show_default_tag'
 
