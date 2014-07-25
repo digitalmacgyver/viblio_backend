@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import pdb
+import time
 import uuid
 
 from vib.vwf.VWorker import VWorker
@@ -65,6 +66,11 @@ class Transcode( VWorker ):
                     } ) )
 
             s3.download_file( original_file, input_file['s3_bucket'], input_file['s3_key'] )
+
+            # There seems to be a race condition where somehow the OS
+            # doesn't present the file to the next command sometimes -
+            # give things a few seconds to catch up.
+            time.sleep( 3 )
 
             log.debug( json.dumps( {
                         'media_uuid' : media_uuid,
