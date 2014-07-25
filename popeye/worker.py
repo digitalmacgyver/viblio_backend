@@ -361,7 +361,8 @@ class Worker( Background ):
                                     'thumbnails' : [ {
                                             'times' : [ 0.5 ],
                                             'type'  : 'static',
-                                            'size'  : "320x240",
+                                     #       'size'  : "320x240",
+                                            'size'  : "272x204",
                                             'label' : 'poster',
                                             'format' : 'png',
                                             'output_file' : {
@@ -369,32 +370,33 @@ class Worker( Background ):
                                                 's3_key' : "%s_poster.png" % ( files['main']['key'] )
                                                 }
                                             }, 
-                                                     {
-                                            'times' : [ 0.5 ],
-                                            'type'  : 'static',
-                                            'original_size' : True,
-                                            'label' : 'poster_original',
-                                            'format' : 'png',
-                                            'output_file' : {
-                                                's3_bucket' : config.bucket_name,
-                                                's3_key' : "%s_poster_original.png" % ( files['main']['key'] )
-                                                }
-                                            }, 
-                                                     {
-                                            'times' : [ 0.5 ],
-                                            'size': "128x128",
-                                            'type'  : 'static',
-                                            'label' : 'thumbnail',
-                                            'format' : 'png',
-                                            'output_file' : {
-                                                's3_bucket' : config.bucket_name,
-                                                's3_key' : "%s_thumbnail.png" % ( files['main']['key'] )
-                                                }
-                                            },
+                                     #                {
+                                     #       'times' : [ 0.5 ],
+                                     #       'type'  : 'static',
+                                     #       'original_size' : True,
+                                     #       'label' : 'poster_original',
+                                     #       'format' : 'png',
+                                     #       'output_file' : {
+                                     #           's3_bucket' : config.bucket_name,
+                                     #           's3_key' : "%s_poster_original.png" % ( files['main']['key'] )
+                                     #           }
+                                     #       }, 
+                                     #                {
+                                     #       'times' : [ 0.5 ],
+                                     #       'size': "128x128",
+                                     #       'type'  : 'static',
+                                     #       'label' : 'thumbnail',
+                                     #       'format' : 'png',
+                                     #       'output_file' : {
+                                     #           's3_bucket' : config.bucket_name,
+                                     #           's3_key' : "%s_thumbnail.png" % ( files['main']['key'] )
+                                     #           }
+                                     #       },
                                                      {
                                             'times' : [ 0.5 ],
                                             'type'  : 'animated',
-                                            'size'  : "320x240",
+                                     #       'size'  : "320x240",
+                                            'size'  : "272x204",
                                             'label' : 'poster_animated',
                                             'format' : 'gif',
                                             'output_file' : {
@@ -402,29 +404,30 @@ class Worker( Background ):
                                                 's3_key' : "%s_poster_animated.gif" % ( files['main']['key'] )
                                                 }
                                             },
-                                                     {
-                                            'times' : [ 0.5 ],
-                                            'size': "128x128",
-                                            'type'  : 'animated',
-                                            'label' : 'thumbnail_animated',
-                                            'format' : 'gif',
-                                            'output_file' : {
-                                                's3_bucket' : config.bucket_name,
-                                                's3_key' : "%s_thumbnail_animated.gif" % ( files['main']['key'] )
-                                                }
-                                            } ]
+                                     #                {
+                                     #       'times' : [ 0.5 ],
+                                     #       'size': "128x128",
+                                     #       'type'  : 'animated',
+                                     #       'label' : 'thumbnail_animated',
+                                     #       'format' : 'gif',
+                                     #       'output_file' : {
+                                     #           's3_bucket' : config.bucket_name,
+                                     #           's3_key' : "%s_thumbnail_animated.gif" % ( files['main']['key'] )
+                                     #           }
+                                     #       }
+                                    ]
                                     },
-                                { 
-                                    'output_file' : {
-                                        's3_bucket' : config.bucket_name,
-                                        's3_key' : "%s_output_sd.mp4" % ( files['main']['key'] ),
-                                        },
-                                    'format' : 'mp4',
-                                    'scale' : "640:trunc(ow/a/2)*2",
-                                    'max_video_bitrate' : 1500,
-                                    'audio_bitrate' : 160,
-                                    'asset_type' : 'main_sd'
-                                    }
+                                #{ 
+                                #    'output_file' : {
+                                #        's3_bucket' : config.bucket_name,
+                                #        's3_key' : "%s_output_sd.mp4" % ( files['main']['key'] ),
+                                #        },
+                                #    'format' : 'mp4',
+                                #    'scale' : "640:trunc(ow/a/2)*2",
+                                #    'max_video_bitrate' : 1500,
+                                #    'audio_bitrate' : 160,
+                                #    'asset_type' : 'main_sd'
+                                #    }
                                 ] } ),
                 workflow_id=self.uuid 
                 )

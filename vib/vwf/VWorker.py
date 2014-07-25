@@ -180,7 +180,10 @@ class VWorker( swf.ActivityWorker ):
 
         log = self.logger
         while True:
-            heartbeat()
+            if self.heartbeat_active:
+                heartbeat()
+            else:
+                return
             log.info(json.dumps({'message' : 'Heartbeat just occurred, time to next heartbeat is %d seconds' % delay_secs}))
             for i in range(delay_secs):
                 if not self.heartbeat_active:

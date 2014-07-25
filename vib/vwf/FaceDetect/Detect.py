@@ -5,8 +5,11 @@ import commands
 import hashlib
 import json
 import logging
+import PIL
+from PIL import Image
 import pprint
 import shutil
+from StringIO import StringIO
 import os
 
 import vib.rekog.utils
@@ -152,15 +155,23 @@ class Detect( VWorker ):
                 for face in track['faces']:
                     face['s3_bucket'] = s3_bucket
                     face_file_name = config.faces_dir + face['s3_key']
-                    file_handle = open( face_file_name )
-                    data = file_handle.read()    
-                    file_handle.close()
-                    md5sum = hashlib.md5(data).hexdigest()
-                    face['md5sum'] = md5sum
+
+                    data = Image.open( face_file_name )
+                    data.thumbnail( ( 128, 128 ), PIL.Image.ANTIALIAS )
+                    data_string = StringIO()
+                    data.save( data_string, "PNG" )
+
+                    #file_handle = open( face_file_name )
+                    #data = file_handle.read()    
+                    #file_handle.close()
+                    #md5sum = hashlib.md5(data).hexdigest()
+                    #face['md5sum'] = md5sum
                     
                     try:
-                        vib.utils.s3.upload_file( face_file_name, s3_bucket, face['s3_key'] )
-                        db_utils.add_media_asset_face( user_uuid, media_uuid, face['s3_key'], os.path.getsize( face_file_name ), track['track_id'], face )
+                        #vib.utils.s3.upload_file( face_file_name, s3_bucket, face['s3_key'] )
+                        vib.utils.s3.upload_string( data_string.getvalue(), s3_bucket, face['s3_key'] )
+                        #db_utils.add_media_asset_face( user_uuid, media_uuid, face['s3_key'], os.path.getsize( face_file_name ), track['track_id'], face )
+                        db_utils.add_media_asset_face( user_uuid, media_uuid, face['s3_key'], data_string.len, track['track_id'], face )
                         print face
                     except Exception as e:
                         log.error( json.dumps( { 'media_uuid' : media_uuid,
