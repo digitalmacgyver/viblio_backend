@@ -174,7 +174,7 @@ def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, name
     # Compose the list of faces to crawl, set to 5 - if the number is
     # too large ReKognition can return a failure (presumably due to
     # timeout).
-    max_friends_per_call = 5
+    max_friends_per_call = 1
     for idx in range( 0, max( len( fb_friends ), 1 ), max_friends_per_call ):
         jobs = ''
         if idx == 0 and not skip_self:
