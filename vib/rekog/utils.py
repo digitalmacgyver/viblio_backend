@@ -205,8 +205,14 @@ def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, name
             'user_id'      : user_id
             }
 
-        r = requests.post( "http://rekognition.com/func/api/", data )
-        results.append( r.json() )
+        try:
+            r = requests.post( "http://rekognition.com/func/api/", data )
+            results.append( r.json() )
+        except Exception as e:
+            # Sometimes this API call fails - however our simple API
+            # here doesn't really support exception handling here, we
+            # just keep going.
+            pass
 
     return results
 
