@@ -404,8 +404,6 @@ sqs.set_message_class( RawMessage )
 
 def run():
     try:
-        # DEBUG
-        '''
         message = None
         message = sqs.read( wait_time_seconds = 20 )
         
@@ -437,18 +435,14 @@ def run():
         # potentially getting stuck in a high API call look for Orbeus
         # and Facebook.
         sqs.delete_message( message )
-        '''
-
-        fb_access_token = 'CAAIuDbNb8ncBAB0CydUilw6yt1oHoRQBWogVz8tSOhXvrz4rLFKnWgCeB1clA6VY5Sndke88Lc8aLMIZCKnyk8FazBJ0ZBl4HFlU3PZA3DZBsPuoH0ZCrJAGxZB07BnZBKt03SRPekUlM6MZB2uX8MAelR0EvZBJuTMFIpBaMhZChv3OfoTtiCEZCta'
-        fb_user_id      = '1619207'
-        user_uuid       = '18698144-16D0-11E4-883F-CC798B55516E'
+        message = None
 
         # DEBUG
-        #if fb_recent_link_request( user_uuid ):
-        if True:
+        if fb_recent_link_request( user_uuid ):
+        #if True:
             # DEBUG
-            import pdb
-            pdb.set_trace()
+            #import pdb
+            #pdb.set_trace()
             friends = get_fb_friends_for_user( user_uuid, fb_user_id, fb_access_token )
             log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                      'message' : "Facebook friends for user %s/%s were %s" % ( user_uuid, fb_user_id, friends ) } ) )
@@ -473,8 +467,6 @@ def run():
         log.error( json.dumps( { 'message' : "Exception was: %s" % e } ) )
         raise
     finally:
-        # DEBUG
-        pass
-        #if message != None:
-        #    sqs.delete_message( message )
+        if message != None:
+            sqs.delete_message( message )
 
