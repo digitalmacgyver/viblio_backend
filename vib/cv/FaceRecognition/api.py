@@ -496,14 +496,16 @@ def recognize_face( user_id, face_url ):
                     # Either there was no 'tag' in match, or the tag wasn't an int.
                     if 'tag' in match:
                         log.error( json.dumps( { 'user_id'    : user_id,
-                                                 'message'    : 'Invalid tag found, tag must be integer. Match was: %s' % ( match ) } ) )
+                                                 'message'    : 'Invalid tag found, tag must be integer, skipping. Match was: %s' % ( match ) } ) )
                         log.info( json.dumps( { 'user_id'    : user_id,
                                                 'message'    : 'Deleting faces with invalid tag: %s for user_id: %s' % ( match['tag'], user_id ) } ) )
                         rekog.delete_face_for_user( user_id, match['tag'], config.recog_v2_namespace )
                     else:
                         log.error( json.dumps( { 'user_id'    : user_id,
-                                                 'message'    : 'Invalid match returned from ReKognition, match was: %s' % ( match ) } ) )
+                                                 'message'    : 'Invalid match returned from ReKognition, skipping, match was: %s' % ( match ) } ) )
 
+                    # Move on to the next face.
+                    continue
                     
                 recognition_confidence = float( match['score'] )
                 if contact_id not in reconciled_contacts:
