@@ -210,9 +210,11 @@ def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, name
 
     return results
 
-def delete_face_for_user( user_id, tag, face_idx, namespace=None ):
-    '''Deletes the face tagged with index face_idx for user_id in
-    namespace.  The special _x_all tag can be used for untagged faces.
+def delete_face_for_user( user_id, tag, face_idx=None, namespace=None ):
+    '''Deletes either all faces of 'tag', or those which also have
+    'face_idx'.
+
+    The special _x_all tag can be used for untagged faces.
 
     Optionally face_idx can be formatted as '1;2;3' to delete multiple
     faces at once
@@ -229,8 +231,10 @@ def delete_face_for_user( user_id, tag, face_idx, namespace=None ):
         'name_space'   : namespace,
         'user_id'      : user_id,
         'tag'          : tag, 
-        'img_index'    : face_idx
         }
+
+    if face_idx is not None:
+        data['img_index'] = face_idx
 
     r = requests.post( "http://rekognition.com/func/api/", data )
     result = r.json()
