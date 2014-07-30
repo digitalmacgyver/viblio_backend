@@ -36,7 +36,23 @@ def _reconcile_db_rekog( user_id, contact_id ):
     contact_faces = []
 
     for face in all_faces:
-        face_contact_id = int( face['tag'] )
+        try:
+            face_contact_id = int( face['tag'] )
+        except Exception as e:
+            # Either there was no 'tag' in face, or the tag wasn't an int.
+            if 'tag' in face:
+                log.error( json.dumps( { 'user_id'    : user_id,
+                                         'message'    : 'Invalid tag found, tag must be integer, skipping. Face was: %s' % ( face ) } ) )
+                log.info( json.dumps( { 'user_id'    : user_id,
+                                        'message'    : 'Deleting faces with invalid tag: %s for user_id: %s' % ( face['tag'], user_id ) } ) )
+                rekog.delete_face_for_user( user_id, face['tag'], config.recog_v2_namespace )
+            else:
+                log.error( json.dumps( { 'user_id'    : user_id,
+                                         'message'    : 'Invalid face returned from ReKognition, skipping, face was: %s' % ( face ) } ) )
+                
+            # Move on to the next face.
+            continue
+                
         if face_contact_id == contact_id:
             contact_faces.append( face )
             
@@ -57,7 +73,23 @@ def _reconcile_db_rekog( user_id, contact_id ):
         all_faces = rekog.visualize_for_user( user_id, num_img_return_pertag=None, no_image=True, show_default=True, namespace=config.recog_v2_namespace )
         contact_faces = []
         for face in all_faces:
-            face_contact_id = int( face['tag'] )
+            try:
+                face_contact_id = int( face['tag'] )
+            except Exception as e:
+                # Either there was no 'tag' in face, or the tag wasn't an int.
+                if 'tag' in face:
+                    log.error( json.dumps( { 'user_id'    : user_id,
+                                             'message'    : 'Invalid tag found, tag must be integer, skipping. Face was: %s' % ( face ) } ) )
+                    log.info( json.dumps( { 'user_id'    : user_id,
+                                            'message'    : 'Deleting faces with invalid tag: %s for user_id: %s' % ( face['tag'], user_id ) } ) )
+                    rekog.delete_face_for_user( user_id, face['tag'], config.recog_v2_namespace )
+                else:
+                    log.error( json.dumps( { 'user_id'    : user_id,
+                                             'message'    : 'Invalid face returned from ReKognition, skipping, face was: %s' % ( face ) } ) )
+                
+                # Move on to the next face.
+                continue
+
             if face_contact_id == contact_id:
                 contact_faces.append( face )
 
