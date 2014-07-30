@@ -161,7 +161,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
         
     # Add in a hard coded command to get some high resolution, rotated
     # images for making albums.
-    output_cmd += image_opts + ' -f image2 %s/%s-image-%%04d.png' % ( config.transcode_dir, media_uuid )
+    output_cmd += image_opts + ' -f image2 %s/%s-image-%%04d.jpg' % ( config.transcode_dir, media_uuid )
 
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s' % ( input_filename, output_cmd )
     log.info( json.dumps( { 'media_uuid' : media_uuid,
@@ -205,7 +205,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
         # by our caller.
         if output['asset_type'] == 'main':
             images = []
-            for filename in sorted( glob.glob( '%s/%s-image-*.png' % ( config.transcode_dir, media_uuid ) ) ):
+            for filename in sorted( glob.glob( '%s/%s-image-*.jpg' % ( config.transcode_dir, media_uuid ) ) ):
                 try:
                     # Calculate the timecode metric.
                     #
@@ -213,11 +213,11 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                     # then starts making frames every FPS at FPS/2 in video when
                     # the -vf fps=X option is used (different, crazier behavior
                     # results from usage of -r).
-                    sequence = int( re.search( r'image-(\d+).png', filename ).groups()[0] )
+                    sequence = int( re.search( r'image-(\d+).jpg', filename ).groups()[0] )
                     if sequence == 1:
                         continue
                     timecode = ( sequence - 2 ) * ( 1.0 / image_fps )  + ( 1.0 / ( 2 * image_fps ) )
-                    image_key = "%s/%s-image-%s.png" % ( media_uuid, media_uuid, timecode )
+                    image_key = "%s/%s-image-%s.jpg" % ( media_uuid, media_uuid, timecode )
                     
                     blur_score, face_score, rgb_hist = _get_cv_features( filename )
                     
@@ -229,7 +229,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                     # Inform the caller abour the metrics.
                     images.append( { 'output_file'    : { 's3_key' : image_key },
                                      'output_file_fs' : filename,
-                                     'format'         : 'png',
+                                     'format'         : 'jpg',
                                      'timecode'       : timecode,
                                      'blur_score'     : blur_score,
                                      'face_score'     : face_score,
