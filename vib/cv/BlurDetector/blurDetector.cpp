@@ -247,10 +247,18 @@ void getBlurValue2( const Mat &edges, const Mat &original,
   }
 
   if ( vblur ) {
-    *vblur = vert_total / num_vert_edges;
+    if ( num_vert_edges ) {
+      *vblur = vert_total / num_vert_edges;
+    } else {
+      *vblur = 0;
+    }
   }
   if ( hblur ) {
-    *hblur = hor_total / num_hor_edges;
+    if ( num_hor_edges ) {
+      *hblur = hor_total / num_hor_edges;
+    } else {
+      *hblur = 0;
+    }
   }
   return;
 }
@@ -364,9 +372,17 @@ void sobel_helper( const Mat & gradient, Mat * sobel, bool debug=false, const st
   // Convert our image to a grayscale image scaled such that the
   // brightest spots are white and the darkest spots are black.
   cv::Mat sobelImage, unused;
-  abs_grad.convertTo( sobelImage,
-		      CV_8U, 255.0 / ( sobmax - sobmin ), // Scale
-  		      -sobmin * 255.0 / ( sobmax - sobmin ) ); // Add after scaling
+  if ( sobmax != sobmin ) {
+    abs_grad.convertTo( sobelImage,
+			CV_8U, 255.0 / ( sobmax - sobmin ), // Scale
+			-sobmin * 255.0 / ( sobmax - sobmin ) ); // Add after scaling
+  } else {
+    // Handle the case where the input image is a uniform color - just
+    // turn the whole thing black.
+    abs_grad.convertTo( sobelImage,
+			CV_8U, 0, // Scale
+			0 ); // Add after scaling
+  }
   
   if ( debug ) {
     imwrite( *outfile_prefix + "_abs_grad_normalized.jpg", sobelImage );  
