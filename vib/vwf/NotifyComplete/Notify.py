@@ -59,7 +59,7 @@ class Notify( VWorker ):
             # Check if this is special Viblio generated content, if so
             # maybe do something else.
             try:
-                if options.get( 'viblio_added_content_type', '' ) == 'Smiling Faces':
+                if options.get( 'viblio_added_content_type', '' ) in [ 'Smiling Faces', 'Album Summary' ]:
                     orm = vib.db.orm.get_session()
                     orm.commit()
 

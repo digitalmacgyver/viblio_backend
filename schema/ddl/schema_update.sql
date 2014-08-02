@@ -1,3 +1,17 @@
+alter table viblio_added_content add column album_id integer null default null after media_user_id;
+alter table viblio_added_content add column album_user_id integer null default null after album_id;
+
+alter table viblio_added_content add  INDEX `fk_viblio_added_content_media2` (`album_id` ASC, `album_user_id` ASC);
+alter table viblio_added_content add  CONSTRAINT `fk_viblio_added_content_media2`
+    FOREIGN KEY (`album_id` , `album_user_id` )
+    REFERENCES `media` (`id` , `user_id` )
+    ON DELETE CASCADE
+    ON UPDATE CASCADE;
+
+
+
+
+--
 
 alter table media_assets add column timecode decimal( 14, 6 ) null default null after duration;
 

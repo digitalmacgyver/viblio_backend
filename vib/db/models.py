@@ -155,6 +155,7 @@ def db_map(engine):
                                            cascade="all, delete-orphan" ),
             'viblio_added_content' : relationship( models.ViblioAddedContent,
                                                    lazy='dynamic',
+                                                   foreign_keys=models.ViblioAddedContent.media_id,
                                                    backref='media' )
             })
 

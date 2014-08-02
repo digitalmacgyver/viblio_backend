@@ -745,6 +745,8 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`viblio_added_content` (
   `user_id` INT(11) NOT NULL ,
   `media_id` INT(11) NULL ,
   `media_user_id` INT(11) NULL ,
+  `album_id` INT(11) NOT NULL ,
+  `album_user_id` INT(11) NOT NULL ,
   `content_type` VARCHAR(32) NULL DEFAULT NULL ,
   `status` VARCHAR(32) NULL DEFAULT NULL ,
   `attempts` INT NULL DEFAULT NULL ,
@@ -753,6 +755,7 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`viblio_added_content` (
   PRIMARY KEY (`id`) ,
   INDEX `fk_viblio_added_content_users1` (`user_id` ASC) ,
   INDEX `fk_viblio_added_content_media1` (`media_id` ASC, `media_user_id` ASC) ,
+  INDEX `fk_viblio_added_content_media2` (`album_id` ASC, `album_user_id` ASC) ,
   CONSTRAINT `fk_viblio_added_content_users1`
     FOREIGN KEY (`user_id` )
     REFERENCES `video_dev`.`users` (`id` )
@@ -762,6 +765,11 @@ CREATE  TABLE IF NOT EXISTS `video_dev`.`viblio_added_content` (
     FOREIGN KEY (`media_id` , `media_user_id` )
     REFERENCES `video_dev`.`media` (`id` , `user_id` )
     ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_viblio_added_content_media2`
+    FOREIGN KEY (`album_id` , `album_user_id` )
+    REFERENCES `video_dev`.`media` (`id` , `user_id` )
+    ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 

@@ -31,7 +31,7 @@ log.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
 
-format_string = 'build_smiling_faces: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
+format_string = 'build_album_summaries: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
 
 sys_formatter = logging.Formatter( format_string )
 
@@ -43,7 +43,7 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-def generate_clips( user_uuid, 
+def generate_clips( album_uuid, 
                     workdir,
                     min_clip_secs       = 2,
                     max_clip_secs       = 3,
@@ -55,7 +55,7 @@ def generate_clips( user_uuid,
                     output_x            = 640,
                     output_y            = 360 ):
     '''Takes the input parameters:
-    user_uuid, 
+    album_uuid, 
     workdir             = Temporary directory to store videos and clips
     min_clip_secs       = Default 2. No clips shorter than this will be included
     max_clip_secs       = Default 3. No clips longer than this will be included
@@ -73,19 +73,27 @@ def generate_clips( user_uuid,
     then the lesser of the two will determine when we stop including
     clips from a video.
     '''
-    log.info( json.dumps( { 'user_uuid' : user_uuid, 
-                            'message'   : 'Getting user id for user_uuid %s' % ( user_uuid ) } ) )
+    log.info( json.dumps( { 'album_uuid' : album_uuid, 
+                            'message'   : 'Getting album for album_uuid %s' % ( album_uuid ) } ) )
 
-    # Get the list of movies for the current user.
+    # Get the list of movies for the current album.
     orm = vib.db.orm.get_session()
     orm.commit()
 
-    user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
+    album = orm.query( Media ).filter( Media.uuid == album_uuid ).one()
+    user = orm.query( Users ).filter( Users.id == album.user_id ).one()
 
-    log.info( json.dumps( { 'user_uuid' : user_uuid, 
-                            'message'   : 'Getting media_files for user_id %s' % ( user.id ) } ) )
+    log.info( json.dumps( { 'album_uuid' : album_uuid, 
+                            'message'   : 'Getting media_files for user_id %s, album_id %s' % ( user.id, album.id ) } ) )
     
-    media_files = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.status == 'complete', Media.is_viblio_created == False ) ).order_by( Media.recording_date )[:]
+    media_files = orm.query( Media ).filter( 
+        and_( 
+            MediaAlbums.album_id == album.id,
+            MediaAlbums.media_id == Media.id,
+            Media.is_album == False,
+            Media.status == 'complete', 
+            Media.is_viblio_created == False ) 
+        ).order_by( Media.recording_date )[:]
 
     orm.close()
 
@@ -98,12 +106,12 @@ def generate_clips( user_uuid,
         media_uuid = media.uuid
 
         if output_secs >= max_output_secs:
-            log.info( json.dumps( { 'user_uuid' : user_uuid, 
+            log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                     'message'   : 'max_output_secs limit reached, skipping analysis of media_uuid: %s' % ( media_uuid ) } ) )
             break
         
         if output_clips >= max_input_videos:
-            log.info( json.dumps( { 'user_uuid' : user_uuid, 
+            log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                     'message'   : 'max_input_videos limit reached, skipping analysis of media_uuid: %s' % ( media_uuid ) } ) )
             break
 
@@ -120,10 +128,10 @@ def generate_clips( user_uuid,
                 g = open( "%s/%s_tracks.json" % ( workdir, media_uuid ), 'w' )
                 json.dump( tracks, g )
                 g.close()
-                log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                         'message'   : 'Downloaded tracks for media_uuid: %s' % ( media_uuid ) } ) )
             except Exception as e:
-                log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                         'message'   : "Couldn't download tracks for media_uuid: %s, skipping." % ( media_uuid ) } ) )
                 continue
 
@@ -134,17 +142,17 @@ def generate_clips( user_uuid,
             for track in tracks:
                 # Stop working on this input if we've got all we need from it.
                 if input_secs >= max_secs_per_input:
-                    log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                    log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                             'message'   : 'max_secs_per_input limit reached, skipping additional tracks for media_uuid: %s' % ( media_uuid ) } ) )
                     break
                 if input_clips >= max_clips_per_input:
-                    log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                    log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                             'message'   : 'max_clips_per_input limit reached, skipping additional tracks for media_uuid: %s' % ( media_uuid ) } ) )
                     break
 
                 # Skip tracks where the person isn't happy.
                 if 'isHappy' in track['faces'][0] and not track['faces'][0]['isHappy']:
-                    log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                    log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                             'message'   : 'Skipping track where person is not happy for media_uuid: %s' % ( media_uuid ) } ) )
                     continue
 
@@ -153,11 +161,11 @@ def generate_clips( user_uuid,
                 for vi in track['visiblity_info']:
                     # Stop working on this input if we've got all we need from it.
                     if input_secs >= max_secs_per_input:
-                        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                        log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                                 'message'   : 'max_secs_per_input limit reached, skipping additional tracks for media_uuid: %s' % ( media_uuid ) } ) )
                         break
                     if input_clips >= max_clips_per_input:
-                        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                        log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                                 'message'   : 'max_clips_per_input limit reached, skipping additional tracks for media_uuid: %s' % ( media_uuid ) } ) )
                         break
 
@@ -167,13 +175,13 @@ def generate_clips( user_uuid,
 
                     # Skip clips that are too short.
                     if end - start < min_clip_secs:
-                        log.debug( json.dumps( { 'user_uuid' : user_uuid, 
+                        log.debug( json.dumps( { 'album_uuid' : album_uuid, 
                                                  'message'   : 'Skipping cut %s-%s because it is shorter than min_clip_secs' % ( start, end ) } ) )
                         continue
 
                     # Trim clips that are too long.
                     if end - start > max_clip_secs:
-                        log.debug( json.dumps( { 'user_uuid' : user_uuid, 
+                        log.debug( json.dumps( { 'album_uuid' : album_uuid, 
                                                  'message'   : 'Trimming cut %s-%s to end at %s because it is longer than max_clip_secs' % ( start, end, start+max_clip_secs ) } ) )
                         end = start + max_clip_secs
 
@@ -190,13 +198,13 @@ def generate_clips( user_uuid,
                 if len( track_cuts ) > 0:
                     cuts.append( track_cuts )
 
-            log.debug( json.dumps( { 'user_uuid' : user_uuid, 
+            log.debug( json.dumps( { 'album_uuid' : album_uuid, 
                                      'message'   : 'Raw cuts are: %s' % ( cuts ) } ) )
 
             # Sort all our tracks by the start time of the tracks.
             sorted_track_cuts = sorted( [ x for y in cuts for x in y ], key=lambda element: element[0] )
             
-            log.debug( json.dumps( { 'user_uuid' : user_uuid, 
+            log.debug( json.dumps( { 'album_uuid' : album_uuid, 
                                      'message'   : 'Sorted cuts are: %s' % ( sorted_track_cuts ) } ) )
 
             # And concatenate overlapping tracks.
@@ -211,7 +219,7 @@ def generate_clips( user_uuid,
                     final_cuts.append( cut )
             final_cuts = final_cuts[1:]
 
-            log.debug( json.dumps( { 'user_uuid' : user_uuid, 
+            log.debug( json.dumps( { 'album_uuid' : album_uuid, 
                                      'message'   : 'Final cuts are: %s' % ( final_cuts ) } ) )
 
             # Stop working on this input video if there were no cuts of interest.
@@ -222,7 +230,7 @@ def generate_clips( user_uuid,
             movie_key = '%s/%s_output.mp4' % ( media_uuid, media_uuid )
             movie_file = '%s/%s.mp4' % ( workdir, media_uuid )
             download_file( movie_file, config.bucket_name, movie_key )
-            log.info( json.dumps( { 'user_uuid' : user_uuid, 
+            log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                     'message'   : 'Downloaded input video to %s' % ( movie_file ) } ) )
 
 
@@ -230,7 +238,7 @@ def generate_clips( user_uuid,
             input_x = int( exif['width'] )
             input_y = int( exif['height'] )
             input_ratio = float( input_x ) / input_y
-            log.debug( json.dumps( { 'user_uuid' : user_uuid, 
+            log.debug( json.dumps( { 'album_uuid' : album_uuid, 
                                      'message'   : 'Got exif for input video of dimension: %sx%s' % ( input_x, input_y ) } ) )
 
             # Calculate the aspect ratio for our output video.
@@ -246,7 +254,7 @@ def generate_clips( user_uuid,
                     ffmpeg_opts = ' -vf scale=%s:-1,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_x, output_x, output_y )
                 cmd = "ffmpeg -y -i %s -ss %s -t %s -r 30000/1001 %s %s" % ( movie_file, track_cut[0], track_cut[1]-track_cut[0], ffmpeg_opts, cut_video )
 
-                log.info( json.dumps( { 'user_uuid' : user_uuid, 
+                log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                          'message'   : 'Generating clip with command: %s' % ( cmd ) } ) )
                 ( status, output ) = commands.getstatusoutput( cmd )
 
@@ -254,12 +262,12 @@ def generate_clips( user_uuid,
                     # Store the fact that we made this cut for later concatenation.
                     cut_lines.append( "file %s\n" % ( cut_video ) )
                 else:
-                    log.error( json.dumps( { 'user_uuid' : user_uuid, 
+                    log.error( json.dumps( { 'album_uuid' : album_uuid, 
                                              'message'   : 'Something went wrong generating clip, output was: %s' % ( output ) } ) )
                     output_secs -= track_cut[1] - track_cut[0]
             
         except Exception as e:
-            log.error( json.dumps( { 'user_uuid' : user_uuid, 
+            log.error( json.dumps( { 'album_uuid' : album_uuid, 
                                      'message'   : 'Unexpected error processing file %s: %s' % ( media_uuid, e ) } ) )
             # Note - we just keep going if we hit an error and hope for the best.
 
@@ -274,13 +282,13 @@ def generate_clips( user_uuid,
     cut_file.close()
 
     if output_secs > min_output_secs:
-        return True
+        return ( True, album.title )
     else:
-        log.warning( json.dumps( { 'user_uuid' : user_uuid, 
+        log.warning( json.dumps( { 'album_uuid' : album_uuid, 
                                    'message'   : 'Summary video length of %s was too short, returning False.' % ( output_secs ) } ) )
-        return False
+        return ( False, None )
                 
-def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
+def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filename="Summary", title="A Gift from Viblio" ):
     # Open the output file for storing concatenation data.
     cut_file_name = '%s/cuts.txt' % ( workdir )
     output_file = '%s/summary.mp4' % ( workdir )
@@ -289,26 +297,29 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
         raise Exception( "Couldn't find expected cut file at: %s" % ( cut_file_name ) )
 
     cmd = "ffmpeg -y -f concat -i %s %s" % ( cut_file_name, output_file )
-    log.info( json.dumps( { 'user_uuid' : user_uuid, 
+    log.info( json.dumps( { 'album_uuid' : album_uuid, 
                             'message'   : 'Generating summary with command: %s' % ( cmd ) } ) )
 
     ( status, output ) = commands.getstatusoutput( cmd )
 
     if status != 0:
         message = "Error generating summary video: %s" % ( output )
-        log.error( json.dumps( { 'user_uuid' : user_uuid, 
+        log.error( json.dumps( { 'album_uuid' : album_uuid, 
                                      'message'   : message } ) )
         raise Exception( message )
     else:
         # Upload video to S3.
         summary_uuid = str( uuid.uuid4() )
-        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+        log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                 'message'   : 'Uploading summary video from %s with uuid %s' % ( output_file, summary_uuid ) } ) )
         upload_file( output_file, config.bucket_name, "%s/%s" % ( summary_uuid, summary_uuid ) )
 
         # Write records to database
         orm = vib.db.orm.get_session()
         orm.commit()
+
+        album = orm.query( Media ).filter( Media.uuid == album_uuid ).one()
+        user = orm.query( Users ).filter( Users.id == album.user_id ).one()
 
         unique_hash = None
         f = open( output_file, 'rb' )
@@ -321,19 +332,21 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
         unique_hash = md5.hexdigest()
         f.close()
 
-        log.info( json.dumps( { 'user_uuid' : user_uuid, 
-                                'message'   : 'Creating database records for user_uuid %s, media_uuid %s, and viblio_added_content_id %s ' % ( user_uuid, summary_uuid, viblio_added_content_id ) } ) )
+        log.info( json.dumps( { 'album_uuid' : album_uuid, 
+                                'message'   : 'Creating database records for album_uuid %s, media_uuid %s, and viblio_added_content_id %s ' % ( album_uuid, summary_uuid, viblio_added_content_id ) } ) )
 
-        user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
         media = Media( uuid = summary_uuid,
                        media_type = 'original',
-                       filename = 'Faces Summary',
-                       title = 'A Gift from Viblio',
+                       filename = filename,
+                       title = title,
                        view_count = 0,
                        status = 'pending',
                        is_viblio_created = True,
                        unique_hash = unique_hash )
         user.media.append( media )
+        orm.commit()
+        media_album = MediaAlbums( album_id = album.id,
+                                   media_id = media.id )
 
         original_uuid = str( uuid.uuid4() )
 
@@ -351,10 +364,9 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
         media.viblio_added_content.append( vac )
         
         orm.commit()
-        orm.close()
 
         # New pipeline callout
-        log.info( json.dumps( { 'user_uuid' : user_uuid, 
+        log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                 'message'   : 'Starting VWF execution.' } ) )
         execution = swf.WorkflowType( 
             name = 'VideoProcessing' + config.VPWSuffix, 
@@ -362,9 +374,9 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
             ).start( 
             task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList, 
             input = json.dumps( { 
-                        'viblio_added_content_type' : 'Smiling Faces',
+                        'viblio_added_content_type' : 'Album Summary',
                         'media_uuid' : summary_uuid, 
-                        'user_uuid'  : user_uuid,
+                        'user_uuid'  : user.uuid,
                         'original_uuid' : original_uuid,
                         'input_file' : {
                             's3_bucket'  : config.bucket_name,
@@ -445,8 +457,9 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
             )
 
         # Clean up
+        orm.close()
         if workdir[:4] == '/mnt':
-            log.info( json.dumps( { 'user_uuid' : user_uuid, 
+            log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                     'message'   : 'Deleting temporary files at %s' % ( workdir ) } ) )
             shutil.rmtree( workdir )
         return
@@ -456,7 +469,7 @@ def __get_sqs():
 
 def run():
     try:
-        sqs = __get_sqs().get_queue( config.smile_creation_queue )
+        sqs = __get_sqs().get_queue( config.album_summary_creation_queue )
 
         message = None
         message = sqs.read( wait_time_seconds = 20 )
@@ -479,7 +492,7 @@ def run():
         except Exception as e:
             log.debug( json.dumps( { 'message' : "Error converting options to string: %s" % e } ) )
         
-        user_uuid           = options.get( 'user_uuid', None )
+        album_uuid          = options.get( 'album_uuid', None )
         viblio_added_content_id = options['viblio_added_content_id']
         min_clip_secs       = float( options.get( 'min_clip_secs', 2 ) )
         max_clip_secs       = float( options.get( 'max_clip_secs', 3 ) )
@@ -491,8 +504,8 @@ def run():
         output_x            = int( options.get( 'output_x', 640 ) )
         output_y            = int( options.get( 'output_y', 360 ) )
 
-        if user_uuid != None:
-            workdir = config.faces_dir + '/smiling_faces/' + user_uuid
+        if album_uuid != None:
+            workdir = config.faces_dir + '/album_summary/' + album_uuid + '/'
             try:
                 if not os.path.isdir( workdir ):
                     os.makedirs( workdir )
@@ -508,7 +521,7 @@ def run():
             # new attempt up to max_retries times.     
             sqs.delete_message( message )
 
-            clips_ok = generate_clips( user_uuid, 
+            ( clips_ok, title ) = generate_clips( album_uuid, 
                                        workdir             = workdir,
                                        min_clip_secs       = min_clip_secs,
                                        max_clip_secs       = max_clip_secs,
@@ -519,10 +532,14 @@ def run():
                                        max_output_secs     = max_output_secs,
                                        output_x            = output_x, 
                                        output_y            = output_y )
+
             if clips_ok:
-                produce_summary_video( user_uuid, workdir, viblio_added_content_id )
+                # Get the list of movies for the current album.
+                title = "Viblio Album Summary: " + title
                 
-            log.info( json.dumps( { 'message' : "Completed successfully for user_uuid: %s" % ( user_uuid ) } ) )
+                produce_summary_video( album_uuid, workdir, viblio_added_content_id, title.title(), title.title() )
+                
+            log.info( json.dumps( { 'message' : "Completed successfully for album_uuid: %s" % ( album_uuid ) } ) )
             return True
         else:
             # This message is not for us or is malformed, someone else

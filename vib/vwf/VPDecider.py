@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
+import boto.sqs
+from boto.sqs.message import RawMessage
 import boto.swf
 import boto.swf.layer2 as swf
+import datetime
 import json
 import logging
 import mixpanel
@@ -136,7 +139,7 @@ class VPDecider( swf.Decider ):
 
                         decisions.fail_workflow_execution( reason=reason[:250] )
                         failed = True
-                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid )
+                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid, reason )
 
                     elif not details[-1].get( 'retry', False ):
                         reason = "Most recent failure for task %s said not to retry, terminating workflow." % task
@@ -153,7 +156,7 @@ class VPDecider( swf.Decider ):
 
                         decisions.fail_workflow_execution( reason=reason[:250] )
                         failed = True
-                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid )
+                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid, reason )
                     else:
 
                         log.info( json.dumps( {
@@ -209,7 +212,7 @@ class VPDecider( swf.Decider ):
                         _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'activity_timeout', 'activity' : task } )
                         decisions.fail_workflow_execution( reason=reason[:250] )
                         failed = True
-                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid )
+                        _update_media_status( media_uuid, 'WorkflowFailed', user_uuid, reason )
                     else:
                         log.warning( json.dumps( {
                                     'media_uuid' : media_uuid,
@@ -317,7 +320,7 @@ class VPDecider( swf.Decider ):
             log.error( json.dumps({'media_uuid' : media_uuid, 'user_uuid' : user_uuid, 'task' : task, 'error_code' : 'max_timeouts', 'message' : reason}))
             _mp_log( "Workflow Failed", media_uuid, user_uuid, { 'reason' : 'no_lock retries exceeded', 'activity' : task, 'type' : 'fatal_error' } )
             decisions.fail_workflow_execution(reason = reason[:250])
-            _update_media_status( media_uuid, 'WorkflowFailed', user_uuid )
+            _update_media_status( media_uuid, 'WorkflowFailed', user_uuid, reason )
             return True
         else:
             message = 'Retrying task %s for time %d out of %d allowed lock retries' % (task, len(details), VPW[task]['lock_retries'])
@@ -559,7 +562,7 @@ def _get_input( task, completed_tasks ):
         task_input[prerequisite] = completed_tasks.get( prerequisite, {} )
     return task_input
         
-def _update_media_status( media_uuid, status, user_uuid ):
+def _update_media_status( media_uuid, status, user_uuid, reason="Unknown" ):
     orm = vib.db.orm.get_session()
     try:
         orm.commit()
@@ -589,6 +592,97 @@ def _update_media_status( media_uuid, status, user_uuid ):
         log.error( json.dumps( { 'media_uuid' : media_uuid,
                                  'user_uuid' : user_uuid,
                                  'message' : "Failed to update media status to %s for media_uuid %s, error was: %s" % ( status, media_uuid, e ) } ) )
+
+    # Now send an email if there was a problem.
+    if ( status == 'WorkflowFailed' ):
+        body = ''
+        try:
+            user_id = 'Unknown'
+            user_email = 'Unknown'
+            filename = 'Unknown'
+            title = 'Unknown'
+            media_id = 'Unknown'
+            workflow_stages = "Workflow Stage\t\tCreated Date\n"
+            try:
+                user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
+                user_id = user.id
+                user_email = user.email
+            except Exception as ue:
+                pass
+            try:
+                media_id = media.id
+                filename = media.filename
+                title = media.title
+            except Exception as me:
+                pass
+            try:
+                workflow_stage_list = orm.query( MediaWorkflowStages ).filter( MediaWorkflowStages.media_id == media_id ).order_by( MediaWorkflowStages.created_date )[:]
+                for ws in workflow_stage_list:
+                    workflow_stages += "%s\t\t%s\n" % ( ws.workflow_stage, ws.created_date )
+            except Exception as we:
+                pass
+
+            loggly_errors = "https://viblio.loggly.com/search#terms=json.level%%3A%%22ERROR%%22%%20AND%%20json.name%%3A%%22vib.vwf*%%22%%20AND%%20json.activity_log.media_uuid%%3A%%22%s%%22&from=%s&until=%s&source_group=" % ( 
+                media_uuid, 
+                ( datetime.datetime.utcnow() - datetime.timedelta( days=3 ) ).strftime( "%Y-%m-%dT%H:%M:%SZ" ).replace( ":", "%3A" ),
+                ( datetime.datetime.utcnow() + datetime.timedelta( hours=3 ) ).strftime( "%Y-%m-%dT%H:%M:%SZ" ).replace( ":", "%3A" ) )
+
+            loggly_events = "https://viblio.loggly.com/search#terms=json.activity_log.media_uuid%%3A%%22%s%%22&from=%s&until=%s&source_group=" % ( 
+                media_uuid, 
+                ( datetime.datetime.utcnow() - datetime.timedelta( days=3 ) ).strftime( "%Y-%m-%dT%H:%M:%SZ" ).replace( ":", "%3A" ),
+                ( datetime.datetime.utcnow() + datetime.timedelta( hours=3 ) ).strftime( "%Y-%m-%dT%H:%M:%SZ" ).replace( ":", "%3A" ) )
+            
+            subject = "%s VWF Failure" % ( config.VPWSuffix )
+            if media.status == 'visible':
+                subject += " but visible: "
+            else:
+                subject += ": "
+            subject += "'%s', %s, %s" % ( title[:20], user_email, reason )
+
+            body = '''
+<body>
+<pre>
+deployment      : %s
+user_uuid / id  : %s / %s
+user_email      : %s
+filename        : %s
+title           : %s
+media_uuid / id : %s / %s
+
+
+reason          :
+=================
+%s
+
+
+Workflow stage history:
+=======================
+%s
+</pre>
+<p>
+Error messages:<br />
+<a href="%s">%s</a>
+</p>
+<p>
+Event history:<br />
+<a href="%s">%s</a>
+</p>
+</body>
+''' % ( config.VPWSuffix, user_uuid, user_id, user_email, filename, title, media_uuid, media_id, reason, workflow_stages, loggly_errors, loggly_errors, loggly_events, loggly_events )
+
+            connection = boto.sqs.connect_to_region( config.sqs_region, aws_access_key_id = config.awsAccess, aws_secret_access_key = config.awsSecret )
+            queue = connection.get_queue( config.email_queue )
+            message = RawMessage()
+            message.set_body( json.dumps( {
+                        'subject' : subject,
+                        'to' : [ { 'email' : 'admin@viblio.com', 'name' : 'Viblio Administrator' } ],
+                        'body' : body
+                        } ) )
+            queue.write( message )
+        except Exception as e:
+            log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                     'user_uuid' : user_uuid,
+                                     'message' : "Failed to send email error for media_uuid %s, message was: %s, error was: %s" % ( media_uuid, body, e ) } ) )
 
     return
 
