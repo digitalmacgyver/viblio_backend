@@ -347,6 +347,7 @@ def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filenam
         orm.commit()
         media_album = MediaAlbums( album_id = album.id,
                                    media_id = media.id )
+        orm.add( media_album )
 
         original_uuid = str( uuid.uuid4() )
 
