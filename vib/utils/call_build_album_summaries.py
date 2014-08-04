@@ -58,7 +58,7 @@ def call_build_album_summaries( min_videos = 5, album_uuid = None, max_retries =
         for album in all_albums:
             if album[1] >= min_videos:
                 log.info( json.dumps( { 'message' : 'Adding album_id %s with %s videos to build user list.' % ( album[0], album[1] ) } ) )
-                build_users.append( album[0] )
+                build_albums.append( album[0] )
     else:
         # Get only eligible albums who do not already have this content.
         all_albums = []
@@ -100,36 +100,50 @@ def call_build_album_summaries( min_videos = 5, album_uuid = None, max_retries =
         
         album_summaries = orm.query( ViblioAddedContent ).filter( and_( ViblioAddedContent.album_id == album_id, ViblioAddedContent.content_type == 'Album Summary' ) )[:]
 
-        album_summary = None
-
         if len( album_summaries ) > 1:
             log.error( json.dumps( { 'message' : 'Error, more than 1 album summary row for album %s found.' % ( album_id ) } ) )
-        elif len( album_summaries ) == 1:
-            album_summary = album_summaries[0]
-            album_summary.status = 'scheduled'
-            album_summary.attempts += 1
-        else:
-            album_summary = ViblioAddedContent( 
-                content_type = 'Album Summary',
-                status = 'scheduled',
-                attempts = 1,
-                user_id = album.user_id,
-                album_id = album.id,
-                album_user_id = album.user_id,
-                )
-            orm.add( album_summary )
+            continue
 
-        orm.commit()
-
-        if album_summary is not None:
-            log.info( json.dumps( { 'message' : 'Starting job for album_uuid: %s, viblio_added_content_id: %s, attempts: %s' % ( album.uuid, album_summary.id, album_summary.attempts ) } ) )
+        # Find out what sort of album summary we'd like to make.
+        # 
+        # If this is a person album, make a person summary. 
+        # 
+        # Other album types not yet implemented.
+        contacts = orm.query( Contacts ).filter( Contacts.user_id == album.user_id )
+        contact_id = None
+        for contact in contacts:
+            if album.title == contact.contact_name:
+                contact_id = contact.id
+                break
+                
+        if contact_id is not None:
+            if len( album_summaries ) == 1:
+                album_summary = album_summaries[0]
+                album_summary.status = 'scheduled'
+                album_summary.attempts += 1
+            else:
+                album_summary = ViblioAddedContent( 
+                    content_type = 'Album Summary',
+                    status = 'scheduled',
+                    attempts = 1,
+                    user_id = album.user_id,
+                    album_id = album.id,
+                    album_user_id = album.user_id,
+                    )
+                orm.add( album_summary )
+            orm.commit()
+            log.info( json.dumps( { 'message' : 'Starting job for person album_uuid: %s, viblio_added_content_id: %s, attempts: %s' % ( album.uuid, album_summary.id, album_summary.attempts ) } ) )
             message = Message()
             message.set_body( json.dumps( {
                         'album_uuid' : album.uuid,
-                        'viblio_added_content_id' : album_summary.id } ) )
-
+                        'viblio_added_content_id' : album_summary.id,
+                        'summary_type' : 'person',
+                        'contact_id' : contact_id } ) )
+                
             status = queue.write( message )
             log.info( json.dumps( { 'message' : 'Message status was: %s' % ( status ) } ) )
+        else:
+            log.info( json.dumps( { 'message' : 'Skipping job for non-person album_uuid: %s' % ( album.uuid ) } ) )
             
 if __name__ == '__main__':
     usage = "usage: DEPLOYMENT=[staging|prod] %prog [-v 5] [-a album-uuid] [-r 4] [-f]"

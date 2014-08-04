@@ -6,6 +6,7 @@ import boto.sqs.connection
 from boto.sqs.connection import Message
 import commands
 import datetime
+import glob
 import json
 import hashlib
 import logging
@@ -45,6 +46,7 @@ log.addHandler( consolelog )
 
 def generate_clips( album_uuid, 
                     workdir,
+                    contact_id = None,
                     min_clip_secs       = 2,
                     max_clip_secs       = 3,
                     max_input_videos    = 120,
@@ -85,16 +87,29 @@ def generate_clips( album_uuid,
 
     log.info( json.dumps( { 'album_uuid' : album_uuid, 
                             'message'   : 'Getting media_files for user_id %s, album_id %s' % ( user.id, album.id ) } ) )
-    
-    media_files = orm.query( Media ).filter( 
-        and_( 
-            MediaAlbums.album_id == album.id,
-            MediaAlbums.media_id == Media.id,
-            Media.is_album == False,
-            Media.status == 'complete', 
-            Media.is_viblio_created == False ) 
-        ).order_by( Media.recording_date )[:]
 
+    if contact_id is not None:
+        media_files = orm.query( Media.uuid, MediaAssetFeatures.track_id ).filter( 
+            and_( 
+                MediaAlbums.album_id == album.id,
+                MediaAlbums.media_id == Media.id,
+                Media.is_album == False,
+                Media.status == 'complete', 
+                Media.is_viblio_created == False,
+                Media.id == MediaAssetFeatures.media_id,
+                MediaAssetFeatures.contact_id == contact_id )
+            ).order_by( Media.recording_date )[:]
+    else:
+        media_files = orm.query( Media.uuid, MediaAssetFeatures.track_id ).filter( 
+            and_( 
+                MediaAlbums.album_id == album.id,
+                MediaAlbums.media_id == Media.id,
+                Media.is_album == False,
+                Media.status == 'complete', 
+                Media.is_viblio_created == False,
+                Media.id == MediaAssetFeatures.media_id )
+            ).order_by( Media.recording_date )[:]
+        
     orm.close()
 
     cut_lines = []
@@ -102,7 +117,15 @@ def generate_clips( album_uuid,
     output_secs = 0
     output_clips = 0
 
+    media_tracks = {}
     for media in media_files:
+        if media.uuid in media_tracks:
+            media_tracks[media.uuid][media.track_id] = True
+        else:
+            media_tracks[media.uuid] = { media.track_id : True, "media" : media }
+
+    for media_uuid in media_tracks.keys():
+        media = media_tracks[media_uuid]["media"]
         media_uuid = media.uuid
 
         if output_secs >= max_output_secs:
@@ -140,6 +163,11 @@ def generate_clips( album_uuid,
             cuts = [ ]
 
             for track in tracks:
+                if track["track_id"] not in media_tracks[media_uuid]:
+                    log.info( json.dumps( { 'album_uuid' : album_uuid, 
+                                            'message'   : "Skipping track %s which does not have contact %s in it." % ( track["track_id"], contact_id ) } ) ) 
+                    continue
+
                 # Stop working on this input if we've got all we need from it.
                 if input_secs >= max_secs_per_input:
                     log.info( json.dumps( { 'album_uuid' : album_uuid, 
@@ -252,7 +280,7 @@ def generate_clips( album_uuid,
                     ffmpeg_opts = ' -vf scale=-1:%s,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_y, output_x, output_y )
                 else:
                     ffmpeg_opts = ' -vf scale=%s:-1,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_x, output_x, output_y )
-                cmd = "ffmpeg -y -i %s -ss %s -t %s -r 30000/1001 %s %s" % ( movie_file, track_cut[0], track_cut[1]-track_cut[0], ffmpeg_opts, cut_video )
+                cmd = "ffmpeg -y -i %s -ss %s -t %s -r 30000/1001 -an %s %s" % ( movie_file, track_cut[0], track_cut[1]-track_cut[0], ffmpeg_opts, cut_video )
 
                 log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                          'message'   : 'Generating clip with command: %s' % ( cmd ) } ) )
@@ -275,20 +303,24 @@ def generate_clips( album_uuid,
     cut_file_name = '%s/cuts.txt' % ( workdir )
     cut_file = open( cut_file_name, 'w' )
 
+    # DEBUG
     random.shuffle( cut_lines )
+    if contact_id is None:
+        random.shuffle( cut_lines )
+
     for line in cut_lines:
         cut_file.write( line )
 
     cut_file.close()
 
     if output_secs > min_output_secs:
-        return ( True, album.title )
+        return ( True, album.title, output_secs )
     else:
         log.warning( json.dumps( { 'album_uuid' : album_uuid, 
                                    'message'   : 'Summary video length of %s was too short, returning False.' % ( output_secs ) } ) )
-        return ( False, None )
+        return ( False, None, None )
                 
-def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filename="Summary", title="A Gift from Viblio" ):
+def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filename="Summary", title="A Gift from Viblio", output_secs=None ):
     # Open the output file for storing concatenation data.
     cut_file_name = '%s/cuts.txt' % ( workdir )
     output_file = '%s/summary.mp4' % ( workdir )
@@ -296,7 +328,17 @@ def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filenam
     if not os.path.isfile( cut_file_name ):
         raise Exception( "Couldn't find expected cut file at: %s" % ( cut_file_name ) )
 
-    cmd = "ffmpeg -y -f concat -i %s %s" % ( cut_file_name, output_file )
+    # DEBUG
+    music_file = random.choice( glob.glob( '/wintmp/music/*m4a' ) )
+    logo_file = '/wintmp/summary-test/logo.png'
+
+    afade = ''
+    if output_secs is not None:
+        afade = '-af "afade=t=out:st=%s:d=5"' % ( output_secs - 5 )
+
+    ffmpeg_opts = ' -filter_complex \'[2:0] split [a][b] ; [a] fade=out:duration=5, scale=-1:64 [c] ; [b] fade=in:st=%s:d=1, scale=-1:128 [d] ; [0:v][c] overlay=main_w-overlay_w-10:main_h-overlay_h-10 [x]; [x][d] overlay=trunc((main_w-overlay_w)/2):trunc((main_h-overlay_h)/2)\' ' % ( output_secs-1 )
+
+    cmd = "ffmpeg -y -f concat -i %s -i %s -loop 1 -i %s -r 30000/1001 -c:a libfdk_aac %s %s -shortest %s" % ( cut_file_name, music_file, logo_file, afade, ffmpeg_opts, output_file )
     log.info( json.dumps( { 'album_uuid' : album_uuid, 
                             'message'   : 'Generating summary with command: %s' % ( cmd ) } ) )
 
@@ -462,7 +504,8 @@ def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filenam
         if workdir[:4] == '/mnt':
             log.info( json.dumps( { 'album_uuid' : album_uuid, 
                                     'message'   : 'Deleting temporary files at %s' % ( workdir ) } ) )
-            shutil.rmtree( workdir )
+            # DEBUG
+            #shutil.rmtree( workdir )
         return
         
 def __get_sqs():
@@ -494,16 +537,34 @@ def run():
             log.debug( json.dumps( { 'message' : "Error converting options to string: %s" % e } ) )
         
         album_uuid          = options.get( 'album_uuid', None )
+        contact_id          = options.get( 'contact_id', None )
         viblio_added_content_id = options['viblio_added_content_id']
-        min_clip_secs       = float( options.get( 'min_clip_secs', 2 ) )
-        max_clip_secs       = float( options.get( 'max_clip_secs', 3 ) )
+
+        # DEBUG
+        min_clip_secs       = float( options.get( 'min_clip_secs', 1 ) )
+        max_clip_secs       = float( options.get( 'max_clip_secs', 24 ) )
         max_input_videos    = int( options.get( 'max_input_videos', 120 ) )
-        max_secs_per_input  = int( options.get( 'max_secs_per_input', 30 ) )
-        max_clips_per_input = int( options.get( 'max_clips_per_input', 1 ) )
-        min_output_secs     = int( options.get( 'min_output_secs', 6 ) )
-        max_output_secs     = int( options.get( 'max_output_secs', 120 ) )
+        max_secs_per_input  = int( options.get( 'max_secs_per_input', 999 ) )
+        max_clips_per_input = int( options.get( 'max_clips_per_input', 999 ) )
+        min_output_secs     = int( options.get( 'min_output_secs', 30 ) )
+        max_output_secs     = int( options.get( 'max_output_secs', 999 ) )
         output_x            = int( options.get( 'output_x', 640 ) )
         output_y            = int( options.get( 'output_y', 360 ) )
+
+        '''
+        min_clip_secs       = float( options.get( 'min_clip_secs', 2 ) )
+        max_clip_secs       = float( options.get( 'max_clip_secs', 6 ) )
+        max_input_videos    = int( options.get( 'max_input_videos', 120 ) )
+        max_secs_per_input  = int( options.get( 'max_secs_per_input', 30 ) )
+        max_clips_per_input = int( options.get( 'max_clips_per_input', 2 ) )
+        min_output_secs     = int( options.get( 'min_output_secs', 30 ) )
+        max_output_secs     = int( options.get( 'max_output_secs', 310 ) )
+        output_x            = int( options.get( 'output_x', 640 ) )
+        output_y            = int( options.get( 'output_y', 360 ) )
+        '''
+
+        if contact_id is not None:
+            contact_id = int( contact_id )
 
         if album_uuid != None:
             workdir = config.faces_dir + '/album_summary/' + album_uuid + '/'
@@ -522,8 +583,9 @@ def run():
             # new attempt up to max_retries times.     
             sqs.delete_message( message )
 
-            ( clips_ok, title ) = generate_clips( album_uuid, 
+            ( clips_ok, title, output_secs ) = generate_clips( album_uuid, 
                                        workdir             = workdir,
+                                       contact_id = contact_id,
                                        min_clip_secs       = min_clip_secs,
                                        max_clip_secs       = max_clip_secs,
                                        max_input_videos    = max_input_videos,
@@ -538,7 +600,7 @@ def run():
                 # Get the list of movies for the current album.
                 title = "Viblio Album Summary: " + title
                 
-                produce_summary_video( album_uuid, workdir, viblio_added_content_id, title.title(), title.title() )
+                produce_summary_video( album_uuid, workdir, viblio_added_content_id, title.title(), title.title(), output_secs )
                 
             log.info( json.dumps( { 'message' : "Completed successfully for album_uuid: %s" % ( album_uuid ) } ) )
             return True
