@@ -37,7 +37,7 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, face_files, **options ):
+def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=None, thumbnail_file=None, face_files=[], **options ):
     '''Adds the video, thumbnail, and poster for the user_uuid.
     
     Each of the video, poster, and thumbanil _file arguments is a dictionary with:
@@ -105,11 +105,20 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
         # Copy video file to S3 location for this user.
         video_uri = '%s/%s_output.%s' % ( media_uuid, media_uuid, video_file['format'] )
         poster_uri = '%s/%s_poster.%s' % ( media_uuid, media_uuid, poster_file['format'] )
-        thumbnail_uri = '%s/%s_thumbnail.%s' % ( media_uuid, media_uuid, thumbnail_file['format'] )
+        if thumbnail_file is not None:
+            thumbnail_uri = '%s/%s_thumbnail.%s' % ( media_uuid, media_uuid, thumbnail_file['format'] )
+
+        if poster_animated is not None:
+            poster_animated_uri = '%s/%s_poster_animated.%s' % ( media_uuid, media_uuid, poster_animated['format'] )
 
         vib.utils.s3.copy_s3_file( video_file['s3_bucket'], video_file['s3_key'], config.bucket_name, video_uri )
         vib.utils.s3.copy_s3_file( poster_file['s3_bucket'], poster_file['s3_key'], config.bucket_name, poster_uri )
-        vib.utils.s3.copy_s3_file( thumbnail_file['s3_bucket'], thumbnail_file['s3_key'], config.bucket_name, thumbnail_uri )
+
+        if thumbnail_file is not None:
+            vib.utils.s3.copy_s3_file( thumbnail_file['s3_bucket'], thumbnail_file['s3_key'], config.bucket_name, thumbnail_uri )
+
+        if poster_animated is not None:
+            vib.utils.s3.copy_s3_file( poster_animated['s3_bucket'], poster_animated['s3_key'], config.bucket_name, poster_animated_uri )
 
         orm = vib.db.orm.get_session()
 
@@ -143,17 +152,18 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
             view_count   = 0 )
         media.assets.append( video_asset )
 
-        thumbnail_uuid = str( uuid.uuid4() )
-        thumbnail_asset = MediaAssets( uuid       = thumbnail_uuid,
-                                       asset_type = 'thumbnail',
-                                       mimetype   = thumbnail_mimetype,
-                                       bytes      = thumbnail_file['bytes'],
-                                       width      = int( thumbnail_x ), 
-                                       height     = int( thumbnail_y ),
-                                       uri        = thumbnail_uri,
-                                       location   = 'us',
-                                       view_count = 0 )
-        media.assets.append( thumbnail_asset )
+        if thumbnail_file is not None:
+            thumbnail_uuid = str( uuid.uuid4() )
+            thumbnail_asset = MediaAssets( uuid       = thumbnail_uuid,
+                                           asset_type = 'thumbnail',
+                                           mimetype   = thumbnail_mimetype,
+                                           bytes      = thumbnail_file['bytes'],
+                                           width      = int( thumbnail_x ), 
+                                           height     = int( thumbnail_y ),
+                                           uri        = thumbnail_uri,
+                                           location   = 'us',
+                                           view_count = 0 )
+            media.assets.append( thumbnail_asset )
 
         poster_uuid = str( uuid.uuid4() )
         poster_asset = MediaAssets( uuid       = poster_uuid,
@@ -166,6 +176,19 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
                                     location   = 'us',
                                     view_count = 0 )
         media.assets.append( poster_asset )
+
+        if poster_animated is not None:
+            poster_animated_uuid = str( uuid.uuid4() )
+            poster_animated_asset = MediaAssets( uuid       = poster_animated_uuid,
+                                                 asset_type = 'poster_animated',
+                                                 mimetype   = 'image/' + poster_animated['format'],
+                                                 bytes      = poster_animated['bytes'],
+                                                 width      = int( poster_x ), # Not a typo.
+                                                 height     = int( poster_y ), # Not a typo.
+                                                 uri        = poster_animated_uri,
+                                                 location   = 'us',
+                                                 view_count = 0 )
+            media.assets.append( poster_animated_asset )
 
         for idx, face in enumerate( face_files ):
             contact_name        = face.get( 'contact_name', 'Viblio Feedback' )
@@ -211,10 +234,8 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, thumbnail_file, 
     except Exception as e:
         if orm != None:
             orm.rollback()
-        log.error( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "Exception was: %s" % e
-                    } ) )
+        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                 'message' : "Exception was: %s" % e } ) )
         raise
 
 def __get_sqs():
@@ -296,6 +317,34 @@ def run():
                 '''
 
             welcome_video_for_user(
+                title = 'Getting Started with VIBLIO',
+                description = 'Your INTELLIGENT Video Library',
+                user_uuid = user_uuid,
+                video_file = { 
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-004/video.mp4', 
+                    'bytes'     : 15820189,
+                    'format'    : 'mp4'
+                    },
+                poster_file = {
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-003/poster.png',
+                    'bytes'     : 10148,
+                    'format'    : 'png'
+                    },
+                face_files = [ 
+                    {
+                        'contact_name' : 'Mona',
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-003/face.png',
+                        'bytes'     : 8954,
+                        'format'    : 'png',
+                        'face_size' : '128x128'
+                        }, 
+                    ]
+                )
+
+            welcome_video_for_user(
                 title = 'Welcome to Viblio',
                 description = 'Your INTELLIGENT Video Library',
                 user_uuid = user_uuid,
@@ -329,6 +378,7 @@ def run():
                     ]
                 )
 
+            '''
             welcome_video_for_user(
                 title = 'Example Video 2',
                 description = 'Rediscover your favorite family videos with Viblio and watch what matters. Reserve your spot now for the revolutionary video-storing and sharing platform at https://viblio.com/signup/',
@@ -378,6 +428,7 @@ def run():
                         } 
                     ]
                 )
+                '''
 
             sqs.delete_message( message )
             return True
