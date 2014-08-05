@@ -202,6 +202,13 @@ def generate_clips( album_uuid,
                     end = float( vi['end_frame'] )/1000
 
                     # Skip clips that are too short.
+
+                    # DEBUG - just extend clips to be 5 seconds if we can.
+                    if end - start < 5:
+                        current = end - start
+                        start = max( 0, start - ( 5.0 - current ) / 2.0 )
+                        end += ( 5.0 - current ) / 2.0
+
                     if end - start < min_clip_secs:
                         log.debug( json.dumps( { 'album_uuid' : album_uuid, 
                                                  'message'   : 'Skipping cut %s-%s because it is shorter than min_clip_secs' % ( start, end ) } ) )
@@ -276,10 +283,18 @@ def generate_clips( album_uuid,
             for idx, track_cut in enumerate( final_cuts ):
                 cut_video = "%s/%s_%s.mp4" % ( workdir, media_uuid, idx )
 
+                # DEBUG - all we care about for now are that the
+                # videos less than 640 wide and 360 high.
                 if input_ratio < output_ratio:
-                    ffmpeg_opts = ' -vf scale=-1:%s,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_y, output_x, output_y )
+                    ffmpeg_opts = ' -vf scale=-1:%s ' % ( output_y )
                 else:
-                    ffmpeg_opts = ' -vf scale=%s:-1,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_x, output_x, output_y )
+                    ffmpeg_opts = ' -vf scale=%s:-1 ' % ( output_x )
+
+                #if input_ratio < output_ratio:
+                #    ffmpeg_opts = ' -vf scale=-1:%s,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_y, output_x, output_y )
+                #else:
+                #    ffmpeg_opts = ' -vf scale=%s:-1,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_x, output_x, output_y )
+
                 cmd = "ffmpeg -y -i %s -ss %s -t %s -r 30000/1001 -an %s %s" % ( movie_file, track_cut[0], track_cut[1]-track_cut[0], ffmpeg_opts, cut_video )
 
                 log.info( json.dumps( { 'album_uuid' : album_uuid, 
@@ -541,7 +556,7 @@ def run():
         viblio_added_content_id = options['viblio_added_content_id']
 
         # DEBUG
-        min_clip_secs       = float( options.get( 'min_clip_secs', 1 ) )
+        min_clip_secs       = float( options.get( 'min_clip_secs', .1 ) )
         max_clip_secs       = float( options.get( 'max_clip_secs', 24 ) )
         max_input_videos    = int( options.get( 'max_input_videos', 120 ) )
         max_secs_per_input  = int( options.get( 'max_secs_per_input', 999 ) )
