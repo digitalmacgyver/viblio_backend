@@ -318,30 +318,26 @@ def run():
 
             welcome_video_for_user(
                 title = 'Getting Started with VIBLIO',
-                description = 'Your INTELLIGENT Video Library',
+                description = 'This is a very short tutorial to help you get started with your new VIBLIO account',
                 user_uuid = user_uuid,
                 video_file = { 
                     's3_bucket' : 'viblio-external',
                     's3_key'    : 'media/video-004/video.mp4', 
-                    'bytes'     : 15820189,
+                    'bytes'     : 17197235,
                     'format'    : 'mp4'
                     },
                 poster_file = {
                     's3_bucket' : 'viblio-external',
-                    's3_key'    : 'media/video-003/poster.png',
-                    'bytes'     : 10148,
+                    's3_key'    : 'media/video-004/poster.png',
+                    'bytes'     : 53510,
                     'format'    : 'png'
                     },
-                face_files = [ 
-                    {
-                        'contact_name' : 'Mona',
-                        's3_bucket' : 'viblio-external',
-                        's3_key'    : 'media/video-003/face.png',
-                        'bytes'     : 8954,
-                        'format'    : 'png',
-                        'face_size' : '128x128'
-                        }, 
-                    ]
+                poster_animated = {
+                    's3_bucket' : 'viblio-external',
+                    's3_key'    : 'media/video-004/poster_animated.gif',
+                    'bytes'     : 301740,
+                    'format'    : 'gif'
+                    },
                 )
 
             welcome_video_for_user(
