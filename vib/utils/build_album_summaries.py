@@ -336,7 +336,7 @@ def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filenam
     if output_secs is not None:
         afade = '-af "afade=t=out:st=%s:d=5"' % ( output_secs - 5 )
 
-    ffmpeg_opts = ' -filter_complex \'[2:0] split [a][b] ; [a] fade=out:duration=5, scale=-1:64 [c] ; [b] fade=in:st=%s:d=1, scale=-1:128 [d] ; [0:v][c] overlay=main_w-overlay_w-10:main_h-overlay_h-10 [x]; [x][d] overlay=trunc((main_w-overlay_w)/2):trunc((main_h-overlay_h)/2)\' ' % ( output_secs-1 )
+    ffmpeg_opts = ' -filter_complex \'[2:0] split [a][b] ; [a] fade=out:st=3:duration=1, scale=-1:64 [c] ; [b] fade=in:st=%s:d=1, scale=-1:128 [d] ; [0:v][c] overlay=main_w-overlay_w-10:main_h-overlay_h-10 [x]; [x][d] overlay=trunc((main_w-overlay_w)/2):trunc((main_h-overlay_h)/2)\' ' % ( output_secs-1 )
 
     cmd = "ffmpeg -y -f concat -i %s -i %s -loop 1 -i %s -r 30000/1001 -c:a libfdk_aac %s %s -shortest %s" % ( cut_file_name, music_file, logo_file, afade, ffmpeg_opts, output_file )
     log.info( json.dumps( { 'album_uuid' : album_uuid, 
