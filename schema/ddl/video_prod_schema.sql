@@ -1620,6 +1620,8 @@ COMMIT;
 START TRANSACTION;
 USE `video_dev`;
 INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('original', NULL, NULL);
+INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_face', NULL, NULL);
+INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_album', NULL, NULL);
 
 COMMIT;
 
@@ -1648,6 +1650,11 @@ INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) V
 INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('original', NULL, NULL);
 INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('thumbnail_animated', NULL, NULL);
 INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('poster_animated', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('face', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_face', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('main_sd', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('poster_original', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_album', NULL, NULL);
 
 COMMIT;
 
