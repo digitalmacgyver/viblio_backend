@@ -1,3 +1,7 @@
+
+
+--
+
 alter table viblio_added_content add column album_id integer null default null after media_user_id;
 alter table viblio_added_content add column album_user_id integer null default null after album_id;
 
