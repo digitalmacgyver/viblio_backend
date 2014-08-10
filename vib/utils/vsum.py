@@ -182,6 +182,8 @@ class Clip( object ):
             self.end = end
 
         self.display = display
+
+        self.pts_offset = 0
         
     def get_duration( self ):
         return self.end - self.start
@@ -219,8 +221,36 @@ class Clip( object ):
             scale_clause += "crop=w=%d:h=%d" % ( window.width, window.height )
 
         elif display.display_style == PAN:
-            # DEBUG, implement
-            pass
+            ( scale, ow, oh ) = self.get_output_dimensions( self.video.width, self.video.height, window.width, window.height, max )
+
+            if scale != 1:
+                scale_clause = "scale=width=%d:height=%d," % ( ow, oh )
+    
+
+            # We need to pan the image if scale != 1.
+            pan_clause = ''
+            if ow > window.width or oh > window.height:
+                # Note - we only want to call this if we're actually
+                # panning, or it will erroneously trigger us to
+                # alternate pan directions.
+                direction = display.get_pan_direction() 
+
+                xpan = ''
+                if ow  > window.width:
+                    xpan = "x=%s" % ( self.get_pan_clause( direction, ow, window.width, self.get_duration(), self.pts_offset ) )
+
+                ypan = ''
+                if oh  > window.height:
+                    ypan = "y=%s" % ( self.get_pan_clause( direction, oh, window.height, self.get_duration(), self.pts_offset ) )
+
+                # NOTE: This logic does not allow both x and y
+                # panning, additional stuff would be required to get
+                # the :'s right in the pan clause if both could be
+                # present.
+                pan_clause = ":%s%s" % ( xpan, ypan )
+
+            scale_clause += "crop=w=%d:h=%d%s" % ( window.width, window.height, pan_clause )
+
         elif display.display_style == CASCADE:
             # DEBUG, implement
             pass
@@ -228,7 +258,20 @@ class Clip( object ):
             raise Exception( "Error, unknown display style: %s" % ( display.display_style ) )
 
         return scale_clause
+
+    def get_pan_clause( self, direction, c, w, duration, pts_offset ):
+        pan_clause = ''
+        if c  > w:
+            pixels_per_sec = float( ( c - w ) ) / duration
+            if direction in [ DOWN, RIGHT ]:
+                pan_clause = "trunc(%f * ( t - 0*%f ) )" % ( pixels_per_sec, self.pts_offset )
+            elif direction in [ UP, LEFT ]:
+                pan_clause = "%d-trunc(%f * ( t - 0*%f ) )" % ( w - c, pixels_per_sec, self.pts_offset )
+            else:
+                raise Exception( "Could not determine pan direction." )
             
+        return pan_clause
+
     def get_output_dimensions( self, cw, ch, ww, wh, operator ):
         scale = operator( float( ww ) / cw, float( wh ) / ch )
         ow = int( cw * scale )
@@ -376,6 +419,7 @@ class Window( object ):
             ilabel = Window.video_inputs[clip.video.filename]
             olabel = clip.label
             
+            clip.pts_offset = pts_offset
             scale_clause = clip.get_scale_clause( self )
 
             cmd += ' [%s] trim=start=%s:end=%s:duration=%s,setpts=PTS-STARTPTS+%s/TB,%s [%s] ; ' % ( ilabel, clip.start, clip.end, clip.get_duration(), pts_offset, scale_clause, olabel )
@@ -395,7 +439,9 @@ if __name__ == '__main__':
     
     # ??? Loop
 
-    # Crop
+    # DEBUG - pan is sort of working, the problem perhaps relates to
+    # timestamps?  Up and down seem to be inverted as well.
+
     # Zoom/pan
     # Cascade
     # Total duration
@@ -404,7 +450,7 @@ if __name__ == '__main__':
     # Watermark
 
     # This much is basically working.
-    d = _Display( display_style = CROP )
+    d = _Display( display_style = PAN )
 
     w1 = Window( display = d )
     w2 = Window( width=200, height=200, x=1080, y=520 )
