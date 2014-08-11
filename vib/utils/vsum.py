@@ -264,9 +264,9 @@ class Clip( object ):
         if c  > w:
             pixels_per_sec = float( ( c - w ) ) / duration
             if direction in [ DOWN, RIGHT ]:
-                pan_clause = "trunc(%f * ( t - 0*%f ) )" % ( pixels_per_sec, self.pts_offset )
+                pan_clause = "trunc(%f * ( t - %f ) )" % ( pixels_per_sec, self.pts_offset )
             elif direction in [ UP, LEFT ]:
-                pan_clause = "%d-trunc(%f * ( t - 0*%f ) )" % ( w - c, pixels_per_sec, self.pts_offset )
+                pan_clause = "%d-trunc(%f * ( t - %f ) )" % ( c - w, pixels_per_sec, self.pts_offset )
             else:
                 raise Exception( "Could not determine pan direction." )
             
@@ -439,10 +439,6 @@ if __name__ == '__main__':
     
     # ??? Loop
 
-    # DEBUG - pan is sort of working, the problem perhaps relates to
-    # timestamps?  Up and down seem to be inverted as well.
-
-    # Zoom/pan
     # Cascade
     # Total duration
     # Audio
@@ -452,8 +448,8 @@ if __name__ == '__main__':
     # This much is basically working.
     d = _Display( display_style = PAN )
 
-    w1 = Window( display = d )
-    w2 = Window( width=200, height=200, x=1080, y=520 )
+    w1 = Window( display = d, height=1280, width=720 )
+    w2 = Window( width=200, height=200, x=520, y=520 )
     v1 = Video( 'test.mp4' )
     v2 = Video( 'flip.mp4' )
 
