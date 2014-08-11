@@ -649,7 +649,6 @@ filename        : %s
 title           : %s
 media_uuid / id : %s / %s
 
-
 reason          :
 =================
 %s
@@ -667,8 +666,18 @@ Error messages:<br />
 Event history:<br />
 <a href="%s">%s</a>
 </p>
+<pre>
+Download reproducer:
+
+cd ~/video_processor/vib
+source setup-env.sh
+cd utils
+python -i s3.py
+download_file( '/wintmp/problems/%s', '%s', '%s/%s' )
+</pre>
+
 </body>
-''' % ( config.VPWSuffix, user_uuid, user_id, user_email, filename, title, media_uuid, media_id, reason, workflow_stages, loggly_errors, loggly_errors, loggly_events, loggly_events )
+''' % ( config.VPWSuffix, user_uuid, user_id, user_email, filename, title, media_uuid, media_id, reason, workflow_stages, loggly_errors, loggly_errors, loggly_events, loggly_events, filename, config.bucket_name, media_uuid, media_uuid )
 
             connection = boto.sqs.connect_to_region( config.sqs_region, aws_access_key_id = config.awsAccess, aws_secret_access_key = config.awsSecret )
             queue = connection.get_queue( config.email_queue )

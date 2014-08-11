@@ -59,7 +59,7 @@ CASCADE_DIRECTIONS = [ DOWN, LEFT, RIGHT, UP ]
 ALTERNATE = "alternate"
 PAN_DIRECTIONS = [ ALTERNATE, DOWN, UP ]
 
-class _Display( object ):
+class Display( object ):
     def __init__( self, 
                   cascade_concurrency = 4,
                   cascade_direction   = DOWN,
@@ -184,21 +184,20 @@ class Clip( object ):
         self.display = display
 
         self.pts_offset = 0
+
+        self.width = None
+        self.height = None
         
     def get_duration( self ):
         return self.end - self.start
 
     def get_scale_clause( self, window ):
-        display = None
-        if self.display is not None:
-            display = self.display
-        elif window.display is not None:
-            display = window.display
-        else:
-            display = _Display()
+        display = get_display( self, window )
 
         if display.display_style == PAD:
             ( scale, ow, oh ) = self.get_output_dimensions( self.video.width, self.video.height, window.width, window.height, min )
+            self.width = ow
+            self.height = oh
 
             xterm = ""
             if ow != window.width:
@@ -214,6 +213,8 @@ class Clip( object ):
             scale_clause += "pad=width=%d:height=%d%s%s:color=%s" % ( window.width, window.height, xterm, yterm, display.pad_bgcolor )
         elif display.display_style == CROP:
             ( scale, ow, oh ) = self.get_output_dimensions( self.video.width, self.video.height, window.width, window.height, max )
+            self.width = ow
+            self.height = oh
 
             if scale != 1:
                 scale_clause = "scale=width=%d:height=%d," % ( ow, oh )
@@ -222,6 +223,8 @@ class Clip( object ):
 
         elif display.display_style == PAN:
             ( scale, ow, oh ) = self.get_output_dimensions( self.video.width, self.video.height, window.width, window.height, max )
+            self.width = ow
+            self.height = oh
 
             if scale != 1:
                 scale_clause = "scale=width=%d:height=%d," % ( ow, oh )
@@ -237,11 +240,11 @@ class Clip( object ):
 
                 xpan = ''
                 if ow  > window.width:
-                    xpan = "x=%s" % ( self.get_pan_clause( direction, ow, window.width, self.get_duration(), self.pts_offset ) )
+                    xpan = "x=%s" % ( self.get_pan_clause( direction, ow, window.width ) )
 
                 ypan = ''
                 if oh  > window.height:
-                    ypan = "y=%s" % ( self.get_pan_clause( direction, oh, window.height, self.get_duration(), self.pts_offset ) )
+                    ypan = "y=%s" % ( self.get_pan_clause( direction, oh, window.height ) )
 
                 # NOTE: This logic does not allow both x and y
                 # panning, additional stuff would be required to get
@@ -252,14 +255,23 @@ class Clip( object ):
             scale_clause += "crop=w=%d:h=%d%s" % ( window.width, window.height, pan_clause )
 
         elif display.display_style == CASCADE:
-            # DEBUG, implement
-            pass
+                scale = random.uniform( 1.0/2, 1.0/6 )
+                # Set the width to be randomly between 1/2 and 1/6th
+                # of the window width, and the height so the aspect
+                # ratio is retained.
+                ow = 2*int( window.width*scale / 2 )
+                oh = 2*int( self.video.height * ow / ( self.video.width * 2 ) )
+                self.width = ow
+                self.height = oh
+
+                scale_clause = "scale=width=%d:height=%d" % ( ow, oh )
         else:
             raise Exception( "Error, unknown display style: %s" % ( display.display_style ) )
 
         return scale_clause
 
-    def get_pan_clause( self, direction, c, w, duration, pts_offset ):
+    def get_pan_clause( self, direction, c, w ):
+        duration = self.get_duration()
         pan_clause = ''
         if c  > w:
             pixels_per_sec = float( ( c - w ) ) / duration
@@ -300,7 +312,8 @@ class Watermark( object ):
                   scale = "",
                   x = 0,
                   y = 0,
-                  fade = "" ):
+                  fade = "",
+                  loop = "" ):
 
         if not os.path.exists( filename ):
             raise Exception( "No watermark media found at: %s" % ( filename ) )
@@ -315,9 +328,10 @@ class Watermark( object ):
 class Window( object ):
     idx = 0
     z = 0
-    video_inputs = {}
+    media_inputs = {}
     layer_idx = 0
     prior_overlay = None
+    total_duration = 0
 
     def __init__( self,
                   windows = None,
@@ -375,7 +389,9 @@ class Window( object ):
         if display is not None:
             self.display = display
         else:
-            self.display = _Display()
+            self.display = Display()
+
+        self.cascade_completions = []
 
     def render( self ):
         '''Where the magic happens.'''
@@ -386,18 +402,39 @@ class Window( object ):
         if len( self.windows ) == 0 and len( self.clips ) == 0:
             raise Exception( "Can't render with no clips and no child windows." )
 
-        cmd = '%s -y -an ' % ( FFMPEG )
+        cmd = '%s -y -r 30000/1001 -c:a libfdk_acc -an ' % ( FFMPEG )
+        video_count = 1
         for idx, video in enumerate( sorted( Video.videos.keys() ) ):
             cmd += " -i %s " % ( video )
-            Window.video_inputs[video] = '%d:v' % ( idx )
+            Window.media_inputs[video] = '%d:v' % ( idx )
+            video_count = idx
+
+        for idx, watermark in enumerate( self.watermarks ):
+            cmd += " -i %s %s " % ( watermark.filename, watermark.loop )
+            Window.media_inputs[watermark.filename] = '%d:v' % ( video_count + idx )
+
+        # DEBUG
+        #cmd += " -i %s " % ( self.audio_filename )
+        #Window.media_inputs[self.audio_filename] = '%d:a' % ( video_count + len( self.watermarks ) )
+
             
         cmd += ' -filter_complex " color=%s:size=%sx%s [base_%s] ; ' % ( self.bgcolor, self.width, self.height, self.label )
 
         cmd += self.render_window()
 
+        cmd += self.add_watermarks()
+
         # DEBUG - actually handle the tail end here.
         # DEBUG - actually get to correct duration here.
-        return cmd[:-8] + ' " -t 10 -strict -2 output.mp4'
+        return cmd[:-8] + ' " -t %d -strict -2 output.mp4' % ( Window.total_duration )
+
+    def add_watermarks( self ):
+        cmd = ""
+        # DEBUG - actually do something here.
+        for watermark in self.watermarks:
+            cmd += "[%s] %s"
+
+        return cmd
 
     def render_window( self ):
         # We render clips first, then windows on top of them.
@@ -416,40 +453,81 @@ class Window( object ):
         cmd = ''
         pts_offset = 0
         for clip in self.clips:
-            ilabel = Window.video_inputs[clip.video.filename]
+            ilabel = Window.media_inputs[clip.video.filename]
             olabel = clip.label
-            
-            clip.pts_offset = pts_offset
+
+            display = get_display( clip, self )
+
+            # Compute the PST offset for this clip.
+            if display.display_style != CASCADE:
+                clip.pts_offset = pts_offset
+                pts_offset += clip.get_duration()
+                if pts_offset > Window.total_duration:
+                    Window.total_duration = pts_offset
+            else:
+                # It's complicated if this is a cascading clip.
+                if len( self.cascade_completions ) < display.cascade_concurrency:
+                    if len( self.cascade_completions ):
+                        clip.pts_offset = min( self.cascade_completions )
+                    else:
+                        clip.pts_offset = 0
+                    self.cascade_completions.append( clip.pts_offset + clip.get_duration() )
+                else:
+                    # Determine when we can begin the next cascade.
+                    clip.pts_offset = min( self.cascade_completions )
+                    # Remove clips that will end at that offset.
+                    while self.cascade_completions.count( clip.pts_offset ):
+                        self.cascade_completions.remove( clip.pts_offset )
+                    self.cascade_completions.append( clip.pts_offset + clip.get_duration() )
+                if max( self.cascade_completions ) > Window.total_duration:
+                    Window.total_duration = max( self.cascade_completions )
+
             scale_clause = clip.get_scale_clause( self )
 
-            cmd += ' [%s] trim=start=%s:end=%s:duration=%s,setpts=PTS-STARTPTS+%s/TB,%s [%s] ; ' % ( ilabel, clip.start, clip.end, clip.get_duration(), pts_offset, scale_clause, olabel )
-            pts_offset += clip.get_duration()
-    
-        # Overlay them onto base
-        if not Window.prior_overlay:
-            Window.prior_overlay = 'base_%s' % ( self.label )
-        for idx, clip in enumerate( self.clips ):
-            cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, self.x, self.y, Window.layer_idx )
+            cmd += ' [%s] trim=start=%s:end=%s:duration=%s,setpts=PTS-STARTPTS+%s/TB,%s [%s] ; ' % ( ilabel, clip.start, clip.end, clip.get_duration(), clip.pts_offset, scale_clause, olabel )
+            
+            # Overlay them onto one another
+            if not Window.prior_overlay:
+                Window.prior_overlay = 'base_%s' % ( self.label )
+            for idx, clip in enumerate( self.clips ):
+                if display.display_style != CASCADE:
+                    cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, self.x, self.y, Window.layer_idx )
+                else:
+                    # DEBUG - handle different directions.
+
+                    # DEBUG - I HAVE A BUG HERE, BUT ALSO THERE IS A BUG WHEN A SINGLE CLIP IS USED IN DIFFERENT PLACES, WITH IT ONLY HAVING 1 WIDTH, PTS OFFSET, ETC.
+                    x = self.x + random.randint( 0, self.width - clip.width )
+                    y = "'%d + if( gte(t,%d), -h(t-%d)*%f, NAN)'" % ( self.y, clip.pts_offset, clip.pts_offset, float( self.height+clip.height ) / clip.get_duration() )
+                    cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, x, y, Window.layer_idx )
             Window.prior_overlay = 'o%d' % ( Window.layer_idx )
             Window.layer_idx += 1
 
         return cmd
+
+def get_display( clip, window ):
+    if clip.display is not None:
+        return clip.display
+    elif window.display is not None:
+        return window.display
+    else:
+        return Display()
         
 if __name__ == '__main__':
     
     # ??? Loop
 
-    # Cascade
-    # Total duration
+    # ??? Cascade
+
     # Audio
     # Distribute clips
     # Watermark
 
     # This much is basically working.
-    d = _Display( display_style = PAN )
+    d = Display( display_style = PAN )
 
     w1 = Window( display = d, height=1280, width=720 )
     w2 = Window( width=200, height=200, x=520, y=520 )
+    w3 = Window( display=Display( display_style=CASCADE ), bgcolor='White', width=1280, height=1024 )
     v1 = Video( 'test.mp4' )
     v2 = Video( 'flip.mp4' )
 
@@ -457,12 +535,17 @@ if __name__ == '__main__':
     c2 = Clip( v1, 7, 8 )
     c3 = Clip( v2, 5, 6 )
 
+
+
     w2.clips = [ c3 ]
 
     w1.clips = [ c1, c2 ]
     w1.windows = [ w2 ]
 
-    print w1.render()
+    w3.windows = [ w1 ]
+
+    w3.clips = [ c2, c3, c1 ]
+    print w3.render()
 
             
         
