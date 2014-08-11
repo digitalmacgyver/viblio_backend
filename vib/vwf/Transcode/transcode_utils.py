@@ -161,7 +161,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
         
     # Add in a hard coded command to get some high resolution, rotated
     # images for making albums.
-    output_cmd += image_opts + ' -f image2 %s/%s-image-%%04d.jpg' % ( config.transcode_dir, media_uuid )
+    output_cmd += image_opts + ' -qscale:v 2 %s/%s-image-%%04d.jpg' % ( config.transcode_dir, media_uuid )
 
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s' % ( input_filename, output_cmd )
     log.info( json.dumps( { 'media_uuid' : media_uuid,
