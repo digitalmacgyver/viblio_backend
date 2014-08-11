@@ -8,6 +8,7 @@ import datetime
 import json
 import logging
 import mixpanel
+import os
 import pprint
 import time
 
@@ -639,6 +640,8 @@ def _update_media_status( media_uuid, status, user_uuid, reason="Unknown" ):
                 subject += ": "
             subject += "'%s', %s, %s" % ( title[:20], user_email, reason )
 
+            error_filename = media_id + os.path.splitext( filename )[-1]
+
             body = '''
 <body>
 <pre>
@@ -677,7 +680,7 @@ download_file( '/wintmp/problems/%s', '%s', '%s/%s' )
 </pre>
 
 </body>
-''' % ( config.VPWSuffix, user_uuid, user_id, user_email, filename, title, media_uuid, media_id, reason, workflow_stages, loggly_errors, loggly_errors, loggly_events, loggly_events, filename, config.bucket_name, media_uuid, media_uuid )
+''' % ( config.VPWSuffix, user_uuid, user_id, user_email, filename, title, media_uuid, media_id, reason, workflow_stages, loggly_errors, loggly_errors, loggly_events, loggly_events, error_filename, config.bucket_name, media_uuid, media_uuid )
 
             connection = boto.sqs.connect_to_region( config.sqs_region, aws_access_key_id = config.awsAccess, aws_secret_access_key = config.awsSecret )
             queue = connection.get_queue( config.email_queue )
