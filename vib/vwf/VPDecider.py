@@ -640,7 +640,7 @@ def _update_media_status( media_uuid, status, user_uuid, reason="Unknown" ):
                 subject += ": "
             subject += "'%s', %s, %s" % ( title[:20], user_email, reason )
 
-            error_filename = media_id + os.path.splitext( filename )[-1]
+            error_filename = str( media_id ) + os.path.splitext( filename )[-1]
 
             body = '''
 <body>
