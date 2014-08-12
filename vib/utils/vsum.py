@@ -346,7 +346,8 @@ class Window( object ):
                   z_index = None,
                   watermarks = None,
                   audio_filename = None,
-                  display = None ):
+                  display = None,
+                  extend_duration = 0.1 ):
 
         self.label = "w%d" % ( Window.idx )
         Window.idx += 1
@@ -391,32 +392,37 @@ class Window( object ):
         else:
             self.display = Display()
 
+        self.extend_duration = extend_duration
+
         self.cascade_completions = []
+        self.cascade_filled = False
+
+
 
     def render( self ):
-        '''Where the magic happens.'''
-
         #import pdb
         #pdb.set_trace()
 
         if len( self.windows ) == 0 and len( self.clips ) == 0:
             raise Exception( "Can't render with no clips and no child windows." )
 
-        cmd = '%s -y -r 30000/1001 -c:a libfdk_acc -an ' % ( FFMPEG )
-        video_count = 1
+        # DEBUG
+        cmd = '%s -y -r 30000/1001 ' % ( FFMPEG )
         for idx, video in enumerate( sorted( Video.videos.keys() ) ):
             cmd += " -i %s " % ( video )
             Window.media_inputs[video] = '%d:v' % ( idx )
-            video_count = idx
+
+        video_count = len( Video.videos.keys() )
 
         for idx, watermark in enumerate( self.watermarks ):
             cmd += " -i %s %s " % ( watermark.filename, watermark.loop )
             Window.media_inputs[watermark.filename] = '%d:v' % ( video_count + idx )
 
-        # DEBUG
-        #cmd += " -i %s " % ( self.audio_filename )
-        #Window.media_inputs[self.audio_filename] = '%d:a' % ( video_count + len( self.watermarks ) )
-
+        # DEBUG - add some kind of afade  '-af "afade=t=out:st=%s:d=5"'
+        # DEBUG - get libfdk_aac working with new ffmpeg, or fix buffer overflow problems.
+        #cmd += " -i %s -c:a libfdk_aac " % ( self.audio_filename )
+        cmd += " -i %s " % ( self.audio_filename )
+        Window.media_inputs[self.audio_filename] = '%d:a' % ( video_count + len( self.watermarks ) )
             
         cmd += ' -filter_complex " color=%s:size=%sx%s [base_%s] ; ' % ( self.bgcolor, self.width, self.height, self.label )
 
@@ -424,9 +430,9 @@ class Window( object ):
 
         cmd += self.add_watermarks()
 
-        # DEBUG - actually handle the tail end here.
-        # DEBUG - actually get to correct duration here.
-        return cmd[:-8] + ' " -t %d -strict -2 output.mp4' % ( Window.total_duration )
+        audio_fade_start = max( 0, Window.total_duration + self.extend_duration - 5 )
+        audio_fade_duration = Window.total_duration + self.extend_duration - audio_fade_start
+        return cmd + ' [%s] afade=t=out:st=%f:d=%f [audio] " -map [%s] -map [audio] -t %f -strict -2 output.mp4' % ( Window.media_inputs[self.audio_filename], audio_fade_start, audio_fade_duration, Window.prior_overlay, Window.total_duration + self.extend_duration )
 
     def add_watermarks( self ):
         cmd = ""
@@ -449,6 +455,8 @@ class Window( object ):
         return cmd
 
     def add_clips( self, clips ):
+        '''Where the magic happens.'''
+
         # Build up our library of clips.
         cmd = ''
         pts_offset = 0
@@ -467,11 +475,13 @@ class Window( object ):
             else:
                 # It's complicated if this is a cascading clip.
                 if len( self.cascade_completions ) < display.cascade_concurrency:
-                    if len( self.cascade_completions ):
+                    if self.cascade_filled:
                         clip.pts_offset = min( self.cascade_completions )
                     else:
                         clip.pts_offset = 0
                     self.cascade_completions.append( clip.pts_offset + clip.get_duration() )
+                    if len( self.cascade_completions ) == display.cascade_concurrency:
+                        self.cascade_filled = True
                 else:
                     # Determine when we can begin the next cascade.
                     clip.pts_offset = min( self.cascade_completions )
@@ -486,19 +496,31 @@ class Window( object ):
 
             cmd += ' [%s] trim=start=%s:end=%s:duration=%s,setpts=PTS-STARTPTS+%s/TB,%s [%s] ; ' % ( ilabel, clip.start, clip.end, clip.get_duration(), clip.pts_offset, scale_clause, olabel )
             
-            # Overlay them onto one another
-            if not Window.prior_overlay:
-                Window.prior_overlay = 'base_%s' % ( self.label )
-            for idx, clip in enumerate( self.clips ):
-                if display.display_style != CASCADE:
-                    cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, self.x, self.y, Window.layer_idx )
-                else:
-                    # DEBUG - handle different directions.
+        # Overlay them onto one another
+        if not Window.prior_overlay:
+            Window.prior_overlay = 'base_%s' % ( self.label )
+        for idx, clip in enumerate( self.clips ):
+            display = get_display( clip, self )
 
-                    # DEBUG - I HAVE A BUG HERE, BUT ALSO THERE IS A BUG WHEN A SINGLE CLIP IS USED IN DIFFERENT PLACES, WITH IT ONLY HAVING 1 WIDTH, PTS OFFSET, ETC.
+            if display.display_style != CASCADE:
+                cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, self.x, self.y, Window.layer_idx )
+            else:
+                direction = display.cascade_direction
+
+                if direction in [ UP, DOWN ]:
                     x = self.x + random.randint( 0, self.width - clip.width )
-                    y = "'%d + if( gte(t,%d), -h(t-%d)*%f, NAN)'" % ( self.y, clip.pts_offset, clip.pts_offset, float( self.height+clip.height ) / clip.get_duration() )
-                    cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, x, y, Window.layer_idx )
+                    if direction == UP:
+                        y = "'%d + if( gte(t,%d), H-(t-%d)*%f, NAN)'" % ( self.y, clip.pts_offset, clip.pts_offset, float( self.height+clip.height ) / clip.get_duration() )
+                    elif direction == DOWN:
+                        y = "'%d + if( gte(t,%d), -h+(t-%d)*%f, NAN)'" % ( self.y, clip.pts_offset, clip.pts_offset, float( self.height+clip.height ) / clip.get_duration() )
+                else:
+                    y = self.y + random.randint( 0, self.height - clip.height )
+                    if direction == LEFT:
+                        x = "'%d + if( gte(t,%d), -w+(t-%d)*%f, NAN)'" % ( self.x, clip.pts_offset, clip.pts_offset, float( self.width+clip.width ) / clip.get_duration() )
+                    elif direction == RIGHT:
+                        x = "'%d + if( gte(t,%d), W-(t-%d)*%f, NAN)'" % ( self.x, clip.pts_offset, clip.pts_offset, float( self.width+clip.width ) / clip.get_duration() )
+
+                cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, x, y, Window.layer_idx )
             Window.prior_overlay = 'o%d' % ( Window.layer_idx )
             Window.layer_idx += 1
 
@@ -516,25 +538,38 @@ if __name__ == '__main__':
     
     # ??? Loop
 
-    # ??? Cascade
-
-    # Audio
     # Distribute clips
     # Watermark
 
+    # DEBUG:
+    # [Parsed_overlay_31 @ 0x1da5180] [framesync @ 0x1da5d68] Buffer queue overflow, dropping.
+
+    # DEBUG - I HAVE A BUG HERE, BUT ALSO THERE IS A BUG WHEN A SINGLE
+    # CLIP IS USED IN DIFFERENT PLACES, WITH IT ONLY HAVING 1 WIDTH,
+    # PTS OFFSET, ETC.
+
+    # DEBUG - The use of static counters on leads to including all
+    # videos as ffmpeg input arguments whether or not the window being
+    # rendered needs them.
+
     # This much is basically working.
     d = Display( display_style = PAN )
-
+    
+    w0 = Window( width=1280, height=1024, audio_filename='/wintmp/music/human405.m4a' )
     w1 = Window( display = d, height=1280, width=720 )
     w2 = Window( width=200, height=200, x=520, y=520 )
-    w3 = Window( display=Display( display_style=CASCADE ), bgcolor='White', width=1280, height=1024 )
+    w3 = Window( display=Display( display_style=CASCADE, cascade_direction=RIGHT ), bgcolor='White', width=1280, height=1024 )
     v1 = Video( 'test.mp4' )
     v2 = Video( 'flip.mp4' )
 
     c1 = Clip( v1, 1, 3 )
     c2 = Clip( v1, 7, 8 )
     c3 = Clip( v2, 5, 6 )
-
+    c4 = Clip( v1, 4, 9, display=Display( display_style=CASCADE, cascade_direction = UP ) )
+    c5 = Clip( v2, 0, 1, display=Display( display_style=CASCADE, cascade_direction = DOWN ) )
+    c6 = Clip( v2, 1, 2, display=Display( display_style=CASCADE, cascade_direction = LEFT ) )
+    c7 = Clip( v2, 2, 3, display=Display( display_style=CASCADE, cascade_direction = RIGHT ) )
+    c8 = Clip( v2, 3, 5 )
 
 
     w2.clips = [ c3 ]
@@ -542,10 +577,15 @@ if __name__ == '__main__':
     w1.clips = [ c1, c2 ]
     w1.windows = [ w2 ]
 
-    w3.windows = [ w1 ]
+    # DEBUG -when just the below is set we get the bad ffmpeg -i behavior.
+    #w3.clips = [ c4 ]
 
-    w3.clips = [ c2, c3, c1 ]
-    print w3.render()
+    w3.clips = [ c4, c5, c6, c7, c8 ]
+
+    w0.windows = [ w1, w3 ]
+    
+    print w0.render()
+    
 
             
         
