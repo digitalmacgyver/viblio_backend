@@ -35,9 +35,110 @@ log.addHandler( consolelog )
 # DEBUG - fix this.
 FFMPEG = '/home/viblio/ffmpeg/git/ffmpeg/ffmpeg'
 
-def distribute_clips( clips=[], windows=[] ):
-    pass
+def distribute_clips( clips, windows, min_duration=None ):
+    '''Distribute clips to windows.
+    
+    This attempts to place clips in the window whose aspect ratio is a
+    close match for the clip, while also balancing the total content
+    duration of the clips in the windows (note: this can be different
+    from the total duration of the rendered window when cascading
+    clips are used).
 
+    If min_duration is != None, then the clips will continually be
+    recycled until the min_duration is met.
+    '''
+    
+    window_stats = []
+    for window in windows:
+        ar = float( window.width ) / window.height
+        duration = 0
+        window_stats.append( { 'window'   : window,
+                               'ar'       : ar,
+                               'duration' : duration } )
+
+    def add_clips_helper( clone = False ):
+        for orig_clip in clips:
+            if clone:
+                clip = Clip( clone=True, clip=orig_clip )
+            else:
+                clip = orig_clip
+                
+            ar = float( clip.video.width ) / clip.video.height
+            duration = clip.get_duration()
+
+            window_durations = [ compute_window_duration( x.clips, x ) for x in windows ]
+            min_window_duration = min( window_durations )
+
+            # Sort candidate windows by increasing AR match and then by increasing duration.
+            window_stats.sort( key=lambda x: ( abs( x['ar'] - ar ), x['duration'] ) )
+        
+            # Find a window to add this clip to, while maintaining this
+            # constraint:
+            #
+            # Find the first window sorted by closest aspect ratio and
+            # then duration so long as adding this clip to the window so
+            # long as:
+            # window.duration + clip.duration > 2*(min_window_duration + clip.duration)
+            # window.duration < min_duration
+            clip_added = False
+            for window in window_stats:
+                if ( window['duration'] + duration ) <= 2*( min_window_duration + duration ):
+                    if min_duration is None or window['duration'] < min_duration:
+                        window['window'].clips.append( clip )
+                        window['duration'] = compute_window_duration( window['window'].clips, window['window'] )
+                        clip_added = True
+                        break
+                  
+            if not clip_added and min_duration is None:
+                raise Exception( "Failed to place clip %s in a window." % ( clip.label ) )
+
+    if min_duration is None:
+        add_clips_helper()
+    else:
+        add_clips_helper()
+        window_durations = [ compute_window_duration( x.clips, x ) for x in windows ]
+        while min( window_durations ) < min_duration:
+            window_durations = [ compute_window_duration( x.clips, x ) for x in windows ]
+            add_clips_helper( clone = True )
+
+def compute_window_duration( clips, window, cascade_concurrency=None ):
+    '''Don't actually do anything, just report how long the clips will
+    take to render in this window.'''
+
+    duration = 0
+    pts_offset = 0
+    cascade_completions = []
+    cascade_filled = False
+    for clip in clips:
+        display = get_display( clip, window )
+
+        # Compute the PST offset for this clip.
+        if display.display_style != CASCADE:
+            pts_offset += clip.get_duration()
+            if pts_offset > duration:
+                duration = pts_offset
+        else:
+            # It's complicated if this is a cascading clip.
+            cascade_pts_offset = 0
+            if len( cascade_completions ) < display.cascade_concurrency:
+                if cascade_filled:
+                    cascade_pts_offset = min( cascade_completions )
+                else:
+                    cascade_pts_offset = 0
+                cascade_completions.append( cascade_pts_offset + clip.get_duration() )
+                if len( cascade_completions ) == display.cascade_concurrency:
+                    cascade_filled = True
+            else:
+                # Determine when we can begin the next cascade.
+                cascade_pts_offset = min( cascade_completions )
+                # Remove clips that will end at that offset.
+                while cascade_completions.count( cascade_pts_offset ):
+                    cascade_completions.remove( cascade_pts_offset )
+                cascade_completions.append( cascade_pts_offset + clip.get_duration() )
+            if max( cascade_completions ) > duration:
+                duration = max( cascade_completions )
+
+    return duration
 
 # Some constants
 
@@ -149,13 +250,11 @@ class Video( object ):
             self.height = Video.videos[filename][height]
             self.duration = Video.videos[filename][duration]
         else:
-            # DEBUG
-            # ffmpeg -i and re to get the relevant data for the video.
-            # Assign instance variables.
-            self.duration = 10.01
-            self.width = 720
-            self.height = 576
-            #DEBUG
+            ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
+            info = json.loads( output )
+            self.duration = info['format']['duration']
+            self.width = info['streams'][0]['width']
+            self.height = info['streams'][0]['height']
             Video.videos[filename] = { 'width'    : self.width,
                                        'height'   : self.height,
                                        'duration' : self.duration }
@@ -164,30 +263,55 @@ class Clip( object ):
     idx = 0
 
     def __init__( self,
-                  video,
+                  video               = None,
                   start               = 0,
                   end                 = None,
-                  display             = None ):
+                  display             = None,
+                  clone               = False,
+                  clip           = None ):
+        if not clone:
+            if video is None:
+                raise Exception( "Clip consturctor requires either a video argument, or clone and clip arguments." )
+
+            self.label = "c%d" % ( Clip.idx )
+            Clip.idx += 1
+            
+            self.video = video
+            
+            self.start = start
+            
+            if end is None:
+                self.end = video.duration
+            else:
+                self.end = end
+
+            self.display = display
+            
+            self.pts_offset = 0
+            
+            self.width = None
+            self.height = None
+        else:
+            if clip is not None:
+                self.clone( clip )
+            else:
+                raise Exception( "Must provide clip argument if clone is true." )
         
+    def clone( self, clip ):
         self.label = "c%d" % ( Clip.idx )
         Clip.idx += 1
         
-        self.video = video
+        self.video = clip.video
+        self.start = clip.start
+        self.end = clip.end
+        self.display = clip.display
 
-        self.start = start
-
-        if end is None:
-            self.end = video.duration
-        else:
-            self.end = end
-
-        self.display = display
-
+        # These fields are calculated for the object during rendinging
+        # in a window, so we don't clone them.
         self.pts_offset = 0
-
         self.width = None
         self.height = None
-        
+
     def get_duration( self ):
         return self.end - self.start
 
@@ -304,26 +428,42 @@ class Clip( object ):
 
         return ( scale, ow, oh )
 
-
-                  
+# Note - I had intended to offer scale arguments for watermark, but
+# ran across FFMPEG bugs (segmentation faults, memory corruption) when
+# using the FFMPEG scale filter on PNG images, so I left it out.
 class Watermark( object ):
+    watermarks = {}
+    idx = 0
+
     def __init__( self, 
                   filename,
-                  scale = "",
-                  x = 0,
-                  y = 0,
-                  fade = "",
-                  loop = "" ):
+                  x = "",
+                  y = "",
+                  fade_in_start = None,     # Negative values are taken relative to the end of the video
+                  fade_in_duration = None,
+                  fade_out_start = None,    # Negative values are taken relative to end of video.
+                  fade_out_duration = None ):
 
         if not os.path.exists( filename ):
             raise Exception( "No watermark media found at: %s" % ( filename ) )
         else:
             self.filename = filename
 
-        self.scale = scale
         self.x = x
         self.y = y
-        self.fade = fade
+        self.fade_in_start = fade_in_start
+        self.fade_in_duration = fade_in_duration
+        self.fade_out_start = fade_out_start
+        self.fade_out_duration = fade_out_duration
+        
+        self.label = "w%d" % ( Watermark.idx )
+        Watermark.idx += 1
+
+        # We only store each watermark media input once no matter how
+        # many times it is used.
+        if filename not in Watermark.watermarks:
+            Watermark.watermarks[filename] = True
+
 
 class Window( object ):
     idx = 0
@@ -331,7 +471,7 @@ class Window( object ):
     media_inputs = {}
     layer_idx = 0
     prior_overlay = None
-    total_duration = 0
+    target_duration = None
 
     def __init__( self,
                   windows = None,
@@ -341,13 +481,17 @@ class Window( object ):
                   height = 720,
                   x = 0,
                   y = 0,
-                  loop = True,
-                  duration = None,
+                  duration = None, # The total rendered duration,
+                                   # defaults to that of the audio
+                                   # track. Short values may lead to
+                                   # some clips never being visible,
+                                   # long values may lead to empty
+                                   # screen once all clips have been
+                                   # shown.
                   z_index = None,
                   watermarks = None,
                   audio_filename = None,
-                  display = None,
-                  extend_duration = 0.1 ):
+                  display = None ):
 
         self.label = "w%d" % ( Window.idx )
         Window.idx += 1
@@ -367,8 +511,6 @@ class Window( object ):
         self.height   = height
         self.x        = x
         self.y        = y
-        self.loop     = loop
-        self.duration = duration
 
         if z_index is not None:
             self.z_index = z_index
@@ -386,18 +528,28 @@ class Window( object ):
                 raise Exception( "No audio found at: %s" % ( audio_filename ) )
             else:
                 self.audio_filename = audio_filename
+                ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format %s" % ( audio_filename ) )
+                audio_info = json.loads( output )
+                self.audio_duration = float( audio_info['format']['duration'] )
+        else:
+            self.audio_duration = None
+
+        if duration is None and audio_filename is not None:
+            self.duration = self.audio_duration
+        else:
+            self.duration = duration
 
         if display is not None:
             self.display = display
         else:
             self.display = Display()
 
-        self.extend_duration = extend_duration
-
         self.cascade_completions = []
         self.cascade_filled = False
+        
+        self.current_duration = None
 
-
+        Window.prior_overlay = None
 
     def render( self ):
         #import pdb
@@ -406,23 +558,19 @@ class Window( object ):
         if len( self.windows ) == 0 and len( self.clips ) == 0:
             raise Exception( "Can't render with no clips and no child windows." )
 
-        # DEBUG
         cmd = '%s -y -r 30000/1001 ' % ( FFMPEG )
         for idx, video in enumerate( sorted( Video.videos.keys() ) ):
             cmd += " -i %s " % ( video )
             Window.media_inputs[video] = '%d:v' % ( idx )
 
-        video_count = len( Video.videos.keys() )
+        for idx, watermark_filename in enumerate( Watermark.watermarks.keys() ):
+            cmd += " -loop 1 -i %s " % ( watermark_filename )
+            Window.media_inputs[watermark_filename] = '%d:0' % ( len( Video.videos.keys() ) + idx )
 
-        for idx, watermark in enumerate( self.watermarks ):
-            cmd += " -i %s %s " % ( watermark.filename, watermark.loop )
-            Window.media_inputs[watermark.filename] = '%d:v' % ( video_count + idx )
-
-        # DEBUG - add some kind of afade  '-af "afade=t=out:st=%s:d=5"'
         # DEBUG - get libfdk_aac working with new ffmpeg, or fix buffer overflow problems.
         #cmd += " -i %s -c:a libfdk_aac " % ( self.audio_filename )
         cmd += " -i %s " % ( self.audio_filename )
-        Window.media_inputs[self.audio_filename] = '%d:a' % ( video_count + len( self.watermarks ) )
+        Window.media_inputs[self.audio_filename] = '%d:a' % ( len( Video.videos.keys() ) + len( Watermark.watermarks.keys() ) )
             
         cmd += ' -filter_complex " color=%s:size=%sx%s [base_%s] ; ' % ( self.bgcolor, self.width, self.height, self.label )
 
@@ -430,15 +578,53 @@ class Window( object ):
 
         cmd += self.add_watermarks()
 
-        audio_fade_start = max( 0, Window.total_duration + self.extend_duration - 5 )
-        audio_fade_duration = Window.total_duration + self.extend_duration - audio_fade_start
-        return cmd + ' [%s] afade=t=out:st=%f:d=%f [audio] " -map [%s] -map [audio] -t %f -strict -2 output.mp4' % ( Window.media_inputs[self.audio_filename], audio_fade_start, audio_fade_duration, Window.prior_overlay, Window.total_duration + self.extend_duration )
+        if self.audio_duration is not None and self.audio_duration == self.duration:
+            audio_fade_start = self.duration
+            audio_fade_duration = 0
+        else:
+            audio_fade_start = max( 0, self.duration - 5 )
+            audio_fade_duration = self.duration - audio_fade_start
+
+        afade_clause = "afade=t=out:st=%f:d=%f" % ( audio_fade_start, audio_fade_duration )
+
+        return cmd + ' [%s] %s [audio] " -map [%s] -map [audio] -t %f -strict -2 output.mp4' % ( Window.media_inputs[self.audio_filename], afade_clause, Window.prior_overlay, self.duration )
 
     def add_watermarks( self ):
         cmd = ""
-        # DEBUG - actually do something here.
+
         for watermark in self.watermarks:
-            cmd += "[%s] %s"
+
+            fade_clause = ""
+            if watermark.fade_in_start is not None:
+                in_start = watermark.fade_in_start
+                if in_start < 0:
+                    in_start = self.duration + in_start
+                in_duration = min( watermark.fade_in_duration, self.duration - in_start )
+                fade_clause = "fade=in:st=%f:d=%f" % ( in_start, in_duration )
+            if watermark.fade_out_start is not None:
+                out_start = watermark.fade_out_start
+                if out_start < 0:
+                    out_start = self.duration + out_start
+                out_duration = min( watermark.fade_out_duration, self.duration - out_start )
+                if fade_clause == "":
+                    fade_clause = "fade="
+                else:
+                    fade_clause += ":"
+                fade_clause += "out:st=%f:d=%f" % ( out_start, out_duration )
+
+            mark_clause = fade_clause
+            if mark_clause == "":
+                mark_clause = "copy"
+
+            cmd += " [%s] %s [%s] ; " % ( Window.media_inputs[watermark.filename], mark_clause, watermark.label )
+
+        # Overlay them onto one another
+        if not Window.prior_overlay:
+            Window.prior_overlay = 'base_%s' % ( self.label )
+        for watermark in self.watermarks:
+            cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, watermark.label, watermark.x, watermark.y, Window.layer_idx )
+            Window.prior_overlay = 'o%d' % ( Window.layer_idx )
+            Window.layer_idx += 1
 
         return cmd
 
@@ -470,8 +656,8 @@ class Window( object ):
             if display.display_style != CASCADE:
                 clip.pts_offset = pts_offset
                 pts_offset += clip.get_duration()
-                if pts_offset > Window.total_duration:
-                    Window.total_duration = pts_offset
+                if pts_offset > self.current_duration:
+                    self.current_duration = pts_offset
             else:
                 # It's complicated if this is a cascading clip.
                 if len( self.cascade_completions ) < display.cascade_concurrency:
@@ -489,8 +675,8 @@ class Window( object ):
                     while self.cascade_completions.count( clip.pts_offset ):
                         self.cascade_completions.remove( clip.pts_offset )
                     self.cascade_completions.append( clip.pts_offset + clip.get_duration() )
-                if max( self.cascade_completions ) > Window.total_duration:
-                    Window.total_duration = max( self.cascade_completions )
+                if max( self.cascade_completions ) > self.current_duration:
+                    self.current_duration = max( self.cascade_completions )
 
             scale_clause = clip.get_scale_clause( self )
 
@@ -499,11 +685,13 @@ class Window( object ):
         # Overlay them onto one another
         if not Window.prior_overlay:
             Window.prior_overlay = 'base_%s' % ( self.label )
+
+        # Build up a render for this window only.
         for idx, clip in enumerate( self.clips ):
             display = get_display( clip, self )
 
             if display.display_style != CASCADE:
-                cmd += ' [%s] [%s] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, self.x, self.y, Window.layer_idx )
+                cmd += ' [%s] [%s] overlay=x=%d:y=%d:eof_action=pass [o%s] ; ' % ( Window.prior_overlay, clip.label, self.x, self.y, Window.layer_idx )
             else:
                 direction = display.cascade_direction
 
@@ -535,59 +723,63 @@ def get_display( clip, window ):
         return Display()
         
 if __name__ == '__main__':
-    
-    # ??? Loop
+    # Future features / debugging
+    # * [Parsed_overlay_31 @ 0x1da5180] [framesync @ 0x1da5d68] Buffer queue overflow, dropping.
 
-    # Distribute clips
-    # Watermark
-
-    # DEBUG:
-    # [Parsed_overlay_31 @ 0x1da5180] [framesync @ 0x1da5d68] Buffer queue overflow, dropping.
-
-    # DEBUG - I HAVE A BUG HERE, BUT ALSO THERE IS A BUG WHEN A SINGLE
-    # CLIP IS USED IN DIFFERENT PLACES, WITH IT ONLY HAVING 1 WIDTH,
-    # PTS OFFSET, ETC.
-
-    # DEBUG - The use of static counters on leads to including all
-    # videos as ffmpeg input arguments whether or not the window being
-    # rendered needs them.
+    # * Bad behavior can occur when a single clip is rendered multiple
+    #   times due to its state.
 
     # This much is basically working.
     d = Display( display_style = PAN )
+
+    m1 = Watermark( '/wintmp/summary-test/logo.png',
+                    x = "main_w-overlay_w-10",
+                    y = "main_h-overlay_h-10",
+                    fade_out_start = 3,
+                    fade_out_duration = 1 )
+    m2 = Watermark( '/wintmp/summary-test/logo128.png',
+                    x = "trunc((main_w-overlay_w)/2)",
+                    y = "trunc((main_h-overlay_h)/2)",
+                    fade_in_start = -1,
+                    fade_in_duration = 1 )
     
     w0 = Window( width=1280, height=1024, audio_filename='/wintmp/music/human405.m4a' )
-    w1 = Window( display = d, height=1280, width=720 )
-    w2 = Window( width=200, height=200, x=520, y=520 )
-    w3 = Window( display=Display( display_style=CASCADE, cascade_direction=RIGHT ), bgcolor='White', width=1280, height=1024 )
+    w1 = Window( display = d, height=1280, width=720, duration = w0.duration )
+    w2 = Window( width=200, height=200, x=520, y=520, duration = w0.duration )
+    w3 = Window( display=Display( display_style=CASCADE, cascade_direction=RIGHT ), bgcolor='White', width=1280, height=1024, duration = w0.duration )
     v1 = Video( 'test.mp4' )
-    v2 = Video( 'flip.mp4' )
+    v2 = Video( 'flip.mp4' )    
 
-    c1 = Clip( v1, 1, 3 )
+    #w0.watermarks = [ m1, m2 ]
+
+    c1 = Clip( v1, 1, 3 )    
     c2 = Clip( v1, 7, 8 )
     c3 = Clip( v2, 5, 6 )
+    cx = Clip( v1, 4, 9 )
     c4 = Clip( v1, 4, 9, display=Display( display_style=CASCADE, cascade_direction = UP ) )
     c5 = Clip( v2, 0, 1, display=Display( display_style=CASCADE, cascade_direction = DOWN ) )
     c6 = Clip( v2, 1, 2, display=Display( display_style=CASCADE, cascade_direction = LEFT ) )
     c7 = Clip( v2, 2, 3, display=Display( display_style=CASCADE, cascade_direction = RIGHT ) )
     c8 = Clip( v2, 3, 5 )
 
+    #w0.windows = [ w2 ]
+    #w0.clips = [ cx ]
+    #w2.clips = [ c2 ]
+    #print w0.render()
 
-    w2.clips = [ c3 ]
-
-    w1.clips = [ c1, c2 ]
     w1.windows = [ w2 ]
+    w0.windows = [ w1 ]
 
-    # DEBUG -when just the below is set we get the bad ffmpeg -i behavior.
-    #w3.clips = [ c4 ]
+    if 0:
+        w2.clips = [ c3 ]
+        w1.clips = [ c1, c2 ]
+        w3.clips = [ c4, c5, c6, c7, c8 ]
+    else:
+        distribute_clips( [ c1, c2, c3, c8, cx ], [ w1, w2 ], w0.duration )
 
-    w3.clips = [ c4, c5, c6, c7, c8 ]
-
-    w0.windows = [ w1, w3 ]
+    result = w0.render()
+    print result
     
-    print w0.render()
-    
-
-            
         
         
 
