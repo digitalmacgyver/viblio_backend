@@ -634,8 +634,9 @@ class Window( object ):
 
         # Then we recursively descend into our child windows.
         for window in sorted( self.windows, key=lambda x: x.z_index ):
-            cmd += window.render_window()
-            
+            # DEBUG - cmd += window.render_window()
+            print window.render_window()
+
         #import pdb
         #pdb.set_trace()
         return cmd
@@ -726,6 +727,15 @@ if __name__ == '__main__':
     # Future features / debugging
     # * [Parsed_overlay_31 @ 0x1da5180] [framesync @ 0x1da5d68] Buffer queue overflow, dropping.
 
+    # OK, we have the following problems:
+    # 1. The command line gets super long, and may exceed limits.
+    # 2. With so many streams we run into performance problems.
+    #
+    # Alternate approach:
+    # Build each window seperately in a seperate file.
+    # "Loop" by concatenating multiple inputs of the seperate files.
+    # ?? Maybe building each clip into its own file in a work dir?
+
     # * Bad behavior can occur when a single clip is rendered multiple
     #   times due to its state.
 
@@ -743,7 +753,7 @@ if __name__ == '__main__':
                     fade_in_start = -1,
                     fade_in_duration = 1 )
     
-    w0 = Window( width=1280, height=1024, audio_filename='/wintmp/music/human405.m4a' )
+    w0 = Window( width=1280, height=1024, audio_filename='/wintmp/music/human405.m4a', duration = 10 )
     w1 = Window( display = d, height=1280, width=720, duration = w0.duration )
     w2 = Window( width=200, height=200, x=520, y=520, duration = w0.duration )
     w3 = Window( display=Display( display_style=CASCADE, cascade_direction=RIGHT ), bgcolor='White', width=1280, height=1024, duration = w0.duration )
