@@ -2,6 +2,7 @@
 
 import commands
 import datetime
+import glob
 import hashlib
 import json
 import logging
@@ -40,7 +41,7 @@ log.addHandler( consolelog )
 FFMPEG = 'ffmpeg'
 FFMPEG = '/home/viblio/ffmpeg/git/ffmpeg/ffmpeg'
 
-def distribute_clips( clips, windows, min_duration=None ):
+def distribute_clips( clips, windows, min_duration=None, randomize_clips=False ):
     '''Distribute clips to windows.
     
     This attempts to place clips in the window whose aspect ratio is a
@@ -52,6 +53,9 @@ def distribute_clips( clips, windows, min_duration=None ):
     If min_duration is != None, then the clips will continually be
     recycled until the min_duration is met.
     '''
+
+    #import pdb
+    #pdb.set_trace()
     
     window_stats = []
     for window in windows:
@@ -62,6 +66,8 @@ def distribute_clips( clips, windows, min_duration=None ):
                                'duration' : duration } )
 
     def add_clips_helper():
+        if randomize_clips:
+            random.shuffle( clips )
         for clip in clips:
             ar = float( clip.video.width ) / clip.video.height
             duration = clip.get_duration()
@@ -115,8 +121,7 @@ DOWN      = "down"  # Down and right are synonyms for pan directions.
 LEFT      = "left"  # Left and up are synonyms for pan directions.
 RIGHT     = "right" 
 UP        = "up"    
-STATIC    = "static"
-OVERLAY_DIRECTIONS = [ DOWN, LEFT, RIGHT, UP, STATIC ]
+OVERLAY_DIRECTIONS = [ DOWN, LEFT, RIGHT, UP ]
 
 # Pan directions
 ALTERNATE = "alternate"
@@ -126,6 +131,7 @@ class Display( object ):
     def __init__( self, 
                   overlay_concurrency = 4,
                   overlay_direction   = DOWN,
+                  overlay_min_gap     = 0.5,
                   display_style       = PAD,
                   pan_direction       = ALTERNATE,
                   pad_bgcolor         = 'Black' ):
@@ -174,6 +180,8 @@ class Display( object ):
                          
         self.overlay_concurrency = overlay_concurrency
 
+        self.overlay_min_gap = overlay_min_gap
+
         self.pad_bgcolor = pad_bgcolor
 
     def get_pan_direction( self ):
@@ -212,9 +220,9 @@ class Video( object ):
             self.filename = filename
 
         if filename in Video.videos:
-            self.width = Video.videos[filename][width]
-            self.height = Video.videos[filename][height]
-            self.duration = Video.videos[filename][duration]
+            self.width = Video.videos[filename]['width']
+            self.height = Video.videos[filename]['height']
+            self.duration = Video.videos[filename]['duration']
         else:
             ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
             info = json.loads( output )
@@ -237,12 +245,12 @@ class Clip( object ):
 
         self.video = video
         
-        self.start = start
+        self.start = float( start )
             
         if end is None:
             self.end = video.duration
         else:
-            self.end = end
+            self.end = float( end )
 
         self.display = display
             
@@ -281,6 +289,17 @@ class Window( object ):
     cache_dict = {}
 
     @staticmethod
+    def set_tmpdir( tmpdir ):
+        if os.path.exists( tmpdir ):
+            Window.tmpdir = tmpdir
+        else:
+            try:
+                os.makedirs( tmpdir )
+                Window.tmpdir = tmpdir
+            except Exception as e:
+                raise( "Error creting tmpdir: %s, error was: %s" % ( tmpdir, e ) )
+
+    @staticmethod
     def load_cache_dict():
         if os.path.exists( Window.cache_dict_file ):
             f = open( Window.cache_dict_file, 'r' )
@@ -300,6 +319,15 @@ class Window( object ):
         pickle.dump( Window.cache_dict, f )
         f.close()
     
+    @staticmethod
+    def clear_cache():
+        if os.path.isdir( Window.tmpdir ):
+            for cache_file in glob.glob( "%s/*" % ( Window.tmpdir ) ):
+                try:
+                    os.remove( cache_file )
+                except Exception as e:
+                    raise Error( "Error while deleting file %s: %s" % ( cache_file, e ) )
+
     def __init__( self,
                   windows = None,
                   clips = None,
@@ -322,7 +350,7 @@ class Window( object ):
                   audio_filename = None,
                   display = None,
                   output_file = "./output.mp4",
-                  overlay_batch_concurrency = 64 # The number of
+                  overlay_batch_concurrency = 32, # The number of
                                                  # overlays that we
                                                  # will attempt to
                                                  # apply with one
@@ -334,6 +362,9 @@ class Window( object ):
                                                  # setting it lower
                                                  # increases rendering
                                                  # time.
+                  force = False # If true then we disregard the cache
+                                # and regenerate clips each time we
+                                # encounter them.
                   ):
 
         if windows is not None:
@@ -394,6 +425,8 @@ class Window( object ):
         self.outputfile = output_file
         
         self.overlay_batch_concurrency = overlay_batch_concurrency
+
+        self.force = force               
 
     def get_next_renderfile( self ):
         return "%s/%s.mp4" % ( Window.tmpdir, str( uuid.uuid4() ) )
@@ -586,8 +619,8 @@ class Window( object ):
 
                 include_clause += " -i %s " % ( filename )
 
-                scale = random.uniform( 1.0/2, 1.0/6 )
-                # Set the width to be randomly between 1/2 and 1/6th
+                scale = random.uniform( 1.0/2, 1.0/4 )
+                # Set the width to be randomly between 1/2 and 1/4th
                 # of the window width, and the height so the aspect
                 # ratio is retained.
                 ow = 2*int( self.width*scale / 2 )
@@ -716,7 +749,7 @@ class Window( object ):
         # Check the cache for such a clip.
         # If not, produce it and save it in the cache.
         clip_hash = self.get_clip_hash( clip, self.width, self.height, display.prior_pan ) 
-        if clip_hash in Window.cache_dict:
+        if clip_hash in Window.cache_dict and not self.force:
             print "Cache hit for clip: %s" % ( clip_hash )
             return Window.cache_dict[clip_hash]
         else:
@@ -785,6 +818,8 @@ class Window( object ):
         overlay_completions = []
         overlay_filled = False
         overlay_timing = []
+        overlay_prior_pts_offset = 0
+        overlay_pts_offset = 0
         for clip in clips:
             display = get_display( clip, self )
 
@@ -795,20 +830,18 @@ class Window( object ):
                     duration = pts_offset
             else:
                 # It's complicated if this is a cascading clip.
-                overlay_pts_offset = 0
                 if len( overlay_completions ) < display.overlay_concurrency:
-                    if overlay_filled:
-                        if len( overlay_completions ):
-                            overlay_pts_offset = min( overlay_completions )
-                    else:
-                        overlay_pts_offset = 0
+                    overlay_prior_pts_offset = overlay_pts_offset
+                    if overlay_pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
+                        overlay_pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
                     overlay_completions.append( overlay_pts_offset + clip.get_duration() )
                     overlay_timing.append( ( overlay_pts_offset, overlay_pts_offset + clip.get_duration() ) )
-                    if len( overlay_completions ) == display.overlay_concurrency:
-                        overlay_filled = True
                 else:
                     # Determine when we can begin the next overlay.
+                    overlay_prior_pts_offset = overlay_pts_offset
                     overlay_pts_offset = min( overlay_completions )
+                    if overlay_pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
+                        overlay_pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
                     # Remove clips that will end at that offset.
                     while overlay_completions.count( overlay_pts_offset ):
                         overlay_completions.remove( overlay_pts_offset )
@@ -851,6 +884,8 @@ if __name__ == '__main__':
                     y = "trunc((main_h-overlay_h)/2)",
                     fade_in_start = -1,
                     fade_in_duration = 1 )
+
+    Window.clear_cache()
 
     w0 = Window( width=1280, height=1024, audio_filename='/wintmp/music/human405.m4a', duration=10 )
     w1 = Window( display = d, height=1024, width=720 )
