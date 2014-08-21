@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import logging
+import magic
 from optparse import OptionParser
 import os
 import sys
@@ -58,15 +59,15 @@ def manage_media( action, title, media_type, desc, album_title, filename ):
         
         s3.upload_file( filename, config.bucket_name, "%s/%s" % ( media_uuid, media_uuid ) )
         
-        media = Media( user_id = user.id,
-                       uuid = media_uuid,
-                       media_type = media_type,
-                       title = title,
-                       filename = filename,
-                       description = desc,
-                       is_viblio_created = 1 )
+        new_media = Media( user_id = user.id,
+                           uuid = media_uuid,
+                           media_type = media_type,
+                           title = title,
+                           filename = filename,
+                           description = desc,
+                           is_viblio_created = 1 )
         
-        user.media.append( media )
+        user.media.append( new_media )
         
         mime = magic.Magic( mime=True )
         
@@ -77,34 +78,39 @@ def manage_media( action, title, media_type, desc, album_title, filename ):
                              location = 'us',
                              bytes = os.path.getsize( filename ) )
         
-        media.media_assets.append( asset )
+        new_media.assets.append( asset )
+
+        orm.commit()
         
         if album_title is not None:
-            album = orm.query( Media ).filter( and_( Media.user_id == user.id,
+            albums = orm.query( Media ).filter( and_( Media.user_id == user.id,
                                                      Media.title == album_title,
                                                      Media.is_album == 1 ) )[:]
             
-            print "Adding to album: %s, %s" % ( album.title, album.id )
-            
-            if len( album ) != 1:
-                print "Warning - less or more than 1 albums named %s found for viblio media user, no album association made." % ( album )
+            if len( albums ) != 1:
+                print "Warning - less or more than 1 albums named %s found for viblio media user, no album association made." % ( album_title )
             else:
-                album.media_albums.append( media )
-                
+                album = albums[0]
+                media_album = MediaAlbums( album_id = album.id,
+                                           media_id = new_media.id )
+                print "Adding to album: %s, %s" % ( album.title, album.id )
+                orm.add( media_album )
+                orm.commit()
+
         orm.commit()
     elif action == 'add_album':      
-        print "Creating %s album %s" % ( media_type, title )
+        print "Creating %s album %s" % ( media_type, album_title )
         media_uuid = str( uuid.uuid4() )
         
-        media = Media( user_id = user.id,
-                       uuid = media_uuid,
-                       media_type = media_type,
-                       title = album_title,
-                       is_album = 1,
-                       description = description,
-                       is_viblio_created = 1 )
+        new_media = Media( user_id = user.id,
+                           uuid = media_uuid,
+                           media_type = media_type,
+                           title = album_title,
+                           is_album = 1,
+                           description = desc,
+                           is_viblio_created = 1 )
 
-        user.media.append( media )
+        user.media.append( new_media )
 
         orm.commit()
     if action == 'delete':
@@ -112,9 +118,9 @@ def manage_media( action, title, media_type, desc, album_title, filename ):
         orm.query( Media ).filter( and_( Media.user_id == user.id,
                                          Media.is_viblio_created == 1,
                                          Media.media_type == media_type,
-                                         Media.title == title ) )
+                                         Media.title == title ) ).delete()
         orm.commit()
-        s3.delete_s3_file( config.bucket_name, "%s/%s" % ( media.uuid, media.uuid ) )
+        s3.delete_s3_file( config.bucket_name, "%s/%s" % ( media[0].uuid, media[0].uuid ) )
         
 
 if __name__ == '__main__':
@@ -123,12 +129,15 @@ if __name__ == '__main__':
     parser = OptionParser( usage = usage )
     parser.add_option( "-a", "--add",
                        dest="add",
+                       action="store_true",
                        help="Add the media argument to --filename (mutually exclusive with --add-album and --delete)" )
     parser.add_option( "-A", "--add-album",
                        dest="add_album",
+                       action="store_true",
                        help="Create an album with --title (mutually exclusive with --add and --delete)" )
     parser.add_option( "-d", "--delete",
                        dest="delete",
+                       action="store_true",
                        help="Remove the media specified by title/type (mutually exclusive with --add and --add-album)" )
     parser.add_option( "-t", "--title",
                        dest="title",
@@ -173,8 +182,8 @@ if __name__ == '__main__':
         action = 'add'
         
         if not options.filename:
-            print "\n\nMust provide --filename argument for --add."
             parser.print_help()
+            print "\n\nMust provide --filename argument for --add."
             sys.exit(0)
         else:
             if os.path.exists( options.filename ):
@@ -184,15 +193,15 @@ if __name__ == '__main__':
 
     if action != 'add_album' and ( not options.title or not options.type ):
         parser.print_help()
-        print "\n\nMust provide both --title and --type."
+        print "\n\nMust provide both --title and --type to --add and --delete."
         sys.exit(0)
-    elif action == 'add_album' and not options.type:
+    elif action == 'add_album' and ( not options.album or not options.type ):
         parser.print_help()
-        print "\n\nMust provide --type."
+        print "\n\nMust provide --album and --type to --add-album."
         sys.exit(0)
     else:
         title = options.title
-        if media_type in media_types:
+        if options.type in media_types:
             media_type = options.type
         else:
             parser.print_help()
