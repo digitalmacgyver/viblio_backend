@@ -125,11 +125,9 @@ log.addHandler( consolelog )
 def download_movie( media_uuid, workdir ):
     movie_key = '%s/%s_output.mp4' % ( media_uuid, media_uuid )
     movie_file = '%s/%s.mp4' % ( workdir, media_uuid )
-    # DEBUG - for testing don't download stuff over and over.
-    if not os.path.isfile( movie_file ):
-        download_file( movie_file, config.bucket_name, movie_key )
-        log.info( json.dumps( { 'media_uuid' : media_uuid, 
-                                'message'   : 'Downloaded input video to %s' % ( movie_file ) } ) )
+    download_file( movie_file, config.bucket_name, movie_key )
+    log.info( json.dumps( { 'media_uuid' : media_uuid, 
+                            'message'   : 'Downloaded input video to %s' % ( movie_file ) } ) )
     return movie_file
 
 
@@ -153,10 +151,12 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets ):
     videos = orm.query( Media, MediaAssets ).filter( 
         Media.id == MediaAssets.media_id,
         Media.is_album == 0,
-        MediaAssets.uuid.in_( images ) ).order_by( Media.recording_date.desc(), Media.created_date.desc() )[:]
+        MediaAssets.uuid.in_( images ) ).order_by( Media.recording_date.desc(), Media.created_date.desc(), MediaAssets.timecode )[:]
 
     if order == 'oldest':
-        videos.reverse()
+        # Sort from oldest to newest, but still show clips from within
+        # a given video in order.
+        videos.sort( key=lambda x: ( x.Media.recording_date, x.Media.created_date, x.MediaAssets.timecode ) )
 
     if order == 'random':
         random.shuffle( videos )
@@ -164,13 +164,15 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets ):
     result = { 'summary_duration' : None,
                'videos' : {} }
     summary_duration = 0
-    for video in videos:
+    prior_video_uuid = None
+    for video_index, video in enumerate( videos ):
 
         timecode = float( video.MediaAssets.timecode )
 
         if video.Media.uuid not in result['videos']:
             movie_file = download_movie( video.Media.uuid, workdir )
-            result['videos'][video.Media.uuid] = { 'filename' : movie_file }
+            result['videos'][video.Media.uuid] = { 'filename' : movie_file, 
+                                                   'video_index' : video_index }
             
             ( status, output ) = commands.getstatusoutput( 'ffprobe -v quiet -print_format json -show_format -show_streams %s ' % ( movie_file ) )
             info = json.loads( output )
@@ -189,8 +191,19 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets ):
             start = max( 0,              timecode + moment_offsets[0] )
             end   = min( video_duration, timecode + moment_offsets[1] )
             
+            if order in [ 'oldest', 'newest' ]:
+                if prior_video_uuid == video.Media.uuid:
+                    # If we're working on sequential cuts from the
+                    # same video, don't let them overlap.
+                    start = max( start, result['videos'][video.Media.uuid]['cuts'][-1][1] )
+
+                    if start <= end:
+                        continue
+
             result['videos'][video.Media.uuid]['cuts'].append( [ start, end ] )
             summary_duration += end - start
+
+        prior_video_uuid = video.Media.uuid
             
     result['summary_duration'] = summary_duration
 
@@ -209,7 +222,7 @@ def generate_summary( summary_type,
                       order           = 'random',
                       effects         = [],
                       moment_offsets  = ( -2.5, 2.5 ),
-                      target_duration = 0,
+                      target_duration = None,
                       summary_options = {},
                       title           = '',
                       description     = '',
@@ -217,18 +230,20 @@ def generate_summary( summary_type,
                       lng             = None,
                       tags            = [],
                       recording_date  = None,
-                      output_x        = 640,
-                      output_y        = 360 ):
+                      output_x        = 1280,
+                      output_y        = 720 ):
+
+    vsum.Window.set_tmpdir( "%s/../vsum_tmp" % workdir )
 
     output_file = "%s/%s.mp4" % ( workdir, summary_uuid )
 
-    # DEBUG - Eventually we'll actually do something dynamic about music here.
-    # DEBUG - Add music to window, them get window.duration.
-    target_duration = 30
-    if target_duration == 0:
-        # DEBUG
-        # target_duration = get length of audio track.
-        target_duration = 30
+    orm = vib.db.orm.get_session()
+    audio_track = orm.query( Media, MediaAssets ).filter( Media.id == MediaAssets.media_id,
+                                                          Media.uuid == audio_track,
+                                                          MediaAssets.asset_type == 'original' ).one()
+
+    audio_filename = "%s/%s_audio" % ( workdir, summary_uuid )
+    download_file( audio_filename, config.bucket_name, audio_track.MediaAssets.uri )
 
     # While get_moments will return things with the approrpriate
     # order, we can tell vsum.distribute_clips to randomize clips, if
@@ -242,7 +257,7 @@ def generate_summary( summary_type,
         video_cuts = get_moments( summary_uuid, images, order, workdir, moment_offsets )
 
         summary_clips = []
-        for video_uuid, video in video_cuts['videos'].items():
+        for video_uuid, video in sorted( video_cuts['videos'].items(), key=lambda x: x[1]['video_index'] ):
             filename = video['filename']
             cuts = video['cuts']
             
@@ -251,26 +266,57 @@ def generate_summary( summary_type,
                                                  start = cut[0],
                                                  end   = cut[1] ) )
 
-        w = vsum.Window( width=output_x, height=output_y, output_file=output_file, duration=target_duration, bgcolor="White" )
+        w = vsum.Window( width       = output_x, 
+                         height      = output_y, 
+                         output_file = output_file, 
+                         duration    = target_duration,
+                         bgcolor     = "White",
+                         audio_filename  = audio_filename )
+        w.display.pad_bgcolor = 'White'
 
-        # DEBUG
-        summary_style = 'cascade'
+        if target_duration is None:
+            target_duration = w.duration
+
+        small_logo_color = 'white'
+        large_logo_color = 'white'
 
         if summary_style == 'classic':
             vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
         elif summary_style == 'cascade':
+            small_logo_color = 'gray'
+            large_logo_color = 'gray'
             w.display.display_style = vsum.OVERLAY
             vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
         elif summary_style == 'template-1':
-            w1 = vsum.Window( width=256, height=156, x=16, y=16, display=vsum.Display( display_style=vsum.CROP ) )
-            w2 = vsum.Window( width=256, height=156, x=328, y=16, display=vsum.Display( display_style=vsum.PAD, pad_bgcolor="Blue" ) )
-            w3 = vsum.Window( width=256, height=156, x=16, y=188, display=vsum.Display( display_style=vsum.PAN ) )
-            w4 = vsum.Window( width=256, height=156, x=328, y=188, display=vsum.Display( display_style=vsum.OVERLAY ), bgcolor="Red" )
+            large_logo_color = 'gray'
+            w1 = vsum.Window( width=512, height=312, x=32, y=32, display=vsum.Display( display_style=vsum.CROP ) )
+            w2 = vsum.Window( width=512, height=312, x=576, y=32, display=vsum.Display( display_style=vsum.PAD, pad_bgcolor="Blue" ) )
+            w3 = vsum.Window( width=512, height=312, x=32, y=376, display=vsum.Display( display_style=vsum.PAN ) )
+            w4 = vsum.Window( width=512, height=312, x=576, y=376, display=vsum.Display( display_style=vsum.OVERLAY ), bgcolor="Red" )
             w.windows = [ w1, w2, w3, w4 ]
             vsum.distribute_clips( summary_clips, [ w1, w2, w3, w4 ], min_duration=target_duration, randomize_clips=randomize_clips )
+        elif summary_style == 'template-2':
+            small_logo_color = 'gray'
+            large_logo_color = 'white'
+            w1 = vsum.Window( width=368, height=656, x=824, y=32, display=vsum.Display( display_style=vsum.CROP ) )
+            w2 = vsum.Window( width=656, height=656, x=84, y=32, display=vsum.Display( display_style=vsum.PAN ) )
+            w.windows = [ w1, w2 ]
+            vsum.distribute_clips( summary_clips, [ w1, w2 ], min_duration=target_duration, randomize_clips=randomize_clips )
+
         else:
             raise Exception( "Unexpected summary style: %s" % ( summary_style ) )
-        
+
+        m1 = vsum.Watermark( "%s/media/logo-%s-128.png" % ( os.path.dirname( __file__ ), small_logo_color ),
+                             x = "main_w-overlay_w-10",
+                             y = "main_h-overlay_h-10",
+                             fade_out_start = 3,
+                             fade_out_duration = 1 )
+        m2 = vsum.Watermark( "%s/media/logo-%s-256.png" % ( os.path.dirname( __file__ ), large_logo_color ),
+                        x = "trunc((main_w-overlay_w)/2)",
+                             y = "trunc((main_h-overlay_h)/2)",
+                             fade_in_start = -2,
+                             fade_in_duration = 1 )
+        w.watermarks = [ m1, m2 ]
         w.render()
 
     else:
@@ -310,8 +356,12 @@ def generate_summary( summary_type,
                    media_type = 'original',
                    filename = filename,
                    title = title,
+                   description = description,
                    view_count = 0,
                    status = 'pending',
+                   recording_date = recording_date,
+                   lat = lat,
+                   lng = lng,
                    unique_hash = unique_hash )
     user.media.append( media )
     orm.commit()
@@ -331,6 +381,13 @@ def generate_summary( summary_type,
         location = 'us',
         view_count = 0 )
     media.assets.append( video_asset )
+
+    for tag in tags:
+        feature = MediaAssetFeatures(
+            feature_type = 'activity',
+            coordinates = tag
+            )
+        video_asset.media_asset_features.append( feature )
 
     orm.commit()
 
@@ -395,8 +452,7 @@ def generate_summary( summary_type,
     #if workdir[:4] == '/mnt':
     #    log.info( json.dumps( { 'media_uuid' : summary_uuid, 
     #                            'message'    : 'Deleting temporary files at %s' % ( workdir ) } ) )
-        # DEBUG
-        #shutil.rmtree( workdir )
+    #    shutil.rmtree( workdir )
     return
 
 
@@ -738,8 +794,7 @@ def run():
         if user_uuid is None or images is None or summary_type is None or audio_track is None:
             message = 'Error, empty input for one of user_uuid: %s, images: %s, summary_type: %s, and audio_track: %s' % ( user_uuid, images, summary_type, audio_track )
             log.error( json.dumps( { 'message' : message } ) )
-            # DEBUG
-            # raise Exception( message )
+            raise Exception( message )
 
         # Mandatory for some summary_types.
         contacts        = options.get( 'contacts[]', [] )
@@ -774,16 +829,12 @@ def run():
         tags            = options.get( 'tags[]', [] )
         recording_date  = options.get( 'recording_date', datetime.datetime.now() )
 
-        output_x        = options.get( 'output_x', 640 )
-        output_y        = options.get( 'output_y', 360 )
+        output_x        = options.get( 'output_x', 1280 )
+        output_y        = options.get( 'output_y', 720 )
 
         # The UUID of the summary we will create.
         summary_uuid = str( uuid.uuid4() )
         
-        # For testing just keep using this over and over.
-        # DEBUG
-        summary_uuid = '071151c4-25cc-4ef0-9bcd-c7838dec7a56'
-
         workdir = config.faces_dir + '/album_summary/' + summary_uuid + '/'
         try:
             if not os.path.isdir( workdir ):
@@ -799,7 +850,7 @@ def run():
         # fail we don't try again.
    
         # DEBUG
-        #sqs.delete_message( message )
+        sqs.delete_message( message )
 
         generate_summary( summary_type,
                           summary_uuid,

@@ -1,6 +1,6 @@
 */5 * * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/monitoring/MonitorQueues-wrapper.py >> /tmp/MonitorQueues-staging-$(/bin/date +"\%F").log 2>&1
 0 0 * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/utils/cleanup_temp_files.py >> /tmp/cleanup_temp_files-staging-$(/bin/date +"\%F").log 2>&1
-0 0 * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/utils/call_build_smiling_faces.py >> /tmp/call_build_smiling_faces-staging-$(/bin/date +"\%F").log 2>&1
-12 0 * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/utils/call_build_album_summaries.py >> /tmp/call_build_album_summaries-staging-$(/bin/date +"\%F").log 2>&1
+#0 0 * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/utils/call_build_smiling_faces.py >> /tmp/call_build_smiling_faces-staging-$(/bin/date +"\%F").log 2>&1
+#12 0 * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/utils/call_build_album_summaries.py >> /tmp/call_build_album_summaries-staging-$(/bin/date +"\%F").log 2>&1
 0 */6 * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/utils/fail_orphan_workflows.py >> /tmp/fail-orphan-workflows-$(/bin/date +"\%F").log 2>&1
 0 0 * * * export PYTHONPATH=/deploy/staging/; export DEPLOYMENT=staging; /deploy/staging/vib/cv/FaceRecognition/CleanupFaces-wrapper.py >> /tmp/CleanupFaces-$(/bin/date +"\%F").log 2>&1

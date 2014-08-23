@@ -37,9 +37,7 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-# DEBUG - fix this.
 FFMPEG = 'ffmpeg'
-FFMPEG = '/home/viblio/ffmpeg/git/ffmpeg/ffmpeg'
 
 def distribute_clips( clips, windows, min_duration=None, randomize_clips=False ):
     '''Distribute clips to windows.
@@ -129,7 +127,7 @@ PAN_DIRECTIONS = [ ALTERNATE, DOWN, UP ]
 
 class Display( object ):
     def __init__( self, 
-                  overlay_concurrency = 4,
+                  overlay_concurrency = 3,
                   overlay_direction   = DOWN,
                   overlay_min_gap     = 0.5,
                   display_style       = PAD,
@@ -149,7 +147,7 @@ class Display( object ):
         # This way of setting defaults allows the defaults to overlay to
         # callers who proxy the creation of this class.
         if overlay_concurrency is None:
-            overlay_concurrency = 4
+            overlay_concurrency = 3
         if overlay_direction is None:
             overlay_direction = DOWN
         if display_style is None:
@@ -350,7 +348,7 @@ class Window( object ):
                   audio_filename = None,
                   display = None,
                   output_file = "./output.mp4",
-                  overlay_batch_concurrency = 32, # The number of
+                  overlay_batch_concurrency = 16, # The number of
                                                  # overlays that we
                                                  # will attempt to
                                                  # apply with one
@@ -416,13 +414,10 @@ class Window( object ):
         else:
             self.display = Display()
 
-        self.overlay_completions = []
-        self.overlay_filled = False
-        
         if Window.cache_dict == {}:
             Window.load_cache_dict()
 
-        self.outputfile = output_file
+        self.output_file = output_file
         
         self.overlay_batch_concurrency = overlay_batch_concurrency
 
@@ -453,7 +448,8 @@ class Window( object ):
             window_file = window.render( helper=True )
             tmpfile = self.get_next_renderfile()
 
-            cmd = '%s -y -i %s -i %s -r 30000/1001 -q:v 1 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
+            #cmd = '%s -y -i %s -i %s -r 30000/1001 -q:v 1 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -r 30000/1001 -q:v 1 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -470,8 +466,7 @@ class Window( object ):
             else:
                 audio_fade_start = max( 0, self.duration - 5 )
                 audio_fade_duration = self.duration - audio_fade_start
-            # DEBUG - remove strict.
-            afade_clause = ' -strict -2 -af "afade=t=out:st=%f:d=%f" ' % ( audio_fade_start, audio_fade_duration )
+            afade_clause = ' -af "afade=t=out:st=%f:d=%f" ' % ( audio_fade_start, audio_fade_duration )
             current = tmpfile
             tmpfile = self.get_next_renderfile()
             cmd = '%s -y -i %s -i %s -vf copy %s -t %f %s' % ( FFMPEG, current, self.audio_filename, afade_clause, self.duration, tmpfile )
@@ -482,7 +477,7 @@ class Window( object ):
                 raise Exception( "Error adding audio %s to file %s with command: %s" % ( self.audio_filename, current, cmd ) )
 
         if not helper:
-            shutil.copyfile( tmpfile, self.outputfile )
+            shutil.copyfile( tmpfile, self.output_file )
         return tmpfile
 
     def add_watermarks( self, watermarks, current ):
@@ -523,7 +518,8 @@ class Window( object ):
         # Overlay them onto one another
         prior_overlay = '0'
         for idx, watermark in enumerate( watermarks ):
-            cmd += ' [%s] [w%d] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( prior_overlay, idx, watermark.x, watermark.y, idx )
+            #cmd += ' [%s] [w%d] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( prior_overlay, idx, watermark.x, watermark.y, idx )
+            cmd += ' [%s] [w%d] overlay=x=%s:y=%s [o%s] ; ' % ( prior_overlay, idx, watermark.x, watermark.y, idx )
             prior_overlay = "o%s" % idx
 
         cmd += ' [%s] copy " %s' % ( prior_overlay, tmpfile )
@@ -585,7 +581,7 @@ class Window( object ):
             for clip_file in clip_files:
                 f.write( "file '%s'\n" % ( clip_file ))
             f.close()
-            cmd = "%s -y -f concat -i %s -q:v 1 -an %s" % ( FFMPEG, concat_file, tmpfile )
+            cmd = "%s -y -f concat -i %s -r 30000/1001 -q:v 1 -an %s" % ( FFMPEG, concat_file, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -643,7 +639,8 @@ class Window( object ):
                     elif direction == RIGHT:
                         x = "'if( gte(t,%d), W-(t-%d)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.width+ow ) / overlay.get_duration() )
 
-                filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s:eof_action=pass [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
+                #filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s:eof_action=pass [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
+                filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
                 prior_overlay = 't%d' % ( overlay_idx )
 
             tmpfile = self.get_next_renderfile()                                          
@@ -815,11 +812,8 @@ class Window( object ):
 
         duration = 0
         pts_offset = 0
-        overlay_completions = []
-        overlay_filled = False
         overlay_timing = []
         overlay_prior_pts_offset = 0
-        overlay_pts_offset = 0
         for clip in clips:
             display = get_display( clip, self )
 
@@ -830,23 +824,21 @@ class Window( object ):
                     duration = pts_offset
             else:
                 # It's complicated if this is a cascading clip.
-                if len( overlay_completions ) < display.overlay_concurrency:
-                    overlay_prior_pts_offset = overlay_pts_offset
-                    if overlay_pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
-                        overlay_pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
-                    overlay_completions.append( overlay_pts_offset + clip.get_duration() )
-                    overlay_timing.append( ( overlay_pts_offset, overlay_pts_offset + clip.get_duration() ) )
+                if len( overlay_timing ) < display.overlay_concurrency:
+                    overlay_prior_pts_offset = pts_offset
+                    if pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
+                        pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
+                    overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
                 else:
                     # Determine when we can begin the next overlay.
-                    overlay_prior_pts_offset = overlay_pts_offset
-                    overlay_pts_offset = min( overlay_completions )
-                    if overlay_pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
-                        overlay_pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
-                    # Remove clips that will end at that offset.
-                    while overlay_completions.count( overlay_pts_offset ):
-                        overlay_completions.remove( overlay_pts_offset )
-                    overlay_completions.append( overlay_pts_offset + clip.get_duration() )
-                    overlay_timing.append( ( overlay_pts_offset, overlay_pts_offset + clip.get_duration() ) )
+                    overlay_prior_pts_offset = pts_offset
+                    # Extract the end times, sort them, and then look
+                    # at the display.overlay_concurrency largest ones,
+                    # and take the minimum of those.
+                    pts_offset = min( sorted( [ x[1] for x in overlay_timing ] )[-display.overlay_concurrency:] )
+                    if pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
+                        pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
+                    overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
                 if max( [ x[1] for x in overlay_timing ] ) > duration:
                     duration = max( [ x[1] for x in overlay_timing ] )
                     
@@ -856,48 +848,18 @@ class Window( object ):
             return duration
 
 if __name__ == '__main__':
-    # Future features / debugging
-    # * [Parsed_overlay_31 @ 0x1da5180] [framesync @ 0x1da5d68] Buffer queue overflow, dropping.
-
-    # OK, we have the following problems:
-    # 1. The command line gets super long, and may exceed limits.
-    # 2. With so many streams we run into performance problems.
-    #
-    # Alternate approach:
-    # Build each window seperately in a seperate file.
-    # "Loop" by concatenating multiple inputs of the seperate files.
-    # ?? Maybe building each clip into its own file in a work dir?
-
-    # * Bad behavior can occur when a single clip is rendered multiple
-    #   times due to its state.
-
-    # This much is basically working.
+    ''' Example usage:
+    # Set some diplay properties.
     d = Display( display_style = PAN )
 
-    m1 = Watermark( '/wintmp/summary-test/logo.png',
-                    x = "main_w-overlay_w-10",
-                    y = "main_h-overlay_h-10",
-                    fade_out_start = 3,
-                    fade_out_duration = 1 )
-    m2 = Watermark( '/wintmp/summary-test/logo128.png',
-                    x = "trunc((main_w-overlay_w)/2)",
-                    y = "trunc((main_h-overlay_h)/2)",
-                    fade_in_start = -1,
-                    fade_in_duration = 1 )
-
+    # If the cache might be bad, we can clean it out.
     Window.clear_cache()
 
-    w0 = Window( width=1280, height=1024, audio_filename='/wintmp/music/human405.m4a', duration=10 )
-    w1 = Window( display = d, height=1024, width=720 )
-    w2 = Window( width=200, height=200, x=520, y=520 )
-    w3 = Window( display=Display( display_style=OVERLAY, overlay_direction=RIGHT ), bgcolor='White', width=560, height=512, x=720 )
-    #w3 = Window( display=Display( display_style=OVERLAY, overlay_direction=RIGHT ), bgcolor='White', width=560, height=512, x=720, audio_filename='/wintmp/music/human405.m4a' )
-    w4 = Window( display=Display( display_style=PAD, overlay_direction=RIGHT, pad_bgcolor='Green' ), bgcolor='Green', width=560, height=512, x=720, y=512 )
+    # Define some videos.
     v1 = Video( 'test.mp4' )
     v2 = Video( 'flip.mp4' )    
 
-    w0.watermarks = [ m1, m2 ]
-
+    # Define some clips from our videos.
     c1 = Clip( v1, 1, 3 )  
     c2 = Clip( v1, 7, 8 )
     c3 = Clip( v2, 5, 6 )
@@ -908,27 +870,44 @@ if __name__ == '__main__':
     c7 = Clip( v2, 2, 3, display=Display( display_style=OVERLAY, overlay_direction = RIGHT ) )
     c8 = Clip( v2, 3, 5 )
 
-    #w0.windows = [ w2 ]
-    #w0.clips = [ cx ]
-    #w2.clips = [ c2 ]
-    #print w0.render()
+    # Define some windows.
+    w0 = Window( width=1280, height=1024, audio_filename='/wintmp/music/human405.m4a', duration=10 )
+    w1 = Window( display = d, height=1024, width=720 )
+    w2 = Window( width=200, height=200, x=520, y=520 )
+    w3 = Window( display=Display( display_style=OVERLAY, overlay_direction=RIGHT ), bgcolor='White', width=560, height=512, x=720 )
+    w4 = Window( display=Display( display_style=PAD, overlay_direction=RIGHT, pad_bgcolor='Green' ), bgcolor='Green', width=560, height=512, x=720, y=512 )
 
-    w1.windows = [ w2 ]
+    # We can apply some static image watermarks.
+    m1 = Watermark( '/wintmp/summary-test/logo.png',
+                    x = "main_w-overlay_w-10",
+                    y = "main_h-overlay_h-10",
+                    fade_out_start = 3,
+                    fade_out_duration = 1 )
+    m2 = Watermark( '/wintmp/summary-test/logo128.png',
+                    x = "trunc((main_w-overlay_w)/2)",
+                    y = "trunc((main_h-overlay_h)/2)",
+                    fade_in_start = -1,
+                    fade_in_duration = 1 )
+    w0.watermarks = [ m1, m2 ]
+
+    # Windows can hold clips and/or other windows.
     w0.windows = [ w1, w3, w4 ]
+    # We can even have windows holding windows, e.g. w0->w1->w2.
+    w1.windows = [ w2 ]
 
-    if 0:
-        w2.clips = [ c3 ]
-        w1.clips = [ c1, c2 ]
-        w3.clips = [ c4, c5, c6, c7, c8 ]
-    else:
-        distribute_clips( [ c1, c2, c3, c8, cx, c4, c5, c6, c7 ], [ w1, w2, w3, w4 ], w0.duration )
-        #distribute_clips( [ c1, c2, c3, c8, cx, c4, c5, c6, c7 ], [ w3 ], w3.duration )
+    # Manually assign clips to windows.
+    w2.clips = [ c3 ]
+    w1.clips = [ c1, c2 ]
+    w3.clips = [ c4, c5, c6, c7, c8 ]
+    w0.output_file = 'output1.mp4'
+    w0.render()
 
-
-    result = w0.render()
-    print result
-    #result = w0.render()
-    #print result
+    # Automatically distribute clips amongst windows..
+    distribute_clips( [ c1, c2, c3, c8, cx, c4, c5, c6, c7 ], [ w1, w2, w3, w4 ], w0.duration )
+    w0.output_file = 'output2.mp4'
+    w0.render()
+    '''
+    pass
     
         
         
