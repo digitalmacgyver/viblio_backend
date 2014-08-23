@@ -100,7 +100,7 @@ import uuid
 import vib.db.orm
 from vib.db.models import *
 from vib.utils.s3 import download_string, download_file, upload_file
-from vib.vwf.Transcode.transcode_utils import get_exif
+import vib.utils.vsum as vsum
 
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
@@ -125,15 +125,24 @@ log.addHandler( consolelog )
 def download_movie( media_uuid, workdir ):
     movie_key = '%s/%s_output.mp4' % ( media_uuid, media_uuid )
     movie_file = '%s/%s.mp4' % ( workdir, media_uuid )
-    # DEBUG - for testing don't download stuff over and over.
-    if not os.path.isfile( movie_file ):
-        download_file( movie_file, config.bucket_name, movie_key )
-        log.info( json.dumps( { 'media_uuid' : media_uuid, 
-                                'message'   : 'Downloaded input video to %s' % ( movie_file ) } ) )
+    download_file( movie_file, config.bucket_name, movie_key )
+    log.info( json.dumps( { 'media_uuid' : media_uuid, 
+                            'message'   : 'Downloaded input video to %s' % ( movie_file ) } ) )
     return movie_file
 
 
 def get_moments( media_uuid, images, order, workdir, moment_offsets ):
+    '''Returns a data structure:
+    { summary_duration : 99
+      videos : { 
+          video1_uuid : {
+              filename : /tmp/video.mp4,
+              cuts : [ ( 0, 3 ), ( 2, 5 ), ... ]
+              }, 
+          ...
+          }
+    }
+    '''
     # Get the list of movies for the input images.
     orm = vib.db.orm.get_session()
     orm.commit()
@@ -142,32 +151,38 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets ):
     videos = orm.query( Media, MediaAssets ).filter( 
         Media.id == MediaAssets.media_id,
         Media.is_album == 0,
-        MediaAssets.uuid.in_( images ) ).order_by( Media.recording_date.desc(), Media.created_date.desc() )[:]
+        MediaAssets.uuid.in_( images ) ).order_by( Media.recording_date.desc(), Media.created_date.desc(), MediaAssets.timecode )[:]
 
     if order == 'oldest':
-        videos.reverse()
+        # Sort from oldest to newest, but still show clips from within
+        # a given video in order.
+        videos.sort( key=lambda x: ( x.Media.recording_date, x.Media.created_date, x.MediaAssets.timecode ) )
+
+    if order == 'random':
+        random.shuffle( videos )
 
     result = { 'summary_duration' : None,
                'videos' : {} }
-    video_cuts = {}
     summary_duration = 0
-    for video in videos:
+    prior_video_uuid = None
+    for video_index, video in enumerate( videos ):
 
         timecode = float( video.MediaAssets.timecode )
 
         if video.Media.uuid not in result['videos']:
             movie_file = download_movie( video.Media.uuid, workdir )
-            result['videos'][video.Media.uuid] = { 'filename' : movie_file }
+            result['videos'][video.Media.uuid] = { 'filename' : movie_file, 
+                                                   'video_index' : video_index }
             
-            ( status, output ) = commands.getstatusoutput( 'ffprobe -i %s -show_format 2> /dev/null | grep duration' % ( movie_file ) )
-            video_duration = float( re.search( r'duration=(.*)', output ).groups()[0] )
+            ( status, output ) = commands.getstatusoutput( 'ffprobe -v quiet -print_format json -show_format -show_streams %s ' % ( movie_file ) )
+            info = json.loads( output )
+            video_duration = float( info['format']['duration'] )
             result['videos'][video.Media.uuid]['duration'] = video_duration
 
-            
             start = max( 0,              timecode + moment_offsets[0] )
             end   = min( video_duration, timecode + moment_offsets[1] )
             
-            video_cuts[video.Media.uuid] = [ [ start, end ] ]
+            result['videos'][video.Media.uuid]['cuts'] = [ [ start, end ] ]
             summary_duration += end - start
 
         else:
@@ -176,35 +191,23 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets ):
             start = max( 0,              timecode + moment_offsets[0] )
             end   = min( video_duration, timecode + moment_offsets[1] )
             
-            video_cuts[video.Media.uuid].append( [ start, end ] )
+            if order in [ 'oldest', 'newest' ]:
+                if prior_video_uuid == video.Media.uuid:
+                    # If we're working on sequential cuts from the
+                    # same video, don't let them overlap.
+                    start = max( start, result['videos'][video.Media.uuid]['cuts'][-1][1] )
+
+                    if start <= end:
+                        continue
+
+            result['videos'][video.Media.uuid]['cuts'].append( [ start, end ] )
             summary_duration += end - start
-            
-    for video_uuid, cuts in video_cuts.items():
-        # Fix up our cuts by merging overlapping cuts and ordering them
-        # within the video from first to last.
-        sorted_cuts = sorted( [ x for x in cuts ], key=lambda element: element[0] )
-            
-        log.debug( json.dumps( { 'media_uuid' : video_uuid, 
-                                 'message'   : 'Sorted cuts are: %s' % ( sorted_cuts ) } ) )
 
-        # And concatenate overlapping tracks.
-        final_cuts = [ [ -1, -1 ] ]
-        for cut in sorted_cuts:
-            if final_cuts[-1][0] <= cut[0] and final_cuts[-1][1] >= cut[0]:
-                prior_duration = final_cuts[-1][1] - final_cuts[-1][0]
-                final_cut = max( cut[1], final_cuts[-1][1] )
-                final_cuts[-1][1] = final_cut
-                new_duration = final_cuts[-1][1] - final_cuts[-1][0]
-                summary_duration += new_duration - prior_duration
-            else:
-                final_cuts.append( cut )
-        final_cuts = final_cuts[1:]
-        result['videos'][video_uuid]['cuts'] = final_cuts
-
+        prior_video_uuid = video.Media.uuid
+            
     result['summary_duration'] = summary_duration
 
     return result
-
 
 def generate_summary( summary_type,
                       summary_uuid,
@@ -219,7 +222,7 @@ def generate_summary( summary_type,
                       order           = 'random',
                       effects         = [],
                       moment_offsets  = ( -2.5, 2.5 ),
-                      target_duration = 0,
+                      target_duration = None,
                       summary_options = {},
                       title           = '',
                       description     = '',
@@ -227,167 +230,233 @@ def generate_summary( summary_type,
                       lng             = None,
                       tags            = [],
                       recording_date  = None,
-                      output_x        = 640,
-                      output_y        = 360 ):
+                      output_x        = 1280,
+                      output_y        = 720 ):
 
-    # DEBUG - Eventually we'll actually do something dynamic about music here.
-    if target_duration == 0:
-        # DEBUG
-        # target_duration = get length of audio track.
-        target_duration = 30
+    vsum.Window.set_tmpdir( "%s/../vsum_tmp" % workdir )
+
+    output_file = "%s/%s.mp4" % ( workdir, summary_uuid )
+
+    orm = vib.db.orm.get_session()
+    audio_track = orm.query( Media, MediaAssets ).filter( Media.id == MediaAssets.media_id,
+                                                          Media.uuid == audio_track,
+                                                          MediaAssets.asset_type == 'original' ).one()
+
+    audio_filename = "%s/%s_audio" % ( workdir, summary_uuid )
+    download_file( audio_filename, config.bucket_name, audio_track.MediaAssets.uri )
+
+    # While get_moments will return things with the approrpriate
+    # order, we can tell vsum.distribute_clips to randomize clips, if
+    # we do then when it loops clips to make a min_duration they will
+    # not keep appearing in the same order with each loop.
+    randomize_clips = False
+    if order == 'random':
+        randomize_clips = True
 
     if summary_type == 'moments':
         video_cuts = get_moments( summary_uuid, images, order, workdir, moment_offsets )
+
+        summary_clips = []
+        for video_uuid, video in sorted( video_cuts['videos'].items(), key=lambda x: x[1]['video_index'] ):
+            filename = video['filename']
+            cuts = video['cuts']
+            
+            for cut in cuts:
+                summary_clips.append( vsum.Clip( video = vsum.Video( filename=filename ),
+                                                 start = cut[0],
+                                                 end   = cut[1] ) )
+
+        w = vsum.Window( width       = output_x, 
+                         height      = output_y, 
+                         output_file = output_file, 
+                         duration    = target_duration,
+                         bgcolor     = "White",
+                         audio_filename  = audio_filename )
+        w.display.pad_bgcolor = 'White'
+
+        if target_duration is None:
+            target_duration = w.duration
+
+        small_logo_color = 'white'
+        large_logo_color = 'white'
+
+        if summary_style == 'classic':
+            vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
+        elif summary_style == 'cascade':
+            small_logo_color = 'gray'
+            large_logo_color = 'gray'
+            w.display.display_style = vsum.OVERLAY
+            vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
+        elif summary_style == 'template-1':
+            large_logo_color = 'gray'
+            w1 = vsum.Window( width=512, height=312, x=32, y=32, display=vsum.Display( display_style=vsum.CROP ) )
+            w2 = vsum.Window( width=512, height=312, x=576, y=32, display=vsum.Display( display_style=vsum.PAD, pad_bgcolor="Blue" ) )
+            w3 = vsum.Window( width=512, height=312, x=32, y=376, display=vsum.Display( display_style=vsum.PAN ) )
+            w4 = vsum.Window( width=512, height=312, x=576, y=376, display=vsum.Display( display_style=vsum.OVERLAY ), bgcolor="Red" )
+            w.windows = [ w1, w2, w3, w4 ]
+            vsum.distribute_clips( summary_clips, [ w1, w2, w3, w4 ], min_duration=target_duration, randomize_clips=randomize_clips )
+        elif summary_style == 'template-2':
+            small_logo_color = 'gray'
+            large_logo_color = 'white'
+            w1 = vsum.Window( width=368, height=656, x=824, y=32, display=vsum.Display( display_style=vsum.CROP ) )
+            w2 = vsum.Window( width=656, height=656, x=84, y=32, display=vsum.Display( display_style=vsum.PAN ) )
+            w.windows = [ w1, w2 ]
+            vsum.distribute_clips( summary_clips, [ w1, w2 ], min_duration=target_duration, randomize_clips=randomize_clips )
+
+        else:
+            raise Exception( "Unexpected summary style: %s" % ( summary_style ) )
+
+        m1 = vsum.Watermark( "%s/media/logo-%s-128.png" % ( os.path.dirname( __file__ ), small_logo_color ),
+                             x = "main_w-overlay_w-10",
+                             y = "main_h-overlay_h-10",
+                             fade_out_start = 3,
+                             fade_out_duration = 1 )
+        m2 = vsum.Watermark( "%s/media/logo-%s-256.png" % ( os.path.dirname( __file__ ), large_logo_color ),
+                        x = "trunc((main_w-overlay_w)/2)",
+                             y = "trunc((main_h-overlay_h)/2)",
+                             fade_in_start = -2,
+                             fade_in_duration = 1 )
+        w.watermarks = [ m1, m2 ]
+        w.render()
+
     else:
         # DEBUG - implement other summary types.
         pass
 
-    # DEBUG
-    # 
-    # Build up a single monster FFMPEG command with N inputs and one output? --inputts, --ss, -t?  
-    #
-    # Have alternate functions here, one for classical, one for cascade.
-    #
-    # Big question, do I need to cut stuff out first, or just build the worlds best command line?
-    #
-    # We'll build the world's best command line, ala:
-    #
-    #ffmpeg -i in.ts -filter_complex \
-    #    "[0:v]trim=duration=30[a]; \
-    #[0:v]trim=start=40:end=50,setpts=PTS-STARTPTS[b]; \
-    #[a][b]concat[c]; \
-    #[0:v]trim=start=80,setpts=PTS-STARTPTS[d]; \
-    #[c][d]concat[out1]" -map [out1] out.ts
-    #
-    #http://superuser.com/questions/681885/how-can-i-remove-multiple-segments-from-a-video-using-ffmpeg
-    #
-    #The filter has v+a outputs: first v video outputs, then a audio outputs.
-    #
-    #There are nx(v+a) inputs: first the inputs for the first segment, in the same order as the outputs, then the inputs for the second segment, etc. 
-    #
-    # The concat filter suggests inputs have the same frame rate, and
-    # it's up to the user to ensure they have the same resolution, so
-    # I'll need to apply my resolution/padding junk in the input
-    # filter complex.
-    #
-    # Maybe use split, we can crop and pad inline.
-    # [in] split [splitout1][splitout2];
-    # [splitout1] crop=100:100:0:0    [cropout];
-    # [splitout2] pad=200:200:100:100 [padout];
-    # CAN DEFINITELY DO MATH IN CROP ON TIMEBASE.
-    #
-    # SYNTAX: https://www.ffmpeg.org/ffmpeg-utils.html
-    #
-
-'''
-
-TO TEST: If I avoid concat and instead to overlays of everything with
-different time bases, can I get the same output, and what about
-performance?  If so, can I unify cascade and sequential into a single framework?
-
-* If so, then move dipsplay technique of cascade onto a clip, and we can allow cascades over sequential. 
-* THIS IS HIGHLY DESIRABLE, SEQUENTIAL SETS THE BACKGROUND, CASCADE OVERWRITES - BLACK BACKGROUND JUST A SPECIAL CASE?
-
-Make some test videos - my 10 second sample tester, and a vflipped
-verion of it, make sure things are doing the right stuff on that
-before working with user videos.
-
-Design:
-
-We have an assembler that takes inputs for N windows, each window has:
-
-* Width and height.
-* List of clips for window
-* Display technique: sequential or cascade
-* Cascade has a bunch of other stuff, inbound interval, scaling factors, etc.
-* max_duration - stop generating after this long
-* time fill - what to do if the content is too short for duration, loop, or add evenly spaced gaps of black?
-
-* Each clip specification has:
-* unique clip id
-* Pad, crop, or zoom and pan
-* unique video specification
-* input width/height
-* duration
-
-* Each video specification has:
-* Unique video specification ID 
-* Video specifier, e.g. [2:v]
-* filename
-
-Assembler also takes in stuff about:
-* Overall background size
-* Background color
-* Window positioning
-* Window ordering (in case of overlap)
-* audio track
-* Watermarks
-
-
-'''
-
-
-
+    # Upload video to S3.
+    log.info( json.dumps( { 'media_uuid' : summary_uuid, 
+                            'message'    : 'Uploading summary video from %s with uuid %s' % ( output_file, summary_uuid ) } ) )
+    upload_file( output_file, config.bucket_name, "%s/%s" % ( summary_uuid, summary_uuid ) )
     
+    # Write records to database
+    orm = vib.db.orm.get_session()
+    orm.commit()
 
+    album = None
+    if album_uuid is not None:
+        album = orm.query( Media ).filter( Media.uuid == album_uuid ).one()
+
+    user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
+
+    unique_hash = None
+    f = open( output_file, 'rb' )
+    md5 = hashlib.md5()
+    while True:
+        file_data = f.read( 1048576 )
+        if not file_data:
+            break
+        md5.update( file_data )
+    unique_hash = md5.hexdigest()
+    f.close()
+
+    log.info( json.dumps( { 'media_uuid' : summary_uuid, 
+                            'message'    : 'Creating database records for album_uuid %s, media_uuid %s' % ( album_uuid, summary_uuid ) } ) )
+
+    media = Media( uuid = summary_uuid,
+                   media_type = 'original',
+                   filename = filename,
+                   title = title,
+                   description = description,
+                   view_count = 0,
+                   status = 'pending',
+                   recording_date = recording_date,
+                   lat = lat,
+                   lng = lng,
+                   unique_hash = unique_hash )
+    user.media.append( media )
+    orm.commit()
+
+    if album is not None:
+        media_album = MediaAlbums( album_id = album.id,
+                                   media_id = media.id )
+        orm.add( media_album )
+
+    original_uuid = str( uuid.uuid4() )
+
+    video_asset = MediaAssets(
+        uuid = original_uuid,
+        asset_type = 'original',
+        bytes = os.path.getsize( output_file ),
+        uri = "%s/%s" % ( summary_uuid, summary_uuid ),
+        location = 'us',
+        view_count = 0 )
+    media.assets.append( video_asset )
+
+    for tag in tags:
+        feature = MediaAssetFeatures(
+            feature_type = 'activity',
+            coordinates = tag
+            )
+        video_asset.media_asset_features.append( feature )
+
+    orm.commit()
+
+    # New pipeline callout
+    log.info( json.dumps( { 'media_uuid' : summary_uuid, 
+                            'message'    : 'Starting VWF execution.' } ) )
+    execution = swf.WorkflowType( 
+        name = 'VideoProcessing' + config.VPWSuffix, 
+        domain = 'Viblio', version = '1.0.7' 
+        ).start( 
+        task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList, 
+        input = json.dumps( { 
+                    'media_uuid' : summary_uuid, 
+                    'user_uuid'  : user.uuid,
+                    'original_uuid' : original_uuid,
+                    'input_file' : {
+                        's3_bucket'  : config.bucket_name,
+                        's3_key' : "%s/%s" % ( summary_uuid, summary_uuid ),
+                        },
+                    'metadata_uri' : None,
+                    'outputs' : [ { 
+                            'output_file' : {
+                                's3_bucket' : config.bucket_name,
+                                's3_key' : "%s/%s_output.mp4" % ( summary_uuid, summary_uuid ),
+                                },
+                            'format' : 'mp4',
+                            'max_video_bitrate' : 1500,
+                            'audio_bitrate' : 160,
+                            'asset_type' : 'main',
+                            'thumbnails' : [ {
+                                    'times' : [ 0.5 ],
+                                    'type'  : 'static',
+                                    'size'  : "288x216",
+                                    'label' : 'poster',
+                                    'format' : 'png',
+                                    'output_file' : {
+                                        's3_bucket' : config.bucket_name,
+                                        's3_key' : "%s/%s_poster.png" % ( summary_uuid, summary_uuid ),
+                                        }
+                                    }, 
+                                             {
+                                    'times' : [ 0.5 ],
+                                    'type'  : 'animated',
+                                    'size'  : "288x216",
+                                    'label' : 'poster_animated',
+                                    'format' : 'gif',
+                                    'output_file' : {
+                                        's3_bucket' : config.bucket_name,
+                                        's3_key' : "%s/%s_poster_animated.gif" % ( summary_uuid, summary_uuid ),
+                                        }
+                                    },
+                                             ]
+                            }
+                                  ]
+                    } ),
+        workflow_id=summary_uuid
+        )
+
+    # Clean up
+    orm.close()
+    # DEBUG - enable this.
+    #if workdir[:4] == '/mnt':
+    #    log.info( json.dumps( { 'media_uuid' : summary_uuid, 
+    #                            'message'    : 'Deleting temporary files at %s' % ( workdir ) } ) )
+    #    shutil.rmtree( workdir )
     return
 
 
-
-
-'''
-        
-    exif = get_exif( media_uuid, movie_file )
-    input_x = int( exif['width'] )
-    input_y = int( exif['height'] )
-    input_ratio = float( input_x ) / input_y
-    log.debug( json.dumps( { 'album_uuid' : album_uuid, 
-                             'message'   : 'Got exif for input video of dimension: %sx%s' % ( input_x, input_y ) } ) )
-
-    # Calculate the aspect ratio for our output video.
-    output_ratio = float( output_x ) / output_y
-
-    # Generate our clips.
-    for idx, track_cut in enumerate( final_cuts ):
-        cut_video = "%s/%s_%s.mp4" % ( workdir, media_uuid, idx )
-        
-        # DEBUG - all we care about for now are that the
-        # videos less than 640 wide and 360 high.
-        if input_ratio < output_ratio:
-            ffmpeg_opts = ' -vf scale=-1:%s ' % ( output_y )
-        else:
-            ffmpeg_opts = ' -vf scale=%s:-1 ' % ( output_x )
-            
-        #if input_ratio < output_ratio:
-        #    ffmpeg_opts = ' -vf scale=-1:%s,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_y, output_x, output_y )
-        #else:
-        #    ffmpeg_opts = ' -vf scale=%s:-1,pad="%s:%s:(ow-iw)/2:(oh-ih)/2" ' % ( output_x, output_x, output_y )
-
-        cmd = "ffmpeg -y -i %s -ss %s -t %s -r 30000/1001 -an %s %s" % ( movie_file, track_cut[0], track_cut[1]-track_cut[0], ffmpeg_opts, cut_video )
-
-        log.info( json.dumps( { 'album_uuid' : album_uuid, 
-                                'message'   : 'Generating clip with command: %s' % ( cmd ) } ) )
-        ( status, output ) = commands.getstatusoutput( cmd )
-
-        if status == 0:
-            # Store the fact that we made this cut for later concatenation.
-            cut_lines.append( "file %s\n" % ( cut_video ) )
-        else:
-            log.error( json.dumps( { 'album_uuid' : album_uuid, 
-                                     'message'   : 'Something went wrong generating clip, output was: %s' % ( output ) } ) )
-            output_secs -= track_cut[1] - track_cut[0]
-'''
-
-
-
-'''
-
     
-
-
-
-'''
-
 '''
 
     album = orm.query( Media ).filter( Media.uuid == album_uuid ).one()
@@ -673,163 +742,7 @@ def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filenam
                                      'message'   : message } ) )
         raise Exception( message )
     else:
-        # Upload video to S3.
-        summary_uuid = str( uuid.uuid4() )
-        log.info( json.dumps( { 'album_uuid' : album_uuid, 
-                                'message'   : 'Uploading summary video from %s with uuid %s' % ( output_file, summary_uuid ) } ) )
-        upload_file( output_file, config.bucket_name, "%s/%s" % ( summary_uuid, summary_uuid ) )
 
-        # Write records to database
-        orm = vib.db.orm.get_session()
-        orm.commit()
-
-        album = orm.query( Media ).filter( Media.uuid == album_uuid ).one()
-        user = orm.query( Users ).filter( Users.id == album.user_id ).one()
-
-        unique_hash = None
-        f = open( output_file, 'rb' )
-        md5 = hashlib.md5()
-        while True:
-            file_data = f.read( 1048576 )
-            if not file_data:
-                break
-            md5.update( file_data )
-        unique_hash = md5.hexdigest()
-        f.close()
-
-        log.info( json.dumps( { 'album_uuid' : album_uuid, 
-                                'message'   : 'Creating database records for album_uuid %s, media_uuid %s, and viblio_added_content_id %s ' % ( album_uuid, summary_uuid, viblio_added_content_id ) } ) )
-
-        media = Media( uuid = summary_uuid,
-                       media_type = 'original',
-                       filename = filename,
-                       title = title,
-                       view_count = 0,
-                       status = 'pending',
-                       is_viblio_created = True,
-                       unique_hash = unique_hash )
-        user.media.append( media )
-        orm.commit()
-        media_album = MediaAlbums( album_id = album.id,
-                                   media_id = media.id )
-        orm.add( media_album )
-
-        original_uuid = str( uuid.uuid4() )
-
-        video_asset = MediaAssets(
-            uuid = original_uuid,
-            asset_type = 'original',
-            bytes = os.path.getsize( output_file ),
-            uri = "%s/%s" % ( summary_uuid, summary_uuid ),
-            location = 'us',
-            view_count = 0 )
-        media.assets.append( video_asset )
-
-        vac = orm.query( ViblioAddedContent ).filter( ViblioAddedContent.id == viblio_added_content_id ).one()
-        vac.status = 'prepared'
-        media.viblio_added_content.append( vac )
-        
-        orm.commit()
-
-        # New pipeline callout
-        log.info( json.dumps( { 'album_uuid' : album_uuid, 
-                                'message'   : 'Starting VWF execution.' } ) )
-        execution = swf.WorkflowType( 
-            name = 'VideoProcessing' + config.VPWSuffix, 
-            domain = 'Viblio', version = '1.0.7' 
-            ).start( 
-            task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList, 
-            input = json.dumps( { 
-                        'viblio_added_content_type' : 'Album Summary',
-                        'media_uuid' : summary_uuid, 
-                        'user_uuid'  : user.uuid,
-                        'original_uuid' : original_uuid,
-                        'input_file' : {
-                            's3_bucket'  : config.bucket_name,
-                            's3_key' : "%s/%s" % ( summary_uuid, summary_uuid ),
-                            },
-                        'metadata_uri' : None,
-                        'outputs' : [ { 
-                                'output_file' : {
-                                    's3_bucket' : config.bucket_name,
-                                    's3_key' : "%s/%s_output.mp4" % ( summary_uuid, summary_uuid ),
-                                    },
-                                'format' : 'mp4',
-                                'max_video_bitrate' : 1500,
-                                'audio_bitrate' : 160,
-                                'asset_type' : 'main',
-                                'thumbnails' : [ {
-                                        'times' : [ 0.5 ],
-                                        'type'  : 'static',
-                                        #'size'  : "320x240",
-                                        'size'  : "288x216",
-                                        'label' : 'poster',
-                                        'format' : 'png',
-                                        'output_file' : {
-                                            's3_bucket' : config.bucket_name,
-                                            's3_key' : "%s/%s_poster.png" % ( summary_uuid, summary_uuid ),
-                                            }
-                                        }, 
-                                        #         {
-                                        #'times' : [ 0.5 ],
-                                        #'type'  : 'static',
-                                        #'original_size' : True,
-                                        #'label' : 'poster_original',
-                                        #'format' : 'png',
-                                        #'output_file' : {
-                                        #    's3_bucket' : config.bucket_name,
-                                        #    's3_key' : "%s/%s_poster_original.png" % ( summary_uuid, summary_uuid ),
-                                        #    }
-                                        #}, 
-                                        #         {
-                                        #'times' : [ 0.5 ],
-                                        #'size': "128x128",
-                                        #'type'  : 'static',
-                                        #'label' : 'thumbnail',
-                                        #'format' : 'png',
-                                        #'output_file' : {
-                                        #    's3_bucket' : config.bucket_name,
-                                        #    's3_key' : "%s/%s_thumbnail.png" % ( summary_uuid, summary_uuid ),
-                                        #    }
-                                        #},
-                                                 {
-                                        'times' : [ 0.5 ],
-                                        'type'  : 'animated',
-                                        #'size'  : "320x240",
-                                        'size'  : "288x216",
-                                        'label' : 'poster_animated',
-                                        'format' : 'gif',
-                                        'output_file' : {
-                                            's3_bucket' : config.bucket_name,
-                                            's3_key' : "%s/%s_poster_animated.gif" % ( summary_uuid, summary_uuid ),
-                                            }
-                                        },
-                                        #         {
-                                        #'times' : [ 0.5 ],
-                                        #'size': "128x128",
-                                        #'type'  : 'animated',
-                                        #'label' : 'thumbnail_animated',
-                                        #'format' : 'gif',
-                                        #'output_file' : {
-                                        #    's3_bucket' : config.bucket_name,
-                                        #    's3_key' : "%s/%s_thumbnail_animated.gif" % ( summary_uuid, summary_uuid ),
-                                        #    }
-                                        #} 
-                                                 ]
-                                }
-                                      ]
-                        } ),
-            workflow_id=summary_uuid
-            )
-
-        # Clean up
-        orm.close()
-        if workdir[:4] == '/mnt':
-            log.info( json.dumps( { 'album_uuid' : album_uuid, 
-                                    'message'   : 'Deleting temporary files at %s' % ( workdir ) } ) )
-            # DEBUG
-            #shutil.rmtree( workdir )
-        return
 
 '''
         
@@ -862,7 +775,7 @@ def run():
         except Exception as e:
             log.debug( json.dumps( { 'message' : "Error converting options to string: %s" % e } ) )
         
-        if 'action' not in options or options['action'] != 'build_video_summary':
+        if 'action' not in options or options['action'] != 'create_video_summary':
             # This message is not for us, move on.
             return True;
 
@@ -881,8 +794,7 @@ def run():
         if user_uuid is None or images is None or summary_type is None or audio_track is None:
             message = 'Error, empty input for one of user_uuid: %s, images: %s, summary_type: %s, and audio_track: %s' % ( user_uuid, images, summary_type, audio_track )
             log.error( json.dumps( { 'message' : message } ) )
-            # DEBUG
-            # raise Exception( message )
+            raise Exception( message )
 
         # Mandatory for some summary_types.
         contacts        = options.get( 'contacts[]', [] )
@@ -917,16 +829,12 @@ def run():
         tags            = options.get( 'tags[]', [] )
         recording_date  = options.get( 'recording_date', datetime.datetime.now() )
 
-        output_x        = options.get( 'output_x', 640 )
-        output_y        = options.get( 'output_y', 360 )
+        output_x        = options.get( 'output_x', 1280 )
+        output_y        = options.get( 'output_y', 720 )
 
         # The UUID of the summary we will create.
         summary_uuid = str( uuid.uuid4() )
         
-        # For testing just keep using this over and over.
-        # DEBUG
-        summary_uuid = '071151c4-25cc-4ef0-9bcd-c7838dec7a56'
-
         workdir = config.faces_dir + '/album_summary/' + summary_uuid + '/'
         try:
             if not os.path.isdir( workdir ):
@@ -942,7 +850,7 @@ def run():
         # fail we don't try again.
    
         # DEBUG
-        #sqs.delete_message( message )
+        sqs.delete_message( message )
 
         generate_summary( summary_type,
                           summary_uuid,

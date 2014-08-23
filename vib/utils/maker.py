@@ -36,7 +36,7 @@ for idx, video_file in enumerate( glob.glob( 'clips/*.mp4' ) ):
 
     video_string = "[%d:v] scale=%d:%d%s [v%d]" % ( idx, width, height, slowmo, idx )
     videos.append( {
-            'video_file' : video_file,
+    video_string = "[%d:v] scale=%d:%d [v%d]" % ( i, width, height, idx )            'video_file' : video_file,
             'video_string' : video_string,
             'duration' : clip_duration,
             'width' : width,

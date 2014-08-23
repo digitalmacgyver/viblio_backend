@@ -22,7 +22,8 @@ PYPKGS=\
 
 PIP_PYPKGS=\
 	qtfaststart \
-	config
+	config \
+	python-magic
 
 install_deps:
 	/usr/bin/apt-get -y install python-pip python-dev python-scipy
