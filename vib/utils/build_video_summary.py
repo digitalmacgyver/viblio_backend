@@ -395,70 +395,67 @@ def generate_summary( summary_type,
     log.info( json.dumps( { 'media_uuid' : summary_uuid, 
                             'message'    : 'Starting VWF execution.' } ) )
     execution = swf.WorkflowType( 
-        name = 'VideoProcessing' + config.VPWSuffix, 
-        domain = 'Viblio', version = '1.0.7' 
-        ).start( 
-        task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList, 
-        input = json.dumps( { 
-                    'media_uuid' : summary_uuid, 
-                    'user_uuid'  : user.uuid,
-                    'original_uuid' : original_uuid,
-                    'input_file' : {
-                        's3_bucket'  : config.bucket_name,
-                        's3_key' : "%s/%s" % ( summary_uuid, summary_uuid ),
-                        },
-                    'metadata_uri' : None,
-                    'outputs' : [ { 
-                            'output_file' : {
-                                's3_bucket' : config.bucket_name,
-                                's3_key' : "%s/%s_output.mp4" % ( summary_uuid, summary_uuid ),
-                                },
-                            'format' : 'mp4',
-                            'max_video_bitrate' : 1500,
-                            'audio_bitrate' : 160,
-                            'asset_type' : 'main',
-                            'thumbnails' : [ {
-                                    'times' : [ 0.5 ],
-                                    'type'  : 'static',
-                                    'size'  : "288x216",
-                                    'label' : 'poster',
-                                    'format' : 'png',
-                                    'output_file' : {
-                                        's3_bucket' : config.bucket_name,
-                                        's3_key' : "%s/%s_poster.png" % ( summary_uuid, summary_uuid ),
-                                        }
-                                    }, 
-                                             {
-                                    'times' : [ 0.5 ],
-                                    'type'  : 'animated',
-                                    'size'  : "288x216",
-                                    'label' : 'poster_animated',
-                                    'format' : 'gif',
-                                    'output_file' : {
-                                        's3_bucket' : config.bucket_name,
-                                        's3_key' : "%s/%s_poster_animated.gif" % ( summary_uuid, summary_uuid ),
-                                        }
-                                    },
-                                             ]
-                            }
-                                  ]
-                    } ),
-        workflow_id=summary_uuid
-        )
-
+	    name = 'VideoProcessing' + config.VPWSuffix, 
+	    domain = 'Viblio', version = '1.0.7' 
+	    ).start( 
+	    task_list = 'VPDecider' + config.VPWSuffix + config.UniqueTaskList, 
+	    input = json.dumps( { 
+				    'media_uuid' : summary_uuid, 
+				    'user_uuid'  : user.uuid,
+				    'original_uuid' : original_uuid,
+				    'input_file' : {
+					    's3_bucket'  : config.bucket_name,
+					    's3_key' : "%s/%s" % ( summary_uuid, summary_uuid ),
+					    },
+				    'metadata_uri' : None,
+				    'outputs' : [ { 
+						    'output_file' : {
+							    's3_bucket' : config.bucket_name,
+							    's3_key' : "%s/%s_output.mp4" % ( summary_uuid, summary_uuid ),
+							    },
+						    'format' : 'mp4',
+						    'max_video_bitrate' : 1500,
+						    'audio_bitrate' : 160,
+						    'asset_type' : 'main',
+						    'thumbnails' : [ {
+								    'times' : [ 0.5 ],
+								    'type'  : 'static',
+								    'size'  : "288x216",
+								    'label' : 'poster',
+								    'format' : 'png',
+								    'output_file' : {
+									    's3_bucket' : config.bucket_name,
+									    's3_key' : "%s/%s_poster.png" % ( summary_uuid, summary_uuid ),
+									    }
+								    }, 
+								     {
+								    'times' : [ 0.5 ],
+								    'type'  : 'animated',
+								    'size'  : "288x216",
+								    'label' : 'poster_animated',
+								    'format' : 'gif',
+								    'output_file' : {
+									    's3_bucket' : config.bucket_name,
+									    's3_key' : "%s/%s_poster_animated.gif" % ( summary_uuid, summary_uuid ),
+									    }
+								    },
+								     ]
+						    }
+						  ]
+				    } ),
+	    workflow_id=summary_uuid
+	    )
+	    
     # Clean up
     orm.close()
-    # DEBUG - enable this.
-    #if workdir[:4] == '/mnt':
-    #    log.info( json.dumps( { 'media_uuid' : summary_uuid, 
-    #                            'message'    : 'Deleting temporary files at %s' % ( workdir ) } ) )
-    #    shutil.rmtree( workdir )
+    if workdir[:4] == '/mnt':
+        log.info( json.dumps( { 'media_uuid' : summary_uuid, 
+				'message'    : 'Deleting temporary files at %s' % ( workdir ) } ) )
+    shutil.rmtree( workdir )
     return
 
-
-    
 '''
-
+# DEBUG - This code can be salvaged when we build people summaries.
     album = orm.query( Media ).filter( Media.uuid == album_uuid ).one()
     user = orm.query( Users ).filter( Users.id == album.user_id ).one()
 
@@ -848,8 +845,6 @@ def run():
         # 
         # Summary creation is "best effort" in this regard - if we
         # fail we don't try again.
-   
-        # DEBUG
         sqs.delete_message( message )
 
         generate_summary( summary_type,
@@ -888,6 +883,4 @@ def run():
             # Even if something went wrong, make sure we delete the
             # message so we don't end up stuck in an infinite loop
             # trying to process this message.
-            # DEBUG
-            pass
-            #sqs.delete_message( message )    
+            sqs.delete_message( message )    
