@@ -283,7 +283,7 @@ class Watermark( object ):
 class Window( object ):
     z = 0
     tmpdir = '/tmp/vsum/'
-    cache_dict_file = '/tmp/vsum/cachedb'
+    cache_dict_file = 'cachedb'
     cache_dict = {}
 
     @staticmethod
@@ -299,8 +299,8 @@ class Window( object ):
 
     @staticmethod
     def load_cache_dict():
-        if os.path.exists( Window.cache_dict_file ):
-            f = open( Window.cache_dict_file, 'r' )
+        if os.path.exists( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ) ):
+            f = open( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ), 'r' )
             Window.cache_dict = pickle.load( f )
             f.close()
         else:
@@ -313,7 +313,7 @@ class Window( object ):
         if not os.path.isdir( Window.tmpdir ):
             os.makedirs( Window.tmpdir )
 
-        f = open( Window.cache_dict_file, 'wb' )
+        f = open( "%s/%s" % ( Window.tmpdir, Window.cache_dict_file ), 'wb' )
         pickle.dump( Window.cache_dict, f )
         f.close()
     
@@ -324,7 +324,7 @@ class Window( object ):
                 try:
                     os.remove( cache_file )
                 except Exception as e:
-                    raise Error( "Error while deleting file %s: %s" % ( cache_file, e ) )
+                    raise Exception( "Error while deleting file %s: %s" % ( cache_file, e ) )
 
     def __init__( self,
                   windows = None,
