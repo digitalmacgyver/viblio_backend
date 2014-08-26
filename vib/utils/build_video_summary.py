@@ -131,7 +131,7 @@ def download_movie( media_uuid, workdir ):
     return movie_file
 
 
-def get_moments( media_uuid, images, order, workdir, moment_offsets ):
+def get_moments( media_uuid, images, order, workdir, moment_offsets, random_duration=False, min_duration=None ):
     '''Returns a data structure:
     { summary_duration : 99
       videos : { 
@@ -169,39 +169,51 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets ):
 
         timecode = float( video.MediaAssets.timecode )
 
+	start_offset = moment_offsets[0]
+	end_offset = moment_offsets[1]
+	if random_duration:
+	    start_offset *= random.uniform( 1, 2 )
+	    end_offset *= random.uniform( 1, 2 )
+
         if video.Media.uuid not in result['videos']:
             movie_file = download_movie( video.Media.uuid, workdir )
-            result['videos'][video.Media.uuid] = { 'filename' : movie_file, 
-                                                   'video_index' : video_index }
+
+	    result['videos'][video.Media.uuid] = { 'filename' : movie_file, 
+						   'video_index' : video_index }
             
             ( status, output ) = commands.getstatusoutput( 'ffprobe -v quiet -print_format json -show_format -show_streams %s ' % ( movie_file ) )
             info = json.loads( output )
             video_duration = float( info['format']['duration'] )
-            result['videos'][video.Media.uuid]['duration'] = video_duration
+	    result['videos'][video.Media.uuid]['duration'] = video_duration
 
-            start = max( 0,              timecode + moment_offsets[0] )
-            end   = min( video_duration, timecode + moment_offsets[1] )
-            
-            result['videos'][video.Media.uuid]['cuts'] = [ [ start, end ] ]
-            summary_duration += end - start
+            start = max( 0,              timecode + start_offset )
+            end   = min( video_duration, timecode + end_offset )
+	    
+	    if min_duration is None or end - start >= min_duration:
+		result['videos'][video.Media.uuid]['cuts'] = [ [ start, end ] ]
+		summary_duration += end - start
+	    else:
+		result['videos'][video.Media.uuid]['cuts'] = [ ]
 
         else:
             video_duration = result['videos'][video.Media.uuid]['duration']
 
-            start = max( 0,              timecode + moment_offsets[0] )
-            end   = min( video_duration, timecode + moment_offsets[1] )
+            start = max( 0,              timecode + start_offset )
+            end   = min( video_duration, timecode + end_offset )
             
             if order in [ 'oldest', 'newest' ]:
                 if prior_video_uuid == video.Media.uuid:
                     # If we're working on sequential cuts from the
                     # same video, don't let them overlap.
-                    start = max( start, result['videos'][video.Media.uuid]['cuts'][-1][1] )
+		    if len( result['videos'][video.Media.uuid]['cuts'] ):
+			start = max( start, result['videos'][video.Media.uuid]['cuts'][-1][1] )
 
                     if start <= end:
                         continue
 
-            result['videos'][video.Media.uuid]['cuts'].append( [ start, end ] )
-            summary_duration += end - start
+	    if min_duration is None or end - start >= min_duration:
+		result['videos'][video.Media.uuid]['cuts'].append( [ start, end ] )
+		summary_duration += end - start
 
         prior_video_uuid = video.Media.uuid
             
@@ -254,7 +266,10 @@ def generate_summary( summary_type,
         randomize_clips = True
 
     if summary_type == 'moments':
-        video_cuts = get_moments( summary_uuid, images, order, workdir, moment_offsets )
+	if summary_style != 'cascade':
+	    video_cuts = get_moments( summary_uuid, images, order, workdir, moment_offsets )
+	else:
+	    video_cuts = get_moments( summary_uuid, images, order, workdir, moment_offsets, random_duration=True, min_duration = float( moment_offsets[1]-moment_offsets[0] )/2 )
 
         summary_clips = []
         for video_uuid, video in sorted( video_cuts['videos'].items(), key=lambda x: x[1]['video_index'] ):
@@ -279,13 +294,18 @@ def generate_summary( summary_type,
 
         small_logo_color = 'white'
         large_logo_color = 'white'
-
-        if summary_style == 'classic':
-            vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
+		
+	if summary_style == 'classic':
+	    w.display.display_style = vsum.CROP
+	    w.width = 720
+	    w.height = 720
+	    vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
         elif summary_style == 'cascade':
             small_logo_color = 'gray'
             large_logo_color = 'gray'
             w.display.display_style = vsum.OVERLAY
+	    w.bgcolor = 'LightGrey'
+	    w.bgimage_file = "%s/media/logo-white-1280x720.png" % ( os.path.dirname( __file__ ) )
             vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
         elif summary_style == 'template-1':
             large_logo_color = 'gray'
@@ -451,7 +471,8 @@ def generate_summary( summary_type,
     if workdir[:4] == '/mnt':
         log.info( json.dumps( { 'media_uuid' : summary_uuid, 
 				'message'    : 'Deleting temporary files at %s' % ( workdir ) } ) )
-    shutil.rmtree( workdir )
+        # DEBUG
+        #shutil.rmtree( workdir )
     return
 
 '''

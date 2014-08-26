@@ -1,43 +1,17 @@
 #!/usr/bin/env python
 
 import commands
-import datetime
 import glob
 import hashlib
 import json
-import logging
-from logging import handlers
-import math
 import os
 import pickle
 import random
-import re
 import shutil
-import tempfile
-import time
 import uuid
 
-import vib.config.AppConfig
-config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
-
-log = logging.getLogger( __name__ )
-log.setLevel( logging.DEBUG )
-
-syslog = logging.handlers.SysLogHandler( address="/dev/log" )
-
-format_string = 'vsum: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
-
-sys_formatter = logging.Formatter( format_string )
-
-syslog.setFormatter( sys_formatter )
-syslog.setLevel( logging.INFO )
-consolelog = logging.StreamHandler()
-consolelog.setLevel( logging.DEBUG )
-
-log.addHandler( syslog )
-log.addHandler( consolelog )
-
 FFMPEG = 'ffmpeg'
+FFMPEG = '/home/viblio/ffmpeg/git/ffmpeg/ffmpeg'
 
 def distribute_clips( clips, windows, min_duration=None, randomize_clips=False ):
     '''Distribute clips to windows.
@@ -52,9 +26,9 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
     recycled until the min_duration is met.
     '''
 
-    #import pdb
-    #pdb.set_trace()
-    
+    if len( clips ) == 0:
+        return
+
     window_stats = []
     for window in windows:
         ar = float( window.width ) / window.height
@@ -127,9 +101,9 @@ PAN_DIRECTIONS = [ ALTERNATE, DOWN, UP ]
 
 class Display( object ):
     def __init__( self, 
-                  overlay_concurrency = 3,
+                  overlay_concurrency = 4,
                   overlay_direction   = DOWN,
-                  overlay_min_gap     = 0.5,
+                  overlay_min_gap     = 4,
                   display_style       = PAD,
                   pan_direction       = ALTERNATE,
                   pad_bgcolor         = 'Black' ):
@@ -243,12 +217,12 @@ class Clip( object ):
 
         self.video = video
         
-        self.start = float( start )
+        self.start = max( float( start ), 0 )
             
         if end is None:
             self.end = video.duration
         else:
-            self.end = float( end )
+            self.end = min( float( end ), video.duration )
 
         self.display = display
             
@@ -330,6 +304,7 @@ class Window( object ):
                   windows = None,
                   clips = None,
                   bgcolor = 'Black',
+                  bgimage_file = None, # For windows with no clips, they can optionally place an image on top of their bgcolor.  The image is assumed to be sized correctly, no scaling or placement is done.
                   width = 1280,
                   height = 720,
                   # The position of this window relative to its parent
@@ -374,6 +349,8 @@ class Window( object ):
             self.clips = clips
         else:
             self.clips = []
+
+        self.bgimage_file = bgimage_file
 
         self.bgcolor  = bgcolor
         self.width    = width
@@ -428,10 +405,21 @@ class Window( object ):
 
     def render( self, helper=False ):
         # File to accumulate things in.
-        tmpfile = self.get_next_renderfile()
+        tmpfile = None
 
-        # Handle the case where there are no clips
-        if len( self.clips ) == 0:
+        # Lay down a background if requested to.
+        if self.bgimage_file is not None:
+            tmpfile = self.get_next_renderfile()
+            cmd = '%s -y -loop 1 -i %s -r 30000/1001 -q:v 1 -filter_complex " color=%s:size=%dx%d [base] ; [base] [0] overlay " -t %f %s' % ( FFMPEG, self.bgimage_file, self.bgcolor, self.width, self.height, self.duration, tmpfile )
+            print "Running: %s" % ( cmd )
+            ( status, output ) = commands.getstatusoutput( cmd )
+            print "Output was: %s" % ( output )
+            if status != 0 or not os.path.exists( tmpfile ):
+                raise Exception( "Error producing solid background file %s with command: %s" % ( tmpfile, cmd ) )
+
+        # Handle the case where there are no clips and no background.
+        if len( self.clips ) == 0 and self.bgimage_file is None:
+            tmpfile = self.get_next_renderfile()
             cmd = '%s -y -r 30000/1001 -q:v 1 -filter_complex " color=%s:size=%dx%d " -t %f %s' % ( FFMPEG, self.bgcolor, self.width, self.height, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
@@ -439,7 +427,7 @@ class Window( object ):
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error producing solid background file %s with command: %s" % ( tmpfile, cmd ) )
         else:
-            tmpfile = self.render_clips( self.clips )
+            tmpfile = self.render_clips( self.clips, tmpfile )
 
         for window in sorted( self.windows, key=lambda x: x.z_index ):
             if window.duration is None:
@@ -448,8 +436,8 @@ class Window( object ):
             window_file = window.render( helper=True )
             tmpfile = self.get_next_renderfile()
 
-            #cmd = '%s -y -i %s -i %s -r 30000/1001 -q:v 1 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
-            cmd = '%s -y -i %s -i %s -r 30000/1001 -q:v 1 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -r 30000/1001 -q:v 1 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
+            #cmd = '%s -y -i %s -i %s -r 30000/1001 -q:v 1 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -466,6 +454,7 @@ class Window( object ):
             else:
                 audio_fade_start = max( 0, self.duration - 5 )
                 audio_fade_duration = self.duration - audio_fade_start
+            # DEBUG - remove strict
             afade_clause = ' -af "afade=t=out:st=%f:d=%f" ' % ( audio_fade_start, audio_fade_duration )
             current = tmpfile
             tmpfile = self.get_next_renderfile()
@@ -518,8 +507,8 @@ class Window( object ):
         # Overlay them onto one another
         prior_overlay = '0'
         for idx, watermark in enumerate( watermarks ):
-            #cmd += ' [%s] [w%d] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( prior_overlay, idx, watermark.x, watermark.y, idx )
-            cmd += ' [%s] [w%d] overlay=x=%s:y=%s [o%s] ; ' % ( prior_overlay, idx, watermark.x, watermark.y, idx )
+            cmd += ' [%s] [w%d] overlay=x=%s:y=%s:eof_action=pass [o%s] ; ' % ( prior_overlay, idx, watermark.x, watermark.y, idx )
+            #cmd += ' [%s] [w%d] overlay=x=%s:y=%s [o%s] ; ' % ( prior_overlay, idx, watermark.x, watermark.y, idx )
             prior_overlay = "o%s" % idx
 
         cmd += ' [%s] copy " %s' % ( prior_overlay, tmpfile )
@@ -544,7 +533,7 @@ class Window( object ):
         md5.update( clip_name )
         return md5.hexdigest()
 
-    def render_clips( self, clips ):
+    def render_clips( self, clips, tmpfile ):
         # For each clip we:
         #
         # 1. Check in our cache to see if we already have a version of
@@ -587,8 +576,8 @@ class Window( object ):
             print "Output was: %s" % ( output )
             if status != 0 or not os.path.exists( tmpfile ):
                 raise Exception( "Error producing concatenated file %s with command: %s" % ( tmpfile, cmd ) )
-        else:
-            # All the clips are overlays - build a background for the clips.
+        elif tmpfile is None:
+            # All the clips are overlays and we have no background.
             duration = self.compute_duration( self.clips )
             tmpfile = self.get_next_renderfile()
             cmd = '%s -y -r 30000/1001 -q:v 1 -filter_complex " color=%s:size=%dx%d " -t %f %s' % ( FFMPEG, self.bgcolor, self.width, self.height, duration, tmpfile )
@@ -615,8 +604,8 @@ class Window( object ):
 
                 include_clause += " -i %s " % ( filename )
 
-                scale = random.uniform( 1.0/2, 1.0/4 )
-                # Set the width to be randomly between 1/2 and 1/4th
+                scale = random.uniform( 1.0/3, 2.0/3 )
+                # Set the width to be randomly between 2/3 and 1/3th
                 # of the window width, and the height so the aspect
                 # ratio is retained.
                 ow = 2*int( self.width*scale / 2 )
@@ -629,15 +618,15 @@ class Window( object ):
                 if direction in [ UP, DOWN ]:
                     x = random.randint( 0, self.width - ow )
                     if direction == UP:
-                        y = "'if( gte(t,%d), H-(t-%d)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.height+oh ) / overlay.get_duration() )
+                        y = "'if( gte(t,%f), H-(t-%f)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.height+oh ) / overlay.get_duration() )
                     elif direction == DOWN:
-                        y = "'if( gte(t,%d), -h+(t-%d)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.height+oh ) / overlay.get_duration() )
+                        y = "'if( gte(t,%f), -h+(t-%f)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.height+oh ) / overlay.get_duration() )
                 else:
                     y = random.randint( 0, self.height - oh )
                     if direction == LEFT:
-                        x = "'if( gte(t,%d), -w+(t-%d)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.width+ow ) / overlay.get_duration() )
+                        x = "'if( gte(t,%f), -w+(t-%f)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.width+ow ) / overlay.get_duration() )
                     elif direction == RIGHT:
-                        x = "'if( gte(t,%d), W-(t-%d)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.width+ow ) / overlay.get_duration() )
+                        x = "'if( gte(t,%f), W-(t-%f)*%f, NAN)'" % ( overlay_start, overlay_start, float( self.width+ow ) / overlay.get_duration() )
 
                 #filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s:eof_action=pass [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
                 filter_complex += ' [%s] [o%d] overlay=x=%s:y=%s [t%d] ; ' % ( prior_overlay, overlay_idx, x, y, overlay_idx )
@@ -691,9 +680,6 @@ class Window( object ):
             scale_clause += "crop=w=%d:h=%d" % ( self.width, self.height )
 
         elif display.display_style == PAN:
-            import pdb
-            #pdb.set_trace()
-
             ( scale, ow, oh ) = self.get_output_dimensions( clip.video.width, clip.video.height, self.width, self.height, max )
 
             clip_width = ow
@@ -826,8 +812,10 @@ class Window( object ):
                 # It's complicated if this is a cascading clip.
                 if len( overlay_timing ) < display.overlay_concurrency:
                     overlay_prior_pts_offset = pts_offset
-                    if pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
+                    if pts_offset > 0 and pts_offset - overlay_prior_pts_offset <= display.overlay_min_gap:
                         pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
+                    elif pts_offset == 0:
+                        pts_offset += display_overlay_min_gap
                     overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
                 else:
                     # Determine when we can begin the next overlay.
@@ -836,8 +824,10 @@ class Window( object ):
                     # at the display.overlay_concurrency largest ones,
                     # and take the minimum of those.
                     pts_offset = min( sorted( [ x[1] for x in overlay_timing ] )[-display.overlay_concurrency:] )
-                    if pts_offset - overlay_prior_pts_offset < display.overlay_min_gap:
+                    if pts_offset > 0 and pts_offset - overlay_prior_pts_offset <= display.overlay_min_gap:
                         pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
+                    elif pts_offset == 0:
+                        pts_offset += display_overlay_min_gap
                     overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
                 if max( [ x[1] for x in overlay_timing ] ) > duration:
                     duration = max( [ x[1] for x in overlay_timing ] )
