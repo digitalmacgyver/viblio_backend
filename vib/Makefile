@@ -34,6 +34,7 @@ install_deps:
 	/usr/bin/apt-get -y install libapache2-mod-wsgi
 	/usr/bin/apt-get -y install python-bs4
 	/usr/bin/apt-get -y install imagemagick
+	/usr/bin/apt-get -y install libimage-exiftool-perl
 	/usr/local/bin/pip install xmltodict
 
 # Build the image suitable for software upgrade

@@ -11,7 +11,7 @@ import shutil
 import uuid
 
 FFMPEG = 'ffmpeg'
-FFMPEG = '/home/viblio/ffmpeg/git/ffmpeg/ffmpeg'
+#FFMPEG = '/home/viblio/ffmpeg/git/ffmpeg/ffmpeg'
 
 def distribute_clips( clips, windows, min_duration=None, randomize_clips=False ):
     '''Distribute clips to windows.
@@ -454,8 +454,7 @@ class Window( object ):
             else:
                 audio_fade_start = max( 0, self.duration - 5 )
                 audio_fade_duration = self.duration - audio_fade_start
-            # DEBUG - remove strict
-            afade_clause = ' -af "afade=t=out:st=%f:d=%f" ' % ( audio_fade_start, audio_fade_duration )
+            afade_clause = ' -c:a libfdk_aac -af "afade=t=out:st=%f:d=%f" ' % ( audio_fade_start, audio_fade_duration )
             current = tmpfile
             tmpfile = self.get_next_renderfile()
             cmd = '%s -y -i %s -i %s -vf copy %s -t %f %s' % ( FFMPEG, current, self.audio_filename, afade_clause, self.duration, tmpfile )

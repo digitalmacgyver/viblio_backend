@@ -17,10 +17,9 @@ def get_exif( media_uuid, filename ):
     try:
         exif_file = os.path.splitext( filename )[0] + '_exif.json'
         command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + filename
-        log.info( json.dumps( {
-                    'media_uuid' : media_uuid,
-                    'message' : 'Running exif extraction command: %s' % command
-                    } ) )
+        log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                'message' : 'Running exif extraction command: %s' % command } ) )
+
         os.system( command )
 
         file_handle = open( exif_file )

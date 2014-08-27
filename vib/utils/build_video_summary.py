@@ -296,9 +296,7 @@ def generate_summary( summary_type,
         large_logo_color = 'white'
 		
 	if summary_style == 'classic':
-	    w.display.display_style = vsum.CROP
-	    w.width = 720
-	    w.height = 720
+	    w.display.display_style = vsum.PAN
 	    vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
         elif summary_style == 'cascade':
             small_logo_color = 'gray'
