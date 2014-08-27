@@ -815,7 +815,7 @@ class Window( object ):
                     if pts_offset > 0 and pts_offset - overlay_prior_pts_offset <= display.overlay_min_gap:
                         pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
                     elif pts_offset == 0:
-                        pts_offset += display_overlay_min_gap
+                        pts_offset += display.overlay_min_gap
                     overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
                 else:
                     # Determine when we can begin the next overlay.
@@ -827,7 +827,7 @@ class Window( object ):
                     if pts_offset > 0 and pts_offset - overlay_prior_pts_offset <= display.overlay_min_gap:
                         pts_offset = overlay_prior_pts_offset + display.overlay_min_gap
                     elif pts_offset == 0:
-                        pts_offset += display_overlay_min_gap
+                        pts_offset += display.overlay_min_gap
                     overlay_timing.append( ( pts_offset, pts_offset + clip.get_duration() ) )
                 if max( [ x[1] for x in overlay_timing ] ) > duration:
                     duration = max( [ x[1] for x in overlay_timing ] )

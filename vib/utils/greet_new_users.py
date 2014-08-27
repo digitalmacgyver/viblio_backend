@@ -280,9 +280,11 @@ def run():
 
         if action == 'welcome_video' and user_uuid != None:
             # Process message
-            log.info( json.dumps( {
-                        'message' : "Starting greet_new_users, message body was %s: " % body
-                        } ) )
+            log.info( json.dumps( { 'message' : "Starting greet_new_users, message body was %s: " % body } ) )
+
+            # Need to delete the message here or it can get processed multiple times.
+            sqs.delete_message( message )
+
 
             '''
             welcome_video_for_user(
@@ -426,7 +428,6 @@ def run():
                 )
                 '''
 
-            sqs.delete_message( message )
             return True
         else:
             # This message is not for us or is malformed - someone
@@ -436,9 +437,7 @@ def run():
         return True
 
     except Exception as e:
-        log.error( json.dumps( {
-                    'message' : "Exception was: %s" % e
-                    } ) )
+        log.error( json.dumps( { 'message' : "Exception was: %s" % e } ) )
         raise
     finally:
         if message != None and options != None and options.get( 'action', '' ) == 'welcome_video':

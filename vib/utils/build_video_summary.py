@@ -471,8 +471,7 @@ def generate_summary( summary_type,
     if workdir[:4] == '/mnt':
         log.info( json.dumps( { 'media_uuid' : summary_uuid, 
 				'message'    : 'Deleting temporary files at %s' % ( workdir ) } ) )
-        # DEBUG
-        #shutil.rmtree( workdir )
+        shutil.rmtree( workdir )
     return
 
 '''
