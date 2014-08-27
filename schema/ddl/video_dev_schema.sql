@@ -1622,6 +1622,7 @@ USE `video_dev_1`;
 INSERT INTO `video_dev_1`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('original', NULL, NULL);
 INSERT INTO `video_dev_1`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_face', NULL, NULL);
 INSERT INTO `video_dev_1`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_album', NULL, NULL);
+INSERT INTO `video_dev_1`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('music', NULL, NULL);
 
 COMMIT;
 
@@ -1655,6 +1656,7 @@ INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`)
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('main_sd', NULL, NULL);
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('poster_original', NULL, NULL);
 INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_album', NULL, NULL);
+INSERT INTO `video_dev_1`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('music', NULL, NULL);
 
 COMMIT;
 
