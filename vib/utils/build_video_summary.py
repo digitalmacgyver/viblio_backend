@@ -421,6 +421,8 @@ def generate_summary( summary_type,
 				    'media_uuid' : summary_uuid, 
 				    'user_uuid'  : user.uuid,
 				    'original_uuid' : original_uuid,
+                                    'viblio_added_content_type' : config.viblio_summary_video_type,
+                                    'target_album_name' : config.viblio_summary_album_name,
 				    'input_file' : {
 					    's3_bucket'  : config.bucket_name,
 					    's3_key' : "%s/%s" % ( summary_uuid, summary_uuid ),

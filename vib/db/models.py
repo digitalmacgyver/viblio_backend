@@ -142,22 +142,27 @@ def db_map(engine):
             })
 
     mappers["media"].add_properties({
-            "assets": relationship(models.MediaAssets,
-                                   backref="media",
-                                   cascade="all, delete-orphan"),
-            "media_workflow_stages": relationship( models.MediaWorkflowStages,
-                                                   backref="media",
-                                                   cascade="all, delete-orphan" ),
-            "media_albums" : relationship( models.MediaAlbums,
-                                           lazy="dynamic",
-                                           backref = 'media',
-                                           foreign_keys=models.MediaAlbums.album_id,
-                                           cascade="all, delete-orphan" ),
-            'viblio_added_content' : relationship( models.ViblioAddedContent,
-                                                   lazy='dynamic',
-                                                   foreign_keys=models.ViblioAddedContent.media_id,
-                                                   backref='media' )
-            })
+        "assets": relationship(models.MediaAssets,
+                               backref="media",
+                               cascade="all, delete-orphan"),
+        "media_workflow_stages": relationship( models.MediaWorkflowStages,
+                                               backref="media",
+                                               cascade="all, delete-orphan" ),
+        "media_albums" : relationship( models.MediaAlbums,
+                                       lazy="dynamic",
+                                       backref = 'media',
+                                       foreign_keys=models.MediaAlbums.album_id,
+                                       cascade="all, delete-orphan" ),
+        "media_albums_media" : relationship( models.MediaAlbums,
+                                             lazy="dynamic",
+                                             backref="media_albums",
+                                             foreign_keys=models.MediaAlbums.media_id,
+                                             cascade="all, delete-orphan" ),
+        'viblio_added_content' : relationship( models.ViblioAddedContent,
+                                               lazy='dynamic',
+                                               foreign_keys=models.ViblioAddedContent.media_id,
+                                               backref='media' )
+    })
 
     mappers["media_assets"].add_properties({
             "media_asset_features": relationship( models.MediaAssetFeatures,

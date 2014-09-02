@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import pdb
+from sqlalchemy import and_
 import time
 import uuid
 
@@ -237,11 +238,39 @@ class Transcode( VWorker ):
                                                view_count = 0 )
                     media.assets.append( image_asset )
 
+
+            # Determine if we need to create and or add to the special Video summary album.
+            if options.get( 'viblio_added_content_type', '' ) == config.viblio_summary_video_type:
+                viblio_summary_album = orm.query( Media ).filter( and_( Media.user_id == media.user_id, Media.is_viblio_created == True, Media.title == config.viblio_summary_album_name ) )[:]
+            
+                if len( viblio_summary_album ) == 0:
+                    viblio_summary_album = Media( user_id = media.user_id,
+                                                  uuid = str( uuid.uuid4() ),
+                                                  media_type = 'original',
+                                                  is_album = True,
+                                                  display_album = True,
+                                                  title = config.viblio_summary_album_name,
+                                                  is_viblio_created = True )
+                    orm.add( viblio_summary_album )
+                
+                    media_album_row = MediaAlbums()
+                    orm.add( media_album_row )
+                    media.media_albums_media.append( media_album_row )
+                    viblio_summary_album.media_albums.append( media_album_row )
+                elif len( viblio_summary_album ) == 1:
+                    media_album_row = MediaAlbums()
+                    orm.add( media_album_row )
+                    media.media_albums_media.append( media_album_row )
+                    viblio_summary_album[0].media_albums.append( media_album_row )
+                else:
+                    raise Exception( "ERROR: Found multiple %s albums for user: %s " % ( config.viblio_summary_album_name, media.user_id ) )
+
+
             log.info( json.dumps( {
-                        'media_uuid' : media_uuid,
-                        'user_uuid' : user_uuid,
-                        'message' : "Committing rows to database for user %s, media %s" % ( user_uuid, media_uuid )
-                        } ) )
+                'media_uuid' : media_uuid,
+                'user_uuid' : user_uuid,
+                'message' : "Committing rows to database for user %s, media %s" % ( user_uuid, media_uuid )
+            } ) )
 
             #pdb.set_trace()
             orm.commit()
