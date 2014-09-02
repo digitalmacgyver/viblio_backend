@@ -234,6 +234,10 @@ class Worker( Background ):
         log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
         self.__initialize_metadata( files['metadata']['ifile'] )
         log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
+        if 'skip_faces' in self.data['metadata'] and self.data['metadata']['skip_faces']:
+            self.skip_faces = True
+        else:
+            self.skip_faces = False
 
         #self.mp_log( '010_input_validated' )
 
@@ -343,6 +347,7 @@ class Worker( Background ):
                             'media_uuid' : self.uuid, 
                             'user_uuid'  : self.data['info']['uid'],
                             'original_uuid' : original_uuid,
+                            'skip_faces' : self.skip_faces,
                             'input_file' : {
                                 's3_bucket'  : config.bucket_name,
                                 's3_key' : files['main']['key']

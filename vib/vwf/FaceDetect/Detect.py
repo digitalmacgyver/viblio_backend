@@ -39,6 +39,15 @@ class Detect( VWorker ):
         s3_key = options['Transcode']['output_file']['s3_key']
         s3_bucket = options['Transcode']['output_file']['s3_bucket']
 
+        if options.get( 'skip_faces', False ):
+            log.info( json.dumps( {  'media_uuid' : media_uuid,
+                                     'user_uuid' : user_uuid,
+                                     'message' : "Skipping Face Detection because skip_faces parameter set for media_uuid: %s for user: %s" % ( media_uuid, user_uuid ) } ) )
+            return { 
+                'user_uuid' : user_uuid,
+                'media_uuid' : media_uuid
+            }        
+            
         log.info( json.dumps( {  'media_uuid' : media_uuid,
                                  'user_uuid' : user_uuid,
                                  'message' : "Starting Face Detection on media_uuid: %s for user: %s" % ( media_uuid, user_uuid ) } ) )

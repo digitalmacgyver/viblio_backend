@@ -11,7 +11,6 @@
   util = require("util");
 
   Upload = (function() {
-
       function Upload(config, fileId, uid, fileExt) {
       this.fileId = fileId;
       this.fileExt = fileExt;
