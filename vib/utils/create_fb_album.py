@@ -29,6 +29,7 @@ import boto.sqs.connection
 from boto.sqs.message import RawMessage
 import commands
 import glob
+import hmac
 import os
 import json
 import logging
@@ -180,6 +181,30 @@ def run():
                                    provider_id = album_id )
         media.assets.append( media_asset )
         orm.commit()
+
+        # Send a notification to the user via email.
+        try:
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Notifying Cat server of album creation at %s' %  config.create_fb_album_url } ) )
+            site_token = hmac.new( config.site_secret, user_uuid ).hexdigest()
+            res = requests.get( config.create_fb_album_url, params={ 'uid': user_uuid, 'mid': media_uuid, 'site-token': site_token } )
+            body = ''
+            if hasattr( res, 'text' ):
+                body = res.text
+            elif hasattr( res, 'content' ):
+                body = str( res.content )
+            else:
+                print 'Error: Cannot find body in response!'
+            jdata = json.loads( body )
+
+            if 'error' in jdata:
+                log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid' : user_uuid,
+                                         'message' : "Error notifying CAT, message was: %s" % jdata['message'] } ) )
+        except Exception as e:
+            log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                     'message' : "Error sending email notification to user: %s" % ( e ) } ) )
 
         log.info( json.dumps( { 'media_uuid' : media_uuid,
                                 'message' : "Completed successfully for fb_album: %s / media_uuid: %s" % ( album_id, media_uuid ) } ) )
