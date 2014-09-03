@@ -96,11 +96,9 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
 
         media_uuid = str( uuid.uuid4() )
 
-        log.info( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'media_uuid' : media_uuid,
-                    'message' : "Creating welcome video %s for user %s." % ( media_uuid, user_uuid )
-                    } ) )
+        log.info( json.dumps( {'user_uuid' : user_uuid,
+                               'media_uuid' : media_uuid,
+                               'message' : "Creating welcome video %s for user %s." % ( media_uuid, user_uuid ) } ) )
 
         # Copy video file to S3 location for this user.
         video_uri = '%s/%s_output.%s' % ( media_uuid, media_uuid, video_file['format'] )
@@ -122,7 +120,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
 
         orm = vib.db.orm.get_session()
 
-        user = orm.query( Users ).filter( Users.uuid == user_uuid )[0]
+        user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
 
         media = Media( 
             uuid        = media_uuid,
@@ -228,9 +226,36 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
                 
             face_asset.media_asset_features.append( media_asset_feature )
             contact.media_asset_features.append( media_asset_feature )
-        
+
         orm.commit()
     
+        # Determine if we need to create and or add to the special
+        # video tutorial album.
+        viblio_tutorial_album = orm.query( Media ).filter( and_( Media.user_id == media.user_id, Media.is_viblio_created == True, Media.title == config.viblio_tutorial_album_name ) )[:]
+            
+        if len( viblio_tutorial_album ) == 0:
+            viblio_tutorial_album = Media( user_id = media.user_id,
+                                           uuid = str( uuid.uuid4() ),
+                                           media_type = 'original',
+                                           is_album = True,
+                                           title = config.viblio_tutorial_album_name,
+                                           is_viblio_created = True )
+            orm.add( viblio_tutorial_album )
+                
+            media_album_row = MediaAlbums()
+            orm.add( media_album_row )
+            media.media_albums_media.append( media_album_row )
+            viblio_tutorial_album.media_albums.append( media_album_row )
+        elif len( viblio_tutorial_album ) == 1:
+            media_album_row = MediaAlbums()
+            orm.add( media_album_row )
+            media.media_albums_media.append( media_album_row )
+            viblio_tutorial_album[0].media_albums.append( media_album_row )
+        else:
+            raise Exception( "ERROR: Found multiple %s albums for user: %s " % ( config.viblio_tutorial_album_name, media.user_id ) )
+
+        orm.commit()
+
     except Exception as e:
         if orm != None:
             orm.rollback()
@@ -256,24 +281,16 @@ def run():
         body = message.get_body()
         
         try:
-            log.info( json.dumps( {
-                        'message' : "Reviewing candidate message with body was %s: " % body
-                        } ) )
+            log.info( json.dumps( { 'message' : "Reviewing candidate message with body was %s: " % ( body ) } ) )
         except Exception as e:
-            log.debug( json.dumps( {
-                        'message' : "Error converting body to string, error was: %s" % e
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Error converting body to string, error was: %s" % ( e ) } ) )
 
         options = json.loads( body )
 
         try:
-            log.debug( json.dumps( {
-                        'message' : "Options are %s: " % options
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Options are %s: " % ( options ) } ) )
         except Exception as e:
-            log.debug( json.dumps( {
-                        'message' : "Error converting options to string: %e" % e
-                        } ) )
+            log.debug( json.dumps( { 'message' : "Error converting options to string: %e" % ( e ) } ) )
         
         user_uuid = options.get( 'user_uuid', None )
         action    = options.get( 'action', '' )
@@ -427,6 +444,25 @@ def run():
                     ]
                 )
                 '''
+
+            try:
+                orm = vib.db.orm.get_session()
+
+                user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
+
+                for new_user_album_name in config.new_user_album_names:
+                    viblio_default_album = Media( user_id = user.id,
+                                                  uuid = str( uuid.uuid4() ),
+                                                  media_type = 'original',
+                                                  is_album = True,
+                                                  title = new_user_album_name,
+                                                  is_viblio_created = True )
+                    orm.add( viblio_default_album )
+                
+                orm.commit()
+            except Exception as e:
+                log.error( json.dumps( { 'message' : "Error creating default albums: %e" % ( e ) } ) )
+
 
             return True
         else:

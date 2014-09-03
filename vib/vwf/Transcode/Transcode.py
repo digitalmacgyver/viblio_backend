@@ -248,7 +248,6 @@ class Transcode( VWorker ):
                                                   uuid = str( uuid.uuid4() ),
                                                   media_type = 'original',
                                                   is_album = True,
-                                                  display_album = True,
                                                   title = config.viblio_summary_album_name,
                                                   is_viblio_created = True )
                     orm.add( viblio_summary_album )
