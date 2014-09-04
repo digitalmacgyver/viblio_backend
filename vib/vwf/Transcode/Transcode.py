@@ -190,6 +190,8 @@ class Transcode( VWorker ):
                     duration     = output_exif['duration'] )
                 media.assets.append( video_asset )
 
+                video_poster = None
+
                 for thumbnail in output.get( 'thumbnails', [] ):
                     thumbnail_uuid = str( uuid.uuid4() )
 
@@ -213,6 +215,9 @@ class Transcode( VWorker ):
                                                    location   = 'us',
                                                    view_count = 0 )
                     media.assets.append( thumbnail_asset )
+
+                    if thumbnail['label'] == 'poster':
+                        video_poster = thumbnail_asset
 
                 for image in output.get( 'images', [] ):
                     image_uuid = str( uuid.uuid4() )
@@ -256,6 +261,17 @@ class Transcode( VWorker ):
                     orm.add( media_album_row )
                     media.media_albums_media.append( media_album_row )
                     viblio_summary_album.media_albums.append( media_album_row )
+
+                    album_poster = MediaAssets( user_id = media.user_id,
+                                                uuid = str( uuid.uuid4() ),
+                                                asset_type = 'poster',
+                                                mimetype = video_poster.mimetype,
+                                                location = video_poster.location,
+                                                uri = video_poster.uri, 
+                                                width = video_poster.width,
+                                                height = video_poster.height )
+                    viblio_summary_album.assets.append( album_poster )
+
                 elif len( viblio_summary_album ) == 1:
                     media_album_row = MediaAlbums()
                     orm.add( media_album_row )

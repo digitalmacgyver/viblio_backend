@@ -6,9 +6,11 @@ from boto.sqs.connection import Message
 from boto.sqs.message import RawMessage
 import datetime
 import json
+import hmac
 import logging
 from logging import handlers
 import os
+import requests
 from sqlalchemy import and_
 import time
 import uuid
@@ -246,15 +248,63 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
             orm.add( media_album_row )
             media.media_albums_media.append( media_album_row )
             viblio_tutorial_album.media_albums.append( media_album_row )
+
+            album_poster = MediaAssets( user_id = media.user_id,
+                                        uuid = str( uuid.uuid4() ),
+                                        asset_type = 'poster',
+                                        mimetype = poster_asset.mimetype,
+                                        location = poster_asset.location,
+                                        uri = poster_asset.uri, 
+                                        width = poster_asset.width,
+                                        height = poster_asset.height )
+            viblio_tutorial_album.assets.append( album_poster )
+
         elif len( viblio_tutorial_album ) == 1:
             media_album_row = MediaAlbums()
             orm.add( media_album_row )
             media.media_albums_media.append( media_album_row )
             viblio_tutorial_album[0].media_albums.append( media_album_row )
+
+            album_posters = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == media.id, MediaAssets.asset_type == 'poster' ) ).all()
+            if len( album_posters ) == 0:
+                album_poster = MediaAssets( user_id = media.user_id,
+                                            uuid = str( uuid.uuid4() ),
+                                            asset_type = 'poster',
+                                            mimetype = poster_asset.mimetype,
+                                            location = poster_asset.location,
+                                            uri = poster_asset.uri, 
+                                            width = poster_asset.width,
+                                            height = poster_asset.height )
+                viblio_tutorial_album.assets.append( album_poster )
+
         else:
             raise Exception( "ERROR: Found multiple %s albums for user: %s " % ( config.viblio_tutorial_album_name, media.user_id ) )
 
         orm.commit()
+
+        # Try to send a notification to CAT that we created these videos.
+        try:
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Notifying Cat server of video creation at %s' %  config.viblio_server_url } ) )
+            site_token = hmac.new( config.site_secret, user_uuid ).hexdigest()
+            res = requests.get( config.create_fb_album_url, params={ 'uid': user_uuid, 'mid': media_uuid, 'site-token': site_token } )
+            body = ''
+            if hasattr( res, 'text' ):
+                body = res.text
+            elif hasattr( res, 'content' ):
+                body = str( res.content )
+            else:
+                print 'Error: Cannot find body in response!'
+            jdata = json.loads( body )
+
+            if 'error' in jdata:
+                log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid' : user_uuid,
+                                         'message' : "Error notifying CAT, message was: %s" % jdata['message'] } ) )
+        except Exception as e:
+            log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                     'message' : "Error sending notification to CAT for user, error was: %s" % ( e ) } ) )
 
     except Exception as e:
         if orm != None:
@@ -444,25 +494,6 @@ def run():
                     ]
                 )
                 '''
-
-            try:
-                orm = vib.db.orm.get_session()
-
-                user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
-
-                for new_user_album_name in config.new_user_album_names:
-                    viblio_default_album = Media( user_id = user.id,
-                                                  uuid = str( uuid.uuid4() ),
-                                                  media_type = 'original',
-                                                  is_album = True,
-                                                  title = new_user_album_name,
-                                                  is_viblio_created = True )
-                    orm.add( viblio_default_album )
-                
-                orm.commit()
-            except Exception as e:
-                log.error( json.dumps( { 'message' : "Error creating default albums: %e" % ( e ) } ) )
-
 
             return True
         else:
