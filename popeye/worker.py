@@ -289,6 +289,7 @@ class Worker( Background ):
                            title          = media_title,
                            view_count     = 0,
                            status         = 'pending',
+                           skip_faces     = self.skip_faces,
                            unique_hash    = unique_hash )
 
             mwfs = MediaWorkflowStages( workflow_stage = 'PopeyeComplete' )
