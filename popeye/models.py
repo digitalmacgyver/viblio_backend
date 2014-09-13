@@ -101,6 +101,10 @@ class MediaWorkflowStages( BaseModel, Serializer ):
 class MediaAlbums( BaseModel, Serializer ):
     pass
 
+class Communities( BaseModel, Serializer ):
+    pass
+
+
 """
 Well, reflection really only gives us the column definitions it
 seems.  We are still responsible for establishing the relationships

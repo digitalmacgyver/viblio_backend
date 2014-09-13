@@ -317,16 +317,44 @@ class Worker( Background ):
 
             # Associate with album if appropriate.
             if self.album_uuid:
-                albums = orm.query( 'Media' ).filter( Media.uuid == self.album_uuid )[:]
+                albums = orm.query( 'Media' ).filter( and_( Media.uuid == self.album_uuid ) )[:]
+                
                 if len( albums ) == 0:
                     log.warning( "Requested to add media to album uuid: %s but no such album exists." % ( self.album_uuid ) )
                 elif len( albums ) > 1:
                     log.warning( "Requested to add media to album uuid: %s but multiple such albums exist." % ( self.album_uuid ) )
                 elif len( albums ) == 1:
-                    media_album_row = MediaAlbums()
-                    orm.add( media_album_row )
-                    media.media_albums_media.append( media_album_row )
-                    albums[0].media_albums.append( media_album_row )
+                    allowed = False
+                    # Let's figure out if this user is allowed to upload to this album.
+
+                    if albums[0].user_id == user.id:
+                        # If they own the album they are allowed.
+                        allowed = True
+                    else:
+                        # We have to figure out if the album in
+                        # question is a shared album that this user
+                        # can write to.
+                        communities = orm.query( 'Communities' ).filter( Communities.media_id == albums[0].id )[:]
+                        contact_groups = []
+                        if len( communities ):
+                            contact_groups = orm.query( 'ContactGroups' ).filter( ContactGroup.contact_email == user.email )
+
+                        for community in communities:
+                            for contact_group in contact_groups:
+                                if community.members_id == contact_group.id:
+                                    allowed = True
+                                    break
+                            if allowed:
+                                break
+
+                    if allowed:
+                        media_album_row = MediaAlbums()
+                        orm.add( media_album_row )
+                        media.media_albums_media.append( media_album_row )
+                        albums[0].media_albums.append( media_album_row )
+                    else:
+                        log.warning( "Requested to add media to album uuid: %s but user_id %d can not write to that album." % ( self.album_uuid, user.id ) )                        
+
 
         except Exception as e:
             self.__safe_log( self.popeye_log.exception, 'Failed to add mediafile to database: %s' % str( e ) )
