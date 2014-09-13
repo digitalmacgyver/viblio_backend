@@ -140,15 +140,9 @@
 		    // processing pipeline.
 		    if ( metadata['skip_faces'] ) {
 			console.log( "SKIP FACES IS TRUE" );
-			winston.error( "SKIP FACES IS TRUE" );
-			console.log( metadata['skip_faces'] );
-			winston.error( metadata['skip_faces'] );
 			metadata['skip_faces'] = true;
 		    } else {
 			console.log( "SKIP FACES IS FALSE" );
-			winston.error( "SKIP FACES IS FALSE" );
-			console.log( metadata['skip_faces'] );
-			winston.error( metadata['skip_faces'] );
 			metadata['skip_faces'] = false;
 		    }
 		    
@@ -301,7 +295,6 @@
 			});
 			if ( config.popeye != "none" ) {
 			    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
-			    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + " SKIP: '" + info.skip_faces+ "'\n" );
 			    request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces } }, function( err, res, body ) {
 				if ( err ) {
 				    winston.error( "Popeye error: " + err.message );
@@ -370,7 +363,6 @@
 		    });
 		    if ( config.popeye != "none" ) {
 			winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
-			winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + " SKIP: '" + info.skip_faces+ "'\n" );
 			request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces } }, function( err, res, body ) {
 			    if ( err ) {
 				winston.error( "Popeye error: " + err.message );
@@ -478,7 +470,6 @@
 		});
 		if ( config.popeye != "none" ) {
 		    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
-		    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + " SKIP: '" + info.skip_faces+ "'\n" );
 		    request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces } }, function( err, res, body ) {
 			if ( err ) {
 			    winston.error( "Popeye error: " + err.message );

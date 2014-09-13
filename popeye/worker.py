@@ -239,6 +239,11 @@ class Worker( Background ):
         else:
             self.skip_faces = False
 
+        if 'album_uuid' in self.data['metadata'] and self.data['metadata']['album_uuid']:
+            self.album_uuid = self.data['metadata']['album_uuid']
+        else:
+            self.album_uuid = False
+
         #self.mp_log( '010_input_validated' )
 
         ######################################################################
@@ -309,6 +314,19 @@ class Worker( Background ):
                 location     = 'us',
                 view_count   = 0 )
             media.assets.append( video_asset )
+
+            # Associate with album if appropriate.
+            if self.album_uuid:
+                albums = orm.query( 'Media' ).filter( Media.uuid == self.album_uuid )[:]
+                if len( albums ) == 0:
+                    log.warning( "Requested to add media to album uuid: %s but no such album exists." % ( self.album_uuid ) )
+                elif len( albums ) > 1:
+                    log.warning( "Requested to add media to album uuid: %s but multiple such albums exist." % ( self.album_uuid ) )
+                elif len( albums ) == 1:
+                    media_album_row = MediaAlbums()
+                    orm.add( media_album_row )
+                    media.media_albums_media.append( media_album_row )
+                    albums[0].media_albums.append( media_album_row )
 
         except Exception as e:
             self.__safe_log( self.popeye_log.exception, 'Failed to add mediafile to database: %s' % str( e ) )
