@@ -317,7 +317,7 @@ class Worker( Background ):
 
             # Associate with album if appropriate.
             if self.album_uuid:
-                albums = orm.query( 'Media' ).filter( and_( Media.uuid == self.album_uuid ) )[:]
+                albums = orm.query( Media ).filter( Media.uuid == self.album_uuid )[:]
                 
                 if len( albums ) == 0:
                     log.warning( "Requested to add media to album uuid: %s but no such album exists." % ( self.album_uuid ) )
@@ -334,10 +334,10 @@ class Worker( Background ):
                         # We have to figure out if the album in
                         # question is a shared album that this user
                         # can write to.
-                        communities = orm.query( 'Communities' ).filter( Communities.media_id == albums[0].id )[:]
+                        communities = orm.query( Communities ).filter( Communities.media_id == albums[0].id )[:]
                         contact_groups = []
                         if len( communities ):
-                            contact_groups = orm.query( 'ContactGroups' ).filter( ContactGroup.contact_email == user.email )
+                            contact_groups = orm.query( ContactGroups ).filter( ContactGroups.contact_email == user.email )
 
                         for community in communities:
                             for contact_group in contact_groups:
