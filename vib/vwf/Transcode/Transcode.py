@@ -135,7 +135,10 @@ class Transcode( VWorker ):
                 recording_date = datetime.datetime.utcfromtimestamp( 0 )
 
             if exif['create_date'] and exif['create_date'] != '' and exif['create_date'] != '0000:00:00 00:00:00':
-                recording_date = exif['create_date']
+                try:
+                    recording_date = datetime.datetime.strptime( exif['create_date'], '%Y:%m:%d %H:%M:%S' )
+                except Exception as e:
+                    recording_date = exif['create_date']
             log.debug( 'Setting recording date to ' + str( recording_date ) )
             log.debug( 'Exif data for create was ' + exif['create_date'] )    
             media.recording_date = recording_date
@@ -189,6 +192,20 @@ class Transcode( VWorker ):
                     height       = output_exif.get( 'height', None ),
                     duration     = output_exif['duration'] )
                 media.assets.append( video_asset )
+
+                if output['asset_type'] == 'main' and recording_date != datetime.datetime.utcfromtimestamp( 0 ):
+                    try:
+                        # Add a Month Year tag to the main media asset.
+                        date_string = recording_date.strftime( "%B %Y" )
+                        date_tag = MediaAssetFeatures( 
+                            feature_type = 'activity',
+                            coordinates = date_string
+                        )
+                        video_asset.media_asset_features.append( date_tag )
+                    except Exception as e:
+                        log.warning( json.dumps( { 'media_uuid' : media_uuid,
+                                                   'user_uuid' : user_uuid,
+                                                   'message' : 'Failed to add date tag for video, error was: %s' % ( e ) } ) )
 
                 video_poster = None
 
