@@ -102,6 +102,8 @@ def run():
         user_uuid       = options['user_uuid']
         images          = options['images[]']
         fb_token    = options['fb_token']
+        album_id = options['fb_album_id']
+        fb_url = options['fb_album_url']
         title = options.get( 'title', '' )
         # Note - Facebook requires that you not auto populate
         # descriptive fields, or they may consider it spam, so if we
@@ -130,26 +132,8 @@ def run():
                                      'message' : "No images found in database for input, skipping: %s" % images } ) )
             return True
         
-        # Create a new album.
-        create_album_url = config.fb_endpoint + "/me/albums?access_token=%s" % ( fb_token )
-        data = { 
-            'name' : title,
-            }
-        if description is not None:
-            data['desciption'] = description
-            
-        r = requests.post( create_album_url, data )
-        
-        album_id = r.json()['id']
-        
-        # Get the created album details.
-        album_info_url = config.fb_endpoint + '/%s?access_token=%s' % ( album_id, fb_token )
-        
-        r = requests.get( album_info_url )
-        fb_url = r.json()['link']
-        
         log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                'message' : "Created Facebook album ID: %s, URL: %s" % ( album_id, fb_url ) } ) )
+                                'message' : "Working on Facebook album ID: %s, URL: %s" % ( album_id, fb_url ) } ) )
         
         # Upload the images.
         for image in images:

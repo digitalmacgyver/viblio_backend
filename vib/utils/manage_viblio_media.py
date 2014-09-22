@@ -124,7 +124,7 @@ def manage_media( action, title, media_type, desc, album_title, filename ):
         
 
 if __name__ == '__main__':
-    usage = "Managed Viblio owned media for the admin@viblio.com account usage:\nDEPLOYMENT=[staging|prod] %prog --add|--add-album|--delete --title=T --type=[music] [--desc=D] [--album=Aname] [--filename=F]" 
+    usage = "Managed Viblio owned media for the admin@viblio.com account usage:\nDEPLOYMENT=[staging|prod] %prog --add|--add-album|--delete --title=T --type=[music] [--desc=D|--desc-file=./d.txt] [--album=Aname] [--filename=F]" 
 
     parser = OptionParser( usage = usage )
     parser.add_option( "-a", "--add",
@@ -144,10 +144,13 @@ if __name__ == '__main__':
                        help="Specify the title of the media being added/deleted." )
     parser.add_option( "-e", "--desc",
                        dest="desc",
-                       help="Specify the description of the media being added/deleted." )
+                       help="Specify the description of the media being added." )
+    parser.add_option( "-s", "--desc-file",
+                       dest="descfile",
+                       help="Specify a file containing the description of the media being added." )
     parser.add_option( "-y", "--type",
                        dest="type",
-                       help="Specify the description of the media being added/deleted." )
+                       help="Specify the type of the media being added/deleted." )
     parser.add_option( "-l", "--album",
                        dest="album",
                        help="The name of the album created with --add-album or added to with --add." )
@@ -211,6 +214,20 @@ if __name__ == '__main__':
     if options.desc:
         desc = options.desc
         
+    if options.descfile:
+        if desc:
+            parser.print_help()
+            print "\n\nCan't specify both -e/--desc and -s/--desc-file"
+            sys.exit(0)
+        elif not os.path.isfile( options.descfile ):
+            parser.print_help()
+            print "\n\n-s/--desc-file argument (%s) must refer to an existing file" % ( options.descfile )
+            sys.exit( 0 )
+        else:
+            f = open( options.descfile, 'r' )
+            desc = f.read()
+            f.close()
+
     if options.album:
         album_title = options.album
             

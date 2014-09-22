@@ -255,6 +255,9 @@ def generate_summary( summary_type,
                                                           MediaAssets.asset_type == 'original' ).one()
 
     audio_filename = "%s/%s_audio" % ( workdir, summary_uuid )
+    audio_desc = audio_track.Media.description
+    if audio_desc is None:
+        audio_desc = ''
     download_file( audio_filename, config.bucket_name, audio_track.MediaAssets.uri )
 
     # While get_moments will return things with the approrpriate
@@ -286,7 +289,8 @@ def generate_summary( summary_type,
                          output_file = output_file, 
                          duration    = target_duration,
                          bgcolor     = "White",
-                         audio_filename  = audio_filename )
+                         audio_filename  = audio_filename,
+                         audio_desc  = audio_desc )
         w.display.pad_bgcolor = 'White'
 
         if target_duration is None:

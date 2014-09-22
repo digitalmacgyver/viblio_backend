@@ -321,6 +321,7 @@ class Window( object ):
                   z_index = None,
                   watermarks = None,
                   audio_filename = None,
+                  audio_desc = '',
                   display = None,
                   output_file = "./output.mp4",
                   overlay_batch_concurrency = 16, # The number of
@@ -380,6 +381,8 @@ class Window( object ):
         else:
             self.audio_filename = None
             self.audio_duration = None
+
+        self.audio_desc = audio_desc
 
         if duration is None and audio_filename is not None:
             self.duration = self.audio_duration
@@ -457,7 +460,14 @@ class Window( object ):
             afade_clause = ' -c:a libfdk_aac -af "afade=t=out:st=%f:d=%f" ' % ( audio_fade_start, audio_fade_duration )
             current = tmpfile
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -i %s -i %s -vf copy %s -t %f %s' % ( FFMPEG, current, self.audio_filename, afade_clause, self.duration, tmpfile )
+            filter_clause = ' -vf copy '
+            if self.audio_desc:
+                audio_desc_file = '%s/%s.txt' % ( Window.tmpdir, str( uuid.uuid4() ) )
+                f = open( audio_desc_file, 'w' )
+                f.write( self.audio_desc )
+                f.close()
+                filter_clause = " -filter_complex 'drawtext=fontcolor=white:borderw=1:textfile=%s:x=10:y=h-th-10:enable=gt(t\,%f)'" % ( audio_desc_file, self.duration - 5 )
+            cmd = '%s -y -i %s -i %s %s %s -t %f %s' % ( FFMPEG, current, self.audio_filename, afade_clause, filter_clause, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
