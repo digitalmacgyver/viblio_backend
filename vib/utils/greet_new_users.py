@@ -136,7 +136,8 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
             lat         = lat,
             lng         = lng,
             recording_date = recording_date,
-            status      = 'complete'
+            status      = 'complete',
+            is_viblio_created = True
             )
 
         user.media.append( media )
