@@ -18,8 +18,7 @@ PYPKGS=\
 	requests \
 	pytz \
 	mixpanel-py \
-	supervisor \
-	pillow
+	supervisor
 
 PIP_PYPKGS=\
 	qtfaststart
