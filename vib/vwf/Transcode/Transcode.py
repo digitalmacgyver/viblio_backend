@@ -71,7 +71,7 @@ class Transcode( VWorker ):
             # There seems to be a race condition where somehow the OS
             # doesn't present the file to the next command sometimes -
             # give things a few seconds to catch up.
-            time.sleep( 3 )
+            time.sleep( 5 )
 
             log.debug( json.dumps( {
                         'media_uuid' : media_uuid,

@@ -25,7 +25,7 @@ PIP_PYPKGS=\
 	python-magic
 
 install_deps:
-	/usr/bin/apt-get -i install libopenjpeg-dev libopenjpeg2
+	/usr/bin/apt-get -y install libopenjpeg-dev libopenjpeg2
 	/usr/bin/apt-get -y install python-pip python-dev python-scipy python-pil
 	/usr/bin/easy_install $(PYPKGS)
 	/usr/local/bin/pip install $(PIP_PYPKGS)
