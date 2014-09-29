@@ -689,7 +689,7 @@ download_file( '/wintmp/problems/%s', '%s', '%s/%s' )
             message = RawMessage()
             message.set_body( json.dumps( {
                         'subject' : subject,
-                        'to' : [ { 'email' : 'admin@viblio.com', 'name' : 'Viblio Administrator' } ],
+                        'to' : [ { 'email' : 'admin@viblio.com', 'name' : 'VIBLIO Administrator' } ],
                         'body' : body
                         } ) )
             queue.write( message )

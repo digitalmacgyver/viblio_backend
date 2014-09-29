@@ -328,7 +328,7 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
         media = Media( uuid = summary_uuid,
                        media_type = 'original',
                        filename = 'Faces Summary',
-                       title = 'A Gift from Viblio',
+                       title = 'A Gift from VIBLIO',
                        view_count = 0,
                        status = 'pending',
                        is_viblio_created = True,

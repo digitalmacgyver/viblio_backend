@@ -70,7 +70,7 @@ class Notify( VWorker ):
                     sqs.set_message_class( RawMessage )
 
                     message = {
-                        'subject' : 'Viblio Made You a Present',
+                        'subject' : 'VIBLIO Made You a Present',
                         'to' : [ { 'email' : user.email,
                                    'name' : user.displayname } ],
                         'template': "email/21-mashupGiftForYou.tt",

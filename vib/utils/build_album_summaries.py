@@ -335,7 +335,7 @@ def generate_clips( album_uuid,
                                    'message'   : 'Summary video length of %s was too short, returning False.' % ( output_secs ) } ) )
         return ( False, None, None )
                 
-def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filename="Summary", title="A Gift from Viblio", output_secs=None ):
+def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filename="Summary", title="A Gift from VIBLIO", output_secs=None ):
     # Open the output file for storing concatenation data.
     cut_file_name = '%s/cuts.txt' % ( workdir )
     output_file = '%s/summary.mp4' % ( workdir )
@@ -613,7 +613,7 @@ def run():
 
             if clips_ok:
                 # Get the list of movies for the current album.
-                title = "Viblio Album Summary: " + title
+                title = "VIBLIO Album Summary: " + title
                 
                 produce_summary_video( album_uuid, workdir, viblio_added_content_id, title.title(), title.title(), output_secs )
                 

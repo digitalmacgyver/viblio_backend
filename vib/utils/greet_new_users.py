@@ -56,12 +56,12 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
     * format
     * face_mimetype      - 'image/png'
     * face_size          - '128x128'
-    * contact_name       - 'Viblio Feedback'
+    * contact_name       - 'VIBLIO Feedback'
     * contact_email      - 'feedback@viblio.com'
 
     Optional keyword arguments exist with the following defaults: 
  
-    * description        - 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.'
+    * description        - 'VIBLIO lets you use the power of video to build strong personal connections.  Keep your memories in motion - with VIBLIO.'
     * filename           - ''
     * geo_address        - '1561-1599 Middlefield Road, Palo Alto, CA 94301, USA'
     * geo_city           - 'Palo Alto'
@@ -79,7 +79,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
     orm = None
 
     try:
-        description         = options.get( 'description', 'Viblio lets you use the power of video to build strong personal connections.  Keep your memories in motion - with Viblio.' )
+        description         = options.get( 'description', 'VIBLIO lets you use the power of video to build strong personal connections.  Keep your memories in motion - with VIBLIO.' )
         filename            = options.get( 'filename', '' )
         geo_address         = options.get( 'geo_address', '1561-1599 Middlefield Road, Palo Alto, CA 94301, USA' )
         geo_city            = options.get( 'geo_city', 'Palo Alto' )
@@ -192,7 +192,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
             media.assets.append( poster_animated_asset )
 
         for idx, face in enumerate( face_files ):
-            contact_name        = face.get( 'contact_name', 'Viblio Feedback' )
+            contact_name        = face.get( 'contact_name', 'VIBLIO Feedback' )
             contact_email       = face.get( 'contact_email', 'feedback@viblio.com' )
 
             face_mimetype       = face.get( 'face_mimetype', 'image/png' )
@@ -411,7 +411,7 @@ def run():
                 )
 
             welcome_video_for_user(
-                title = 'Welcome to Viblio',
+                title = 'Welcome to VIBLIO',
                 description = 'Your INTELLIGENT Video Library',
                 user_uuid = user_uuid,
                 video_file = { 
@@ -447,7 +447,7 @@ def run():
             '''
             welcome_video_for_user(
                 title = 'Example Video 2',
-                description = 'Rediscover your favorite family videos with Viblio and watch what matters. Reserve your spot now for the revolutionary video-storing and sharing platform at https://viblio.com/signup/',
+                description = 'Rediscover your favorite family videos with VIBLIO and watch what matters. Reserve your spot now for the revolutionary video-storing and sharing platform at https://viblio.com/signup/',
                 user_uuid = user_uuid,
                 video_file = { 
                     's3_bucket' : 'viblio-external',
