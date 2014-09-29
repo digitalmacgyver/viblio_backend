@@ -337,7 +337,7 @@ class Worker( Background ):
                         communities = orm.query( Communities ).filter( Communities.media_id == albums[0].id )[:]
                         contact_groups = []
                         if len( communities ):
-                            contact_groups = orm.query( ContactGroups ).filter( ContactGroups.contact_email == user.email )
+                            contact_groups = orm.query( ContactGroups ).filter( and_( ContactGroups.contact_id == Contacts.id, Contacts.contact_email == user.email ) )
 
                         for community in communities:
                             for contact_group in contact_groups:
