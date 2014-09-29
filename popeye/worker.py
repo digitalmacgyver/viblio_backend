@@ -341,7 +341,7 @@ class Worker( Background ):
 
                         for community in communities:
                             for contact_group in contact_groups:
-                                if community.members_id == contact_group.id:
+                                if community.members_id == contact_group.group_id:
                                     allowed = True
                                     break
                             if allowed:
