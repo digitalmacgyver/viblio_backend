@@ -58,7 +58,7 @@ class Notify( VWorker ):
             # Check if this is special Viblio generated content, if so
             # maybe do something else.
             try:
-                if options.get( 'viblio_added_content_type', '' ) in [ 'Smiling Faces', 'Album Summary' ]:
+                if options.get( 'viblio_added_content_type', '' ) in [ 'Smiling Faces', 'Album Summary', config.viblio_summary_video_type ]:
                     orm = vib.db.orm.get_session()
                     orm.commit()
 
@@ -69,11 +69,17 @@ class Notify( VWorker ):
                                                       aws_secret_access_key = config.awsSecret ).get_queue( config.email_queue )
                     sqs.set_message_class( RawMessage )
 
+                    subject = 'VIBLIO Made You a Present'
+                    template = 'email/21-mashupGiftForYou.tt'
+                    if options['viblio_added_content_type'] == config.viblio_summary_video_type:
+                        subject = 'Your Moments Summary VIBLIO Video is Ready'
+                        tempalte = 'email/23-momentSummary.tt'
+
                     message = {
-                        'subject' : 'VIBLIO Made You a Present',
+                        'subject' : subject,
                         'to' : [ { 'email' : user.email,
                                    'name' : user.displayname } ],
-                        'template': "email/21-mashupGiftForYou.tt",
+                        'template': template,
                         'stash' : { 'user' : { 'displayname' : user.displayname },
                                     'model' : { 'media' : [ { 'uuid' : media_uuid,
                                                               'views' : {

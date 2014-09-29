@@ -384,7 +384,8 @@ def generate_summary( summary_type,
                    recording_date = recording_date,
                    lat = lat,
                    lng = lng,
-                   unique_hash = unique_hash )
+                   unique_hash = unique_hash,
+                   is_viblio_created = True )
     user.media.append( media )
     orm.commit()
 
