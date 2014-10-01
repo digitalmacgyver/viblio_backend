@@ -289,7 +289,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
                                     'user_uuid' : user_uuid,
                                     'message' : 'Notifying Cat server of video creation at %s' %  config.viblio_server_url } ) )
             site_token = hmac.new( config.site_secret, user_uuid ).hexdigest()
-            res = requests.get( config.create_fb_album_url, params={ 'uid': user_uuid, 'mid': media_uuid, 'site-token': site_token } )
+            res = requests.get( config.viblio_server_url, params={ 'uid': user_uuid, 'mid': media_uuid, 'site-token': site_token } )
             body = ''
             if hasattr( res, 'text' ):
                 body = res.text
