@@ -39,7 +39,7 @@ consolelog.setLevel( logging.DEBUG )
 log.addHandler( syslog )
 log.addHandler( consolelog )
 
-def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=None, thumbnail_file=None, face_files=[], **options ):
+def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=None, thumbnail_file=None, face_files=[], image_files=[], **options ):
     '''Adds the video, thumbnail, and poster for the user_uuid.
     
     Each of the video, poster, and thumbanil _file arguments is a dictionary with:
@@ -230,6 +230,28 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
             face_asset.media_asset_features.append( media_asset_feature )
             contact.media_asset_features.append( media_asset_feature )
 
+        for idx, image in enumerate( image_files ):
+            image_mimetype       = image.get( 'image_mimetype', 'image/png' )
+            image_size           = image.get( 'image_size', '1280x720' )
+            image_x,      image_y      = image_size.split( 'x' )
+            image_uri = '%s/%s_image_0_%s.%s' % ( media_uuid, media_uuid, idx, image['format'] )
+            vib.utils.s3.copy_s3_file( image['s3_bucket'], image['s3_key'], config.bucket_name, image_uri )
+
+            image_uuid = str( uuid.uuid4() )
+            image_asset = MediaAssets( uuid       = image_uuid,
+                                       asset_type = 'image',
+                                       mimetype   = image_mimetype,
+                                       bytes      = image['bytes'],
+                                       width      = int( image_x ), 
+                                       height     = int( image_y ),
+                                       uri        = image_uri,
+                                       timecode = image.get( 'image_timecode', 0 ),
+                                       face_score = image.get( 'image_face_score', 0 ),
+                                       blur_score = image.get( 'image_blur_score', 0 ),
+                                       location   = 'us',
+                                       view_count = 0 )
+            media.assets.append( image_asset )
+
         orm.commit()
     
         # Determine if we need to create and or add to the special
@@ -408,6 +430,71 @@ def run():
                     'bytes'     : 301740,
                     'format'    : 'gif'
                     },
+                image_files = [ 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-004/image-01.jpg',
+                        'bytes'     : 99453,
+                        'format'    : 'jpg',
+                        'image_timecode' : 10,
+                        'face_score' : 0,
+                        'face_size' : '1280x720'
+                        }, 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-004/image-02.jpg',
+                        'bytes'     : 149377,
+                        'format'    : 'jpg',
+                        'image_timecode' : 50,
+                        'face_score' : 1,
+                        'face_size' : '1280x720'
+                        }, 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-004/image-03.jpg',
+                        'bytes'     : 125868,
+                        'format'    : 'jpg',
+                        'image_timecode' : 120,
+                        'face_score' : 0,
+                        'face_size' : '1280x720'
+                        }, 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-004/image-04.jpg',
+                        'bytes'     : 93256,
+                        'format'    : 'jpg',
+                        'image_timecode' : 160,
+                        'face_score' : 0,
+                        'face_size' : '1280x720'
+                        }, 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-004/image-05.jpg',
+                        'bytes'     : 37900,
+                        'format'    : 'jpg',
+                        'image_timecode' : 170,
+                        'face_score' : 0,
+                        'face_size' : '1280x720'
+                        }, 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-004/image-06.jpg',
+                        'bytes'     : 75025,
+                        'format'    : 'jpg',
+                        'image_timecode' : 180,
+                        'face_score' : 1,
+                        'face_size' : '1280x720'
+                        }, 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-004/image-07.jpg',
+                        'bytes'     : 107600,
+                        'format'    : 'jpg',
+                        'image_timecode' : 190,
+                        'face_score' : 0,
+                        'face_size' : '1280x720'
+                        }, 
+                    ]
                 )
 
             welcome_video_for_user(
@@ -440,6 +527,35 @@ def run():
                         'bytes'     : 8954,
                         'format'    : 'png',
                         'face_size' : '128x128'
+                        }, 
+                    ],
+                image_files = [ 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-003/image-01.jpg',
+                        'bytes'     : 43561,
+                        'format'    : 'jpg',
+                        'image_timecode' : 30,
+                        'face_score' : 1,
+                        'face_size' : '1280x720'
+                        }, 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-003/image-02.jpg',
+                        'bytes'     : 83545,
+                        'format'    : 'jpg',
+                        'image_timecode' : 70,
+                        'face_score' : 0,
+                        'face_size' : '1280x720'
+                        }, 
+                    {
+                        's3_bucket' : 'viblio-external',
+                        's3_key'    : 'media/video-003/image-03.jpg',
+                        'bytes'     : 115395,
+                        'format'    : 'jpg',
+                        'image_timecode' : 80,
+                        'face_score' : 0,
+                        'face_size' : '1280x720'
                         }, 
                     ]
                 )
