@@ -207,7 +207,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
                 # We decided not to have these faces associated with names for new users.
                 #contact_name  = contact_name,
                 #contact_email = contact_email,
-                #picture_uri   = face_uri
+                picture_uri   = face_uri
                 )
 
             orm.add( contact )
