@@ -209,7 +209,8 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
                 picture_uri   = face_uri
                 )
 
-            orm.add( contact )
+            # We decided not to have these faces associated with names for new users.
+            #orm.add( contact )
 
             face_uuid = str( uuid.uuid4() )
             face_asset = MediaAssets( uuid       = face_uuid,
@@ -228,7 +229,9 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
                 )
                 
             face_asset.media_asset_features.append( media_asset_feature )
-            contact.media_asset_features.append( media_asset_feature )
+
+            # We decided not to have these faces associated with names for new users.
+            #contact.media_asset_features.append( media_asset_feature )
 
         for idx, image in enumerate( image_files ):
             image_mimetype       = image.get( 'image_mimetype', 'image/png' )
