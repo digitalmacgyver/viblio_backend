@@ -226,7 +226,7 @@ def welcome_video_for_user( user_uuid, video_file, poster_file, poster_animated=
 
             media_asset_feature = MediaAssetFeatures(
                 feature_type = 'face',
-                recognition_result => 'new_face'
+                recognition_result = 'new_face'
                 )
                 
             face_asset.media_asset_features.append( media_asset_feature )
