@@ -124,6 +124,7 @@ def db_map(engine):
             "media": relationship(models.Media,
                                   lazy="dynamic",
                                   backref="user",
+                                  foreign_keys=models.Media.user_id,
                                   cascade="all, delete-orphan"),
             "contacts": relationship(models.Contacts,
                                      lazy="dynamic",
