@@ -180,7 +180,13 @@ def clone_user( user_uuid, new_email, verbose=False ):
                     asset.id = None
                     old_uuid = asset.uuid
                     old_uri = asset.uri
+                    
+                    if old_uri is None:
+                        print "Warning, null old_uri for asset: %s" % ( asset.uuid )
+                        continue
+
                     new_uri = old_uri.replace( m_old_uuid, m_new_uuid )
+                    
 
                     media_uri_old_new[old_uri] = new_uri
 
@@ -226,6 +232,10 @@ def clone_user( user_uuid, new_email, verbose=False ):
                     asset.id = None
                     old_uuid = asset.uuid
                     old_uri = asset.uri
+
+                    if old_uri is None:
+                        print "Warning, null old_uri for asset: %s" % ( asset.uuid )
+                        continue
 
                     if old_uri in media_uri_old_new:
                         new_uri = media_uri_old_new[old_uri]
