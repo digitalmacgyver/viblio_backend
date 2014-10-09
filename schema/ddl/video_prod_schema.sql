@@ -28,42 +28,6 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `video_dev`.`users`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `video_dev`.`users` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `uuid` VARCHAR(36) NOT NULL,
-  `provider` VARCHAR(16) NULL DEFAULT NULL,
-  `provider_id` VARCHAR(45) NULL DEFAULT NULL,
-  `password` VARCHAR(128) NULL DEFAULT NULL,
-  `email` VARCHAR(256) NULL DEFAULT NULL,
-  `displayname` VARCHAR(128) NULL DEFAULT NULL,
-  `active` VARCHAR(32) NULL DEFAULT NULL,
-  `confirmed` TINYINT(1) NULL DEFAULT false,
-  `accepted_terms` TINYINT(1) NULL DEFAULT NULL,
-  `api_key` VARCHAR(128) NULL DEFAULT NULL,
-  `metadata` TEXT NULL DEFAULT NULL,
-  `user_type` VARCHAR(32) NULL DEFAULT 'individual',
-  `created_date` DATETIME NULL DEFAULT NULL,
-  `updated_date` DATETIME NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_users_providers1` (`provider` ASC),
-  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC),
-  INDEX `fk_users_user_types1_idx` (`user_type` ASC),
-  CONSTRAINT `fk_users_providers`
-    FOREIGN KEY (`provider`)
-    REFERENCES `video_dev`.`providers` (`provider`)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE,
-  CONSTRAINT `fk_users_user_types1`
-    FOREIGN KEY (`user_type`)
-    REFERENCES `video_dev`.`user_types` (`type`)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
 -- Table `video_dev`.`media_types`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `video_dev`.`media_types` (
@@ -111,6 +75,49 @@ CREATE TABLE IF NOT EXISTS `video_dev`.`media` (
     REFERENCES `video_dev`.`users` (`id`)
     ON DELETE CASCADE
     ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `video_dev`.`users`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `video_dev`.`users` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `uuid` VARCHAR(36) NOT NULL,
+  `provider` VARCHAR(16) NULL DEFAULT NULL,
+  `provider_id` VARCHAR(45) NULL DEFAULT NULL,
+  `password` VARCHAR(128) NULL DEFAULT NULL,
+  `email` VARCHAR(256) NULL DEFAULT NULL,
+  `displayname` VARCHAR(128) NULL DEFAULT NULL,
+  `active` VARCHAR(32) NULL DEFAULT NULL,
+  `confirmed` TINYINT(1) NULL DEFAULT false,
+  `accepted_terms` TINYINT(1) NULL DEFAULT NULL,
+  `api_key` VARCHAR(128) NULL DEFAULT NULL,
+  `metadata` TEXT NULL DEFAULT NULL,
+  `user_type` VARCHAR(32) NULL DEFAULT 'individual',
+  `banner_uuid` VARCHAR(36) NULL DEFAULT NULL,
+  `created_date` DATETIME NULL DEFAULT NULL,
+  `updated_date` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `fk_users_providers1` (`provider` ASC),
+  UNIQUE INDEX `uuid_UNIQUE` (`uuid` ASC),
+  INDEX `fk_users_user_types1_idx` (`user_type` ASC),
+  INDEX `fk_users_media1_idx` (`banner_uuid` ASC),
+  CONSTRAINT `fk_users_providers`
+    FOREIGN KEY (`provider`)
+    REFERENCES `video_dev`.`providers` (`provider`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_users_user_types1`
+    FOREIGN KEY (`user_type`)
+    REFERENCES `video_dev`.`user_types` (`type`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_users_media1`
+    FOREIGN KEY (`banner_uuid`)
+    REFERENCES `video_dev`.`media` (`uuid`)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL)
 ENGINE = InnoDB;
 
 
@@ -832,6 +839,7 @@ INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) V
 INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_face', NULL, NULL);
 INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_album', NULL, NULL);
 INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('music', NULL, NULL);
+INSERT INTO `video_dev`.`media_types` (`type`, `created_date`, `updated_date`) VALUES ('image', NULL, NULL);
 
 COMMIT;
 
@@ -868,6 +876,7 @@ INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) V
 INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('poster_original', NULL, NULL);
 INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('fb_album', NULL, NULL);
 INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('music', NULL, NULL);
+INSERT INTO `video_dev`.`asset_types` (`type`, `created_date`, `updated_date`) VALUES ('banner', NULL, NULL);
 
 COMMIT;
 
@@ -965,28 +974,6 @@ USE `video_dev`$$
 
 
 CREATE
-	TRIGGER user_created BEFORE INSERT ON users FOR EACH ROW
-BEGIN
-	set NEW.created_date = NOW();
-END;
-$$
-
-USE `video_dev`$$
-
-
-
-CREATE
-	TRIGGER user_updated BEFORE UPDATE ON users FOR EACH ROW
-BEGIN
-	set NEW.updated_date = NOW();
-END;
-$$
-
-USE `video_dev`$$
-
-
-
-CREATE
 	TRIGGER media_type_created BEFORE INSERT ON media_types FOR EACH ROW
 BEGIN
 	set NEW.created_date = NOW();
@@ -1021,6 +1008,28 @@ USE `video_dev`$$
 
 CREATE
 	TRIGGER media_updated BEFORE UPDATE ON media FOR EACH ROW
+BEGIN
+	set NEW.updated_date = NOW();
+END;
+$$
+
+USE `video_dev`$$
+
+
+
+CREATE
+	TRIGGER user_created BEFORE INSERT ON users FOR EACH ROW
+BEGIN
+	set NEW.created_date = NOW();
+END;
+$$
+
+USE `video_dev`$$
+
+
+
+CREATE
+	TRIGGER user_updated BEFORE UPDATE ON users FOR EACH ROW
 BEGIN
 	set NEW.updated_date = NOW();
 END;

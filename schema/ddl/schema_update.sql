@@ -1,3 +1,15 @@
+alter table users add column banner_id INT(11) NULL DEFAULT NULL after user_type;
+alter table users add INDEX fk_users_media1_idx (banner_id ASC);
+alter table users add CONSTRAINT fk_users_media1
+    FOREIGN KEY (banner_id)
+    REFERENCES media (id)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL;
+
+insert into media_types ( type ) values ( 'image' );
+insert into asset_types ( type ) values ( 'banner' );
+commit;
+
 
 
 --
