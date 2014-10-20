@@ -448,7 +448,7 @@ def generate_summary( summary_type,
 						    'audio_bitrate' : 160,
 						    'asset_type' : 'main',
 						    'thumbnails' : [ {
-								    'times' : [ 0.5 ],
+								    'times' : [ 3.0 ],
 								    'type'  : 'static',
 								    'size'  : "288x216",
 								    'label' : 'poster',
@@ -459,7 +459,7 @@ def generate_summary( summary_type,
 									    }
 								    }, 
 								     {
-								    'times' : [ 0.5 ],
+								    'times' : [ 3.0 ],
 								    'type'  : 'animated',
 								    'size'  : "288x216",
 								    'label' : 'poster_animated',

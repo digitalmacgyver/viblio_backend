@@ -394,7 +394,7 @@ def produce_summary_video( user_uuid, workdir ):
                                 'audio_bitrate' : 160,
                                 'asset_type' : 'main',
                                 'thumbnails' : [ {
-                                        'times' : [ 0.5 ],
+                                        'times' : [ 3.0 ],
                                         'type'  : 'static',
                                         'size'  : "320x240",
                                         'label' : 'poster',
@@ -405,7 +405,7 @@ def produce_summary_video( user_uuid, workdir ):
                                             }
                                         }, 
                                                  {
-                                        'times' : [ 0.5 ],
+                                        'times' : [ 3.0 ],
                                         'type'  : 'static',
                                         'original_size' : True,
                                         'label' : 'poster_original',
@@ -416,7 +416,7 @@ def produce_summary_video( user_uuid, workdir ):
                                             }
                                         }, 
                                                  {
-                                        'times' : [ 0.5 ],
+                                        'times' : [ 3.0 ],
                                         'size': "128x128",
                                         'type'  : 'static',
                                         'label' : 'thumbnail',
@@ -427,7 +427,7 @@ def produce_summary_video( user_uuid, workdir ):
                                             }
                                         },
                                                  {
-                                        'times' : [ 0.5 ],
+                                        'times' : [ 3.0 ],
                                         'type'  : 'animated',
                                         'size'  : "320x240",
                                         'label' : 'poster_animated',

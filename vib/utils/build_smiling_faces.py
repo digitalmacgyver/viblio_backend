@@ -381,7 +381,7 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
                                 'audio_bitrate' : 160,
                                 'asset_type' : 'main',
                                 'thumbnails' : [ {
-                                        'times' : [ 0.5 ],
+                                        'times' : [ 3.0 ],
                                         'type'  : 'static',
                                         #'size'  : "320x240",
                                         'size'  : "288x216",
@@ -415,7 +415,7 @@ def produce_summary_video( user_uuid, workdir, viblio_added_content_id ):
                                         #    }
                                         #},
                                                  {
-                                        'times' : [ 0.5 ],
+                                        'times' : [ 3.0 ],
                                         'type'  : 'animated',
                                         #'size'  : "320x240",
                                         'size'  : "288x216",

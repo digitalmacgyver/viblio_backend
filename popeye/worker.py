@@ -411,7 +411,7 @@ class Worker( Background ):
                                     'audio_bitrate' : 160,
                                     'asset_type' : 'main',
                                     'thumbnails' : [ {
-                                            'times' : [ 0.5 ],
+                                            'times' : [ 3.0 ],
                                             'type'  : 'static',
                                      #       'size'  : "320x240",
                                             'size'  : "288x216",
@@ -445,7 +445,7 @@ class Worker( Background ):
                                      #           }
                                      #       },
                                                      {
-                                            'times' : [ 0.5 ],
+                                            'times' : [ 3.0 ],
                                             'type'  : 'animated',
                                      #       'size'  : "320x240",
                                             'size'  : "288x216",

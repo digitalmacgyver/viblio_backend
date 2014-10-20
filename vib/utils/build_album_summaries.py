@@ -451,7 +451,7 @@ def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filenam
                                 'audio_bitrate' : 160,
                                 'asset_type' : 'main',
                                 'thumbnails' : [ {
-                                        'times' : [ 0.5 ],
+                                        'times' : [ 3.0 ],
                                         'type'  : 'static',
                                         #'size'  : "320x240",
                                         'size'  : "288x216",
@@ -485,7 +485,7 @@ def produce_summary_video( album_uuid, workdir, viblio_added_content_id, filenam
                                         #    }
                                         #},
                                                  {
-                                        'times' : [ 0.5 ],
+                                        'times' : [ 3.0 ],
                                         'type'  : 'animated',
                                         #'size'  : "320x240",
                                         'size'  : "288x216",

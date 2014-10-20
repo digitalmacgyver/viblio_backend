@@ -53,6 +53,16 @@ def get_exif( media_uuid, filename ):
                     duration = float( match.groups()[0] )
                 else:
                     duration = None
+
+        if duration is None:
+            # Try another way...
+            try:
+                ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
+                info = json.loads( output )
+                duration = float( info['format']['duration'] )
+            except:
+                # Oh well...
+                pass
         
         return {  'file_ext'    : file_ext, 
                   'mime_type'   : mime_type, 
@@ -267,6 +277,8 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
         output = ''
 
         time = thumbnail['times'][0]
+        if exif['duration'] is not None and time >= exif['duration']:
+            time = float( time ) / 2
 
         ffmpeg_opts = ' -vframes 1 '
         ffmpeg_scale = ''
