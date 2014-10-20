@@ -86,7 +86,13 @@ def find_photos( media_uuid,
 
     cleanup_video_file = False
     if video_file is None:
-        media_asset = orm.query( MediaAssets ).filter( and_( MediaAssets.asset_type == 'original', MediaAssets.media_id == media.id ) ).one()
+        media_assets = orm.query( MediaAssets ).filter( and_( MediaAssets.asset_type == 'original', MediaAssets.media_id == media.id ) )[:]
+        media_asset = None
+        if len( media_asset ) != 1:
+            # Handle the case where there is no 'original' video.
+            media_asset = orm.query( MediaAssets ).filter( and_( MediaAssets.asset_type == 'main', MediaAssets.media_id == media.id ) ).one()
+        else:
+            media_asset = media_assets[0]
         video_file = "%s/%s/find_photos/video_%s" % ( config.faces_dir, media_uuid, media_uuid )
         download_file( video_file, config.bucket_name, media_asset.uri )
 
@@ -327,6 +333,7 @@ def run():
 
     except Exception as e:
         log.info( json.dumps( { 'message'   : 'Failed to find photos, error was: %s' % ( e ) } ) )
+        raise
     finally:
         if message != None:
             # Even if something went wrong, make sure we delete the
