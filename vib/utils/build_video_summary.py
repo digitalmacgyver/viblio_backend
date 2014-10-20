@@ -294,14 +294,16 @@ def generate_summary( summary_type,
         w.display.pad_bgcolor = 'White'
 
         if target_duration is None:
-            target_duration = w.duration
+            target_duration = min( w.duration, 120 )
+            w.duration = target_duration
 
         small_logo_color = 'white'
         large_logo_color = 'white'
 		
 	if summary_style == 'classic':
-	    w.display.display_style = vsum.PAN
+	    w.display.display_style = vsum.PAD
 	    vsum.distribute_clips( summary_clips, [ w ], min_duration=target_duration, randomize_clips=randomize_clips )
+            
         elif summary_style == 'cascade':
             small_logo_color = 'gray'
             large_logo_color = 'gray'
@@ -374,19 +376,22 @@ def generate_summary( summary_type,
     log.info( json.dumps( { 'media_uuid' : summary_uuid, 
                             'message'    : 'Creating database records for album_uuid %s, media_uuid %s' % ( album_uuid, summary_uuid ) } ) )
 
-    media = Media( uuid = summary_uuid,
-                   media_type = 'original',
-                   filename = filename,
-                   title = title,
-                   description = description,
-                   view_count = 0,
-                   status = 'pending',
-                   recording_date = recording_date,
-                   lat = lat,
-                   lng = lng,
-                   unique_hash = unique_hash,
-                   is_viblio_created = True )
-    user.media.append( media )
+    media = orm.query( Media ).filter( Media.uuid == summary_uuid ).one()
+    media.unique_hash = unique_hash
+
+    #media = Media( uuid = summary_uuid,
+    #               media_type = 'original',
+    #               filename = filename,
+    #               title = title,
+    #               description = description,
+    #               view_count = 0,
+    #               status = 'pending',
+    #               recording_date = recording_date,
+    #               lat = lat,
+    #               lng = lng,
+    #               unique_hash = unique_hash,
+    #               is_viblio_created = True )
+    #user.media.append( media )
     orm.commit()
 
     if album is not None:
@@ -808,6 +813,9 @@ def run():
             return True;
 
         # Mandatory options.
+        # The UUID of the summary we will create.
+        #summary_uuid = str( uuid.uuid4() )
+        summary_uuid    = options['summary_uuid']
         user_uuid       = options['user_uuid']
         images          = options['images[]']
         summary_type    = options['summary_type']
@@ -854,9 +862,6 @@ def run():
         output_x        = options.get( 'output_x', 1280 )
         output_y        = options.get( 'output_y', 720 )
 
-        # The UUID of the summary we will create.
-        summary_uuid = str( uuid.uuid4() )
-        
         workdir = config.faces_dir + '/album_summary/' + summary_uuid + '/'
         try:
             if not os.path.isdir( workdir ):

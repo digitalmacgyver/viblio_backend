@@ -234,18 +234,29 @@ class Clip( object ):
 # using the FFMPEG scale filter on PNG images, so I left it out.
 class Watermark( object ):
     def __init__( self, 
-                  filename,
+                  filename = None,
                   x = "",
                   y = "",
                   fade_in_start = None,     # Negative values are taken relative to the end of the video
                   fade_in_duration = None,
                   fade_out_start = None,    # Negative values are taken relative to end of video.
-                  fade_out_duration = None ):
+                  fade_out_duration = None,
+                  bgcolor = None,
+                  width = None,
+                  height = None ):
 
-        if not os.path.exists( filename ):
+        self.filename = filename
+        if filename is not None and not os.path.exists( filename ):
             raise Exception( "No watermark media found at: %s" % ( filename ) )
-        else:
-            self.filename = filename
+        
+        self.bgcolor = bgcolor
+        self.width = width
+        self.height = height
+
+        if self.filename is None and ( self.bgcolor is None or self.width is None or self.height is None ):
+            raise Exception( "Either filename, or all of bgcolor, width, and height must be provided." )
+        elif self.filename is not None and ( self.bgcolor is not None ):
+            raise Exception( "Can't specify both filename and bgcolor for watermark." )
 
         self.x = x
         self.y = y
@@ -483,10 +494,21 @@ class Window( object ):
 
         tmpfile = self.get_next_renderfile()
 
+        file_idx = 0
+
         for watermark in watermarks:
-            cmd += " -loop 1 -i %s " % ( watermark.filename )
+            if watermark.filename is not None:
+                file_idx += 1
+                cmd += " -loop 1 -i %s " % ( watermark.filename )
 
         cmd += ' -filter_complex " '
+
+        filter_idx = 0
+
+        for watermark in watermarks:
+            if watermark.bgcolor is not None:
+                filter_idx += 1
+                cmd += ' color=%s:size=%dx%d [%d] ; ' % ( watermark.bgcolor, watermark.width, watermark.height, file_idx + filter_idx )
 
         for idx, watermark in enumerate( watermarks ):
             fade_clause = ""
@@ -511,7 +533,11 @@ class Window( object ):
             if mark_clause == "":
                 mark_clause = "copy"
 
-            cmd += " [%d] %s [w%d] ; " % ( idx+1, mark_clause, idx )
+            input_idx = idx+1
+            if watermark.filename is None:
+                input_idx += file_idx
+
+            cmd += " [%d] %s [w%d] ; " % ( input_idx, mark_clause, idx )
 
         # Overlay them onto one another
         prior_overlay = '0'
