@@ -88,7 +88,7 @@ def find_photos( media_uuid,
     if video_file is None:
         media_assets = orm.query( MediaAssets ).filter( and_( MediaAssets.asset_type == 'original', MediaAssets.media_id == media.id ) )[:]
         media_asset = None
-        if len( media_asset ) != 1:
+        if len( media_assets ) != 1:
             # Handle the case where there is no 'original' video.
             media_asset = orm.query( MediaAssets ).filter( and_( MediaAssets.asset_type == 'main', MediaAssets.media_id == media.id ) ).one()
         else:
