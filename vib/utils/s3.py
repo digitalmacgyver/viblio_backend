@@ -173,3 +173,13 @@ def delete_s3_files( bucket, keys ):
                     'message' : 'Failed to delete files from s3 bucket: %s with error: %s' % ( bucket, e )
                     } ) )
         raise
+
+def check_exists( bucket, key ):
+    '''Upload the file at filename to s3 in bucket/key'''
+    try:
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+        bucket = s3.get_bucket( bucket )
+        return bucket.get_key( key )
+    except Exception as e:
+        log.error( json.dumps( { 'message' : 'Failed to determine whether key %s exists in bucket %s' % ( key, bucket ) } ) )
+        raise

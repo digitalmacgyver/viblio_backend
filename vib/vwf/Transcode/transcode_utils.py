@@ -7,6 +7,7 @@ import re
 
 import vib.rekog.utils as rekog
 import vib.utils.s3 as s3
+import vib.cv.PhotoFinder.PhotoFinder
 
 log = logging.getLogger( __name__)
 
@@ -119,32 +120,32 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
     log_message = ''
     cmd_output = ''
 
-    duration = exif.get( 'duration', None )
-    image_fps = .2
-    if duration and duration < 20:
-        image_fps = 4.0 / duration
-    elif duration and duration > 150:
-        image_fps = 30.0 / duration
-
-    image_opts = ''
+    #duration = exif.get( 'duration', None )
+    #image_fps = .2
+    #if duration and duration < 20:
+    #    image_fps = 4.0 / duration
+    #elif duration and duration > 150:
+    #    image_fps = 30.0 / duration
+    
+    #image_opts = ''
 
     if rotation == '90':
         log_message = 'Video is rotated 90 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=1'
-        image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=1,'
+        #image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=1,'
     elif rotation == '180':
         log_message = 'Video is rotated 180 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip'
-        image_opts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip,'
+        #image_opts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip,'
     elif rotation == '270':
         log_message = 'Video is rotated 270 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=2'
-        image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=2,'
+        #image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=2,'
     else:
         log_message = 'Video is not rotated.'
-        image_opts += ' -vf '
+        #image_opts += ' -vf '
 
-    image_opts += 'fps=%s ' % ( image_fps )
+    #image_opts += 'fps=%s ' % ( image_fps )
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
                              'message' : log_message } ) )
@@ -170,7 +171,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
         
     # Add in a hard coded command to get some high resolution, rotated
     # images for making albums.
-    output_cmd += image_opts + ' -qscale:v 2 %s/%s-image-%%04d.jpg' % ( config.transcode_dir, media_uuid )
+    #output_cmd += image_opts + ' -qscale:v 2 %s/%s-image-%%04d.jpg' % ( config.transcode_dir, media_uuid )
 
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s' % ( input_filename, output_cmd )
     log.info( json.dumps( { 'media_uuid' : media_uuid,
@@ -209,6 +210,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
 
                 s3.upload_file( thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
 
+        '''
         # Store our generic images in S3, and compute various metrics
         # and store the results in a hash to be stored in the database
         # by our caller.
@@ -238,7 +240,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                     # Inform the caller abour the metrics.
                     images.append( { 'output_file'    : { 's3_key' : image_key },
                                      'output_file_fs' : filename,
-                                     'format'         : 'jpg',
+                                     'format'         : 'jpeg',
                                      'timecode'       : timecode,
                                      'blur_score'     : blur_score,
                                      'face_score'     : face_score,
@@ -249,6 +251,14 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
                                              'message' : "ERROR getting features for image %s: %s" % ( filename, e ) } ) )
                     
             output['images'] = images
+        '''
+
+    try:
+        vib.cv.PhotoFinder.PhotoFinder.find_photos( media_uuid, video_file=input_filename )
+    except Exception as e:
+        log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'message' : "ERROR getting images: %s" % ( e ) } ) )
+        raise
 
     return outputs
 

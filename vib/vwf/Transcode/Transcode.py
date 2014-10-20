@@ -236,6 +236,7 @@ class Transcode( VWorker ):
                     if thumbnail['label'] == 'poster':
                         video_poster = thumbnail_asset
 
+                '''
                 for image in output.get( 'images', [] ):
                     image_uuid = str( uuid.uuid4() )
 
@@ -259,6 +260,7 @@ class Transcode( VWorker ):
                                                cv_metrics = image['cv_metrics'],
                                                view_count = 0 )
                     media.assets.append( image_asset )
+                '''
 
 
             # Determine if we need to create and or add to the special Video summary album.
@@ -383,6 +385,7 @@ class Transcode( VWorker ):
                                         } ) )
                             os.remove( thumbnail['output_file_fs'] )
 
+                '''
                 for image in output.get( 'images', [] ):
                     if 'output_file_fs' in image:
                         if os.path.exists( image['output_file_fs'] ):
@@ -392,6 +395,7 @@ class Transcode( VWorker ):
                                         'message' : "Deleting temporary file %s for user %s, media %s" % ( image['output_file_fs'], user_uuid, media_uuid )
                                         } ) )
                             os.remove( image['output_file_fs'] )
+                '''
 
         except Exception as e:
             log.error( json.dumps( {
