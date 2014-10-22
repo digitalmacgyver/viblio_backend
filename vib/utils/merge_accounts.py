@@ -14,12 +14,12 @@ import vib.cv.FaceRecognition.api as rec
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-log = logging.getLogger( 'vib.utils.clone_user' )
+log = logging.getLogger( 'vib.utils.merge_accounts' )
 log.setLevel( logging.DEBUG )
 
 syslog = logging.handlers.SysLogHandler( address="/dev/log" )
 
-format_string = 'clone_user: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
+format_string = 'merge_accounts: { "name" : "%(name)s", "module" : "%(module)s", "lineno" : "%(lineno)s", "funcName" : "%(funcName)s",  "level" : "%(levelname)s", "deployment" : "' + config.VPWSuffix + '", "activity_log" : %(message)s }'
 
 sys_formatter = logging.Formatter( format_string )
 
@@ -41,7 +41,7 @@ def get_uuid_for_email( email ):
 
     return uuids
 
-def clone_user( user_uuid, new_email, verbose=False ):
+def merge_accounts( src_uuid, dest_uuid, verbose=False ):
     orm = None
 
     try:
@@ -50,29 +50,19 @@ def clone_user( user_uuid, new_email, verbose=False ):
 
         orm = vib.db.orm.get_session()
     
-        users = orm.query( Users ).filter( Users.uuid == user_uuid )
+        src_users = orm.query( Users ).filter( Users.uuid == src_uuid )
+        if src_users.count() != 1:
+            print "Found %s users with uuid %s, can't merge, returning." % ( src_users.count(), src_uuid )
+            return False
+        src_user = src_users[0]
+        src_user_id = src_user.id
 
-        if users.count() != 1:
-            print "Found %s users with uuid %s, can't clone, returning." % ( users.count(), user_uuid )
-            return 0
-
-        user = users[0]
-        old_user_id = user.id
-
-        sqlalchemy.orm.session.make_transient( user )
-        user.id = None
-        user.uuid = str( uuid.uuid4() )
-        user.email = new_email
-
-        # Add new new user.
-        orm.add( user )
-
-        # Add the new user to the beta whitelist.
-        whitelist = EmailUsers( 
-            email = new_email, 
-            status = 'whitelist'
-            )
-        orm.add( whitelist )
+        dest_users = orm.query( Users ).filter( Users.uuid == dest_uuid )
+        if dest_users.count() != 1:
+            print "Found %s users with uuid %s, can't merge, returning." % ( dest_users.count(), dest_uuid )
+            return False
+        dest_user = dest_users[0]
+        dest_user_id = dest_user.id
 
         # We don't copy:
         # Comments
@@ -82,38 +72,28 @@ def clone_user( user_uuid, new_email, verbose=False ):
         picture_uris = {}
         contact_ids = {}
 
-        # Profiles
-        profiles = orm.query( Profiles ).filter( Profiles.user_id == old_user_id )
-        for profile in profiles:
-            old_profile_id = profile.id
+        src_contacts = orm.query( Contacts ).filter( Contacts.user_id == src_user_id )
+        dest_contacts = orm.query( Contacts ).filter( Contacts.user_id == dest_user_id )
+        
+        dest_contacts_by_email = {}
 
-            sqlalchemy.orm.session.make_transient( profile )
-            profile.id = None
-            user.profiles.append( profile )
+        for contact in dest_contacts:
+            if not contact.is_group:
+                if contact.contact_email is not None and contact.contact_email not in dest_contacts_by_email:
+                    dest_contacts_by_email[contact.contact_email] = contact
 
-            profile_fields = orm.query( ProfileFields ).filter( ProfileFields.profiles_id == old_profile_id )
-            for profile_field in profile_fields:
-                sqlalchemy.orm.session.make_transient( profile_field )
-                profile_field.id = None
-                
-                profile.profile_fields.append( profile_field )
-
-        # Media shares
-        media_shares = orm.query( MediaShares ).filter( MediaShares.user_id == old_user_id )
-        for ms in media_shares:
-            sqlalchemy.orm.session.make_transient( ms )
-            ms.id = None
-            ms.uuid = str( uuid.uuid4() )
-            user.media_shares.append( ms )
-
-        #import pdb
-        #pdb.set_trace()
-
-        contacts = orm.query( Contacts ).filter( Contacts.user_id == old_user_id )
         contact_old_new = {}
         # Add contacts ( not groups )
-        for contact in contacts:
+        for contact in src_contacts:
             if not contact.is_group:
+                if contact.contact_email is not None and contact.contact_email in dest_contacts_by_email:
+                    contact_ids[contact.id] = dest_contacts_by_email[contact.contact_email]
+                    contact_old_new[contact.id] = dest_contacts_by_email[contact.contact_email].id
+
+                    if verbose:
+                        print "Skipping copy of contact for email %s, as the destination account already has one." % ( contact.email )
+                    continue
+
                 old_contact_id = contact.id
                 sqlalchemy.orm.session.make_transient( contact )
                 contact.id = None
@@ -126,52 +106,45 @@ def clone_user( user_uuid, new_email, verbose=False ):
                 
                 contact_ids[old_contact_id] = contact
 
-                user.contacts.append( contact )
+                dest_user.contacts.append( contact )
 
                 orm.commit()
                 contact_old_new[old_contact_id] = contact.id
 
-        # Handle contact groups.
-        for group in contacts:
-            if group.is_group:
-                group_contacts = orm.query( ContactGroups ).filter( ContactGroups.group_id == group.id ).all()
-
-                sqlalchemy.orm.session.make_transient( group )
-                group.id = None
-                group.uuid = str( uuid.uuid4() )
-                user.contacts.append( group )
-                orm.commit()
-                
-                for group_member in group_contacts:
-                    if group_member.contact_id in contact_old_new:
-                        new_contact_group = ContactGroups( group_id   = group.id, 
-                                                           contact_id = contact_old_new[group_member.contact_id], 
-                                                           contact_viblio_id = group.contact_viblio_id )
-                        group.contact_groups.append( new_contact_group )
-                    elif verbose:
-                        print "Warning, could not find mapping for contact group member: %s, %s." % ( group_member.group_id, group_member.contact_id )
-                
-
-        media_files = orm.query( Media ).filter( Media.user_id == old_user_id )
+        src_media_files = orm.query( Media ).filter( Media.user_id == src_user_id )
+        dest_media_files = orm.query( Media ).filter( Media.user_id == dest_user_id )
         media_old_new = {}
         media_uri_old_new = {}
-        # Add media ( not albums )
-        for m in media_files:
+
+        dest_media_by_hash = {}
+        for m in dest_media_files:
             if not m.is_album:
+                dest_media_by_hash[m.unique_hash] = m
+
+        # Add media ( not albums )
+        for m in src_media_files:
+            if not m.is_album:
+                if m.unique_hash is not None and m.unique_hash in dest_media_by_hash:
+                    if verbose:
+                        print "Skipping copy of media of unique hash %s, as the destination account already has one." % ( m.unique_hash )
+
+                    media_old_new[m.id] = dest_media_by_hash[m.unique_hash].id
+                    continue
+
                 old_media_id = m.id
-                assets = orm.query( MediaAssets ).filter( MediaAssets.media_id == m.id )[:]
+                src_assets = orm.query( MediaAssets ).filter( MediaAssets.media_id == m.id )[:]
 
                 sqlalchemy.orm.session.make_transient( m )
                 m.id = None
                 m_old_uuid = m.uuid
                 m_new_uuid = str( uuid.uuid4() )
                 m.uuid = m_new_uuid
-                user.media.append( m )
+                dest_user.media.append( m )
                 
                 orm.commit()
                 media_old_new[old_media_id] = m.id
 
-                for asset in assets:
+                for asset in src_assets:
                     features = orm.query( MediaAssetFeatures ).filter( MediaAssetFeatures.media_asset_id == asset.id )[:]
 
                     sqlalchemy.orm.session.make_transient( asset )
@@ -180,12 +153,12 @@ def clone_user( user_uuid, new_email, verbose=False ):
                     old_uri = asset.uri
                     
                     if old_uri is None:
-                        print "Warning, null old_uri for asset: %s" % ( asset.uuid )
+                        if verbose:
+                            print "Warning, null old_uri for asset: %s" % ( asset.uuid )
                         continue
 
                     new_uri = old_uri.replace( m_old_uuid, m_new_uuid )
                     
-
                     media_uri_old_new[old_uri] = new_uri
 
                     if old_uri in picture_uris:
@@ -210,7 +183,7 @@ def clone_user( user_uuid, new_email, verbose=False ):
                             contact_ids[feature.contact_id].media_asset_features.append( feature )
 
         # Handle media albums
-        for album in media_files:
+        for album in src_media_files:
             if album.is_album:
                 album_media = orm.query( MediaAlbums ).filter( MediaAlbums.album_id == album.id ).all()
                 assets = orm.query( MediaAssets ).filter( MediaAssets.media_id == album.id )[:]
@@ -220,7 +193,7 @@ def clone_user( user_uuid, new_email, verbose=False ):
                 m_old_uuid = album.uuid
                 m_new_uuid = str( uuid.uuid4() )
                 album.uuid = m_new_uuid
-                user.media.append( album )
+                dest_user.media.append( album )
                 orm.commit()
 
                 for asset in assets:
@@ -232,7 +205,8 @@ def clone_user( user_uuid, new_email, verbose=False ):
                     old_uri = asset.uri
 
                     if old_uri is None:
-                        print "Warning, null old_uri for asset: %s" % ( asset.uuid )
+                        if verbose:
+                            print "Warning, null old_uri for asset: %s" % ( asset.uuid )
                         continue
 
                     if old_uri in media_uri_old_new:
@@ -287,16 +261,16 @@ if __name__ == '__main__':
     parser.add_option("-e", "--email",
                   dest="email",
                   help="Print the uuid(s) associated with the email and exit." )
-    parser.add_option("-u", "--user",
-                      dest="user_uuid",
-                      help="The user uuid of the user to clone." )
-    parser.add_option("-n", "--new-email",
-                      dest="new_email",
-                      help="The email the newly created clone should have." )
+    parser.add_option("-s", "--srcuser",
+                      dest="src_uuid",
+                      help="The user uuid of the user whose content should be copied from." )
+    parser.add_option("-d", "--destuser",
+                      dest="dest_uuid",
+                      help="The user uuid of the user into whose account srcuser's content should be should be copied." )
 
     (options, args) = parser.parse_args()
 
-    if not ( options.email or options.user_uuid ):
+    if not ( options.email or ( options.src_uuid and options.dest_uuid ) ):
         parser.print_help()
         sys.exit(0)
     elif options.email:
@@ -311,12 +285,10 @@ if __name__ == '__main__':
         if not found:
             print "No user found for email:", email
 
-    elif options.user_uuid and options.new_email:
-        user_uuid = options.user_uuid
-        new_email = options.new_email
-
-        clone_user( user_uuid, new_email, verbose=True )
     else:
-        print "Must provide either -e or both -u and -n arguments."
+        src_uuid = options.src_uuid
+        dest_uuid = options.dest_uuid
+
+        merge_accounts( src_uuid, dest_uuid, verbose=True )
 
 
