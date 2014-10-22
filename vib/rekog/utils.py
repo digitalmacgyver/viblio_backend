@@ -35,7 +35,7 @@ def detect_face( url ):
     r = requests.post( "http://rekognition.com/func/api/", data )
     return r.json()
 
-def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min_confidence=0.8, max_yaw=45, max_pitch=45 ):
+def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min_confidence=0.9, max_yaw=45, max_pitch=45 ):
     '''Adds face at URL for specified user.  If tag is specified the
     name is added with that tag.
 

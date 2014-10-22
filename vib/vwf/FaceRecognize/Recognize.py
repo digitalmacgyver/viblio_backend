@@ -35,11 +35,11 @@ class Recognize( VWorker ):
         try:
             # If the detection_confidence is less than this we set the
             # face as bad face.
-            self.detection_threshold = 0.8
+            self.detection_threshold = 0.9
             
             # If the recognition_confidence is greater than this we
             # set the face as machine recognized.
-            self.recognition_threshold = 0.8
+            self.recognition_threshold = 0.85
             
             self.lock_acquired = False
 
@@ -156,9 +156,9 @@ class Recognize( VWorker ):
     def _handle_face( self, track_id, track_face, user_uuid, media_uuid ):
         '''For each face, send it to Orbues for detection:
         * If not a face, add it to the DB as a not_face
-        * If confidence < 0.8 add it to the DB as bad_face
+        * If confidence < 0.9 add it to the DB as bad_face
         * Else attempt recognition:
-        *  If recognition > 0.8 add to DB as machine_recognized
+        *  If recognition > 0.85 add to DB as machine_recognized
         *  else add as new_face
         '''
         try:

@@ -142,11 +142,11 @@ def add_faces( user_id, contact_id, faces ):
                     #                             'message'    : "ADD_FACE_FOR_USER FAILED: %s" % ( e ) } ) )
                     #    sys.exit(0)
                 
-                    log.debug( json.dumps( { 'user_id'    : user_id,
-                                             'contact_id' : contact_id,
-                                             'message'    : "Face added to recognition with idx: %s" % ( idx ) } ) )
-
                     if idx is not None:
+                        log.debug( json.dumps( { 'user_id'    : user_id,
+                                                 'contact_id' : contact_id,
+                                                 'message'    : "Face added to recognition with idx: %s" % ( idx ) } ) )
+
                         face['idx'] = idx
                         
                         recog_db._add_face( user_id, contact_id, face )
