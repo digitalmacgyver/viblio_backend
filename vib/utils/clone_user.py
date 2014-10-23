@@ -147,7 +147,7 @@ def clone_user( user_uuid, new_email, verbose=False ):
                         new_contact_group = ContactGroups( group_id   = group.id, 
                                                            contact_id = contact_old_new[group_member.contact_id], 
                                                            contact_viblio_id = group.contact_viblio_id )
-                        group.contact_groups.append( new_contact_group )
+                        group.contact_group_groups.append( new_contact_group )
                     elif verbose:
                         print "Warning, could not find mapping for contact group member: %s, %s." % ( group_member.group_id, group_member.contact_id )
                 
