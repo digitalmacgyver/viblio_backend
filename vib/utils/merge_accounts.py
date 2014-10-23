@@ -91,7 +91,7 @@ def merge_accounts( src_uuid, dest_uuid, verbose=False ):
                     contact_old_new[contact.id] = dest_contacts_by_email[contact.contact_email].id
 
                     if verbose:
-                        print "Skipping copy of contact for email %s, as the destination account already has one." % ( contact.email )
+                        print "Skipping copy of contact for email %s, as the destination account already has one." % ( contact.contact_email )
                     continue
 
                 old_contact_id = contact.id
