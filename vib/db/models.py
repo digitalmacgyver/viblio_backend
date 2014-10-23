@@ -171,13 +171,17 @@ def db_map(engine):
             cascade="all, delete-orphan" ) } )
 
     mappers["contacts"].add_properties( {
-            "media_asset_features" : relationship( models.MediaAssetFeatures, backref="contacts" ),
-            "contact_groups" : relationship( models.ContactGroups,
-                                             lazy="dynamic",
-                                             backref="contacts",
-                                             foreign_keys=models.ContactGroups.contact_id,
-                                             cascade="all, delete-orphan" )
-
+        "media_asset_features" : relationship( models.MediaAssetFeatures, backref="contacts" ),
+        "contact_groups" : relationship( models.ContactGroups,
+                                         lazy="dynamic",
+                                         backref="contacts",
+                                         foreign_keys=models.ContactGroups.contact_id,
+                                         cascade="all, delete-orphan" ),
+        "contact_group_groups" : relationship( models.ContactGroups,
+                                               lazy="dynamic",
+                                               backref="contacts",
+                                               foreign_keys=models.ContactGroups.group_id,
+                                               cascade="all, delete-orphan" )
             } )
 
     mappers['profiles'].add_properties( {
