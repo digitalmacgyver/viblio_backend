@@ -179,7 +179,7 @@ def db_map(engine):
                                          cascade="all, delete-orphan" ),
         "contact_group_groups" : relationship( models.ContactGroups,
                                                lazy="dynamic",
-                                               backref="contacts",
+                                               backref="groups",
                                                foreign_keys=models.ContactGroups.group_id,
                                                cascade="all, delete-orphan" )
             } )
