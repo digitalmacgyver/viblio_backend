@@ -1,5 +1,7 @@
 # Python libraries
 import boto.swf.layer2 as swf
+import boto.sqs
+from boto.sqs.message import RawMessage
 import codecs
 import datetime
 import fcntl
@@ -187,6 +189,21 @@ class Worker( Background ):
         if 'finalLength' in self.data['info'] and self.data['info']:
             log.debug( 'JSON finalLength is: ' + str( self.data['info']['finalLength'] ) )
 
+        # Load data from _metadata.json into self.data['metadata']
+        log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
+        self.__initialize_metadata( files['metadata']['ifile'] )
+        log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
+
+        client_filename = os.path.basename( files['main']['ofile'] )
+        if self.data['metadata'] and self.data['metadata']['file'] and self.data['metadata']['file']['Path']:
+            client_filename = self.data['metadata']['file']['Path']
+
+        media_title = None
+        if 'file' in self.data['metadata']:
+            if 'Path' in self.data['metadata']['file']:
+                if len( self.data['metadata']['file']['Path'] ):
+                    media_title = os.path.splitext( ntpath.basename( self.data['metadata']['file']['Path'] ) )[0]
+
         # Check if we've already seen this file for this user.
         unique_hash = None
         try:
@@ -208,9 +225,59 @@ class Worker( Background ):
             log.debug( 'Checking uniqueness of file with hash %s for uid %s' % ( unique_hash, self.data['info']['uid'] ) )
             db_files = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.unique_hash == unique_hash ) ).all()
 
+            stop_unique_failure = False
+
             if len( db_files ) == 0:
                 log.info( 'File with hash %s for user uuid %s is unique, proceeding.' % ( unique_hash, self.data['info']['uid'] ) )
+            elif len( db_files ) == 1:
+                # Handle the various cases of duplicate upload:
+                # 
+                # 1. If the file is OK, send them an email about it.
+                # 2. If the file has failed, clean up the file and allow the upload to proceed.
+                # 3. If the file is in progress, send them an email about it.
+                # 4. Otherwise, just give up.
+
+                if db_files[0].status in [ 'visible', 'complete']:
+                    # Send the user a note.
+                    main_asset = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == db_files[0].id, MediaAssets.asset_type == 'main' ) ).one()
+                    self.notify_user( filename   = media_title,
+                                      user_uuid  = user.uuid, 
+                                      media_uuid = db_files[0].uuid, 
+                                      s3_bucket  = config.bucket_name, 
+                                      s3_key     = main_asset.uri,
+                                      template   = 'email/24-uploadExisting.tt' ) 
+                    log.info( 'Attempted to upload video with unique hash %s that is the same as existing media id: %s' % ( unique_hash, db_files[0].id ) )
+
+                    stop_unique_failure = True
+
+                elif db_files[0].status == 'failed':
+                    # Clean up the failed file and try again.
+                    file_assets = orm.query( MediaAssets ).filter( and_( MediaAssets.user_id == user.id, MediaAssets.media_id == db_files[0].id ) ).all()
+                    for fa in file_assets:
+                        log.info( 'Deleting asset_id: %s for failed media id: %s from s3' % ( fa.id, fa.media_id ) )
+                        helpers.delete_file( fa.uri, log )
+
+                    log.info( 'Deleting failed media id: %s from database' % ( fa.media_id ) )
+                    orm.query( Media ).filter( Media.id == db_files[0].id ).delete()
+                    orm.commit()
+                elif db_files[0].status == 'pending':
+                    self.notify_user( filename   = media_title,
+                                      user_uuid  = user.uuid, 
+                                      media_uuid = db_files[0].uuid, 
+                                      s3_bucket  = config.bucket_name, 
+                                      s3_key     = None,
+                                      template   = 'email/25-uploadPending.tt' ) 
+                    log.info( 'Attempted to upload video with unique hash %s that is the same as currently in process media id: %s' % ( unique_hash, db_files[0].id ) )
+                    stop_unique_failure = True
+                else:
+                    log.info( 'Could not determine disposition of prior media id %s with same unique hash, it is not visible, complete, failed, or pending, but: %s' % ( db_files[0].id, db_files[0].status ) )
+                    stop_unique_failure = True
+
             else:
+                stop_unique_failure = True
+
+            if stop_unique_failure:
+                # Somehow more than 1 files with this unique hash.
                 log.info( 'File with hash %s for user uuid %s is not unique, terminating.' % ( unique_hash, self.data['info']['uid'] ) )
                 self.mp_log( 'Duplicate Video Skipped' )
                 self.file_cleanup()
@@ -230,10 +297,6 @@ class Worker( Background ):
             raise
 
 
-        # Load data from _metadata.json into self.data['metadata']
-        log.info( 'Initializing metadata field from JSON file: ' + files['metadata']['ifile'] )
-        self.__initialize_metadata( files['metadata']['ifile'] )
-        log.info( 'metadata field is: ' + json.dumps( self.data['metadata'] ) )
         if 'skip_faces' in self.data['metadata'] and self.data['metadata']['skip_faces']:
             self.skip_faces = True
         else:
@@ -275,18 +338,9 @@ class Worker( Background ):
         try:
             # Media row
             log.info( 'Generating row for media file' )
-            client_filename = os.path.basename( files['main']['ofile'] )
-            if self.data['metadata'] and self.data['metadata']['file'] and self.data['metadata']['file']['Path']:
-                client_filename = self.data['metadata']['file']['Path']
 
             log.info( 'Getting the current user from the database for uid: ' + self.data['info']['uid'] )
             user = orm.query( Users ).filter_by( uuid = self.data['info']['uid'] ).one()
-
-            media_title = None
-            if 'file' in self.data['metadata']:
-                if 'Path' in self.data['metadata']['file']:
-                    if len( self.data['metadata']['file']['Path'] ):
-                        media_title = os.path.splitext( ntpath.basename( self.data['metadata']['file']['Path'] ) )[0]
 
             media = Media( uuid           = self.uuid,
                            media_type     = 'original',
@@ -658,6 +712,68 @@ class Worker( Background ):
             self.popeye_log.exception( 'Failed to open and parse as JSON: %s error was: %s' % ( ifile, str( e ) ) )
             self.handle_errors()
             raise
+
+
+    def notify_user( self, filename, user_uuid, media_uuid, s3_bucket, s3_key, template ):
+        '''Utility method to send note to SQS where another process will send email.  All parameters required.'''
+
+        log = self.popeye_log
+
+        try:
+            subject = 'VIBLIO: Duplicate Video Uploaded'
+            poster_uri = None
+
+            log.info( "Notifying user %s for filename %s, media_uuid %s, s3_key %s, template %s" % ( user_uuid, filename, media_uuid, s3_key, template ) )
+
+            orm   = self.orm
+
+            user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
+            media = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.uuid == media_uuid ) ).one()
+
+            if template == 'email/24-uploadExisting.tt':
+                poster = orm.query( MediaAssets ).filter( and_( MediaAssets.media_id == media.id, MediaAssets.asset_type == 'poster' ) ).one()
+                poster_uri = poster.uri
+
+            message = {
+                'subject' : subject,
+                'to' : [ { 
+                    'email' : user.email,
+                    'name' : user.displayname } ],
+                'template': template,
+                'stash' : { 
+                    'user' : { 
+                        'displayname' : user.displayname },
+                    'model' : { 
+                        'media' : [ { 
+                            'uuid' : media_uuid,
+                            'views' : {
+                                'poster' : {
+                                    'uri' : poster_uri
+                                }
+                            },
+                            'title' : filename
+                        }
+                                ]
+                    },
+                    'filename' : filename
+                }
+            }
+
+            log.info( "Sending message of: %s" % ( message ) )
+
+            sqs = boto.sqs.connect_to_region( config.sqs_region, 
+                                              aws_access_key_id = config.awsAccess, 
+                                              aws_secret_access_key = config.awsSecret ).get_queue( config.email_queue )
+            sqs.set_message_class( RawMessage )
+
+            m = RawMessage()
+            m.set_body( json.dumps( message ) )
+            status = sqs.write( m )
+            log.info( "Message status was: %s" % ( status ) )
+             
+        except Exception as e:
+            self.__safe_log( self.popeye_log.exception, 'Error notifying user: %s' % ( e ) )
+            # Even if notification fails just go about our business...
 
     def __initialize_uuid( self, input_filename ):
         '''Private method: We expect an input filename that is the

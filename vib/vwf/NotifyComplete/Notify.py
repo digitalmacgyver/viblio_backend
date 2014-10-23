@@ -73,7 +73,7 @@ class Notify( VWorker ):
                     template = 'email/21-mashupGiftForYou.tt'
                     if options['viblio_added_content_type'] == config.viblio_summary_video_type:
                         subject = 'Your Moments Summary VIBLIO Video is Ready'
-                        tempalte = 'email/23-momentSummary.tt'
+                        template = 'email/23-momentSummary.tt'
 
                     message = {
                         'subject' : subject,

@@ -36,3 +36,16 @@ def upload_file( file_data, log, data = None ):
         log.error( 'Failed to upload to s3: %s' % str( e ) )
         raise
 
+def delete_file( key, log ):
+    '''Upload a file to S3'''
+    try:
+        bucket = __get_bucket( log )
+        
+        log.info( 'Deleting s3 key: %s' % (  key ) )
+
+        bucket.delete_key( key )
+
+    except Exception as e:
+        log.error( 'Failed to delete s3 key: %s' % str( e ) )
+        raise
+
