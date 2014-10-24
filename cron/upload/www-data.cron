@@ -1,1 +1,1 @@
-0 0 * * * /usr/bin/find /mnt/uploaded_files/ -type f -maxdepth 1 -mtime +1 -delete >> /tmp/cleanup_temp_files-upload-$(/bin/date +"\%F").log 2>&1
+0 0 * * * /usr/bin/find /mnt/uploaded_files/ -maxdepth 1 -mtime +1 -type f -delete >> /tmp/cleanup_temp_files-upload-$(/bin/date +"\%F").log 2>&1
