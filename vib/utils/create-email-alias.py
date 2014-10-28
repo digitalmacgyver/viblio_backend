@@ -56,11 +56,6 @@ def populate_contacts( alias_file, user_uuid, group_name ):
                 line = oline.rstrip()
                 email, fname, lname = line.split( '\t' )
 
-                # DEBUG - for testing.
-                print "Email before: %s" % ( email )
-                email = email.split( '@' )[0]
-                email = "mjhayward+%s@gmail.com" % ( email )
-
                 print "Email: '%s', First: '%s', Last: '%s'" % ( email, fname, lname )
                 if email in contacts:
                     raise Exception( "Duplicate email found: '%s': %s" % ( email, contacts[email] ) )
@@ -174,12 +169,6 @@ if __name__ == '__main__':
         user_uuid = options.user_uuid
         alias_file = options.alias_file
         group_name = options.group_name
-
-        # For testing.
-        alias_file = '/wintmp/alias/2015.txt'
-        # mjhayward+groupstest in staging.
-        user_uuid = 'A614BCB0-5E16-11E4-83EF-D0E2CA5D5AE2'
-        group_name = 'TestGroup'
 
         populate_contacts( alias_file, user_uuid, group_name )
     else:
