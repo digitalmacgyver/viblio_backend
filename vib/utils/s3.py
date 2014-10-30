@@ -183,3 +183,13 @@ def check_exists( bucket, key ):
     except Exception as e:
         log.error( json.dumps( { 'message' : 'Failed to determine whether key %s exists in bucket %s' % ( key, bucket ) } ) )
         raise
+
+def _get_bucket( bucket ):
+    '''Just get the bucket.'''
+    try:
+        s3 = boto.connect_s3( config.awsAccess, config.awsSecret )
+        bucket = s3.get_bucket( bucket )
+        return bucket
+    except Exception as e:
+        log.error( json.dumps( { 'message' : 'Failed to get bucket %s' % ( bucket ) } ) )
+        raise
