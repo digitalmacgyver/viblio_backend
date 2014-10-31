@@ -52,7 +52,13 @@ def fix_faces( report = True ):
 
     for bc in bad_contacts:
         print "Bad contact: %s" % ( bc.id ),
-        
+
+        if re.search( r'_fb_face', bc.uri ):
+            # This is a Facebook URI
+            if s3.check_exists( config.bucket_name, bc.uri ):
+                print "Valid FB URI, ignoring."
+                continue
+
         # If there is another media_asset_feature for that contact,
         # set the picture URI to that.
         # First see if we have one from videos:
