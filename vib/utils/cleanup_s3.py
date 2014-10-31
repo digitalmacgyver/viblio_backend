@@ -119,7 +119,7 @@ def cleanup_db( s3_media_metadata, delete = False ):
         if asset.uri is not None:
             db_uris[asset.uri] = asset
 
-            m = re.match( r'^([^/])+', asset.uri )
+            m = re.match( r'^([^/]+)', asset.uri )
             if m.groups():
                 db_uuids[ m.groups()[0] ] = True
         else:
@@ -179,7 +179,7 @@ def cleanup_db( s3_media_metadata, delete = False ):
             for uri in uris:
                 print "DB UUID: %s does not exist, deleting metadata %s from S3" % ( uuid, uri )
                 if delete:
-                    s3.delete_file( config.bucket_name, uri )
+                    s3.delete_s3_file( config.bucket_name, uri )
                 
     no_main_videos = orm.query( Media ).filter( and_( Media.media_type == 'original', Media.is_album != 1, Media.status.in_( [ 'visible', 'complete' ] ), ~Media.assets.any( MediaAssets.asset_type == 'main' ) ) )
 

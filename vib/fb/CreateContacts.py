@@ -89,10 +89,11 @@ def update_rekognition_for_user( user_uuid, fb_user_id, fb_friends, fb_access_to
         existing_contacts = get_existing_fb_contacts_for_user( user_uuid )
         skip_self = False
 
-        if fb_user_id in existing_contacts:
-            skip_self = True
-            log.warning( json.dumps( { 'user_uuid' : user_uuid,
-                                       'message' : "Found self %s in contact list, skipping." % fb_user_id } ) )
+        # We can treat ourself as just another contact.
+        #if fb_user_id in existing_contacts:
+        #    skip_self = True
+        #    log.warning( json.dumps( { 'user_uuid' : user_uuid,
+        #                               'message' : "Found self %s in contact list, skipping." % fb_user_id } ) )
 
         for friend in fb_friends:
             if friend['id'] in existing_contacts:
