@@ -53,9 +53,9 @@ def fix_faces( report = True ):
     for bc in bad_contacts:
         print "Bad contact: %s" % ( bc.id ),
 
-        if re.search( r'_fb_face', bc.uri ):
+        if re.search( r'_fb_face', bc.picture_uri ):
             # This is a Facebook URI
-            if s3.check_exists( config.bucket_name, bc.uri ):
+            if s3.check_exists( config.bucket_name, bc.picture_uri ):
                 print "Valid FB URI, ignoring."
                 continue
 
