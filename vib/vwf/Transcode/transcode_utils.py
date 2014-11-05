@@ -287,7 +287,10 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
         output = ''
 
         time = thumbnail['times'][0]
-        if exif['duration'] is not None and time >= exif['duration']:
+        # We have had problems extracting frames even before the end
+        # of the video, so we try here to set the time to 1/2 the
+        # duration or less.
+        if exif['duration'] is not None and time >= float( exif['duration'] ) / 2.0:
             time = float( exif['duration'] ) / 2
 
         ffmpeg_opts = ' -vframes 1 '
