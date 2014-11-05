@@ -4,6 +4,6 @@
 	"files":"/mnt/uploaded_files",
 	"logDir": "/tmp",
 	"logRotateSize": 70485760,
-	"logLevel": "info",
+	"logLevel": "debug",
 	"popeye": "http://localhost:2222/processor/process"
 }

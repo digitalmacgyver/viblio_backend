@@ -288,7 +288,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
 
         time = thumbnail['times'][0]
         if exif['duration'] is not None and time >= exif['duration']:
-            time = float( time ) / 2
+            time = float( exif['duration'] ) / 2
 
         ffmpeg_opts = ' -vframes 1 '
         ffmpeg_scale = ''
