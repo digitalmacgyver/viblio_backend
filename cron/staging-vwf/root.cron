@@ -2,15 +2,15 @@
 #
 # Check for and install new video workflow
 #
-*/5 * * * * sleep $[RANDOM \% 150] ; /etc/init.d/supervisor check_and_install
-*/5 * * * * sleep $[RANDOM \% 150] ; /usr/local/bin/check-and-install-software.pl -db staging -app object_classification
-*/5 * * * * sleep $[RANDOM \% 150] ; /usr/local/bin/check-and-install-software.pl -db staging -app soccer_model
-*/5 * * * * sleep $[RANDOM \% 150] ; /usr/local/bin/check-and-install-software.pl -db staging -app christmas_model
-*/5 * * * * sleep $[RANDOM \% 150] ; /usr/local/bin/check-and-install-software.pl -db staging -app utils
+*/5 * * * * perl -e 'sleep( rand( 150 ) );' ; /etc/init.d/supervisor check_and_install
+#*/5 * * * * perl -e 'sleep( rand( 150 ) );' ; /usr/local/bin/check-and-install-software.pl -db staging -app object_classification
+#*/5 * * * * perl -e 'sleep( rand( 150 ) );' ; /usr/local/bin/check-and-install-software.pl -db staging -app soccer_model
+#*/5 * * * * perl -e 'sleep( rand( 150 ) );' ; /usr/local/bin/check-and-install-software.pl -db staging -app christmas_model
+5 * * * * perl -e 'sleep( rand( 150 ) );' ; /usr/local/bin/check-and-install-software.pl -db staging -app utils
 #
 # Check for vatools
-*/5 * * * * sleep $[RANDOM \% 150] ; /usr/local/bin/check-and-install-software.pl -db staging -app vatools
+10 * * * * perl -e 'sleep( rand( 150 ) );' ; /usr/local/bin/check-and-install-software.pl -db staging -app vatools
 #
 # Check for tools upgrade
 #
-*/5 * * * * sleep $[RANDOM \% 150] ; /usr/local/bin/check-and-install-software.pl -db staging -app tools -quiet
+15 * * * * perl -e 'sleep( rand( 150 ) );' ; /usr/local/bin/check-and-install-software.pl -db staging -app tools -quiet
