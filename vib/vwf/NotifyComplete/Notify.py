@@ -55,6 +55,57 @@ class Notify( VWorker ):
                 # Hopefully some blip, fail with retry status.
                 return { 'ACTIVITY_ERROR' : True, 'retry' : True }
 
+            # Check if this is a special video for a new user tesing
+            # Photo Finder.
+            try:
+                if options.get( 'try_photos', False ):
+                    orm = vib.db.orm.get_session()
+                    orm.commit()
+
+                    user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
+
+                    sqs = boto.sqs.connect_to_region( config.sqs_region, 
+                                                      aws_access_key_id = config.awsAccess, 
+                                                      aws_secret_access_key = config.awsSecret ).get_queue( config.email_queue )
+                    sqs.set_message_class( RawMessage )
+
+                    subject = 'VIBLIO Photo Finder'
+                    template = 'email/26-photoFinder.tt'
+
+                    message = {
+                        'subject' : subject,
+                        'to' : [ { 'email' : user.email,
+                                   'name' : user.displayname } ],
+                        'template': template,
+                        'stash' : { 'user' : { 'displayname' : user.displayname },
+                                    'model' : { 'media' : [ { 'uuid' : media_uuid,
+                                                              'views' : {
+                                            'poster' : {
+                                                'uri' : options['outputs'][0]['thumbnails'][0]['output_file']['s3_key']
+                                                }
+                                            }
+                                                              }
+                                                            ]
+                                                }
+                                    }
+                        }
+                        
+                    log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                            'user_uuid' : user_uuid,
+                                            'message' : "Sending message format of: %s" % ( message ) } ) )
+
+                    m = RawMessage()
+                    m.set_body( json.dumps( message ) )
+                    status = sqs.write( m )
+                    log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                             'user_uuid' : user_uuid,
+                                             'message' : "Message status was: %s" % ( status ) } ) )
+            except Exception as e:
+                log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid' : user_uuid,
+                                         'message' : "Error while sending try photo finder message: %s" % ( e ) } ) )
+                
+
             # Check if this is special Viblio generated content, if so
             # maybe do something else.
             try:

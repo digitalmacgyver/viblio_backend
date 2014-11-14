@@ -296,11 +296,15 @@ class Worker( Background ):
                 self.popeye_logging_handler = None
             raise
 
-
         if 'skip_faces' in self.data['metadata'] and self.data['metadata']['skip_faces']:
             self.skip_faces = True
         else:
             self.skip_faces = False
+
+        if 'try_photos' in self.data['metadata'] and self.data['metadata']['try_photos']:
+            self.try_photos = True
+        else:
+            self.try_photos = False
 
         if 'album_uuid' in self.data['metadata'] and self.data['metadata']['album_uuid']:
             self.album_uuid = self.data['metadata']['album_uuid']
@@ -447,8 +451,9 @@ class Worker( Background ):
                 input = json.dumps( { 
                             'media_uuid' : self.uuid, 
                             'user_uuid'  : self.data['info']['uid'],
-                            'original_uuid' : original_uuid,
-                            'skip_faces' : self.skip_faces,
+                    'original_uuid' : original_uuid,
+                    'skip_faces' : self.skip_faces,
+                    'try_photos' : self.try_photos,
                             'input_file' : {
                                 's3_bucket'  : config.bucket_name,
                                 's3_key' : files['main']['key']

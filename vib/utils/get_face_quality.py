@@ -54,8 +54,8 @@ def detect_faces( url ):
 
 orm = vib.db.orm.get_session()
 
-from_when = datetime.datetime.utcnow() - datetime.timedelta( days=30 )
-end_when = datetime.datetime.utcnow() - datetime.timedelta( days=2 )
+from_when = datetime.datetime.utcnow() - datetime.timedelta( days=5 )
+end_when = datetime.datetime.utcnow() - datetime.timedelta( days=0 )
 
 faces = orm.query( Media.filename, 
                    Media.id,
@@ -70,7 +70,7 @@ faces = orm.query( Media.filename,
         Media.id == MediaAssetFeatures.media_id,
         MediaAssets.id == MediaAssetFeatures.media_asset_id,
         MediaAssetFeatures.feature_type == 'face',
-        MediaAssetFeatures.recognition_result.in_( [ 'bad_face', 'not_face', 'machine_recognized', 'human_recognized', 'two_face' ] ),
+        MediaAssetFeatures.recognition_result.in_( [ 'bad_face', 'not_face', 'machine_recognized', 'human_recognized', 'two_face', 'new_face' ] ),
         MediaAssetFeatures.created_date >= from_when,
         MediaAssetFeatures.created_date <= end_when ) )
 
@@ -124,7 +124,7 @@ for f in faces[:256]:
 
     # DEBUG
     result = None
-    #result = detect_faces( url )
+    result = detect_faces( url )
     if result is not None and len( result['face_detection'] ) > 0:
         confidence = result['face_detection'][0]['confidence']
         beauty = result['face_detection'][0]['beauty']
@@ -141,7 +141,7 @@ for f in faces[:256]:
         if beauty > -1:
             bad_beauty.append( beauty )
         bad_blur.append( blur )
-    elif f.recognition_result in [ 'machine_recognized', 'human_recognized', 'two_face' ]:
+    elif f.recognition_result in [ 'machine_recognized', 'human_recognized', 'two_face', 'new_face' ]:
         good_faces.append( { "url" : url,
                             "confidence" : confidence,
                             "beauty" : beauty,
@@ -194,7 +194,7 @@ bad_cols = get_col_lists( bad_faces, cols )
 for bad_col in bad_cols:
     body_html += "<tr>\n"
     for elem in bad_col:
-        body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>%0.02f</li><li>%0.02f</li><li>%0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'], elem['blur'] )
+        body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>Conf: %0.02f</li><li>Bty : %0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'] )
     body_html += "</tr>\n"
         
 b.write( head_html )
@@ -208,7 +208,8 @@ good_cols = get_col_lists( good_faces, cols )
 for good_col in good_cols:
     body_html += "<tr>\n"
     for elem in good_col:
-        body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>%0.02f</li><li>%0.02f</li><li>%0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'], elem['blur'] )
+        body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>Conf: %0.02f</li><li>Bty : %0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'] )
+        #body_html += '<td><img src="%s" width="%s" height="%s" /><ul><li>%0.02f</li><li>%0.02f</li><li>%0.02f</li></ul></td>\n' % ( elem['url'], width, height, elem['confidence'], elem['beauty'], elem['blur'] )
     body_html += "</tr>\n"
         
 g.write( head_html )

@@ -146,6 +146,18 @@
 			metadata['skip_faces'] = false;
 		    }
 		    
+		    // Store the try_photos directive, if any, in the
+		    // metadata file.  Popeye will look to this file
+		    // to set the value of try_photos for the video
+		    // processing pipeline.
+		    if ( metadata['try_photos'] ) {
+			console.log( "TRY PHOTOS IS TRUE" );
+			metadata['try_photos'] = true;
+		    } else {
+			console.log( "TRY PHOTOS IS FALSE" );
+			metadata['try_photos'] = false;
+		    }
+		    
 		    // Hopefully the original filename is in the
 		    // metadata.  Use that to capture the file extension
 		    var path = require( "path" );
@@ -295,7 +307,7 @@
 			});
 			if ( config.popeye != "none" ) {
 			    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
-			    request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces } }, function( err, res, body ) {
+			    request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces, try_photos: info.try_photos } }, function( err, res, body ) {
 				if ( err ) {
 				    winston.error( "Popeye error: " + err.message );
 				}
@@ -363,7 +375,7 @@
 		    });
 		    if ( config.popeye != "none" ) {
 			winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
-			request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces } }, function( err, res, body ) {
+			request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces, try_photos: info.try_photos } }, function( err, res, body ) {
 			    if ( err ) {
 				winston.error( "Popeye error: " + err.message );
 			    }
@@ -470,7 +482,7 @@
 		});
 		if ( config.popeye != "none" ) {
 		    winston.info("\npcol popeye: " + config.popeye + "?path=" + filePath + "\n" );
-		    request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces } }, function( err, res, body ) {
+		    request( {url: config.popeye, qs: { path: filePath, skip_faces: info.skip_faces, try_photos: info.try_photos } }, function( err, res, body ) {
 			if ( err ) {
 			    winston.error( "Popeye error: " + err.message );
 			}
