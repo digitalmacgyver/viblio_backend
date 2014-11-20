@@ -158,6 +158,9 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets, random_dura
         # a given video in order.
         videos.sort( key=lambda x: ( x.Media.recording_date, x.Media.created_date, x.MediaAssets.timecode ) )
 
+    #import pdb
+    #pdb.set_trace()
+
     if order == 'random':
         random.shuffle( videos )
 
@@ -208,7 +211,7 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets, random_dura
 		    if len( result['videos'][video.Media.uuid]['cuts'] ):
 			start = max( start, result['videos'][video.Media.uuid]['cuts'][-1][1] )
 
-                    if start <= end:
+                    if start >= end:
                         continue
 
 	    if min_duration is None or end - start >= min_duration:
@@ -293,10 +296,6 @@ def generate_summary( summary_type,
                          audio_desc  = audio_desc )
         w.display.pad_bgcolor = 'White'
 
-        if target_duration is None:
-            target_duration = min( w.duration, 120 )
-            w.duration = target_duration
-
         small_logo_color = 'white'
         large_logo_color = 'white'
 		
@@ -341,6 +340,12 @@ def generate_summary( summary_type,
                              fade_in_start = -2,
                              fade_in_duration = 1 )
         w.watermarks = [ m1, m2 ]
+
+        # DEBUG - try to make overall window the length of the longest
+        # subwindow if nothing else is specified.
+        if target_duration is None:
+            w.duration = min( [ x.compute_duration( x.clips ) for x in w.windows ] )
+
         w.render()
 
     else:

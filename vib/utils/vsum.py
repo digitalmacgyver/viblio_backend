@@ -60,7 +60,7 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
             # window.duration < min_duration
             clip_added = False
             for window in window_stats:
-                if ( window['duration'] + duration ) <= 2*( min_window_duration + duration ):
+                if ( window['duration'] + duration ) <= 1.2*( min_window_duration + duration ):
                     if min_duration is None or window['duration'] < min_duration:
                         window['window'].clips.append( clip )
                         window['duration'] = window['window'].compute_duration( window['window'].clips )

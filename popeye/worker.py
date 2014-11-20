@@ -248,6 +248,9 @@ class Worker( Background ):
                                       template   = 'email/24-uploadExisting.tt' ) 
                     log.info( 'Attempted to upload video with unique hash %s that is the same as existing media id: %s' % ( unique_hash, db_files[0].id ) )
 
+                    db_files[0].created_date = datetime.datetime.now()
+                    orm.commit()
+
                     stop_unique_failure = True
 
                 elif db_files[0].status == 'failed':
