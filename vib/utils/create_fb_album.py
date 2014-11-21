@@ -97,6 +97,8 @@ def run():
         
         if 'action' not in options or options['action'] != 'create_fb_album':
             # This message is not for us, move on.
+            message = None
+            options = None
             return True;
 
         user_uuid       = options['user_uuid']

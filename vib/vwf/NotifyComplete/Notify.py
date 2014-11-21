@@ -126,6 +126,11 @@ class Notify( VWorker ):
                         subject = 'Your Moments Summary VIBLIO Video is Ready'
                         template = 'email/23-momentSummary.tt'
 
+                    if options.get( 'subject', None ) is not None:
+                        subject = options['subject']
+                    if options.get( 'template', None ) is not None:
+                        template = options['template']
+
                     message = {
                         'subject' : subject,
                         'to' : [ { 'email' : user.email,

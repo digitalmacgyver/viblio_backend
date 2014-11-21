@@ -344,7 +344,10 @@ def generate_summary( summary_type,
         # DEBUG - try to make overall window the length of the longest
         # subwindow if nothing else is specified.
         if target_duration is None:
-            w.duration = min( [ x.compute_duration( x.clips ) for x in w.windows ] )
+            if w.windows is not None and len( w.windows ):
+                w.duration = min( [ x.compute_duration( x.clips ) for x in w.windows ] )
+            else:
+                w.duration = w.compute_duration( w.clips )
 
         w.render()
 
@@ -438,6 +441,8 @@ def generate_summary( summary_type,
 				    'original_uuid' : original_uuid,
                                     'viblio_added_content_type' : config.viblio_summary_video_type,
                                     'target_album_name' : config.viblio_summary_album_name,
+                'template' : summary_options.get( 'template', None ),
+                'subject' : summary_options.get( 'subject', None ),
 				    'input_file' : {
 					    's3_bucket'  : config.bucket_name,
 					    's3_key' : "%s/%s" % ( summary_uuid, summary_uuid ),
@@ -809,12 +814,16 @@ def run():
         
         if 'action' not in options or options['action'] != 'create_video_summary':
             # This message is not for us, move on.
+            message = None
+            options = None
             return True;
 
         summary_types = [ 'moments' ]
 
         if 'summary_type' not in options or options['summary_type'] not in summary_types:
             # This message is not for us, move on.
+            message = None
+            options = None
             return True;
 
         # Mandatory options.
@@ -850,7 +859,16 @@ def run():
         target_duration = options.get( 'target_duration', None )
         if target_duration is not None:
             target_duration = float( target_duration )
-        summary_options = options.get( 'summary_options', {} )
+        summary_options = options.get( 'summary_options', None )
+        if summary_options is not None:
+            try:
+                summary_options = json.loads( summary_options )
+            except Exception as e:
+                log.error( json.dumps( { 'message' : "Error - summary_options JSON is malformed: %s" % ( e ) } ) )
+                summary_options = {}
+        else:
+            summary_options = {}
+        
             
         # Optional controls for summary metadata.
         title = options.get( 'title', '' )

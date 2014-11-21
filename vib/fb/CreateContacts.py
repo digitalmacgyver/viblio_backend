@@ -271,6 +271,8 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
     Returns an array of the people for whom contacts where created.
     '''
 
+    orm = None
+
     try:
         existing_contacts = get_existing_fb_contacts_for_user( user_uuid )
 
@@ -387,11 +389,10 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
         return created_picture_contacts, created_empty_contacts
     
     except Exception as e:
-        orm.rollback()
-        log.error( json.dumps( {
-                    'user_uuid' : user_uuid,
-                    'message' : "Exception was: %s" % e
-                    } ) )
+        if orm is not None:
+            orm.rollback()
+        log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                 'message' : "Exception was: %s" % ( e ) } ) )
         raise
 
 def __get_sqs():

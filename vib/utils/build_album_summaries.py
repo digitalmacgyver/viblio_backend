@@ -622,6 +622,8 @@ def run():
         else:
             # This message is not for us or is malformed, someone else
             # can deal with it.
+            message = None
+            options = None
             return True
 
         return True
