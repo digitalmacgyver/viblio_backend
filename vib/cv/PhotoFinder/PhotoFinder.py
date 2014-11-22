@@ -155,9 +155,9 @@ def find_photos( media_uuid,
     if images_per_second is None:
         image_fps = 0.2
         if duration and duration < ( min_images / image_fps ):
-            image_fps = min_images / duration
+            image_fps = float( min_images ) / duration
         elif duration and duration > ( max_images / image_fps ):
-            image_fps = max_images / duration
+            image_fps = float( max_images ) / duration
     else:
         image_fps = images_per_second
         
