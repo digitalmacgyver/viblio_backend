@@ -274,7 +274,7 @@ class Transcode( VWorker ):
 
             # Determine if we need to create and or add to the special Try Photo Finder album.
             if options.get( 'try_photos', False ):
-                try_photos_album = orm.query( Media ).filter( and_( Media.user_id == media.user_id, Media.is_viblio_created == True, Media.title == config.viblio_photo_finder_album_name ) )[:]
+                try_photos_album = orm.query( Media ).filter( and_( Media.user_id == media.user_id, Media.is_viblio_created == True, Media.title == config.try_photos_album_name ) )[:]
             
                 if len( try_photos_album ) == 0:
                     try_photos_album = Media( user_id = media.user_id,
