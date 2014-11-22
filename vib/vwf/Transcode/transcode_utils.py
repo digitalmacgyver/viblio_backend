@@ -101,7 +101,7 @@ def move_atom( media_uuid, filename ):
                     } ) )
     return
 
-def transcode_and_store( media_uuid, input_filename, outputs, exif ):
+def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos = False ):
     '''Takes in a media_id, input filename on the filesystem, the
     outputs data structure sent to a Transcode job, and the exif data
     associated with the input filename.
@@ -255,7 +255,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
 
     try:
         min_images = 4
-        if options.get( 'try_photos', False ):
+        if try_photos:
             min_images = 6
         vib.cv.PhotoFinder.PhotoFinder.find_photos( media_uuid, video_file=input_filename, min_images = min_images )
     except Exception as e:

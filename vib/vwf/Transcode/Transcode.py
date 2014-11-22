@@ -99,7 +99,7 @@ class Transcode( VWorker ):
                                          'user_uuid' : user_uuid,
                                          'message' : "Transcoding and storing the result in S3 for user %s media %s : " % ( user_uuid, media_uuid ) } ) )
 
-            outputs = tutils.transcode_and_store( media_uuid, original_file, outputs, exif )
+            outputs = tutils.transcode_and_store( media_uuid, original_file, outputs, exif, options.get( 'try_photos', False ) )
 
             orm = vib.db.orm.get_session()
             orm.commit()
