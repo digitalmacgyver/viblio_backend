@@ -236,33 +236,6 @@ class Transcode( VWorker ):
                     if thumbnail['label'] == 'poster':
                         video_poster = thumbnail_asset
 
-                '''
-                for image in output.get( 'images', [] ):
-                    image_uuid = str( uuid.uuid4() )
-
-                    log.info( json.dumps( {
-                                'media_uuid' : media_uuid,
-                                'user_uuid' : user_uuid,
-                                'asset_type' : 'image',
-                                'output_uuid' : image_uuid,
-                                'message' : "Creating image database row of uuid %s for user %s, media %s of asset_type %s and uri %s" % ( image_uuid, user_uuid, media_uuid, 'image', image['output_file']['s3_key'] )
-                                } ) )
-
-                    image_asset = MediaAssets( uuid       = image_uuid,
-                                               asset_type = 'image',
-                                               mimetype   = 'image/%s' % image.get( 'format', 'png' ),
-                                               bytes      = os.path.getsize( image['output_file_fs'] ),
-                                               uri        = image['output_file']['s3_key'],
-                                               location   = 'us',
-                                               timecode   = image['timecode'],
-                                               blur_score = image['blur_score'],
-                                               face_score = image['face_score'],
-                                               cv_metrics = image['cv_metrics'],
-                                               view_count = 0 )
-                    media.assets.append( image_asset )
-                '''
-
-
             # Determine if we need to create and or add to the special Video summary album.
             if options.get( 'viblio_added_content_type', '' ) == config.viblio_summary_video_type:
                 viblio_summary_album = orm.query( Media ).filter( and_( Media.user_id == media.user_id, Media.is_viblio_created == True, Media.title == config.viblio_summary_album_name ) )[:]
@@ -299,14 +272,45 @@ class Transcode( VWorker ):
                 else:
                     raise Exception( "ERROR: Found multiple %s albums for user: %s " % ( config.viblio_summary_album_name, media.user_id ) )
 
+            # Determine if we need to create and or add to the special Try Photo Finder album.
+            if options.get( 'try_photos', False ):
+                try_photos_album = orm.query( Media ).filter( and_( Media.user_id == media.user_id, Media.is_viblio_created == True, Media.title == config.viblio_photo_finder_album_name ) )[:]
+            
+                if len( try_photos_album ) == 0:
+                    try_photos_album = Media( user_id = media.user_id,
+                                              uuid = str( uuid.uuid4() ),
+                                              media_type = 'original',
+                                              is_album = True,
+                                              title = config.try_photos_album_name,
+                                              is_viblio_created = True )
+                    orm.add( try_photos_album )
+                
+                    media_album_row = MediaAlbums()
+                    orm.add( media_album_row )
+                    media.media_albums_media.append( media_album_row )
+                    try_photos_album.media_albums.append( media_album_row )
 
-            log.info( json.dumps( {
-                'media_uuid' : media_uuid,
-                'user_uuid' : user_uuid,
-                'message' : "Committing rows to database for user %s, media %s" % ( user_uuid, media_uuid )
-            } ) )
+                    album_poster = MediaAssets( user_id = media.user_id,
+                                                uuid = str( uuid.uuid4() ),
+                                                asset_type = 'poster',
+                                                mimetype = video_poster.mimetype,
+                                                location = video_poster.location,
+                                                uri = video_poster.uri, 
+                                                width = video_poster.width,
+                                                height = video_poster.height )
+                    try_photos_album.assets.append( album_poster )
 
-            #pdb.set_trace()
+                elif len( try_photos_album ) == 1:
+                    media_album_row = MediaAlbums()
+                    orm.add( media_album_row )
+                    media.media_albums_media.append( media_album_row )
+                    try_photos_album[0].media_albums.append( media_album_row )
+                else:
+                    raise Exception( "ERROR: Found multiple %s albums for user: %s " % ( config.try_photos_album_name, media.user_id ) )
+
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : "Committing rows to database for user %s, media %s" % ( user_uuid, media_uuid ) } ) )
             orm.commit()
             
             self.cleanup_files( media_uuid, user_uuid, original_file, outputs )
@@ -384,18 +388,6 @@ class Transcode( VWorker ):
                                         'message' : "Deleting temporary file %s for user %s, media %s" % ( thumbnail['output_file_fs'], user_uuid, media_uuid )
                                         } ) )
                             os.remove( thumbnail['output_file_fs'] )
-
-                '''
-                for image in output.get( 'images', [] ):
-                    if 'output_file_fs' in image:
-                        if os.path.exists( image['output_file_fs'] ):
-                            log.debug( json.dumps( {
-                                        'media_uuid' : media_uuid,
-                                        'user_uuid' : user_uuid,
-                                        'message' : "Deleting temporary file %s for user %s, media %s" % ( image['output_file_fs'], user_uuid, media_uuid )
-                                        } ) )
-                            os.remove( image['output_file_fs'] )
-                '''
 
         except Exception as e:
             log.error( json.dumps( {

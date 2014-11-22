@@ -40,8 +40,17 @@ def find_photos( media_uuid,
                  video_file        = None, # Will be downloaded if not provided.
                  start_time        = 0,
                  end_time          = None, # Defaults to duration, negative values are taken as offsets from end.
-                 images_per_second = None,
-                 faces_only        = False ):
+                 images_per_second = None,  # Frames per second - if
+                                            # not specified default to
+                                            # 5 seconds between images
+                                            # subject to min and max
+                                            # images below.
+                 faces_only        = False,
+                 min_images        = 4,
+                 max_images        = 30 ): # If images_per_second is
+                                           # not specifed, at least
+                                           # this number of images will
+                                           # be produced.
     '''Find photos in a given media file, store them in S3, and associate
     them with the media file in the database.
 
@@ -145,10 +154,10 @@ def find_photos( media_uuid,
     image_fps = None
     if images_per_second is None:
         image_fps = 0.2
-        if duration and duration < 20:
-            image_fps = 4.0 / duration
-        elif duration and duration > 150:
-            image_fps = 30.0 / duration
+        if duration and duration < ( min_images / image_fps ):
+            image_fps = min_images / duration
+        elif duration and duration > ( max_images / image_fps ):
+            image_fps = max_images / duration
     else:
         image_fps = images_per_second
         

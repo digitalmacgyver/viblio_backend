@@ -254,7 +254,10 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif ):
         '''
 
     try:
-        vib.cv.PhotoFinder.PhotoFinder.find_photos( media_uuid, video_file=input_filename )
+        min_images = 4
+        if options.get( 'try_photos', False ):
+            min_images = 6
+        vib.cv.PhotoFinder.PhotoFinder.find_photos( media_uuid, video_file=input_filename, min_images = min_images )
     except Exception as e:
         log.error( json.dumps( { 'media_uuid' : media_uuid,
                                  'message' : "ERROR getting images: %s" % ( e ) } ) )

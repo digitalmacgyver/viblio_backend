@@ -64,12 +64,18 @@ class Notify( VWorker ):
 
                     user = orm.query( Users ).filter( Users.uuid == user_uuid ).one()
 
+                    password = user.metadata
+                    user.metadata = None
+                    orm.commit()
+
+                    album = orm.query( Media ).filter( and_( Media.user_id == user.id, Media.is_viblio_created == True, Media.title == config.try_photos_album_name ) ).one()
+
                     sqs = boto.sqs.connect_to_region( config.sqs_region, 
                                                       aws_access_key_id = config.awsAccess, 
                                                       aws_secret_access_key = config.awsSecret ).get_queue( config.email_queue )
                     sqs.set_message_class( RawMessage )
 
-                    subject = 'VIBLIO Photo Finder'
+                    subject = 'Your photos are ready!'
                     template = 'email/26-photoFinder.tt'
 
                     message = {
@@ -85,7 +91,9 @@ class Notify( VWorker ):
                                                 }
                                             }
                                                               }
-                                                            ]
+                                                            ],
+                                                'password' : password,
+                                                'album_uuid' : album.uuid
                                                 }
                                     }
                         }
