@@ -85,7 +85,8 @@ class Notify( VWorker ):
                                    'name' : user.displayname } ],
                         'template': template,
                         'stash' : { 'user' : { 'displayname' : user.displayname,
-                                               'email' : user.email },
+                                               'email' : user.email,
+                                               'provider' : user.provider },
                                     'model' : { 'media' : [ { 'uuid' : media_uuid,
                                                               'views' : {
                                             'poster' : {
