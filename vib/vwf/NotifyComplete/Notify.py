@@ -8,6 +8,7 @@ import hmac
 import json
 import logging
 import requests
+from sqlalchemy import and_
 
 import vib.db.orm
 from vib.db.models import *
