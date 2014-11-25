@@ -152,7 +152,11 @@
 		    // processing pipeline.
 		    if ( metadata['try_photos'] ) {
 			console.log( "TRY PHOTOS IS TRUE" );
-			metadata['try_photos'] = true;
+			if ( metadata['try_photos'] == 2 ) {
+			    metadata['try_photos'] = 2;
+			} else {
+			    metadata['try_photos'] = 1;
+			}
 		    } else {
 			console.log( "TRY PHOTOS IS FALSE" );
 			metadata['try_photos'] = false;

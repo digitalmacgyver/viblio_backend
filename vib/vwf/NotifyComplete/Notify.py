@@ -96,7 +96,8 @@ class Notify( VWorker ):
                                                               }
                                                             ],
                                                 'password' : password,
-                                                'album_uuid' : album.uuid
+                                                'album_uuid' : album.uuid,
+                                                'greeting' : options['try_photos']
                                                 }
                                     }
                         }

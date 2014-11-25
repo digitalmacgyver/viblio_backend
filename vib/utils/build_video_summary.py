@@ -324,7 +324,15 @@ def generate_summary( summary_type,
             w1 = vsum.Window( width=368, height=656, x=824, y=32, display=vsum.Display( display_style=vsum.CROP ) )
             w2 = vsum.Window( width=656, height=656, x=84, y=32, display=vsum.Display( display_style=vsum.PAN ) )
             w.windows = [ w1, w2 ]
-            vsum.distribute_clips( summary_clips, [ w1, w2 ], min_duration=target_duration, randomize_clips=randomize_clips )
+            if summary_options.get( 'distribute_clips', '' ) == 'side_by_side':
+                # In this case we put clips side by side from the same
+                # video, and add some padding of white only screens to
+                # keep the durations the same.
+                for clip in summary_clips:
+                    # DEBUG - iterate through the things, and put in get_solid_clip.
+                    pass
+            else:
+                vsum.distribute_clips( summary_clips, [ w1, w2 ], min_duration=target_duration, randomize_clips=randomize_clips )
 
         else:
             raise Exception( "Unexpected summary style: %s" % ( summary_style ) )
