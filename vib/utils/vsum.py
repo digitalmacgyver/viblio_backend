@@ -84,16 +84,15 @@ def get_solid_clip( duration,
                     height  = 720,
                     bgcolor = 'Black' ):
     '''Create a clip of a solid color of a particular duration and size.
-       Default color is black, default size is 1280x720. Returns the
-       path of the clip.
-
+    Default color is black, default size is 1280x720. Returns the
+    path of the clip.
     '''
-    
+
     w = Window( duration = duration,
                 width    = width,
                 height   = height,
                 bgcolor  = bgcolor )
-
+    
     return w.render()
 
 
@@ -125,11 +124,10 @@ class Display( object ):
                   display_style       = PAD,
                   pan_direction       = ALTERNATE,
                   pad_bgcolor         = 'Black' ):
-
-    '''
+        '''
         display_style - How the clip will be rendered, defaults to PAD,
-                        one of: OVERLAY, CROP, PAD, PAN
-
+        one of: OVERLAY, CROP, PAD, PAN
+        
         pan_direction - If the clip is displayed with PAN display
                         style, and panning occurs, should it be from
                         the top/left to the bottom/right, the reverse,

@@ -134,13 +134,13 @@ def download_movie( media_uuid, workdir ):
 def get_moments( media_uuid, images, order, workdir, moment_offsets, random_duration=False, min_duration=None ):
     '''Returns a data structure:
     { summary_duration : 99
-      videos : { 
-          video1_uuid : {
-              filename : /tmp/video.mp4,
-              cuts : [ ( 0, 3 ), ( 2, 5 ), ... ]
-              }, 
-          ...
-          }
+    videos : { 
+    video1_uuid : {
+    filename : /tmp/video.mp4,
+    cuts : [ ( 0, 3 ), ( 2, 5 ), ... ]
+    }, 
+    ...
+    }
     }
     '''
     # Get the list of movies for the input images.
