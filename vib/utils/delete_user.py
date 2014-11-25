@@ -84,7 +84,7 @@ def delete_all_data_for_user( user_uuid, delete_user=True, verbose=False ):
         if verbose:
             print "About to delete all data for user %s with uuid %s" % ( user[0].email, user[0].uuid )
             print "User has:"
-            print "\t%s videos" % media.count()
+            print "\t%s media items" % media.count()
             print "\t%s contacts" % contacts.count()
             proceed = get_input( "Proceed?", "no" )
             if not proceed:
