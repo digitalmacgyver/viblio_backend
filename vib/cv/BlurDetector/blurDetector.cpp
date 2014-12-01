@@ -94,13 +94,13 @@ void getBlurValue2( const Mat &edges, const Mat &original,
 
 	// Walk backwards till we obtain a local extrema to the left.
 	for ( int prior_value = current_value; 
-	      left >= 0 && // While we're still in the image.
+	      left > 0 && // While we're still in the image.
 		( ( ( left_value < prior_value && left_value < current_value ) 
 		    || ( !monotonic && left_value <= prior_value && left_value <= current_value ) ) || // And decreasing
 		  ( ( left_value > prior_value && left_value > current_value ) 
 		    || ( !monotonic && left_value >= prior_value && left_value >= current_value ) ) ) ; // Or increasing
 	      left--, prior_value = left_value, left_value = original.at<unsigned char>( i, left ) ) {
-	  if ( vert_edges ) {
+	  if ( vert_edges && left >= 0 ) {
 	    vert_edges->at<unsigned char>( i, left ) = 255;
 	  }
 	}
@@ -117,7 +117,7 @@ void getBlurValue2( const Mat &edges, const Mat &original,
 		  ( ( right_value > prior_value && right_value > current_value ) 
 		    || ( !monotonic && right_value >= prior_value && right_value >= current_value ) ) ) ; // Or increasing
 	      right++, prior_value = right_value, right_value = original.at<unsigned char>( i, right ) ) {
-	  if ( vert_edges ) {
+	  if ( vert_edges && right < original.cols ) {
 	    vert_edges->at<unsigned char>( i, right ) = 255;
 	  }
 	}
@@ -178,13 +178,13 @@ void getBlurValue2( const Mat &edges, const Mat &original,
 
 	// Walk backwards till we obtain a local extrema above.
 	for ( int prior_value = current_value; 
-	      up >= 0 && // While we're still in the image.
+	      up > 0 && // While we're still in the image.
 		( ( ( up_value < prior_value && up_value < current_value ) 
 		    || ( !monotonic && up_value <= prior_value && up_value <= current_value ) ) || // And decreasing
 		  ( ( up_value > prior_value && up_value > current_value ) 
 		    || ( !monotonic && up_value >= prior_value && up_value >= current_value ) ) ) ; // Or increasing
 	      up--, prior_value = up_value, up_value = original.at<unsigned char>( up, j ) ) {
-	  if ( hor_edges ) {
+	  if ( hor_edges && up >= 0 ) {
 	    hor_edges->at<unsigned char>( up, j ) = 255;
 	  }
 	}
@@ -201,7 +201,7 @@ void getBlurValue2( const Mat &edges, const Mat &original,
 		  ( ( down_value > prior_value && down_value > current_value ) 
 		    || ( !monotonic && down_value >= prior_value && down_value >= current_value ) ) ) ; // Or increasing
 	      down++, prior_value = down_value, down_value = original.at<unsigned char>( down, j ) ) {
-	  if ( hor_edges ) {
+	  if ( hor_edges && down < original.rows ) {
 	    hor_edges->at<unsigned char>( down, j ) = 255;
 	  }
 	}

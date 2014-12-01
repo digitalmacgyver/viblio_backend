@@ -134,13 +134,13 @@ def download_movie( media_uuid, workdir ):
 def get_moments( media_uuid, images, order, workdir, moment_offsets, random_duration=False, min_duration=None ):
     '''Returns a data structure:
     { summary_duration : 99
-    videos : { 
-    video1_uuid : {
-    filename : /tmp/video.mp4,
-    cuts : [ ( 0, 3 ), ( 2, 5 ), ... ]
-    }, 
-    ...
-    }
+      videos : { 
+        video1_uuid : {
+          filename : /tmp/video.mp4,
+          cuts : [ ( 0, 3 ), ( 2, 5 ), ... ]
+        }, 
+        ...
+      }
     }
     '''
     # Get the list of movies for the input images.
@@ -224,6 +224,58 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets, random_dura
 
     return result
 
+
+def pad_clips( w1, w1_clips, w2_clips, bgcolor='White' ):
+    '''Takes in two arrays of clips, and if the duration of clips in
+    w2_clips exceeds those in w1_clips, adds some blank screens of bgcolor
+    to w1_clips so they have the same duration.  Returns the augmented set
+    of w1_clips.'''
+
+    width = w1.width
+    height = w1.height
+
+    w1_duration = 0
+    for clip in w1_clips:
+        w1_duration += clip.get_duration()
+
+    w2_duration = 0
+    for clip in w2_clips:
+        w2_duration += clip.get_duration()
+
+    if w2_duration > ( w1_duration + 0.01 ):
+        total_pad = w2_duration - w1_duration
+        
+        intersperse = False
+
+        # DEBUG - This technique intersperses the pads.
+        if intersperse:
+            num_pads = max( 1, len( w1_clips ) - 1 )
+            pads = []
+            for i in range( num_pads ):
+                # DEBUG
+                print "Adding pad with duration: %s" % ( total_pad )
+                print "Adding pad with duration: %s" % ( float( total_pad ) / num_pads )
+                pads.append( vsum.Clip( vsum.Video( vsum.get_solid_clip( float( total_pad ) / num_pads, width, height, bgcolor ) ) ) )
+            
+            result = []
+
+            for i in range( max( len( pads ), len( w1_clips ) ) ):
+                if i < len( w1_clips ):
+                    result.append( w1_clips[i] )
+                if i < len( pads ):
+                    result.append( pads[i] )
+
+            return result
+        else:
+            # DEBUG - This technique puts the pads at the beginning and
+            # end.
+            pad = vsum.Clip( vsum.Video( vsum.get_solid_clip( float( total_pad ) / 2, width, height, bgcolor ) ) )
+            return [ pad ] + w1_clips + [ pad ]
+
+    # Nothing to do.
+    return w1_clips
+
+
 def generate_summary( summary_type,
                       summary_uuid,
                       user_uuid,
@@ -248,7 +300,9 @@ def generate_summary( summary_type,
                       output_x        = 1280,
                       output_y        = 720 ):
 
-    vsum.Window.set_tmpdir( "%s/../vsum_tmp" % workdir )
+    vsum.Window.set_tmpdir
+
+    ( "%s/../vsum_tmp" % workdir )
 
     output_file = "%s/%s.mp4" % ( workdir, summary_uuid )
 
@@ -324,13 +378,54 @@ def generate_summary( summary_type,
             w1 = vsum.Window( width=368, height=656, x=824, y=32, display=vsum.Display( display_style=vsum.CROP ) )
             w2 = vsum.Window( width=656, height=656, x=84, y=32, display=vsum.Display( display_style=vsum.PAN ) )
             w.windows = [ w1, w2 ]
+
             if summary_options.get( 'distribute_clips', '' ) == 'side_by_side':
                 # In this case we put clips side by side from the same
                 # video, and add some padding of white only screens to
                 # keep the durations the same.
+                
+                current_movie = summary_clips[0].video.filename
+                w1_clips = []
+                w2_clips = []
+
                 for clip in summary_clips:
-                    # DEBUG - iterate through the things, and put in get_solid_clip.
-                    pass
+                    if clip.video.filename != current_movie:
+                        w1.clips += pad_clips( w1, w1_clips, w2_clips )
+                        w2.clips += pad_clips( w2, w2_clips, w1_clips )
+
+                        # Reset the state for the next clip.
+                        current_movie = clip.video.filename
+                        w1_clips = []
+                        w2_clips = []
+                        if random.randint( 0, 1 ):
+                            w1_clips.append( clip )
+                        else:
+                            w2_clips.append( clip )
+                    else:
+                        w1_duration = 0
+                        for w1_clip in w1_clips:
+                            w1_duration += w1_clip.get_duration()
+
+                        w2_duration = 0
+                        for w2_clip in w2_clips:
+                            w2_duration += w2_clip.get_duration()
+
+                        if w1_duration > w2_duration:
+                            w2_clips.append( clip )
+                        elif w2_duration > w1_duration:
+                            w1_clips.append( clip )
+                        else:
+                            # If both screens have the same duration
+                            # randomly pick one for the next clip to
+                            # go in.
+                            if random.randint( 0, 1 ):
+                                w1_clips.append( clip )
+                            else:
+                                w2_clips.append( clip )
+                
+                w1.clips += pad_clips( w1, w1_clips, w2_clips )
+                w2.clips += pad_clips( w2, w2_clips, w1_clips )
+
             else:
                 vsum.distribute_clips( summary_clips, [ w1, w2 ], min_duration=target_duration, randomize_clips=randomize_clips )
 

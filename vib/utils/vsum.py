@@ -87,7 +87,6 @@ def get_solid_clip( duration,
     Default color is black, default size is 1280x720. Returns the
     path of the clip.
     '''
-
     w = Window( duration = duration,
                 width    = width,
                 height   = height,
@@ -213,8 +212,10 @@ class Video( object ):
             self.height = Video.videos[filename]['height']
             self.duration = Video.videos[filename]['duration']
         else:
+            print "Working on %s" % ( filename )
             ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
             info = json.loads( output )
+            print "JSON %s" % ( filename )
             self.duration = float( info['format']['duration'] )
             self.width = int( info['streams'][0]['width'] )
             self.height = int( info['streams'][0]['height'] )
