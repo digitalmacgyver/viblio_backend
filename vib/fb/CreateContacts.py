@@ -158,13 +158,24 @@ def download_faces_for_user( user_uuid, people, directory='/tmp/fb_faces' ):
             os.makedirs( directory )
             
         for person in people:
-            result = requests.get( person['rekog_url'] )
-            full_image = Image.open( StringIO( result.content ) )
-            cropped_image = full_image.crop( (0, 0, 65, 65 ) )
-            filename = "%s%s.png" % ( directory, person['facebook_id'] )
-            cropped_image.save( filename )
-            person['file'] = filename
-                
+            # There seems to be a timing problem here - sometimes this
+            # doesn't work.  Give it a few seconds to catch up, and
+            # also handle exceptions.
+            try:
+                #time.sleep( 1 )
+                result = requests.get( person['rekog_url'] )
+                full_image = Image.open( StringIO( result.content ) )
+                cropped_image = full_image.crop( (0, 0, 65, 65 ) )
+                filename = "%s%s.png" % ( directory, person['facebook_id'] )
+                cropped_image.save( filename )
+                person['file'] = filename
+            except Exception as e:
+                # Something went wrong... this will cause us to create
+                # a contact with no face.
+                log.error( json.dumps( { 'user_uuid' : user_uuid,
+                                         'message' : 'ERROR: Failed to get facebook thumbnail image from ReKognition, error was: %s' % ( e ) } ) )
+                person['file'] = None
+
         return people
 
     except Exception as e:
@@ -290,7 +301,7 @@ def add_contacts_for_user( user_uuid, people, fb_friends ):
         # Maybe that's for the best.
         # For the time being just add a picture URI and forget the rest.
         for friend in people:
-            if friend['facebook_id'] not in existing_contacts:
+            if friend['facebook_id'] not in existing_contacts and friend['file'] is not None:
 
                 log.debug( json.dumps( { 'user_uuid' : user_uuid,
                                          'message' : "Inserting new picture contact for id/uuid %s/%s on %s: " % ( user.id, user.uuid, friend['facebook_id'] ) } ) )
