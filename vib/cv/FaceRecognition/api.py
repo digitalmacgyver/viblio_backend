@@ -499,7 +499,7 @@ def recognize_face( user_id, face_url ):
                                                  'message'    : 'Invalid tag found, tag must be integer, skipping. Match was: %s' % ( match ) } ) )
                         log.info( json.dumps( { 'user_id'    : user_id,
                                                 'message'    : 'Deleting faces with invalid tag: %s for user_id: %s' % ( match['tag'], user_id ) } ) )
-                        rekog.delete_face_for_user( user_id, match['tag'], config.recog_v2_namespace )
+                        rekog.delete_face_for_user( user_id, match['tag'], namespace=config.recog_v2_namespace )
                     else:
                         log.error( json.dumps( { 'user_id'    : user_id,
                                                  'message'    : 'Invalid match returned from ReKognition, skipping, match was: %s' % ( match ) } ) )

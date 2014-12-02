@@ -45,7 +45,7 @@ def _reconcile_db_rekog( user_id, contact_id ):
                                          'message'    : 'Invalid tag found, tag must be integer, skipping. Face was: %s' % ( face ) } ) )
                 log.info( json.dumps( { 'user_id'    : user_id,
                                         'message'    : 'Deleting faces with invalid tag: %s for user_id: %s' % ( face['tag'], user_id ) } ) )
-                rekog.delete_face_for_user( user_id, face['tag'], config.recog_v2_namespace )
+                rekog.delete_face_for_user( user_id, face['tag'], namespace=config.recog_v2_namespace )
             else:
                 log.error( json.dumps( { 'user_id'    : user_id,
                                          'message'    : 'Invalid face returned from ReKognition, skipping, face was: %s' % ( face ) } ) )
@@ -82,7 +82,7 @@ def _reconcile_db_rekog( user_id, contact_id ):
                                              'message'    : 'Invalid tag found, tag must be integer, skipping. Face was: %s' % ( face ) } ) )
                     log.info( json.dumps( { 'user_id'    : user_id,
                                             'message'    : 'Deleting faces with invalid tag: %s for user_id: %s' % ( face['tag'], user_id ) } ) )
-                    rekog.delete_face_for_user( user_id, face['tag'], config.recog_v2_namespace )
+                    rekog.delete_face_for_user( user_id, face['tag'], namespace=config.recog_v2_namespace )
                 else:
                     log.error( json.dumps( { 'user_id'    : user_id,
                                              'message'    : 'Invalid face returned from ReKognition, skipping, face was: %s' % ( face ) } ) )
@@ -147,7 +147,7 @@ def _delete_rekog_mismatch( user_id, contact_id, db_faces, contact_faces ):
         for idx in face['index']:
             if idx not in db_indices:
                 deleted = True
-                result = rekog.delete_face_for_user( user_id, face['tag'], idx, config.recog_v2_namespace )
+                result = rekog.delete_face_for_user( user_id, face['tag'], idx, namespace=config.recog_v2_namespace )
                 log.info( json.dumps( { 'user_id'    : user_id,
                                         'contact_id' : contact_id,
                                         'message'    : "RECONCILIATION Deleted Recog only face with idx: %s tag: %s" % ( idx, face['tag'] ) } ) )
