@@ -225,7 +225,7 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets, random_dura
     return result
 
 
-def pad_clips( w1, w1_clips, w2_clips, bgcolor='White' ):
+def pad_clips( w1, w1_clips, w2_clips, bgcolor='White', summary_options={} ):
     '''Takes in two arrays of clips, and if the duration of clips in
     w2_clips exceeds those in w1_clips, adds some blank screens of bgcolor
     to w1_clips so they have the same duration.  Returns the augmented set
@@ -247,15 +247,20 @@ def pad_clips( w1, w1_clips, w2_clips, bgcolor='White' ):
         
         intersperse = False
 
-        # DEBUG - This technique intersperses the pads.
+        # This technique intersperses the pads.
         if intersperse:
             num_pads = max( 1, len( w1_clips ) - 1 )
             pads = []
             for i in range( num_pads ):
-                # DEBUG
-                print "Adding pad with duration: %s" % ( total_pad )
-                print "Adding pad with duration: %s" % ( float( total_pad ) / num_pads )
-                pads.append( vsum.Clip( vsum.Video( vsum.get_solid_clip( float( total_pad ) / num_pads, width, height, bgcolor ) ) ) )
+
+                bgimage_file = None
+                if summary_options.get( 'holiday_card', False ):
+                    if width == 368:
+                        bgimage_file = "%s/media/w1-underlay.png" % ( os.path.dirname( __file__ ) )
+                    elif width == 656:
+                        bgimage_file = "%s/media/w2-underlay.png" % ( os.path.dirname( __file__ ) )
+
+                pads.append( vsum.Clip( vsum.Video( vsum.get_solid_clip( float( total_pad ) / num_pads, width, height, bgcolor, bgimage_file ) ) ) )
             
             result = []
 
@@ -267,9 +272,14 @@ def pad_clips( w1, w1_clips, w2_clips, bgcolor='White' ):
 
             return result
         else:
-            # DEBUG - This technique puts the pads at the beginning and
-            # end.
-            pad = vsum.Clip( vsum.Video( vsum.get_solid_clip( float( total_pad ) / 2, width, height, bgcolor ) ) )
+            # This technique puts the pads at the beginning and end.
+            bgimage_file = None
+            if summary_options.get( 'holiday_card', False ):
+                if width == 368:
+                    bgimage_file = "%s/media/w1-underlay.png" % ( os.path.dirname( __file__ ) )
+                elif width == 656:
+                    bgimage_file = "%s/media/w2-underlay.png" % ( os.path.dirname( __file__ ) )
+            pad = vsum.Clip( vsum.Video( vsum.get_solid_clip( float( total_pad ) / 2, width, height, bgcolor, bgimage_file ) ) )
             return [ pad ] + w1_clips + [ pad ]
 
     # Nothing to do.
@@ -341,13 +351,18 @@ def generate_summary( summary_type,
                                                  start = cut[0],
                                                  end   = cut[1] ) )
 
+        bgimage = None
+        if summary_options.get( 'holiday_card', False ):
+            bgimage = "%s/media/stock-background-1280-720.png" % ( os.path.dirname( __file__ ) )
+
         w = vsum.Window( width       = output_x, 
                          height      = output_y, 
                          output_file = output_file, 
                          duration    = target_duration,
                          bgcolor     = "White",
                          audio_filename  = audio_filename,
-                         audio_desc  = audio_desc )
+                         audio_desc  = audio_desc,
+                         bgimage_file = bgimage )
         w.display.pad_bgcolor = 'White'
 
         small_logo_color = 'white'
@@ -379,6 +394,10 @@ def generate_summary( summary_type,
             w2 = vsum.Window( width=656, height=656, x=84, y=32, display=vsum.Display( display_style=vsum.PAN ) )
             w.windows = [ w1, w2 ]
 
+            if summary_options.get( 'holiday_card', False ):
+                w1.bgimage_file = "%s/media/w1-underlay.png" % ( os.path.dirname( __file__ ) )
+                w2.bgimage_file = "%s/media/w2-underlay.png" % ( os.path.dirname( __file__ ) )
+
             if summary_options.get( 'distribute_clips', '' ) == 'side_by_side':
                 # In this case we put clips side by side from the same
                 # video, and add some padding of white only screens to
@@ -390,8 +409,8 @@ def generate_summary( summary_type,
 
                 for clip in summary_clips:
                     if clip.video.filename != current_movie:
-                        w1.clips += pad_clips( w1, w1_clips, w2_clips )
-                        w2.clips += pad_clips( w2, w2_clips, w1_clips )
+                        w1.clips += pad_clips( w1, w1_clips, w2_clips, summary_options=summary_options )
+                        w2.clips += pad_clips( w2, w2_clips, w1_clips, summary_options=summary_options )
 
                         # Reset the state for the next clip.
                         current_movie = clip.video.filename
@@ -423,8 +442,8 @@ def generate_summary( summary_type,
                             else:
                                 w2_clips.append( clip )
                 
-                w1.clips += pad_clips( w1, w1_clips, w2_clips )
-                w2.clips += pad_clips( w2, w2_clips, w1_clips )
+                w1.clips += pad_clips( w1, w1_clips, w2_clips, summary_options=summary_options )
+                w2.clips += pad_clips( w2, w2_clips, w1_clips, summary_options=summary_options )
 
             else:
                 vsum.distribute_clips( summary_clips, [ w1, w2 ], min_duration=target_duration, randomize_clips=randomize_clips )
@@ -971,8 +990,7 @@ def run():
                 summary_options = {}
         else:
             summary_options = {}
-        
-            
+
         # Optional controls for summary metadata.
         title = options.get( 'title', '' )
         description     = options.get( 'description', '' )

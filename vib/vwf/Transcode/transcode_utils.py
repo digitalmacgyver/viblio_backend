@@ -210,49 +210,6 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
 
                 s3.upload_file( thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
 
-        '''
-        # Store our generic images in S3, and compute various metrics
-        # and store the results in a hash to be stored in the database
-        # by our caller.
-        if output['asset_type'] == 'main':
-            images = []
-            for filename in sorted( glob.glob( '%s/%s-image-*.jpg' % ( config.transcode_dir, media_uuid ) ) ):
-                try:
-                    # Calculate the timecode metric.
-                    #
-                    # FFMPEG for some reason generates a garbage first frame, and
-                    # then starts making frames every FPS at FPS/2 in video when
-                    # the -vf fps=X option is used (different, crazier behavior
-                    # results from usage of -r).
-                    sequence = int( re.search( r'image-(\d+).jpg', filename ).groups()[0] )
-                    if sequence == 1:
-                        continue
-                    timecode = ( sequence - 2 ) * ( 1.0 / image_fps )  + ( 1.0 / ( 2 * image_fps ) )
-                    image_key = "%s/%s-image-%s.jpg" % ( media_uuid, media_uuid, timecode )
-                    
-                    blur_score, face_score, rgb_hist = _get_cv_features( filename )
-                    
-                    cv_metrics = json.dumps( { 'rgb_hist' : json.loads( rgb_hist ) } )
-
-                    # Upload the file
-                    s3.upload_file( filename, config.bucket_name, image_key )
-                    
-                    # Inform the caller abour the metrics.
-                    images.append( { 'output_file'    : { 's3_key' : image_key },
-                                     'output_file_fs' : filename,
-                                     'format'         : 'jpeg',
-                                     'timecode'       : timecode,
-                                     'blur_score'     : blur_score,
-                                     'face_score'     : face_score,
-                                     'cv_metrics'     : cv_metrics } )
-                except Exception as e:
-                    # Just proceed on exception.
-                    log.error( json.dumps( { 'media_uuid' : media_uuid,
-                                             'message' : "ERROR getting features for image %s: %s" % ( filename, e ) } ) )
-                    
-            output['images'] = images
-        '''
-
     try:
         min_images = 4
         if try_photos:

@@ -166,15 +166,17 @@ def find_photos( media_uuid,
     image_opts = ''
 
     if rotation == '90':
-        image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=1,'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf "transpose=1,'
     elif rotation == '180':
-        image_opts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip,'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf "hflip,vflip,'
     elif rotation == '270':
-        image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=2,'
+        image_opts += ' -metadata:s:v:0 rotate=0 -vf "transpose=2,'
     else:
-        image_opts += ' -vf '
+        image_opts += ' -vf "scale=trunc(iw*oh/ih/2)*2:720,'
 
     image_opts += 'fps=%s ' % ( image_fps )
+
+    image_opts += '"'
 
     to_clause = ""
     if end_time is not None:

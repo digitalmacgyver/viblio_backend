@@ -82,7 +82,8 @@ def distribute_clips( clips, windows, min_duration=None, randomize_clips=False )
 def get_solid_clip( duration,
                     width   = 1280,
                     height  = 720,
-                    bgcolor = 'Black' ):
+                    bgcolor = 'Black',
+                    bgimage_file = None ):
     '''Create a clip of a solid color of a particular duration and size.
     Default color is black, default size is 1280x720. Returns the
     path of the clip.
@@ -90,7 +91,8 @@ def get_solid_clip( duration,
     w = Window( duration = duration,
                 width    = width,
                 height   = height,
-                bgcolor  = bgcolor )
+                bgcolor  = bgcolor,
+                bgimage_file = bgimage_file )
     
     return w.render()
 
@@ -212,10 +214,8 @@ class Video( object ):
             self.height = Video.videos[filename]['height']
             self.duration = Video.videos[filename]['duration']
         else:
-            print "Working on %s" % ( filename )
             ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
             info = json.loads( output )
-            print "JSON %s" % ( filename )
             self.duration = float( info['format']['duration'] )
             self.width = int( info['streams'][0]['width'] )
             self.height = int( info['streams'][0]['height'] )
@@ -599,7 +599,7 @@ class Window( object ):
 
         if len( clips ) == 0:
             # Nothing to do.
-            return
+            return tmpfile
 
         clip_files = []
         overlays = []
