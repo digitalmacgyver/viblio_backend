@@ -174,7 +174,7 @@ def call_build_video_summary( user_uuid, year, album_id ):
     if use_sqs:
         summary_uuid = str( uuid.uuid4() )
         
-        title = 'Test Holiday Video'
+        title = 'A Holiday Gift from VIBLIO'
 
         media = Media( uuid = summary_uuid,
                        status = 'pending',
