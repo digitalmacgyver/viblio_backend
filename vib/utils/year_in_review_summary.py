@@ -158,8 +158,8 @@ def call_build_video_summary( user_uuid, year, album_id ):
     ]
 
     songs = [
-        '9ad4e4ff-69a6-448d-ac44-b86cdbfa8d60', # staging
-        #'6578e271-813b-4c1f-82cf-2cca0364550a', # prod
+        #'9ad4e4ff-69a6-448d-ac44-b86cdbfa8d60', # staging
+        '6578e271-813b-4c1f-82cf-2cca0364550a', # prod
     ]
     
     #print "./script/wsclient.pl --service services/mediafile/create_video_summary -- summary_type=moments audio_track=f4a6501d-7f85-4040-92b5-e97d5a568c27 summary_style=template-2 order=oldest target_duration=%d title='%s' images[]='%s'" % ( total_duration / 2, video_summary['title'], ','.join( video_summary['images[]'] ) )
@@ -205,7 +205,7 @@ def call_build_video_summary( user_uuid, year, album_id ):
             'moment_offsets[]' : [ -2.5, 2.5 ],
             'summary_options' : json.dumps( {
                 'template' : 'email/27-yirSummary.tt',
-                'subject' : 'Test Holiday Video',
+                'subject' : title,
                 'distribute_clips' : 'side_by_side',
                 'holiday_card' : True
             } ),
