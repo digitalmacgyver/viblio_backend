@@ -158,8 +158,8 @@ def call_build_video_summary( user_uuid, year, album_id ):
     ]
 
     songs = [
-        #'9ad4e4ff-69a6-448d-ac44-b86cdbfa8d60', # staging
-        '6578e271-813b-4c1f-82cf-2cca0364550a', # prod
+        '1827e8a3-148f-4a50-a518-c96e5cfe2046', # staging
+        #'9a2fc139-3acb-48be-a334-bb02bda15ba5' #prod
     ]
     
     #print "./script/wsclient.pl --service services/mediafile/create_video_summary -- summary_type=moments audio_track=f4a6501d-7f85-4040-92b5-e97d5a568c27 summary_style=template-2 order=oldest target_duration=%d title='%s' images[]='%s'" % ( total_duration / 2, video_summary['title'], ','.join( video_summary['images[]'] ) )
