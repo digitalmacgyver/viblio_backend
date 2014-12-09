@@ -39,7 +39,8 @@ log.addHandler( consolelog )
 
 total_duration = 120
 clip_duration = 4.0
-clip_count = total_duration / clip_duration
+#clip_count = total_duration / clip_duration
+clip_count = 30
 
 def call_build_video_summary( user_uuid, year, album_id ): 
     orm = vib.db.orm.get_session()
@@ -207,7 +208,8 @@ def call_build_video_summary( user_uuid, year, album_id ):
                 'template' : 'email/27-yirSummary.tt',
                 'subject' : title,
                 'distribute_clips' : 'side_by_side',
-                'holiday_card' : True
+                'holiday_card' : True,
+                'duration_method' : 'shortest'
             } ),
             'summary_uuid' : summary_uuid,
             'action' : 'create_video_summary',
