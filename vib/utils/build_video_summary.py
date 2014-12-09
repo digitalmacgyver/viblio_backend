@@ -466,10 +466,15 @@ def generate_summary( summary_type,
         # DEBUG - try to make overall window the length of the longest
         # subwindow if nothing else is specified.
         if target_duration is None:
+            window_duration = 0
             if w.windows is not None and len( w.windows ):
-                w.duration = min( [ x.compute_duration( x.clips ) for x in w.windows ] )
+                window_duration = min( [ x.compute_duration( x.clips ) for x in w.windows ] )
             else:
-                w.duration = w.compute_duration( w.clips )
+                window_duration = w.compute_duration( w.clips )
+            
+            if summary_options.get( 'duration_method', '' ) == 'shortest':
+                if w.duration is None or window_duration < w.duration:
+                    w.duration = window_duration
 
         w.render()
 
