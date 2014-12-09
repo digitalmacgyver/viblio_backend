@@ -38,7 +38,7 @@ log.addHandler( syslog )
 log.addHandler( consolelog )
 
 total_duration = 120
-clip_duration = 2.0
+clip_duration = 4.0
 clip_count = total_duration / clip_duration
 
 def call_build_video_summary( user_uuid, year, album_id ): 
@@ -202,7 +202,7 @@ def call_build_video_summary( user_uuid, year, album_id ):
             'order' : 'oldest',
             'title' : title,
             'images[]' : video_summary['images[]'],
-            'moment_offsets[]' : [ -2.5, 2.5 ],
+            'moment_offsets[]' : [ -clip_duration / 2.0, clip_duration / 2.0 ],
             'summary_options' : json.dumps( {
                 'template' : 'email/27-yirSummary.tt',
                 'subject' : title,
