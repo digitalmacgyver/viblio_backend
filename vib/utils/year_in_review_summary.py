@@ -209,7 +209,9 @@ def call_build_video_summary( user_uuid, year, album_id ):
                 'subject' : title,
                 'distribute_clips' : 'side_by_side',
                 'holiday_card' : True,
-                'duration_method' : 'shortest'
+                'duration_method' : 'shortest',
+                'year_desc' : '2014',
+                'album_name' : album.title
             } ),
             'summary_uuid' : summary_uuid,
             'action' : 'create_video_summary',

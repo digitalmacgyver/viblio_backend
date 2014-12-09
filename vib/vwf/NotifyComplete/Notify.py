@@ -157,7 +157,9 @@ class Notify( VWorker ):
                                             }
                                                               }
                                                             ]
-                                                }
+                                                },
+                                    'year_desc' : options.get( 'year_desc', '' ),
+                                    'album_name' : options.get( 'album_name', '' )
                                     }
                         }
                         
