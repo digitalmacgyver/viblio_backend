@@ -159,7 +159,8 @@ def call_build_video_summary( user_uuid, year, album_id ):
     ]
 
     songs = [
-        '1827e8a3-148f-4a50-a518-c96e5cfe2046', # staging
+        #'1827e8a3-148f-4a50-a518-c96e5cfe2046', # staging - good riddance
+        '9ad4e4ff-69a6-448d-ac44-b86cdbfa8d60', # Staging - clocks in chicago
         #'9a2fc139-3acb-48be-a334-bb02bda15ba5' #prod
     ]
     

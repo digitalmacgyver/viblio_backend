@@ -151,17 +151,17 @@ class Notify( VWorker ):
                         'stash' : { 'user' : { 'displayname' : user.displayname },
                                     'model' : { 'media' : [ { 'uuid' : media_uuid,
                                                               'views' : {
-                                            'poster' : {
-                                                'uri' : options['outputs'][0]['thumbnails'][0]['output_file']['s3_key']
-                                                }
-                                            }
+                                                                  'poster' : {
+                                                                      'uri' : options['outputs'][0]['thumbnails'][0]['output_file']['s3_key']
+                                                                  }
                                                               }
-                                                            ]
-                                                },
+                                                          }
+                                                        ]
+                                            },
                                     'year_desc' : options.get( 'year_desc', '' ),
                                     'album_name' : options.get( 'album_name', '' )
-                                    }
-                        }
+                                }
+                    }
                         
                     log.info( json.dumps( { 'media_uuid' : media_uuid,
                                             'user_uuid' : user_uuid,
