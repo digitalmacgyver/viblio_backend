@@ -517,7 +517,7 @@ class Window( object ):
             if my_duration == 0:
                 raise Exception( "Could not determine duration for window." )
             else:
-                print "WARNING: No duration specified for window, set duration to %s, the longest duration of clips in this or any of it's child windows." % ( my_duration )
+                print "WARNING: No duration specified for window, set duration to %s, the longest duration of clips in this or any of its child windows." % ( my_duration )
                 self.duration = my_duration
 
         # Lay down a background if requested to.
