@@ -566,7 +566,7 @@ def generate_summary( summary_type,
                 'template' : summary_options.get( 'template', None ),
                 'subject' : summary_options.get( 'subject', None ),
                 'year_desc' : summary_options.get( 'year_desc', None ),
-                'album_name' : summary_options.get( 'abum_name', None ),
+                'album_name' : summary_options.get( 'album_name', None ),
 				    'input_file' : {
 					    's3_bucket'  : config.bucket_name,
 					    's3_key' : "%s/%s" % ( summary_uuid, summary_uuid ),
