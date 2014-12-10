@@ -172,7 +172,8 @@ def find_photos( media_uuid,
     elif rotation == '270':
         image_opts += ' -metadata:s:v:0 rotate=0 -vf "transpose=2,'
     else:
-        image_opts += ' -vf "scale=trunc(iw*oh/ih/2)*2:720,'
+        #image_opts += ' -vf "scale=trunc(iw*oh/ih/2)*2:720,'
+        image_opts += ' -vf " '
 
     image_opts += 'fps=%s ' % ( image_fps )
 

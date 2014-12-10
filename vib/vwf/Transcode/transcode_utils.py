@@ -164,7 +164,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
                 output_cmd += ' -vf scale="%s"%s ' % ( output.get( 'scale' ), sar_clause )
         else:
             if rotation in [ '90', '180', '270' ]:
-                output_cmd += ',scale="%s"%s ' % ( sar_clause )
+                output_cmd += '%s ' % ( sar_clause )
             else:
                 if sar_clause != "":
                     output_cmd += ' -vf %s ' % ( sar_clause[1:] )
