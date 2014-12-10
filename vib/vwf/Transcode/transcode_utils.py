@@ -148,7 +148,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
 
     sar_clause = ""
     if exif.get( 'sar', None ) is not None and exif['sar'] != '1:1':
-        sar_clause = ",scale=iw*sar:ih,setsar=sar=1"
+        sar_clause = ',scale="2*trunc(iw*sar/2):ih",setsar=sar=1'
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
                              'message' : "SAR IS: %s" % ( exif.get( 'sar', 'NOT FOUND' ) ) } ) )
