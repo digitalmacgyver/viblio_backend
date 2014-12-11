@@ -67,10 +67,12 @@ def get_exif( media_uuid, filename ):
 
         # Not technically exif, but metadata about the video nonetheless.
         sar = None
+        pix_fmt = None
         try:
             ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
             info = json.loads( output )
             sar = info['streams'][0].get( 'sample_aspect_ratio', None )
+            pix_fmt = info['streams'][0].get( 'pix_fmt', None )
         except:
             # Oh well...
             pass
@@ -85,7 +87,8 @@ def get_exif( media_uuid, filename ):
                   'width'       : image_width,
                   'height'      : image_height,
                   'duration'    : duration,
-                  'sar'         : sar
+                  'sar'         : sar,
+                  'pix_fmt'     : pix_fmt
                   }
 
     except Exception as e:
@@ -149,6 +152,11 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
     sar_clause = ""
     if exif.get( 'sar', None ) is not None and exif['sar'] != '1:1':
         sar_clause = ',scale="2*trunc(iw*sar/2):ih",setsar=sar=1'
+
+    pix_fmt_arg = ""
+    if exif.get( 'pix_fmt', None ) is not None and exif['pix_fmt'] != 'yuv420p':
+        pix_fmt_arg = " -pix_fmt yuv420p "
+    ffopts = pix_fmt_arg + ffopts
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
                              'message' : "SAR IS: %s" % ( exif.get( 'sar', 'NOT FOUND' ) ) } ) )
