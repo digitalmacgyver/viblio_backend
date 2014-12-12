@@ -38,8 +38,9 @@ log.addHandler( syslog )
 log.addHandler( consolelog )
 
 total_duration = 120
-clip_duration = 2.0
-clip_count = total_duration / clip_duration
+clip_duration = 4.0
+#clip_count = total_duration / clip_duration
+clip_count = 48
 
 def call_build_video_summary( user_uuid, year, album_id ): 
     orm = vib.db.orm.get_session()
@@ -158,8 +159,10 @@ def call_build_video_summary( user_uuid, year, album_id ):
     ]
 
     songs = [
-        '1827e8a3-148f-4a50-a518-c96e5cfe2046', # staging
-        #'9a2fc139-3acb-48be-a334-bb02bda15ba5' #prod
+        '1827e8a3-148f-4a50-a518-c96e5cfe2046', # staging - good riddance
+        #'9ad4e4ff-69a6-448d-ac44-b86cdbfa8d60', # Staging - clocks in chicago
+        #'6578e271-813b-4c1f-82cf-2cca0364550a', # prod - clocks in chicago
+        #'9a2fc139-3acb-48be-a334-bb02bda15ba5' #prod - good riddance
     ]
     
     #print "./script/wsclient.pl --service services/mediafile/create_video_summary -- summary_type=moments audio_track=f4a6501d-7f85-4040-92b5-e97d5a568c27 summary_style=template-2 order=oldest target_duration=%d title='%s' images[]='%s'" % ( total_duration / 2, video_summary['title'], ','.join( video_summary['images[]'] ) )
@@ -202,12 +205,15 @@ def call_build_video_summary( user_uuid, year, album_id ):
             'order' : 'oldest',
             'title' : title,
             'images[]' : video_summary['images[]'],
-            'moment_offsets[]' : [ -2.5, 2.5 ],
+            'moment_offsets[]' : [ -clip_duration / 2.0, clip_duration / 2.0 ],
             'summary_options' : json.dumps( {
                 'template' : 'email/27-yirSummary.tt',
                 'subject' : title,
                 'distribute_clips' : 'side_by_side',
-                'holiday_card' : True
+                'holiday_card' : True,
+                'duration_method' : 'shortest',
+                'year_desc' : '2014',
+                'album_name' : album.title
             } ),
             'summary_uuid' : summary_uuid,
             'action' : 'create_video_summary',

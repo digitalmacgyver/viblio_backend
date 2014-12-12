@@ -64,6 +64,18 @@ def get_exif( media_uuid, filename ):
             except:
                 # Oh well...
                 pass
+
+        # Not technically exif, but metadata about the video nonetheless.
+        sar = None
+        pix_fmt = None
+        try:
+            ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
+            info = json.loads( output )
+            sar = info['streams'][0].get( 'sample_aspect_ratio', None )
+            pix_fmt = info['streams'][0].get( 'pix_fmt', None )
+        except:
+            # Oh well...
+            pass
         
         return {  'file_ext'    : file_ext, 
                   'mime_type'   : mime_type, 
@@ -74,7 +86,9 @@ def get_exif( media_uuid, filename ):
                   'frame_rate'  : frame_rate,
                   'width'       : image_width,
                   'height'      : image_height,
-                  'duration'    : duration
+                  'duration'    : duration,
+                  'sar'         : sar,
+                  'pix_fmt'     : pix_fmt
                   }
 
     except Exception as e:
@@ -120,36 +134,32 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
     log_message = ''
     cmd_output = ''
 
-    #duration = exif.get( 'duration', None )
-    #image_fps = .2
-    #if duration and duration < 20:
-    #    image_fps = 4.0 / duration
-    #elif duration and duration > 150:
-    #    image_fps = 30.0 / duration
-    
-    #image_opts = ''
-
     if rotation == '90':
         log_message = 'Video is rotated 90 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=1'
-        #image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=1,'
     elif rotation == '180':
         log_message = 'Video is rotated 180 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip'
-        #image_opts += ' -metadata:s:v:0 rotate=0 -vf hflip,vflip,'
     elif rotation == '270':
         log_message = 'Video is rotated 270 degrees, rotating.'
         ffopts += ' -metadata:s:v:0 rotate=0 -vf transpose=2'
-        #image_opts += ' -metadata:s:v:0 rotate=0 -vf transpose=2,'
     else:
         log_message = 'Video is not rotated.'
-        #image_opts += ' -vf '
-
-    #image_opts += 'fps=%s ' % ( image_fps )
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
                              'message' : log_message } ) )
 
+    sar_clause = ""
+    if exif.get( 'sar', None ) is not None and exif['sar'] != '1:1':
+        sar_clause = ',scale="2*trunc(iw*sar/2):ih",setsar=sar=1'
+
+    pix_fmt_arg = ""
+    if exif.get( 'pix_fmt', None ) is not None and exif['pix_fmt'] != 'yuv420p':
+        pix_fmt_arg = " -pix_fmt yuv420p "
+    ffopts = pix_fmt_arg + ffopts
+
+    log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                             'message' : "SAR IS: %s" % ( exif.get( 'sar', 'NOT FOUND' ) ) } ) )
 
     output_cmd = ""
     output_files_fs = []
@@ -157,11 +167,16 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
         output_cmd += ffopts
         if output.get( 'scale', None ) is not None:
             if rotation in [ '90', '180', '270' ]:
-                output_cmd += ',scale="%s" ' % ( output.get( 'scale' ) )
+                output_cmd += ',scale="%s"%s ' % ( output.get( 'scale' ), sar_clause )
             else:
-                output_cmd += ' -vf scale="%s" ' % ( output.get( 'scale' ) )
+                output_cmd += ' -vf scale="%s"%s ' % ( output.get( 'scale' ), sar_clause )
         else:
-            output_cmd += ' '
+            if rotation in [ '90', '180', '270' ]:
+                output_cmd += '%s ' % ( sar_clause )
+            else:
+                if sar_clause != "":
+                    output_cmd += ' -vf %s ' % ( sar_clause[1:] )
+
         video_bit_rate = " -crf 18 -maxrate %sk -bufsize 4096k " % output.get( 'max_video_bitrate', 1500 )
         audio_bit_rate = " -b:a %sk " % output.get( 'audio_bitrate', 160 )
         output_file_fs = "%s/%s_%s.%s" % ( config.transcode_dir, media_uuid, idx, output.get( 'format', 'mp4' ) )
@@ -169,10 +184,6 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
         output_files_fs.append( output_file_fs )
         output['output_file_fs'] = output_file_fs
         
-    # Add in a hard coded command to get some high resolution, rotated
-    # images for making albums.
-    #output_cmd += image_opts + ' -qscale:v 2 %s/%s-image-%%04d.jpg' % ( config.transcode_dir, media_uuid )
-
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s' % ( input_filename, output_cmd )
     log.info( json.dumps( { 'media_uuid' : media_uuid,
                             'message' : "Running FFMPEG command %s" % cmd } ) )

@@ -222,6 +222,8 @@ class Video( object ):
             self.width = Video.videos[filename]['width']
             self.height = Video.videos[filename]['height']
             self.duration = Video.videos[filename]['duration']
+            self.sample_aspect_ratio = Video.videos[filename]['sample_aspect_ratio']
+            self.pix_fmt = Video.videos[filename]['pix_fmt']
         else:
             ( status, output ) = commands.getstatusoutput( "ffprobe -v quiet -print_format json -show_format -show_streams %s" % ( filename ) )
             info = json.loads( output )
@@ -229,9 +231,15 @@ class Video( object ):
             self.width = int( info['streams'][0]['width'] )
             self.height = int( info['streams'][0]['height'] )
             self.sample_aspect_ratio = info['streams'][0].get( 'sample_aspect_ratio', '' )
+            if self.sample_aspect_ratio == '0:1':
+                print "WARNING: Nonsense SAR value of 0:1 detected, assuming SAR is 1:1."
+                self.sample_aspect_ratio = '1:1'
+            self.pix_fmt = info['streams'][0].get( 'pix_fmt', '' )
             Video.videos[filename] = { 'width'    : self.width,
                                        'height'   : self.height,
-                                       'duration' : self.duration }
+                                       'duration' : self.duration,
+                                       'sample_aspect_ratio' : self.sample_aspect_ratio,
+                                       'pix_fmt'  : self.pix_fmt }
         
 class Clip( object ):
     def __init__( self,
@@ -250,7 +258,7 @@ class Clip( object ):
         if self.start >= video.duration:
             raise Exception( "Error, asked to start clip at %f but video %s is only %f long." % ( start, video.filename , video.duration ) )
 
-        if end is not None and end >= video.duration:
+        if end is not None and end > video.duration:
             raise Exception( "Error, asked to end clip at %f but video %s is only %f long." % ( end, video.filename , video.duration ) )
 
         if end is not None and end <= start:
@@ -268,6 +276,9 @@ class Clip( object ):
         
     def get_sar( self ):
         return self.video.sample_aspect_ratio
+
+    def get_pix_fmt( self ):
+        return self.video.pix_fmt
 
 # Note - I had intended to offer scale arguments for watermark, but
 # ran across FFMPEG bugs (segmentation faults, memory corruption) when
@@ -377,7 +388,7 @@ class Window( object ):
                                               # exception will be
                                               # issued during
                                               # rendering.
-
+                  pix_fmt = None, # Defaults to yuv420p
                   # The position of this window relative to its parent window (if any)
                   x = 0,
                   y = 0,
@@ -432,6 +443,7 @@ class Window( object ):
             raise Exception( "If sample_aspect_ratio is provided it must be in W:H format." )
 
         self.sample_aspect_ratio = sample_aspect_ratio
+        self.pix_fmt = pix_fmt
 
         self.x        = x
         self.y        = y
@@ -495,7 +507,8 @@ class Window( object ):
         child_windows = [ w for w in self.get_child_windows() ]
         all_windows = [ self ] + child_windows
         sars = set( [ clip.get_sar() for window in all_windows if window.sample_aspect_ratio is None for clip in window.clips ] + [ w.sample_aspect_ratio for w in all_windows if w.sample_aspect_ratio is not None ] )
-
+        
+        computed_sar = None
         if len( sars ) > 1:
             raise Exception( "Multiple different sample aspect ratios present in input videos: %s.  Please preprocess your inputs to all have the same SARs." % ( sars ) )
         elif len( sars ) == 1:
@@ -512,6 +525,19 @@ class Window( object ):
         if self.sample_aspect_ratio is not None:
             sar_clause = ",setsar=sar=%s" % ( self.sample_aspect_ratio )
 
+        pix_fmts = set( [ w.pix_fmt for w in all_windows if w.pix_fmt is not None ] )
+
+        computed_pix_fmt = None
+        if len( pix_fmts ) > 1:
+            raise Exception( "Multiple different color space / pixel format arguments for output windows: %s.  All output windows must have the same pixel format." % ( pix_fmts ) )
+        elif len( pix_fmts ) == 1:
+            computed_pix_fmt = pix_fmts.pop()
+            
+        if self.pix_fmt is None and computed_pix_fmt is not None:
+            self.pix_fmt = computed_pix_fmt
+        else:
+            self.pix_fmt = 'yuv420p'
+
         if self.duration is None:
             my_duration = max( [ w.compute_duration( w.clips ) for w in all_windows ] )
             if my_duration == 0:
@@ -523,7 +549,7 @@ class Window( object ):
         # Lay down a background if requested to.
         if self.bgimage_file is not None:
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -loop 1 -i %s -r 30000/1001 -qp 0 -filter_complex " color=%s:size=%dx%d [base] ; [base] [0] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
+            cmd = '%s -y -loop 1 -i %s -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " color=%s:size=%dx%d [base] ; [base] [0] overlay%s " -t %f %s' % ( FFMPEG, self.bgimage_file, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -533,7 +559,7 @@ class Window( object ):
         # Handle the case where there are no clips and no background.
         if len( self.clips ) == 0 and self.bgimage_file is None:
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -r 30000/1001 -qp 0 -filter_complex " color=%s:size=%dx%d%s " -t %f %s' % ( FFMPEG, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
+            cmd = '%s -y -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " color=%s:size=%dx%d%s " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, sar_clause, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -545,12 +571,14 @@ class Window( object ):
         for window in sorted( self.windows, key=lambda x: x.z_index ):
             if window.duration is None:
                 window.duration = self.duration
+            if window.pix_fmt is None:
+                window.pix_fmt = self.pix_fmt
             current = tmpfile
             window_file = window.render( helper=True )
             tmpfile = self.get_next_renderfile()
 
-            cmd = '%s -y -i %s -i %s -r 30000/1001 -qp 0 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, sar_clause, self.duration, tmpfile )
-            #cmd = '%s -y -i %s -i %s -r 30000/1001 -qp 0 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s:eof_action=pass%s " -t %f %s' % ( FFMPEG, current, window_file, self.pix_fmt, window.x, window.y, sar_clause, self.duration, tmpfile )
+            #cmd = '%s -y -i %s -i %s -r 30000/1001 -qp 18 -filter_complex " [0:v] [1:v] overlay=x=%s:y=%s " -t %f %s' % ( FFMPEG, current, window_file, window.x, window.y, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -577,7 +605,7 @@ class Window( object ):
                 f.write( self.audio_desc )
                 f.close()
                 filter_clause = " -filter_complex 'drawtext=fontcolor=white:borderw=1:textfile=%s:x=10:y=h-th-10:enable=gt(t\,%f)'%s" % ( audio_desc_file, self.duration - 5, sar_clause )
-            cmd = '%s -y -i %s -i %s %s %s -t %f %s' % ( FFMPEG, current, self.audio_filename, afade_clause, filter_clause, self.duration, tmpfile )
+            cmd = '%s -y -i %s -i %s -pix_fmt %s %s %s -t %f %s' % ( FFMPEG, current, self.audio_filename, self.pix_fmt, afade_clause, filter_clause, self.duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -604,7 +632,7 @@ class Window( object ):
                 file_idx += 1
                 cmd += " -loop 1 -i %s " % ( watermark.filename )
 
-        cmd += ' -filter_complex " '
+        cmd += ' -pix_fmt %s -filter_complex " ' % ( self.pix_fmt )
 
         filter_idx = 0
 
@@ -658,15 +686,16 @@ class Window( object ):
 
         return tmpfile
 
-    def get_clip_hash( self, clip, width, height, pan_direction="" ):
+    def get_clip_hash( self, clip, width, height, pan_direction="", pix_fmt="yuv420p" ):
         display = get_display( clip, self )
-        clip_name = "%s%s%s%s%s%s%s" % ( os.path.abspath( clip.video.filename ), 
-                                         clip.start, 
-                                         clip.end, 
-                                         display.display_style, 
-                                         width, 
-                                         height, 
-                                         pan_direction )
+        clip_name = "%s%s%s%s%s%s%s%s" % ( os.path.abspath( clip.video.filename ), 
+                                           clip.start, 
+                                           clip.end, 
+                                           display.display_style, 
+                                           width, 
+                                           height, 
+                                           pan_direction,
+                                           pix_fmt )
         md5 = hashlib.md5()
         md5.update( clip_name )
         return md5.hexdigest()
@@ -709,9 +738,9 @@ class Window( object ):
                 f.write( "file '%s'\n" % ( clip_file ))
             f.close()
             if self.original_audio:
-                cmd = "%s -y -f concat -i %s -r 30000/1001 -qp 0 %s" % ( FFMPEG, concat_file, tmpfile )
+                cmd = "%s -y -f concat -i %s -pix_fmt %s -r 30000/1001 -qp 18 %s" % ( FFMPEG, concat_file, self.pix_fmt, tmpfile )
             else:
-                cmd = "%s -y -f concat -i %s -r 30000/1001 -qp 0 -an %s" % ( FFMPEG, concat_file, tmpfile )
+                cmd = "%s -y -f concat -i %s -pix_fmt %s -r 30000/1001 -qp 18 -an %s" % ( FFMPEG, concat_file, self.pix_fmt, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -721,7 +750,7 @@ class Window( object ):
             # All the clips are overlays and we have no background.
             duration = self.compute_duration( self.clips )
             tmpfile = self.get_next_renderfile()
-            cmd = '%s -y -r 30000/1001 -qp 0 -filter_complex " color=%s:size=%dx%d " -t %f %s' % ( FFMPEG, self.bgcolor, self.width, self.height, duration, tmpfile )
+            cmd = '%s -y -pix_fmt %s -r 30000/1001 -qp 18 -filter_complex " color=%s:size=%dx%d " -t %f %s' % ( FFMPEG, self.pix_fmt, self.bgcolor, self.width, self.height, duration, tmpfile )
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
@@ -735,7 +764,7 @@ class Window( object ):
             cmd = "%s -y -i %s " % ( FFMPEG, tmpfile )
             include_clause = ""
             scale_clause = ""
-            filter_complex = ' -r 30001/1001 -qp 0 -filter_complex " '
+            filter_complex = ' -pix_fmt %s -r 30001/1001 -qp 18 -filter_complex " ' % ( self.pix_fmt )
             for overlay_idx in range( overlay_group, min( len( overlays ), overlay_group + self.overlay_batch_concurrency ) ):
                 overlay_start = overlay_timing[overlay_idx][0]
                 overlay_end = overlay_timing[overlay_idx][1]
@@ -872,7 +901,7 @@ class Window( object ):
          
         # Check the cache for such a clip.
         # If not, produce it and save it in the cache.
-        clip_hash = self.get_clip_hash( clip, self.width, self.height, display.prior_pan ) 
+        clip_hash = self.get_clip_hash( clip, self.width, self.height, display.prior_pan, self.pix_fmt ) 
         if clip_hash in Window.cache_dict and not self.force:
             print "Cache hit for clip: %s" % ( clip_hash )
             return Window.cache_dict[clip_hash]
@@ -880,9 +909,9 @@ class Window( object ):
             filename = "%s/%s.mp4" % ( Window.tmpdir, clip_hash )
             
             if self.original_audio:
-                cmd = '%s -y -ss %f -i %s -r 30000/1001 -qp 0 %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, scale_clause, clip.get_duration(), filename )
+                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -qp 18 %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )
             else:
-                cmd = '%s -y -ss %f -i %s -r 30000/1001 -qp 0 -an %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, scale_clause, clip.get_duration(), filename )               
+                cmd = '%s -y -ss %f -i %s -pix_fmt %s -r 30000/1001 -qp 18 -an %s -t %f %s' % ( FFMPEG, clip.start, clip.video.filename, self.pix_fmt, scale_clause, clip.get_duration(), filename )               
             print "Running: %s" % ( cmd )
             ( status, output ) = commands.getstatusoutput( cmd )
             print "Output was: %s" % ( output )
