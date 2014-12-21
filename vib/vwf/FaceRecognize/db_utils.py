@@ -93,6 +93,8 @@ def add_face( user_uuid, media_uuid, track_id, track_face, recognition_result, r
             picture_uri = track_face['s3_key']
             )
 
+        orm.add( new_contact )
+
         log.info( json.dumps( { 'user_uuid' : user_uuid,
                                 'media_uuid' : media_uuid,
                                 'contact_uuid' : contact_uuid,
