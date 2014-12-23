@@ -23,7 +23,7 @@ def _add_face( user_id, contact_id, face ):
 
         orm = vib.db.orm.get_session()
 
-        face = Faces2( 
+        db_face = Faces2( 
             user_id     = face['user_id'],
             contact_id  = face['contact_id'],
             face_id     = face['face_id'],
@@ -32,7 +32,7 @@ def _add_face( user_id, contact_id, face ):
             idx         = face['idx'],
             )
 
-        orm.add( face )
+        orm.add( db_face )
         orm.commit()
     
         return
