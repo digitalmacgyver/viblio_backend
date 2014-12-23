@@ -90,7 +90,8 @@ for user_email in user_emails:
                                 'poster' : { 
                                     'uri' : uri
                                 }
-                            }
+                            },
+                            'title' : mf.title
                         } )
             
             
