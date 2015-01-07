@@ -305,7 +305,7 @@ class Worker( Background ):
             self.skip_faces = False
 
         if 'try_photos' in self.data['metadata'] and self.data['metadata']['try_photos']:
-            if self.data['metadata']['try_photos'] == 2:
+            if int( self.data['metadata']['try_photos'] ) == 2:
                 self.try_photos = 'existing_user'
             else:
                 self.try_photos = 'new_user'

@@ -139,10 +139,10 @@
 		    // to set the value of skip_faces for the video
 		    // processing pipeline.
 		    if ( metadata['skip_faces'] ) {
-			console.log( "SKIP FACES IS TRUE" );
+			winston.info( "SKIP FACES IS TRUE" );
 			metadata['skip_faces'] = true;
 		    } else {
-			console.log( "SKIP FACES IS FALSE" );
+			winston.info( "SKIP FACES IS FALSE" );
 			metadata['skip_faces'] = false;
 		    }
 		    
@@ -151,14 +151,14 @@
 		    // to set the value of try_photos for the video
 		    // processing pipeline.
 		    if ( metadata['try_photos'] ) {
-			console.log( "TRY PHOTOS IS TRUE" );
 			if ( metadata['try_photos'] == 2 ) {
 			    metadata['try_photos'] = 2;
 			} else {
 			    metadata['try_photos'] = 1;
 			}
+			winston.info( "TRY PHOTOS IS TRUE: " + metadata['try_photos'] );
 		    } else {
-			console.log( "TRY PHOTOS IS FALSE" );
+			winston.info( "TRY PHOTOS IS FALSE" );
 			metadata['try_photos'] = false;
 		    }
 		    
