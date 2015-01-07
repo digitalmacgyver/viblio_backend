@@ -310,9 +310,7 @@ def generate_summary( summary_type,
                       output_x        = 1280,
                       output_y        = 720 ):
 
-    vsum.Window.set_tmpdir
-
-    ( "%s/../vsum_tmp" % workdir )
+    vsum.Window.set_tmpdir( "%s/../vsum_tmp" % workdir )
 
     output_file = "%s/%s.mp4" % ( workdir, summary_uuid )
 
