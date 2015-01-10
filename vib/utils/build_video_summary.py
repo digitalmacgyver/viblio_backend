@@ -987,14 +987,22 @@ def run():
         if target_duration is not None:
             target_duration = float( target_duration )
         summary_options = options.get( 'summary_options', None )
-        if summary_options is not None:
-            try:
-                summary_options = json.loads( summary_options )
-            except Exception as e:
-                log.error( json.dumps( { 'message' : "Error - summary_options JSON is malformed: %s" % ( e ) } ) )
-                summary_options = {}
+        if summary_options is None:
+            summary_options = {}            
         else:
-            summary_options = {}
+            if isinstance( summary_options, unicode ):
+                try:
+                    summary_options = json.loads( summary_options )
+                except Exception as e:
+                    log.error( json.dumps( { 'message' : "Error - summary_options JSON is malformed: %s" % ( e ) } ) )
+                    summary_options = {}
+            elif not isinstance( summary_options, dict ):
+                log.error( json.dumps( { 'message' : "Error - summary_options is neither a JSON string or a Python dictionary: %s" % ( e ) } ) )
+                summary_options = {}
+
+        # DEBUG:
+        log.error( json.dumps( { 'message' : "SUMMARY OPTIONS: %s" % ( summary_options ) } ) )
+
 
         # Optional controls for summary metadata.
         title = options.get( 'title', '' )
