@@ -374,6 +374,7 @@ def delete_user( user_id ):
         deleted = recog_db._get_all_faces_for_user( user_id )
 
         # Delete the user from ReKognition
+        result = None
         try:
             result = rekog.delete_user( user_id, config.recog_v2_namespace )
         except Exception as e:
