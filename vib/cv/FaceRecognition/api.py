@@ -374,7 +374,12 @@ def delete_user( user_id ):
         deleted = recog_db._get_all_faces_for_user( user_id )
 
         # Delete the user from ReKognition
-        result = rekog.delete_user( user_id, config.recog_v2_namespace )
+        try:
+            result = rekog.delete_user( user_id, config.recog_v2_namespace )
+        except Exception as e:
+            log.warning( json.dumps( { 'user_id'    : user_id,
+                                       'message' : "WARNING: Exception thrown deleting face from ReKognition - most likely this face does not exist in that system. Exception was: %s" % ( e ) } ) )
+            
         log.debug( json.dumps( { 'user_id'    : user_id,
                                  'rekog_result' : result,
                                  'message'    : 'Deleted all recognition data for user_id %s' % ( user_id ) } ) )
