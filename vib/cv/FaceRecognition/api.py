@@ -108,11 +108,6 @@ def add_faces( user_id, contact_id, faces ):
                 if face['contact_id'] != contact_id:
                     raise Exception( "Error, face for contact_id %s had contact_id of %s " % ( contact_id, face['contact_id'] ) )
 
-                # DEBUG
-                #import sys
-                #import pdb
-                #pdb.set_trace()
-
                 log.debug( json.dumps( { 'user_id'    : user_id,
                                          'contact_id' : contact_id,
                                          'message'    : "Working on face %s" % ( helpers._format_face( face ) ) } ) )

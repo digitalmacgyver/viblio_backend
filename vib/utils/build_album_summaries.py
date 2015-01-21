@@ -204,10 +204,10 @@ def generate_clips( album_uuid,
                     # Skip clips that are too short.
 
                     # DEBUG - just extend clips to be 5 seconds if we can.
-                    if end - start < 5:
-                        current = end - start
-                        start = max( 0, start - ( 5.0 - current ) / 2.0 )
-                        end += ( 5.0 - current ) / 2.0
+                    #if end - start < 5:
+                    #    current = end - start
+                    #    start = max( 0, start - ( 5.0 - current ) / 2.0 )
+                    #    end += ( 5.0 - current ) / 2.0
 
                     if end - start < min_clip_secs:
                         log.debug( json.dumps( { 'album_uuid' : album_uuid, 

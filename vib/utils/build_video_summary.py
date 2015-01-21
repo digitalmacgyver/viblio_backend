@@ -461,8 +461,8 @@ def generate_summary( summary_type,
                              fade_in_duration = 1 )
         w.watermarks = [ m1, m2 ]
 
-        # DEBUG - try to make overall window the length of the longest
-        # subwindow if nothing else is specified.
+        # Make overall window the length of the longest subwindow if
+        # nothing else is specified.
         if target_duration is None:
             window_duration = 0
             if w.windows is not None and len( w.windows ):
@@ -999,10 +999,6 @@ def run():
             elif not isinstance( summary_options, dict ):
                 log.error( json.dumps( { 'message' : "Error - summary_options is neither a JSON string or a Python dictionary: %s" % ( e ) } ) )
                 summary_options = {}
-
-        # DEBUG:
-        log.error( json.dumps( { 'message' : "SUMMARY OPTIONS: %s" % ( summary_options ) } ) )
-
 
         # Optional controls for summary metadata.
         title = options.get( 'title', '' )

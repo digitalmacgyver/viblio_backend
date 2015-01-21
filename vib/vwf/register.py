@@ -3,7 +3,6 @@
 import boto.swf
 import boto.swf.layer2 as swf
 
-# DEBUG - This is temporary until we reorganize popeye into vib.
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
