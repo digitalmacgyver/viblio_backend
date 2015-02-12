@@ -78,7 +78,7 @@ class Transcode( VWorker ):
                         'user_uuid' : user_uuid,
                         'message' : "Generating exif for original file for user %s media %s" % ( user_uuid, media_uuid )
                     } ) )
-            exif = tutils.get_exif( media_uuid, original_file )
+            exif = tutils.get_exif( media_uuid, original_file, user_uuid )
 
             try:
                 log.debug( json.dumps( {
@@ -86,7 +86,7 @@ class Transcode( VWorker ):
                             'user_uuid' : user_uuid,
                             'message' : "Running qt-faststart for user %s media %s" % ( user_uuid, media_uuid )
                     } ) )
-                tutils.move_atom( media_uuid, original_file )
+                tutils.move_atom( media_uuid, original_file, user_uuid )
             except Exception as e:
                 log.warning( json.dumps( {
                             'media_uuid' : media_uuid,
@@ -99,7 +99,7 @@ class Transcode( VWorker ):
                                          'user_uuid' : user_uuid,
                                          'message' : "Transcoding and storing the result in S3 for user %s media %s : " % ( user_uuid, media_uuid ) } ) )
 
-            outputs = tutils.transcode_and_store( media_uuid, original_file, outputs, exif, options.get( 'try_photos', False ) )
+            outputs = tutils.transcode_and_store( media_uuid, original_file, outputs, exif, options.get( 'try_photos', False ), user_uuid )
 
             orm = vib.db.orm.get_session()
             orm.commit()
@@ -165,7 +165,7 @@ class Transcode( VWorker ):
             for output in outputs:
                 output_uuid = str( uuid.uuid4() )
 
-                output_exif = tutils.get_exif( media_uuid, output['output_file_fs'] )
+                output_exif = tutils.get_exif( media_uuid, output['output_file_fs'], user_uuid )
 
                 log.info( json.dumps( {
                             'media_uuid' : media_uuid,

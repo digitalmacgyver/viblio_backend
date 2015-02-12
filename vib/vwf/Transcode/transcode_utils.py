@@ -14,7 +14,7 @@ log = logging.getLogger( __name__)
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
-def get_exif( media_uuid, filename ):   
+def get_exif( media_uuid, filename, user_uuid = None ):   
     try:
         exif_file = os.path.splitext( filename )[0] + '_exif.json'
         command = '/usr/local/bin/exiftool -j -w! _exif.json -c %+.6f ' + filename
@@ -93,10 +93,11 @@ def get_exif( media_uuid, filename ):
 
     except Exception as e:
         log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'user_uuid'  : user_uuid,
                                  'message' : 'EXIF extraction failed, error was: %s' % e } ) )
         raise
 
-def move_atom( media_uuid, filename ):
+def move_atom( media_uuid, filename, user_uuid ):
     '''Attempt to relocate the atom to the start of the file.'''
 
     cmd = '/usr/local/bin/qtfaststart %s' % filename
@@ -109,13 +110,12 @@ def move_atom( media_uuid, filename ):
                     'message' : 'Failed to run qtfaststart on %s' % filename
                     } ) )
     else:
-        log.warning( json.dumps( {
-                    'media_uuid' : media_uuid,
-                    'message' : 'qtfaststart command returned successful completion status for filename: %s' % filename
-                    } ) )
+        log.warning( json.dumps( { 'media_uuid' : media_uuid,
+                                   'user_uuid' : user_uuid,
+                                   'message' : 'qtfaststart command returned successful completion status for filename: %s' % ( filename ) } ) )
     return
 
-def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos = False ):
+def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos = False, user_uuid = None ):
     '''Takes in a media_id, input filename on the filesystem, the
     outputs data structure sent to a Transcode job, and the exif data
     associated with the input filename.
@@ -147,6 +147,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
         log_message = 'Video is not rotated.'
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                             'user_uuid' : user_uuid,
                              'message' : log_message } ) )
 
     sar_clause = ""
@@ -159,6 +160,7 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
     ffopts = pix_fmt_arg + ffopts
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                             'user_uuid' : user_uuid,
                              'message' : "SAR IS: %s" % ( exif.get( 'sar', 'NOT FOUND' ) ) } ) )
 
     output_cmd = ""
@@ -186,11 +188,13 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
         
     cmd = '/usr/local/bin/ffmpeg -y -i %s %s' % ( input_filename, output_cmd )
     log.info( json.dumps( { 'media_uuid' : media_uuid,
+                            'user_uuid' : user_uuid,
                             'message' : "Running FFMPEG command %s" % cmd } ) )
     ( status, cmd_output ) = commands.getstatusoutput( cmd )
     cmd_output = cmd_output.decode( 'utf-8' )
 
     log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                             'user_uuid' : user_uuid,
                              'message' : "FFMPEG command output was: %s" % cmd_output } ) )
 
     input_frames = re.findall( r'frame=\s*(\d+)\s', cmd_output )
@@ -202,21 +206,24 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
             break
     if not valid_outputs or status != 0:
         log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'user_uuid' : user_uuid,
                                  'message' : 'Failed to generate transcoded video with: %s, error was ...%s' % ( cmd, cmd_output[-256:]) } ) )
         raise Exception( 'Failed to generate transcoded video: ...%s' % cmd_output[-256:] )
 
     # Generate posters and upload to S3
     for idx, output in enumerate( outputs ):
         log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                'user_uuid' : user_uuid,
                                 'message' : "Uploading video for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, output_files_fs[idx], output['output_file']['s3_bucket'], output['output_file']['s3_key'] ) } ) )
 
         s3.upload_file( output_files_fs[idx], output['output_file']['s3_bucket'], output['output_file']['s3_key'] )
 
         if 'thumbnails' in output:
-            thumbnails = generate_thumbnails( media_uuid, output_files_fs[idx], output['thumbnails'], input_frames )
+            thumbnails = generate_thumbnails( media_uuid, output_files_fs[idx], output['thumbnails'], input_frames, user_uuid )
             output['thumbnails'] = thumbnails
             for idx, thumbnail in enumerate( output['thumbnails'] ):
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
                                         'message' : "Uploading thumbnail for media_uuid %s file %s to S3 %s/%s" % ( media_uuid, thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] ) } ) )
 
                 s3.upload_file( thumbnail['output_file_fs'], thumbnail['output_file']['s3_bucket'], thumbnail['output_file']['s3_key'] )
@@ -228,12 +235,13 @@ def transcode_and_store( media_uuid, input_filename, outputs, exif, try_photos =
         vib.cv.PhotoFinder.PhotoFinder.find_photos( media_uuid, video_file=input_filename, min_images = min_images )
     except Exception as e:
         log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                 'user_uuid' : user_uuid,
                                  'message' : "ERROR getting images: %s" % ( e ) } ) )
         raise
 
     return outputs
 
-def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
+def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames, user_uuid = None ):
     '''Takes in a media_uuid, the path to an input movie file, and an
     array of thumbnail data structures.
 
@@ -248,7 +256,9 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
         video_y = int( exif['height'] )
     except Exception as e:
         message = 'Failed to extract width and height from transcoded video for media_uuid %s, terminating.' % ( media_uuid )
-        log.error( json.dumps( { 'media_uuid' : media_uuid, 'message' : message } ) )
+        log.error( json.dumps( { 'media_uuid' : media_uuid, 
+                                 'user_uuid'  : user_uuid,
+                                 'message' : message } ) )
         raise Exception( message )
 
     # DEBUG - for the time being we support only the first element of
@@ -277,6 +287,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                 thumbnail['size'] = "%sx%s" % ( video_x, video_y )
             else:
                 log.warning( json.dumps( { 'media_uuid' : media_uuid,
+                                           'user_uuid'  : user_uuid,
                                            'message' : "Couldn't determine original video size in in order to make an original thumbnail, using 320x240 for the thumbnail size." } ) )
                 thumbnail_x = 320
                 thumbnail_y = 240
@@ -327,31 +338,37 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
             cmd = '/usr/local/bin/ffmpeg -y -ss %s -i %s %s %s %s' %( time, input_file_fs, ffmpeg_opts, ffmpeg_scale, thumbnail_file_fs )
 
             log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid'  : user_uuid,
                                     'message' : "Running command %s to generate thumbnail for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
 
             ( status, output ) = commands.getstatusoutput( cmd )
             output = output.decode( 'utf-8' )
 
             log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                     'user_uuid'  : user_uuid,
                                      'message' : "Thumbnail command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, output ) } ) )
 
             if status != 0 or not os.path.isfile( thumbnail_file_fs ):
                 log.warning( json.dumps( { 'media_uuid' : media_uuid,
+                                           'user_uuid'  : user_uuid,
                                            'message' : "Failed to generate scaled thumbnail for media_uuid %s, video file %s with command %s" % ( media_uuid, input_file_fs, cmd ) } ) )
 
                 cmd = '/usr/local/bin/ffmpeg -y -ss %s -i %s -vframes 1 -vf scale=%s:%s,crop=%s:%s %s' %( time, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y, thumbnail_file_fs )
 
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid'  : user_uuid,
                                         'message' : "Running safer command %s to generate thumbnail for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
 
                 ( status, output ) = commands.getstatusoutput( cmd )
                 output = output.decode( 'utf-8' )
 
                 log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid'  : user_uuid,
                                          'message' : "Thumbnail command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, output ) } ) )
 
                 if status != 0 or not os.path.isfile( thumbnail_file_fs ):
                     log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                             'user_uuid'  : user_uuid,
                                              'message' : "Failed to generate thumbnail for media_uuid %s, video file %s with command %s, error was ...%s" % ( media_uuid, input_file_fs, cmd, output[-256:] ) } ) )
                     raise Exception( 'Failed to generate thumbnail ...%s' % output[-256:] )
                 else:
@@ -367,6 +384,7 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
                 cmd = '/usr/local/bin/ffmpeg -y -i %s' % ( input_file_fs )
 
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid'  : user_uuid,
                                         'message' : "Running command %s to determine fps for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
 
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
@@ -383,39 +401,49 @@ def generate_thumbnails( media_uuid, input_file_fs, thumbnails, input_frames ):
 
                 cmd = 'cd %s ; /usr/local/bin/ffmpeg -y -i %s %s,fps=%s -f image2 %s-thumb-%%04d.png' % ( config.transcode_dir, input_file_fs, ffmpeg_scale, output_fps, media_uuid )
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid'  : user_uuid,
                                         'message' : "Running command %s to create animated gif thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
                 log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid'  : user_uuid,
                                          'message' : "Animated gif thumbnail generation command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, cmd_output ) } ) )
                 
                 if status != 0 or not len( [ x for x in os.listdir( config.transcode_dir ) if x.startswith( "%s-thumb-" % media_uuid ) ] ):
                     log.warning( json.dumps( { 'media_uuid' : media_uuid,
+                                               'user_uuid'  : user_uuid,
                                                'message' : "Failed to generate scaled intermediate images for animated thumbnail, generating unscaled versions." } ) )
 
                     cmd = 'cd %s ; /usr/local/bin/ffmpeg -y -i %s -vf scale=%s:%s,crop=%s:%s,fps=%s -f image2 %s-thumb-%%04d.png' % ( config.transcode_dir, input_file_fs, thumbnail_x, thumbnail_y, thumbnail_x, thumbnail_y, output_fps, media_uuid )
                     log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                            'user_uuid'  : user_uuid,
                                             'message' : "Running safer command %s to create animated gif thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                     ( status, cmd_output ) = commands.getstatusoutput( cmd )
                     log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                             'user_uuid'  : user_uuid,
                                              'message' : "Animated gif thumbnail generation command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, cmd_output ) } ) )
                 
                     if status != 0 or not len( [ x for x in os.listdir( config.transcode_dir ) if x.startswith( "%s-thumb-" % media_uuid ) ] ):
                         log.error( json.dumps( { 'media_uuid' : media_uuid,
+                                                 'user_uuid'  : user_uuid,
                                                  'message' : "Failed to generate imtermediate images for animated thumbnail for media_uuid %s, video file %s with command %s, error was ...%s" % ( media_uuid, input_file_fs, cmd, cmd_output[-256:] ) } ) )
                         raise Exception( 'Failed to generate animated thumbnail ...%s' % cmd_output[-256:] )
 
                 cmd = 'cd %s ; /usr/bin/convert -delay 60 -loop 0 %s-thumb-*.png %s' % ( config.transcode_dir, media_uuid, thumbnail_file_fs )
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid'  : user_uuid,
                                         'message' : "Running command %s to produce animated gif for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )
                 log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid'  : user_uuid,
                                          'message' : "Animated gif thumbnail composition command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, cmd_output ) } ) )
 
                 cmd = 'cd %s ; rm %s-thumb-*.png' % ( config.transcode_dir, media_uuid )
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid'  : user_uuid,
                                         'message' : "Running command %s to clean up thumbnails for media_uuid %s, video file %s" % ( cmd, media_uuid, input_file_fs ) } ) )
                 ( status, cmd_output ) = commands.getstatusoutput( cmd )          
                 log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                         'user_uuid'  : user_uuid,
                                          'message' : "Animated gif thumbnail removal command output for media_uuid %s, video file %s was: %s" % ( media_uuid, input_file_fs, cmd_output ) } ) )
       
                 thumbnail['output_file_fs'] = thumbnail_file_fs 
