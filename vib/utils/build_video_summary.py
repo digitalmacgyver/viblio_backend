@@ -130,7 +130,6 @@ def download_movie( media_uuid, workdir ):
                             'message'   : 'Downloaded input video to %s' % ( movie_file ) } ) )
     return movie_file
 
-
 def get_moments( media_uuid, images, order, workdir, moment_offsets, random_duration=False, min_duration=None ):
     '''Returns a data structure:
     { summary_duration : 99
@@ -177,8 +176,14 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets, random_dura
 	if random_duration:
 	    start_offset *= random.uniform( 1, 2 )
 	    end_offset *= random.uniform( 1, 2 )
-
+            
+        log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                'message' : "Getting clip from media_uuid: %s from %s to %s" % ( video.Media.uuid, start_offset, end_offset ) } ) )
+        
         if video.Media.uuid not in result['videos']:
+            log.debug( json.dumps( { 'media_uuid' : media_uuid,
+                                     'message' : "First time encountering media_uuid %s, probing..." % ( video.media.uuid ) } ) )
+
             movie_file = download_movie( video.Media.uuid, workdir )
 
 	    result['videos'][video.Media.uuid] = { 'filename' : movie_file, 
@@ -310,6 +315,10 @@ def generate_summary( summary_type,
                       output_x        = 1280,
                       output_y        = 720 ):
 
+    log.info( json.dumps( { 'media_uuid' : summary_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "Starting %s style summary titled: %s, order: %s, options: %s" % ( summary_style, title, order, summary_options ) } ) )
+
     vsum.Window.set_tmpdir( "%s/../vsum_tmp" % workdir )
 
     output_file = "%s/%s.mp4" % ( workdir, summary_uuid )
@@ -324,6 +333,10 @@ def generate_summary( summary_type,
     if audio_desc is None:
         audio_desc = ''
     download_file( audio_filename, config.bucket_name, audio_track.MediaAssets.uri )
+
+    log.info( json.dumps( { 'media_uuid' : summary_uuid,
+                            'user_uuid' : user_uuid,
+                            'message' : "Downloaded audio file %s of %s" % ( audio_filename, audio_desc ) } ) )
 
     # While get_moments will return things with the approrpriate
     # order, we can tell vsum.distribute_clips to randomize clips, if
@@ -474,6 +487,10 @@ def generate_summary( summary_type,
                 if w.duration is None or window_duration < w.duration:
                     w.duration = window_duration
 
+        log.info( json.dumps( { 'media_uuid' : summary_uuid,
+                                'user_uuid' : user_uuid,
+                                'message' : "Clips assembled, beginning to render summary." } ) )
+
         w.render()
 
     else:
@@ -482,6 +499,7 @@ def generate_summary( summary_type,
 
     # Upload video to S3.
     log.info( json.dumps( { 'media_uuid' : summary_uuid, 
+                            'user_uuid' : user_uuid, 
                             'message'    : 'Uploading summary video from %s with uuid %s' % ( output_file, summary_uuid ) } ) )
     upload_file( output_file, config.bucket_name, "%s/%s" % ( summary_uuid, summary_uuid ) )
     
@@ -507,6 +525,7 @@ def generate_summary( summary_type,
     f.close()
 
     log.info( json.dumps( { 'media_uuid' : summary_uuid, 
+                            'user_uuid' : user_uuid, 
                             'message'    : 'Creating database records for album_uuid %s, media_uuid %s' % ( album_uuid, summary_uuid ) } ) )
 
     media = orm.query( Media ).filter( Media.uuid == summary_uuid ).one()
@@ -554,6 +573,7 @@ def generate_summary( summary_type,
 
     # New pipeline callout
     log.info( json.dumps( { 'media_uuid' : summary_uuid, 
+                            'user_uuid' : user_uuid, 
                             'message'    : 'Starting VWF execution.' } ) )
     execution = swf.WorkflowType( 
 	    name = 'VideoProcessing' + config.VPWSuffix, 
@@ -616,8 +636,9 @@ def generate_summary( summary_type,
     # Clean up
     orm.close()
     if workdir[:4] == '/mnt':
-        log.info( json.dumps( { 'media_uuid' : summary_uuid, 
-				'message'    : 'Deleting temporary files at %s' % ( workdir ) } ) )
+        log.debug( json.dumps( { 'media_uuid' : summary_uuid, 
+                                 'user_uuid' : user_uuid, 
+                                 'message'    : 'Deleting temporary files at %s' % ( workdir ) } ) )
         shutil.rmtree( workdir )
     return
 
@@ -966,6 +987,10 @@ def run():
             message = 'Error, empty input for one of user_uuid: %s, images: %s, summary_type: %s, and audio_track: %s' % ( user_uuid, images, summary_type, audio_track )
             log.error( json.dumps( { 'message' : message } ) )
             raise Exception( message )
+        else:
+            log.info( json.dumps( { 'media_uuid' : summary_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : "Beginning summary video: %s for user: %s" % ( summary_uuid, user_uuid ) } ) )
 
         # Mandatory for some summary_types.
         contacts        = options.get( 'contacts[]', [] )
@@ -994,10 +1019,14 @@ def run():
                 try:
                     summary_options = json.loads( summary_options )
                 except Exception as e:
-                    log.error( json.dumps( { 'message' : "Error - summary_options JSON is malformed: %s" % ( e ) } ) )
+                    log.error( json.dumps( { 'media_uuid' : summary_uuid,
+                                             'user_uuid' : user_uuid,
+                                             'message' : "Error - summary_options JSON is malformed: %s" % ( e ) } ) )
                     summary_options = {}
             elif not isinstance( summary_options, dict ):
-                log.error( json.dumps( { 'message' : "Error - summary_options is neither a JSON string or a Python dictionary: %s" % ( e ) } ) )
+                log.error( json.dumps( { 'media_uuid' : summary_uuid,
+                                         'user_uuid' : user_uuid,
+                                         'message' : "Error - summary_options is neither a JSON string or a Python dictionary: %s" % ( e ) } ) )
                 summary_options = {}
 
         # Optional controls for summary metadata.
@@ -1020,7 +1049,9 @@ def run():
             if not os.path.isdir( workdir ):
                 os.makedirs( workdir )
         except Exception as e:
-            log.error( json.dumps( { 'message' : "Error creating workdir %s: %s" % ( workdir, e ) } ) )
+            log.error( json.dumps( { 'media_uuid' : summary_uuid,
+                                     'user_uuid' : user_uuid,
+                                     'message' : "Error creating workdir %s: %s" % ( workdir, e ) } ) )
             raise
 
         # We need to delete the message here or it will reach its
@@ -1029,6 +1060,9 @@ def run():
         # Summary creation is "best effort" in this regard - if we
         # fail we don't try again.
         sqs.delete_message( message )
+        log.info( json.dumps( { 'media_uuid' : summary_uuid,
+                                'user_uuid' : user_uuid,
+                                'message' : "Deleting SQS message - no retry after failure from this point. Message was: %s" % ( options ) } ) )
 
         generate_summary( summary_type,
                           summary_uuid,
@@ -1054,12 +1088,26 @@ def run():
                           output_x        = output_x,
                           output_y        = output_y )
                           
-        log.info( json.dumps( { 'message' : "Completed successfully for summary_uuid: %s" % ( summary_uuid ) } ) )
+        log.info( json.dumps( { 'media_uuid' : summary_uuid,
+                                'user_uuid' : user_uuid,
+                                'message' : "Completed successfully for summary_uuid: %s" % ( summary_uuid ) } ) )
 
         return True
 
     except Exception as e:
-        log.error( json.dumps( { 'message' : "Exception was: %s" % e } ) )
+        error_summary_uuid = None
+        error_user_uuid = None
+        try:
+            error_summary_uuid = summary_uuid
+        except Exception as e1:
+            pass
+        try:
+            error_user_uuid = user_uuid
+        except Exception as e2:
+            pass
+        log.error( json.dumps( { 'media_uuid' : error_summary_uuid,
+                                 'user_uuid' : error_user_uuid,
+                                 'message' : "Exception was: %s" % e } ) )
         raise
     finally:
         if message != None and options != None:
