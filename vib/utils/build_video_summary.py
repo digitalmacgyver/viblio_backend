@@ -182,7 +182,7 @@ def get_moments( media_uuid, images, order, workdir, moment_offsets, random_dura
         
         if video.Media.uuid not in result['videos']:
             log.debug( json.dumps( { 'media_uuid' : media_uuid,
-                                     'message' : "First time encountering media_uuid %s, probing..." % ( video.media.uuid ) } ) )
+                                     'message' : "First time encountering media_uuid %s, probing..." % ( video.Media.uuid ) } ) )
 
             movie_file = download_movie( video.Media.uuid, workdir )
 
