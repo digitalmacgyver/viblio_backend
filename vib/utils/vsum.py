@@ -523,7 +523,9 @@ class Window( object ):
 
         sar_clause = ""
         if self.sample_aspect_ratio is not None:
-            sar_clause = ",setsar=sar=%s" % ( self.sample_aspect_ratio )
+            # FFMPEG has deprecated the W:H notation in favor of W/H...
+            ( sarwidth, sarheight ) = self.sample_aspect_ratio.split( ':' )
+            sar_clause = ",setsar=sar=%s/%s" % ( sarwidth, sarheight )
 
         pix_fmts = set( [ w.pix_fmt for w in all_windows if w.pix_fmt is not None ] )
 
