@@ -234,6 +234,12 @@ class Video( object ):
             if self.sample_aspect_ratio == '0:1':
                 print "WARNING: Nonsense SAR value of 0:1 detected, assuming SAR is 1:1."
                 self.sample_aspect_ratio = '1:1'
+            else:
+                # Deal with weird files with rounding error SARs like 649:639.
+                ( sarwidth, sarheight ) = self.sample_aspect_ratio.split( ':' )
+                if ( sarwidth != sarheight ) and abs( ( float( sarwidth ) / float( sarheight ) ) - 1 ) < 0.1:
+                    print "WARNING: Strange SAR value of %s:%s detected, setting SAR to 1:1." % ( sarwidth, sarheight )
+                    self.sample_aspect_ratio = '1:1'
             self.pix_fmt = info['streams'][0].get( 'pix_fmt', '' )
             Video.videos[filename] = { 'width'    : self.width,
                                        'height'   : self.height,
