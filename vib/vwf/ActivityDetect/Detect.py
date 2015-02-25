@@ -30,7 +30,7 @@ class Detect( VWorker ):
             media_uuid = options['media_uuid']
             user_uuid = options['user_uuid']
 
-            if True and config.VPWSuffix in [ 'Prod', 'Local', 'Staging' ]:
+            if True and config.VPWSuffix in [ 'Prod', 'Staging' ]:
                 # We don't do activity detection in prod.
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'user_uuid' : user_uuid,
@@ -108,6 +108,10 @@ class Detect( VWorker ):
                                     'user_uuid' : user_uuid,
                                     'message' : 'Testing media %s for christmas activity.' % ( media_uuid ) } ) )
             ( is_christmas, confidence ) = oc.activity_present( file_name, working_dir, config.christmas_model_dir )
+
+            log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                    'user_uuid' : user_uuid,
+                                    'message' : 'Value of is_christmas was %s, confidence was %s' % ( is_christmas, confidence ) } ) )
 
             if is_christmas:
                 activities.append( 'christmas' )

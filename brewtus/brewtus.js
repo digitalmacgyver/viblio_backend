@@ -279,7 +279,8 @@
 	info.bytesReceived = 0;
 
 	if ( req.headers["content-type"].match( /multipart/ ) ) {
-	    // F'in IE again!!!
+	    // This entire block handles IE uploads, the next one
+	    // handles non-IE.
 	    var form = new formidable.IncomingForm();
 	    form.onPart = function(part) {
 		part.addListener('data', function( buffer ) {
@@ -341,9 +342,18 @@
 		});
 	    }
 	    form.parse( req, function( err, fields, files ) {
+		// THis is necessary to prevent file descriptor leaks.
+		ws.end();
 	    });
+	    // DEBUG
+	    //ws.on("close", function() {
+	    //winston.info("IE closed the file stream " + fileId);
+	    //});
 	}
 	else {
+	    //
+	    // This entire block handles non-IE uploads.
+
 	    //
 	    // This req.pipe(ws) was finishing before the req.on(end was getting
 	    // the last bytes.  So do the write in req.on(end to keep things in
@@ -408,7 +418,7 @@
 		return ws.end();
 	    });
 	    ws.on("close", function() {
-		// winston.info("closed the file stream " + fileId);
+		//winston.info("NON-IE closed the file stream " + fileId);
 	    });
 	    return ws.on("error", function(e) {
 		return httpStatus(res, 500, "File Error", null, meta);
