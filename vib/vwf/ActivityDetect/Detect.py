@@ -104,6 +104,7 @@ class Detect( VWorker ):
             ####################################################
             # Christmas
             ####################################################
+            '''
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
                                     'message' : 'Testing media %s for christmas activity.' % ( media_uuid ) } ) )
@@ -119,6 +120,7 @@ class Detect( VWorker ):
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'user_uuid' : user_uuid,
                                         'message' : 'Adding activity of christmas to media %s' % ( media_uuid ) } ) )
+            '''
 
             orm = vib.db.orm.get_session()
             orm.commit()
