@@ -139,13 +139,18 @@ class Detect( VWorker ):
                 for album in user_albums:
                     album_names[album.title] = album
                 if activity in album_names:
-                    log.info( json.dumps( { 'media_uuid' : media_uuid,
-                                            'user_uuid' : user_uuid,
-                                            'message' : 'Adding media %s to existing album called %s' % ( media_uuid, activity ) } ) )
-                    album = album_names[activity]
-                    media_album = MediaAlbums( media_id = media.id,
-                                               album_id = album_names[activity].id )
-                    orm.add( media_album )
+                    already_in_album = orm.query( MediaAlbums ).filter( and_( MediaAlbums.media_id == media.id, MediaAlbums.album_id == album_names[activity].id ) )[:]
+                    if len( already_in_album ) == 0:
+                        log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                                'user_uuid' : user_uuid,
+                                                'message' : 'Adding media %s to existing album called %s' % ( media_uuid, activity ) } ) )
+                        media_album = MediaAlbums( media_id = media.id,
+                                                   album_id = album_names[activity].id )
+                        orm.add( media_album )
+                    else:
+                        log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                                'user_uuid' : user_uuid,
+                                                'message' : 'Media %s is already in existing album called %s' % ( media_uuid, activity ) } ) )             
                 else:
                     log.info( json.dumps( { 'media_uuid' : media_uuid,
                                             'user_uuid' : user_uuid,
