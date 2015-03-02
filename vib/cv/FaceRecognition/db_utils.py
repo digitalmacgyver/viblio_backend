@@ -294,8 +294,10 @@ def _get_face_for_contact_id( user_id, contact_id ):
         if result.count() >= 1:
             face = result[0].__dict__.copy()
             orm.commit()
+            log.debug( json.dumps( { 'message'    : 'Face is: %s' % ( face ) } ) )
             return face
         else:
+            log.debug( json.dumps( { 'message'    : 'No face was found.' } ) )
             return None
 
     except Exception as e:

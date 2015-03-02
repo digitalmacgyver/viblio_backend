@@ -509,6 +509,8 @@ def recognize_face( user_id, face_url ):
                     continue
                     
                 recognition_confidence = float( match['score'] )
+                log.debug( json.dumps( { 'user_id'    : user_id,
+                                         'message'    : 'Recognition confidence was: %s' % ( recognition_confidence ) } ) )
                 if contact_id not in reconciled_contacts:
                     helpers._reconcile_db_rekog( user_id, contact_id )
                     reconciled_contacts[contact_id] = True
@@ -521,6 +523,9 @@ def recognize_face( user_id, face_url ):
 
         result = {}
         result['faces'] = sorted( faces, key=lambda x: -x['recognition_confidence'] )[:3]
+
+        log.debug( json.dumps( { 'user_id'    : user_id,
+                                 'message'    : 'Adding recognition feedback.' } ) )
         result['recognize_id'] = recog_db._add_recognition_feedback( user_id, face_url, result['faces'] )
 
         log.debug( json.dumps( { 'user_id'    : user_id,
