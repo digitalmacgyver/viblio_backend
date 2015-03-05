@@ -176,6 +176,9 @@ def add_faces( user_id, contact_id, faces ):
                                  'message'    : 'About to reconcile faces for %s, %s' % ( user_id, contact_id ) } ) )
 
         if not helpers._reconcile_db_rekog( user_id, contact_id ):
+            log.debug( json.dumps( { 'user_id'    : user_id,
+                                     'contact_id' : contact_id,
+                                     'message'    : 'About to train_for_user_contact %s, %s' % ( user_id, contact_id ) } ) )
             result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
             log.debug( json.dumps( { 'user_id'    : user_id,
                                      'contact_id' : contact_id,
