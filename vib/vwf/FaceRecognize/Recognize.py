@@ -14,6 +14,8 @@ from vib.vwf.VWorker import VWorker
 import vib.vwf.FaceRecognize.db_utils as db_utils
 import vib.utils.s3 as s3
 
+from vib.utils.timer import timer
+
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
@@ -153,6 +155,7 @@ class Recognize( VWorker ):
             if self.lock_acquired:
                 self.faces_lock.release()
 
+    @timer
     def _handle_face( self, track_id, track_face, user_uuid, media_uuid ):
         '''For each face, send it to Orbues for detection:
         * If not a face, add it to the DB as a not_face

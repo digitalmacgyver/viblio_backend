@@ -171,6 +171,9 @@ def add_faces( user_id, contact_id, faces ):
                                          'message'    : 'Error while adding face: %s' % ( e ) } ) )
                 error.append( face )
 
+        log.debug( json.dumps( { 'user_id'    : user_id,
+                                 'contact_id' : contact_id,
+                                 'message'    : 'About to reconcile faces for %s, %s' % ( user_id, contact_id ) } ) )
 
         if not helpers._reconcile_db_rekog( user_id, contact_id ):
             result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )

@@ -4,6 +4,8 @@ import logging
 import re
 import requests
 
+from vib.utils.timer import timer
+
 import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
@@ -12,6 +14,7 @@ rekog_api_secret = config.rekog_api_secret
 
 default_namespace = config.rekog_namespace
 
+@timer
 def detect_face( url ):
     '''Calls the ReKognition FaceDetect API and returns a Python data
     structure of the results.
@@ -35,6 +38,7 @@ def detect_face( url ):
     r = requests.post( "http://rekognition.com/func/api/", data )
     return r.json()
 
+@timer
 def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min_confidence=0.9, max_yaw=45, max_pitch=45 ):
     '''Adds face at URL for specified user.  If tag is specified the
     name is added with that tag.
@@ -130,6 +134,7 @@ def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min
     else:
         return None
 
+@timer
 def cluster_for_user( user_id, namespace=None ):
     '''Clusters the user in question and returns the result.  Result
     format is:
@@ -158,6 +163,7 @@ def cluster_for_user( user_id, namespace=None ):
     else:
         raise Exception( result['usage']['status'] )
 
+@timer
 def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, namespace=None, skip_self=False ):
     '''For a given Facebook ID and a list of friends with { id, name }
     elements, execute the crawl faces ReKognition task.
@@ -216,6 +222,7 @@ def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, name
 
     return results
 
+@timer
 def delete_face_for_user( user_id, tag, face_idx=None, namespace=None ):
     '''Deletes either all faces of 'tag', or those which also have
     'face_idx'.
@@ -249,6 +256,7 @@ def delete_face_for_user( user_id, tag, face_idx=None, namespace=None ):
     else:
         raise Exception( result['usage']['status'] )
 
+@timer
 def delete_user( user_id, namespace=None ):
     '''Deletes the entirety of the ReKognition structure for the
     provided user, namespace
@@ -273,6 +281,7 @@ def delete_user( user_id, namespace=None ):
     else:
         raise Exception( result['usage']['status'] )
 
+@timer
 def recognize_for_user( user_id, url, namespace = None ):
     '''Call the ReKognition recognize API for the URL within the
     user_id/namespace.
@@ -323,6 +332,7 @@ def recognize_for_user( user_id, url, namespace = None ):
     else:
         return None
 
+@timer
 def rename_tag_for_user( user_id, old_tag, new_tag, namespace=None ):
     '''Renames all occurrences of old_tag to new_tag for the user.
     Returns the result of the API call in JSON format.
@@ -348,7 +358,7 @@ def rename_tag_for_user( user_id, old_tag, new_tag, namespace=None ):
     else:
         raise Exception( result['usage']['status'] )
 
-
+@timer
 def train_for_user( user_id, namespace = None ):
     '''Call the ReKognition training API for all faces for the
     user.
@@ -375,6 +385,7 @@ def train_for_user( user_id, namespace = None ):
     else:
         raise Exception( result['usage']['status'] )
 
+@timer
 def train_for_user_contact( user_id, contact_id, namespace = None ):
     '''Call the ReKognition training API for all faces for the
     user, contact.
@@ -397,12 +408,17 @@ def train_for_user_contact( user_id, contact_id, namespace = None ):
 
     r = requests.post( "http://rekognition.com/func/api/", data )
     result = r.json()
-    if result['usage']['status'] == 'Succeed.':
-        return result
-    else:
-        raise Exception( result['usage']['status'] )
+    
+    # We've been having some weird bugs - do a sanity check.
+    try:
+        if result['usage']['status'] == 'Succeed.':
+            return result
+        else:
+            raise Exception( result['usage']['status'] )
+    except Exception as e:
+        raise Exception( "Unexpected return value from ReKognition in call to train user for contact, response was: %s" % ( result ) )
 
-
+@timer
 def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_default=False, namespace = None ):
     '''Calls the ReKognition Visualize function and returns an array
     of { tag, url, index : ['1', '2', ...] } elements for each tagged
@@ -449,6 +465,7 @@ def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_d
     else:
         raise Exception( result['usage']['status'] )
 
+@timer
 def detect_for_file( path ):
     '''Calls the ReKognition FaceDetect API and returns a Python data
     structure of the results.

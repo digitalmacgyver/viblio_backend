@@ -10,10 +10,13 @@ from sqlalchemy import and_
 import vib.db.orm
 from vib.db.models import *
 
+from vib.utils.timer import timer
+
 # The caller of this script should define a logger that is
 # vib.cv.FaceRecognize so this logger inherits those properties.
 log = logging.getLogger( __name__ )
 
+@timer
 def _add_face( user_id, contact_id, face ):
     '''Inserts a face.'''
     try:
@@ -43,6 +46,7 @@ def _add_face( user_id, contact_id, face ):
                                  'message'    : 'Error adding faces %s: %s' % ( face, e ) } ) )
         raise        
 
+@timer
 def _add_recognition_feedback( user_id, face_url, faces ):
     '''Inserts a tracking row for feedback collection'''
     try:
@@ -89,7 +93,7 @@ def _add_recognition_feedback( user_id, face_url, faces ):
                                  'message'    : 'Error adding recognition feedback row: %s' % ( e ) } ) )
         raise        
 
-
+@timer
 def _check_face_exists( user_id, contact_id, face_id ):
     '''Returns true if the given user_id, contact_id, face_id exist in the database.'''
     try:
@@ -118,6 +122,7 @@ def _check_face_exists( user_id, contact_id, face_id ):
                                  'message'    : 'Error checking whether user, contact, face_id exists %s, %s, %s: %s' % ( user_id, contact_id, face_id, e ) } ) )
         raise        
 
+@timer
 def _delete_all_user_faces( user_id ):
     '''Given an user_id, deletes all faces pertaining to that user from the database.
 
@@ -143,6 +148,7 @@ def _delete_all_user_faces( user_id ):
             
         raise
 
+@timer
 def _delete_contact_faces_for_user( user_id, contact_id ):
     '''Deletes all faces associated with this contact from our
     database.  The caller is presumed to have removed any other
@@ -168,6 +174,7 @@ def _delete_contact_faces_for_user( user_id, contact_id ):
                                  'message'    : 'Error deleting all faces for user %s, contact %s: %s' % ( user_id, contact_id, e ) } ) )
         raise
 
+@timer
 def _delete_faces( faces ):
     '''Given an array of faces, deletes them from the database.
 
@@ -198,6 +205,7 @@ def _delete_faces( faces ):
 
     return
 
+@timer
 def _get_all_faces_for_user( user_id ):
     '''Returns an array of dictionary objects.  The dictionaries have
     keys with column names from the table, and the relevant values.
@@ -225,6 +233,7 @@ def _get_all_faces_for_user( user_id ):
                                  'message'    : 'Error getting list of user faces: %s' % ( e ) } ) )
         raise
 
+@timer
 def _get_contact_faces_for_user( user_id, contact_id ):
     '''Returns an array of dictionary objects.  The dictionaries have
     keys with column names from the table, and the relevant values.
@@ -254,6 +263,7 @@ def _get_contact_faces_for_user( user_id, contact_id ):
                                  'message'    : 'Error getting list of user/contact faces: %s' % ( e ) } ) )
         raise
 
+@timer
 def _get_face_by_id( face_id ):
     '''Returns either a dictionary like object representing the row
     for in the recognition database for this face, or None if the face
@@ -277,6 +287,7 @@ def _get_face_by_id( face_id ):
         log.error( json.dumps( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } ) )
         raise
 
+@timer
 def _get_face_for_contact_id( user_id, contact_id ):
     '''Returns either a dictionary like object representing the row
     for in the recognition database for a face associated with this
@@ -304,6 +315,7 @@ def _get_face_for_contact_id( user_id, contact_id ):
         log.error( json.dumps( { 'message'    : 'Error getting face data, error was: %s' % ( e ) } ) )
         raise
 
+@timer
 def _get_recognition_stats( user_id=None ):
     '''If user_id is not provided, or is None, return all recognition
     stats.  Otherwise return all stats for that user.'''
@@ -331,6 +343,7 @@ def _get_recognition_stats( user_id=None ):
         log.error( json.dumps( { 'message' : 'Error getting recognition stats: %s' % ( e ) } ) )
         raise        
 
+@timer
 def _update_recognition_result( recognize_id, result ):
     '''Sets the feedback_received, recognized, and feedback_result
     fields based on result.
