@@ -163,6 +163,10 @@ class Recognize( VWorker ):
         * Else attempt recognition:
         *  If recognition > 0.85 add to DB as machine_recognized
         *  else add as new_face
+
+        NOTE: The "detection_confidence" here is not related to the
+        media_asset_features.detection_confidence field, which comes
+        from FaceDetection's totalConfidence attribute.
         '''
         try:
             url = "%s%s" % ( config.ImageServer, track_face['s3_key'] )
@@ -183,14 +187,18 @@ class Recognize( VWorker ):
                 result = 'not_face'
             elif len( detection['face_detection'] ) < 1:
                 result = 'not_face'
+            elif len( detection['face_detection'] ) > 1:
+                result = 'two_face'
             else:
                 recog_face = detection['face_detection'][0]
-                detection_confidence = recog_face['confidence']
+                # NOTE: This is not media_asset_features.detection_confidence.
+                detection_confidence = float( recog_face['confidence'] )
                 
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'user_uuid' : user_uuid,
                                         'message' : "Detection confidence was: %f" % ( detection_confidence ) } ) )
                 
+                # NOTE: This is not media_asset_features.detection_confidence.
                 if detection_confidence < self.detection_threshold:
                     result = 'bad_face'
                 else:
@@ -219,6 +227,10 @@ class Recognize( VWorker ):
 
             if result in [ 'bad_face', 'two_face', 'not_face' ]:
                 # Update DB record with appropriate data.
+                log.info( json.dumps( { 'media_uuid' : media_uuid,
+                                        'user_uuid' : user_uuid,
+                                        'message' : "Rejected face at url: %s with status: %s" % ( url, result ) } ) )
+
                 db_utils.update_face( user_uuid, media_uuid, track_id, track_face, result, None, None )
             elif result == 'machine_recognized':
                 # Add to DB with contact ID of ['contact_id']
