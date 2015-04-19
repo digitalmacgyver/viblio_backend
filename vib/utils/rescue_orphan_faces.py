@@ -75,6 +75,9 @@ def update_orphan_faces( hours=24*3 ):
                     } ) )
 
         for orphan in orphan_faces:
+            if orphan.recognition_result is None:
+                orphan.recognition_result = 'new_face'
+
             contact = Contacts(
                 uuid        = str( uuid.uuid4() ),
                 user_id     = orphan.user_id,
