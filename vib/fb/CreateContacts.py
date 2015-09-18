@@ -23,7 +23,6 @@ import vib.config.AppConfig
 config = vib.config.AppConfig.AppConfig( 'viblio' ).config()
 
 import vib.rekog.utils as rekog
-import vib.cv.FaceRecognition.api as rec
 
 import vib.db.orm
 from vib.db.models import *
