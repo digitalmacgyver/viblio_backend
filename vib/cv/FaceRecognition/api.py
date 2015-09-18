@@ -128,7 +128,8 @@ def add_faces( user_id, contact_id, faces ):
                     
                     unchanged.append( face )
                 else:
-                    idx = rekog.add_face_for_user( user_id, face['face_url'], contact_id, config.recog_v2_namespace, strict=True )
+
+                    #idx = rekog.add_face_for_user( user_id, face['face_url'], contact_id, config.recog_v2_namespace, strict=True )
                     #try:
                     #    idx = rekog.add_face_for_user( user_id, face['face_url'], contact_id, config.recog_v2_namespace, strict=True )
                     #except Exception as e:
@@ -137,14 +138,14 @@ def add_faces( user_id, contact_id, faces ):
                     #                             'message'    : "ADD_FACE_FOR_USER FAILED: %s" % ( e ) } ) )
                     #    sys.exit(0)
                 
-                    if idx is not None:
-                        log.debug( json.dumps( { 'user_id'    : user_id,
-                                                 'contact_id' : contact_id,
-                                                 'message'    : "Face added to recognition with idx: %s" % ( idx ) } ) )
+                    #if idx is not None:
+                    #    log.debug( json.dumps( { 'user_id'    : user_id,
+                    #                             'contact_id' : contact_id,
+                    #                             'message'    : "Face added to recognition with idx: %s" % ( idx ) } ) )
 
-                        face['idx'] = idx
+                    #    face['idx'] = idx
                         
-                        recog_db._add_face( user_id, contact_id, face )
+                    recog_db._add_face( user_id, contact_id, face )
 
                         #try:
                         #    recog_db._add_face( user_id, contact_id, face )
@@ -154,16 +155,16 @@ def add_faces( user_id, contact_id, faces ):
                         #                             'message'    : "_ADD_FACE FAILED: %s" % ( e ) } ) )
                         #    sys.exit(0)
 
-                        log.debug( json.dumps( { 'user_id'    : user_id,
-                                                 'contact_id' : contact_id,
-                                                 'message'    : "Added face to database." } ) )
+                    log.debug( json.dumps( { 'user_id'    : user_id,
+                                             'contact_id' : contact_id,
+                                             'message'    : "Added face to database." } ) )
 
-                        added.append( face )
-                    else:
-                        log.debug( json.dumps( { 'user_id'    : user_id,
-                                                 'contact_id' : contact_id,
-                                                 'message'    : "No face found by Recognition, skipping." } ) )
-                        unchanged.append( face )
+                    added.append( face )
+                    #else:
+                    #    log.debug( json.dumps( { 'user_id'    : user_id,
+                    #                             'contact_id' : contact_id,
+                    #                             'message'    : "No face found by Recognition, skipping." } ) )
+                    #    unchanged.append( face )
 
             except Exception as e:
                 log.error( json.dumps( { 'user_id'    : user_id,
@@ -171,19 +172,19 @@ def add_faces( user_id, contact_id, faces ):
                                          'message'    : 'Error while adding face: %s' % ( e ) } ) )
                 error.append( face )
 
-        log.debug( json.dumps( { 'user_id'    : user_id,
-                                 'contact_id' : contact_id,
-                                 'message'    : 'About to reconcile faces for %s, %s' % ( user_id, contact_id ) } ) )
+        #log.debug( json.dumps( { 'user_id'    : user_id,
+        #                         'contact_id' : contact_id,
+        #                         'message'    : 'About to reconcile faces for %s, %s' % ( user_id, contact_id ) } ) )
 
-        if not helpers._reconcile_db_rekog( user_id, contact_id ):
-            log.debug( json.dumps( { 'user_id'    : user_id,
-                                     'contact_id' : contact_id,
-                                     'message'    : 'About to train_for_user_contact %s, %s' % ( user_id, contact_id ) } ) )
-            result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
-            log.debug( json.dumps( { 'user_id'    : user_id,
-                                     'contact_id' : contact_id,
-                                     'rekog_result' : result,
-                                     'message'    : 'Trained Recognition for user_id %s' % ( user_id ) } ) )
+        #if not helpers._reconcile_db_rekog( user_id, contact_id ):
+        #    log.debug( json.dumps( { 'user_id'    : user_id,
+        #                             'contact_id' : contact_id,
+        #                             'message'    : 'About to train_for_user_contact %s, %s' % ( user_id, contact_id ) } ) )
+        #    result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
+        #    log.debug( json.dumps( { 'user_id'    : user_id,
+        #                             'contact_id' : contact_id,
+        #                             'rekog_result' : result,
+        #                             'message'    : 'Trained Recognition for user_id %s' % ( user_id ) } ) )
 
         return { 
             'added'     : added,
@@ -228,24 +229,24 @@ def delete_contact( user_id, contact_id ):
 
         # Try to delete faces for this contact in ReKognition,
         # regardless of whether they showed up in the DB.
-        result = rekog.delete_face_for_user( user_id, str( contact_id ), None, config.recog_v2_namespace )
-        log.debug( json.dumps( { 'user_id'    : user_id,
-                                 'contact_id' : contact_id,
-                                 'rekog_result' : result,
-                                 'message'    : 'Deleted faces for user %s, contact_id %s' % ( user_id, contact_id ) } ) )
+        #result = rekog.delete_face_for_user( user_id, str( contact_id ), None, config.recog_v2_namespace )
+        #log.debug( json.dumps( { 'user_id'    : user_id,
+        #                         'contact_id' : contact_id,
+        #                         'rekog_result' : result,
+        #                         'message'    : 'Deleted faces for user %s, contact_id %s' % ( user_id, contact_id ) } ) )
 
         if len( faces ):
             # This means there were DB faces to delete, retrain
             # ReKognition.  Note that we don't unconditionally retrain
             # because that is an expensive API call.
             recog_db._delete_contact_faces_for_user( user_id, contact_id )
-            result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
-            log.debug( json.dumps( { 'user_id'      : user_id,
-                                     'contact_id'   : contact_id,
-                                     'rekog_result' : result,
-                                     'message'      : 'Trained ReKognition user %s' % ( user_id ) } ) )
+            #result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
+            #log.debug( json.dumps( { 'user_id'      : user_id,
+            #                         'contact_id'   : contact_id,
+            #                         'rekog_result' : result,
+            #                         'message'      : 'Trained ReKognition user %s' % ( user_id ) } ) )
 
-        helpers._reconcile_db_rekog( user_id, contact_id )
+        #helpers._reconcile_db_rekog( user_id, contact_id )
 
         return { 
             'added'     : [],
@@ -305,19 +306,19 @@ def delete_faces( user_id, contact_id, faces ):
 
             delete_indices += ';%s' % ( face['idx'] )
 
-        if len( delete_indices ):
-            delete_indices = delete_indices[1:]
-            try:
-                result = rekog.delete_face_for_user( user_id, str( contact_id ), delete_indices, config.recog_v2_namespace )
-                log.debug( json.dumps( { 'user_id'    : user_id,
-                                         'contact_id' : contact_id,
-                                         'rekog_result' : result,
-                                         'message'    : 'Deleted faces %s for user %s, contact_id %s' % ( delete_indices, user_id, contact_id ) } ) )
-            except Exception as e:
-                log.error( json.dumps( { 'user_id'    : user_id,
-                                         'contact_id' : contact_id,
-                                         'message'    : 'Error deleting face for contact %s for user %s, error was: %s' % ( contact_id, user_id, e ) } ) )
-                raise
+        #if len( delete_indices ):
+            #delete_indices = delete_indices[1:]
+            #try:
+            #    result = rekog.delete_face_for_user( user_id, str( contact_id ), delete_indices, config.recog_v2_namespace )
+            #    log.debug( json.dumps( { 'user_id'    : user_id,
+            #                             'contact_id' : contact_id,
+            #                             'rekog_result' : result,
+            #                             'message'    : 'Deleted faces %s for user %s, contact_id %s' % ( delete_indices, user_id, contact_id ) } ) )
+            #except Exception as e:
+            #    log.error( json.dumps( { 'user_id'    : user_id,
+            #                             'contact_id' : contact_id,
+            #                             'message'    : 'Error deleting face for contact %s for user %s, error was: %s' % ( contact_id, user_id, e ) } ) )
+            #    raise
 
         # Remove the deleted faces from our tracking database.
         recog_db._delete_faces( faces )
@@ -328,12 +329,12 @@ def delete_faces( user_id, contact_id, faces ):
         #
         # If _reconcile returns true it means it did a training call
         # so we don't need to explicitly train ourselves.
-        if not helpers._reconcile_db_rekog( user_id, contact_id ):
-            result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
-            log.debug( json.dumps( { 'user_id'    : user_id,
-                                     'contact_id' : contact_id,
-                                     'rekog_result' : result,
-                                     'message'    : 'Trained Recognition for user_id %s' % ( user_id ) } ) )
+        #if not helpers._reconcile_db_rekog( user_id, contact_id ):
+        #    result = rekog.train_for_user_contact( user_id, contact_id, config.recog_v2_namespace )
+        #    log.debug( json.dumps( { 'user_id'    : user_id,
+        #                             'contact_id' : contact_id,
+        #                             'rekog_result' : result,
+        #                             'message'    : 'Trained Recognition for user_id %s' % ( user_id ) } ) )
 
         return { 
             'added'     : [],
@@ -376,15 +377,15 @@ def delete_user( user_id ):
 
         # Delete the user from ReKognition
         result = None
-        try:
-            result = rekog.delete_user( user_id, config.recog_v2_namespace )
-        except Exception as e:
-            log.warning( json.dumps( { 'user_id'    : user_id,
-                                       'message' : "WARNING: Exception thrown deleting face from ReKognition - most likely this face does not exist in that system. Exception was: %s" % ( e ) } ) )
+        #try:
+        #    result = rekog.delete_user( user_id, config.recog_v2_namespace )
+        #except Exception as e:
+        #    log.warning( json.dumps( { 'user_id'    : user_id,
+        #                               'message' : "WARNING: Exception thrown deleting face from ReKognition - most likely this face does not exist in that system. Exception was: %s" % ( e ) } ) )
             
-        log.debug( json.dumps( { 'user_id'    : user_id,
-                                 'rekog_result' : result,
-                                 'message'    : 'Deleted all recognition data for user_id %s' % ( user_id ) } ) )
+        #log.debug( json.dumps( { 'user_id'    : user_id,
+        #                         'rekog_result' : result,
+        #                         'message'    : 'Deleted all recognition data for user_id %s' % ( user_id ) } ) )
 
         # Delete faces from database
         recog_db._delete_all_user_faces( user_id )
@@ -428,7 +429,7 @@ def get_faces( user_id, contact_id = None ):
         lock.acquire()
         lock_acquired = True
 
-        helpers._reconcile_db_rekog( user_id, contact_id )
+        #helpers._reconcile_db_rekog( user_id, contact_id )
         
         if contact_id is not None:
             log.debug( json.dumps( { 'user_id'    : user_id,
@@ -467,6 +468,9 @@ def recognize_face( user_id, face_url ):
     the faces associated with that contact_id.  The match confidence
     refers to the confidence the recognized face is that contact_id.
     '''
+
+    # Rekognition is no more
+    return { 'faces' : [] }
     
     lock_acquired = False
     lock = None

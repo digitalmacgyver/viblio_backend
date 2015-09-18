@@ -29,6 +29,10 @@ def detect_face( url ):
     key.  If at most 1 face was expected, the face with highest
     confidence is probably the one you were searching for.
     '''
+
+    # Rekognition is no more...
+    return {}
+
     data =  {
         "api_key"    : rekog_api_key, 
         "api_secret" : rekog_api_secret,
@@ -52,6 +56,9 @@ def add_face_for_user( user_id, url, tag=None, namespace=None, strict=False, min
     * Recognition confidence score is less than confidence_threshold
     * Absolute value of yaw or pitch is more than max_yaw or max_pitch
     '''
+
+    # Rekognition is no more.
+    return None
 
     if namespace == None:
         namespace = default_namespace
@@ -145,6 +152,9 @@ def cluster_for_user( user_id, namespace=None ):
     Raises an exception if the API call does not succeed.
     '''
 
+    # Rekognition is no more.
+    return None
+
     if namespace == None:
         namespace = default_namespace
         
@@ -171,6 +181,9 @@ def crawl_faces_for_user( user_id, fb_access_token, fb_user_id, fb_friends, name
     Returns a list of the result(s) of the request(s) made in JSON
     format.  Any API failures are included in the results.
     '''
+
+    # Rekognition is no more.
+    return []
 
     if namespace == None:
         namespace = default_namespace
@@ -234,6 +247,9 @@ def delete_face_for_user( user_id, tag, face_idx=None, namespace=None ):
 
     Raises an exception if the API call does not succeed.'''
 
+    # ReKognition is no more.
+    return None
+
     if namespace == None:
         namespace = default_namespace
         
@@ -262,6 +278,9 @@ def delete_user( user_id, namespace=None ):
     provided user, namespace
 
     Raises an exception if the API call does not succeed.'''
+
+    # Rekognition is no more.
+    return None
 
     if namespace == None:
         namespace = default_namespace
@@ -295,6 +314,9 @@ def recognize_for_user( user_id, url, namespace = None ):
     recognition confidence of this format:
     [ { 'tag' : 'matched_image_tag', 'score' : '0.03' }, ... ]
     '''
+
+    # ReKognition is no more.
+    return None
 
     if namespace == None:
         namespace = default_namespace
@@ -338,6 +360,10 @@ def rename_tag_for_user( user_id, old_tag, new_tag, namespace=None ):
     Returns the result of the API call in JSON format.
 
     Raises an exception if the API call does not succeed.'''
+
+    # ReKognition is no more.
+    return None
+
     if namespace == None:
         namespace = default_namespace
         
@@ -367,6 +393,9 @@ def train_for_user( user_id, namespace = None ):
 
     Raises an exception if the API call does not succeed.'''
 
+    # ReKognition is no more.
+    return None
+
     if namespace == None:
         namespace = default_namespace
 
@@ -393,6 +422,9 @@ def train_for_user_contact( user_id, contact_id, namespace = None ):
     Returns the request result in JSON format.
 
     Raises an exception if the API call does not succeed.'''
+
+    # Rekognition is no more.
+    return None
 
     if namespace == None:
         namespace = default_namespace
@@ -437,6 +469,9 @@ def visualize_for_user( user_id, num_img_return_pertag=1, no_image=False, show_d
 
     Raises an exception if the API call does not succeed.'''
 
+    # Rekognition is no more.
+    return []
+
     if namespace == None:
         namespace = default_namespace
 
@@ -480,6 +515,10 @@ def detect_for_file( path ):
     key.  If at most 1 face was expected, the face with highest
     confidence is probably the one you were searching for.
     '''
+
+    # Rekognition is no more.
+    return {}
+
     f = open( path )
     image_data = f.read()
     f.close()

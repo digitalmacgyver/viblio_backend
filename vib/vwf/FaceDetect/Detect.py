@@ -72,10 +72,10 @@ class Detect( VWorker ):
         try:
             cmd = 'LD_LIBRARY_PATH=/deploy/vatools/lib /deploy/vatools/bin/viblio_video_analyzer'
             # Neurotechnology face detection
-            #opts = ' -f %s --analyzers FaceAnalysis --face_thumbnail_path %s  --filename_prefix %s  --discarded_tracker_frequency 400 --Thumbnail_generation_frequency 2000 --maximum_concurrent_trackers 10 ' % ( file_name, working_dir, media_uuid )
+            opts = ' -f %s --analyzers FaceAnalysis --face_thumbnail_path %s  --filename_prefix %s  --discarded_tracker_frequency 400 --Thumbnail_generation_frequency 2000 --maximum_concurrent_trackers 10 ' % ( file_name, working_dir, media_uuid )
 
             # Orbeus face detection
-            opts = ' -f %s --face_thumbnail_path %s --filename_prefix %s --analyzers FaceAnalysis --discarded_tracker_frequency 400 --Thumbnail_generation_frequency 2000 --maximum_concurrent_trackers 10 --face_detector orbeus --orbeus_api_key zdN9xO1srMEFoEsq --orbeus_secret_key bvi5Li9bcQPE3W5S --orbeus_namespace fd_test_2 --orbeus_user_id test ' % ( file_name, working_dir, media_uuid )
+            #opts = ' -f %s --face_thumbnail_path %s --filename_prefix %s --analyzers FaceAnalysis --discarded_tracker_frequency 400 --Thumbnail_generation_frequency 2000 --maximum_concurrent_trackers 10 --face_detector orbeus --orbeus_api_key zdN9xO1srMEFoEsq --orbeus_secret_key bvi5Li9bcQPE3W5S --orbeus_namespace fd_test_2 --orbeus_user_id test ' % ( file_name, working_dir, media_uuid )
             ( status, output ) = commands.getstatusoutput( cmd + opts )
             if status == 0 and ( output.find( "failed (result = -200)" ) == -1 ):
                 log.info( json.dumps( {  'media_uuid' : media_uuid,
@@ -131,7 +131,8 @@ class Detect( VWorker ):
                 # track.
                 best_face_score = -1
                 best_face = track['faces'][0]
-                if len( track['faces'] ) > 1:
+                # Recognition is no more.
+                if False and len( track['faces'] ) > 1:
                     for face in track['faces']:
                         try:
                             face_file_name = config.faces_dir + face['s3_key']

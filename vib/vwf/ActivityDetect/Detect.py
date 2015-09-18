@@ -30,8 +30,8 @@ class Detect( VWorker ):
             media_uuid = options['media_uuid']
             user_uuid = options['user_uuid']
 
-            if True and config.VPWSuffix in [ 'Prod' ]:
-                # We don't do activity detection in prod.
+            if True and config.VPWSuffix in [ 'Prod', 'Staging', 'Local' ]:
+                # We don't do activity detection anywhere right now.
                 log.info( json.dumps( { 'media_uuid' : media_uuid,
                                         'user_uuid' : user_uuid,
                                         'message' : 'Skipping activity detection in %s environment.' % ( config.VPWSuffix ) } ) )

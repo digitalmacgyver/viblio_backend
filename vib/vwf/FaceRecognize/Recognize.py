@@ -82,6 +82,9 @@ class Recognize( VWorker ):
                 
                 return { 'media_uuid' : media_uuid, 'user_uuid' : user_uuid }
 
+            # Face recognition now just marks everything as a new face for the time being.
+            '''
+
             # Ensure we're the only one working on this particular
             # user.  This allows us to correctly spot and track a
             # person who is present in 2 videos that are uploaded
@@ -120,6 +123,7 @@ class Recognize( VWorker ):
                                         'user_uuid' : user_uuid,
                                         'message' : message } ) )
                 raise Exception( message )
+            '''
 
             # Tracks data structure is like:
             # { "tracks" : [ { 
@@ -151,9 +155,10 @@ class Recognize( VWorker ):
                                      'message' : "Exception was: %s" % ( e ) } ) )
             raise
         finally:
+            pass
             # On the way out let go of our lock if we've got it.
-            if self.lock_acquired:
-                self.faces_lock.release()
+            #if self.lock_acquired:
+            #    self.faces_lock.release()
 
     @timer
     def _handle_face( self, track_id, track_face, user_uuid, media_uuid ):
@@ -169,20 +174,24 @@ class Recognize( VWorker ):
         from FaceDetection's totalConfidence attribute.
         '''
         try:
+            # Just mark everything as a new face for now.
             url = "%s%s" % ( config.ImageServer, track_face['s3_key'] )
-            detection = vib.rekog.utils.detect_face( url )
+            #detection = vib.rekog.utils.detect_face( url )
 
             log.info( json.dumps( { 'media_uuid' : media_uuid,
                                     'user_uuid' : user_uuid,
                                     'message' : "Processing face at: %s" % ( url ) } ) )
 
-            result = 'not_face'
-
+            # Rekognition is no more
+            #result = 'not_face'
+            result = 'new_face'
             user_id = db_utils.get_user_id( user_uuid )
 
             detection_confidence = None
-            recognition_confidence = None
+            recognition_confidence = track_face.get( 'totalConfidence', 0.5 )
 
+            # Rekognition is no more.
+            '''
             if 'face_detection' not in detection:
                 result = 'not_face'
             elif len( detection['face_detection'] ) < 1:
@@ -264,7 +273,8 @@ class Recognize( VWorker ):
                                                'message' : "Matched non-existant contact: %s - removing that contact from Recognition." % ( matches['faces'][0]['contact_id'] ) } ) )
                     rec.delete_contact( user_id, matches['faces'][0]['contact_id'] )
                     result = 'new_face'
-                                        
+            '''
+
             if result == 'new_face':
                 # Add to DB as new face
                 # Add to recog with new contact_id
