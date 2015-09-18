@@ -22,7 +22,8 @@ PYPKGS=\
 PIP_PYPKGS=\
 	qtfaststart \
 	config \
-	python-magic
+	python-magic \
+	mandrill
 
 install_deps:
 	/usr/bin/apt-get -y install libopenjpeg-dev libopenjpeg2
