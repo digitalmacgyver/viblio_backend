@@ -99,11 +99,12 @@ def download_user( user_uuid, outdir='/wintmp/vibout/test/', verbose=False ):
                     
                 if use_created_date:
                     outname = created_date.strftime( "%Y-%m-%d_%H-%M-%S" )
-                    if outname in seen_outnames:
-                        seen_outnames[outname] += 1
-                        outname += "_%d" % ( seen_outnames[outname] )
-                    else:
-                        seen_outnames[outname] = 1
+
+                if outname in seen_outnames:
+                    seen_outnames[outname] += 1
+                    outname += "_%d" % ( seen_outnames[outname] )
+                else:
+                    seen_outnames[outname] = 1
 
                 old_media_id = m.id
                 assets = orm.query( MediaAssets ).filter( MediaAssets.media_id == m.id )[:]
