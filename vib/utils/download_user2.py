@@ -66,6 +66,23 @@ def download_user( user_uuid, outdir='/wintmp/vibout/test/', verbose=False ):
 
         media_files = orm.query( Media ).filter( and_( Media.user_id == old_user_id, Media.media_type == 'original', Media.is_album == False ) )[:]
 
+        albums = orm.query( Media ).filter( and_( Media.user_id == old_user_id, Media.media_type == 'original', Media.is_album == True ) )[:]
+        album_title_map = {}
+        for a in albums:
+            album_title_map[a.id] = a.title
+
+        media_albums = orm.query( MediaAlbums )[:]
+        media_albums_map = {}
+        for ma in media_albums:
+            if ma.media_id in media_albums_map:
+                media_albums_map[ma.media_id].append( ma.album_id )
+            else:
+                media_albums_map[ma.media_id] = [ ma.album_id ]
+
+        #import pdb
+        #pdb.set_trace()
+
+        
         seen_outnames = {}
 
         # Download Media
@@ -126,54 +143,72 @@ def download_user( user_uuid, outdir='/wintmp/vibout/test/', verbose=False ):
 
                     seen_imagenames = {}
 
-                    for asset in assets:
-                        try:
-                            if asset.asset_type not in [ 'image', 'main', 'original', 'poster', 'poster_animated', 'poster_original', 'thumbnail', 'thumbnail_animated' ]:
-                                continue
+                    album_list = media_albums_map.get( m.id, [ 'Uncategorized' ] )
 
-                            if asset.uri is None:
-                                print "Warning, null old_uri for asset: %s" % ( asset.uuid )
-                                continue
+                    for album_id in album_list:
+                        album_title = album_title_map.get( album_id, 'Uncategorized' )
+
+                        for asset in assets:
+                            try:
+                                #if asset.asset_type not in [ 'image', 'main', 'original', 'poster', 'poster_animated', 'poster_original', 'thumbnail', 'thumbnail_animated' ]:
+                                if asset.asset_type not in [ 'original' ]:
+                                    continue
+
+                                if asset.uri is None:
+                                    print "Warning, null old_uri for asset: %s" % ( asset.uuid )
+                                    continue
                                 
-                            if verbose:
-                                print "\tWorking on asset:", asset.asset_type, asset.id
+                                if verbose:
+                                    print "\tWorking on asset:", asset.asset_type, asset.id
 
-                            base_dir = outdir + "/" + outname + "/"
-                            image_dir = outdir + "/" + outname + "/photos/"
 
-                            if not os.path.exists( base_dir ):
-                                os.makedirs( base_dir )
-                            if not os.path.exists( image_dir ):
-                                os.makedirs( image_dir )
+                                tmp_outalbum = ''
+                                for ch in album_title:
+                                    if ch in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ ':
+                                        tmp_outalbum += ch
+                                    else:
+                                        tmp_outalbum += '_'
+
+                                album_title = tmp_outalbum
+                                album_title.strip()
+
+                                base_dir = outdir + "/" + album_title + '/'
+                                #image_dir = outdir + "/" + outname + "/photos/"
+
+                                if not os.path.exists( base_dir ):
+                                    os.makedirs( base_dir )
+                                #if not os.path.exists( image_dir ):
+                                #    os.makedirs( image_dir )
                                 
-                            download_name = None
+                                download_name = None
 
-                            if asset.asset_type == 'main':
-                                download_name = base_dir + outname + "_Viblio.mp4"
-                            elif asset.asset_type == 'original':
-                                download_name = base_dir + outname + outext
-                            elif asset.asset_type == 'image':
-                                download_name = str( int( asset.timecode ) )
-                                if download_name in seen_imagenames:
-                                    seen_imagenames[download_name] += 1
-                                    download_name += "_%d" % ( seen_imagenames[download_name] )
+                                if asset.asset_type == 'main':
+                                    download_name = base_dir + outname + "_Viblio.mp4"
+                                elif asset.asset_type == 'original':
+                                    download_name = base_dir + outname + outext
+                                elif asset.asset_type == 'image':
+                                    download_name = str( int( asset.timecode ) )
+                                    if download_name in seen_imagenames:
+                                        seen_imagenames[download_name] += 1
+                                        download_name += "_%d" % ( seen_imagenames[download_name] )
+                                    else:
+                                        seen_imagenames[download_name] = 1
+                                    download_name += os.path.splitext( asset.uri )[-1]
+                                    download_name = image_dir + download_name
                                 else:
-                                    seen_imagenames[download_name] = 1
-                                download_name += os.path.splitext( asset.uri )[-1]
-                                download_name = image_dir + download_name
-                            else:
-                                download_name = image_dir + asset.asset_type + os.path.splitext( asset.uri )[-1]
+                                    download_name = image_dir + asset.asset_type + os.path.splitext( asset.uri )[-1]
 
-                            if not os.path.exists( download_name ):
-                                s3.download_file( download_name, config.bucket_name, asset.uri )
-                                #print "DOWNLOAD", download_name
-                            else:
-                                print "Skpping download of duplicate file:", download_name
-                                # DEBUG
-                                #print "DOWNLOAD", download_name
+                                if not os.path.exists( download_name ):
+                                    s3.download_file( download_name, config.bucket_name, asset.uri )
+                                    #print "DOWNLOAD", download_name
+                                else:
+                                    print "Skpping download of duplicate file:", download_name
+                                    # DEBUG
+                                    #print "DOWNLOAD", download_name
 
-                        except Exception as e:
-                            print "Error with asset:", e
+                            except Exception as e:
+                                print "Error with asset:", e
+
             except Exception as e:
                 print "Error with media file", e
 
