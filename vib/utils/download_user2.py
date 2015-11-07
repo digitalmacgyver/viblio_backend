@@ -129,8 +129,8 @@ def download_user( user_uuid, outdir='/wintmp/vibout/test/', verbose=False ):
                             tmp_outname += '_'
 
                     outname = tmp_outname
-                    outname.strip()
-                    outext.strip()
+                    outname = outname.strip()
+                    outext = outext.strip()
 
                     if outname in seen_outnames:
                         seen_outnames[outname] += 1
@@ -170,7 +170,7 @@ def download_user( user_uuid, outdir='/wintmp/vibout/test/', verbose=False ):
                                         tmp_outalbum += '_'
 
                                 album_title = tmp_outalbum
-                                album_title.strip()
+                                album_title = album_title.strip()
 
                                 base_dir = outdir + "/" + album_title + '/'
                                 #image_dir = outdir + "/" + outname + "/photos/"

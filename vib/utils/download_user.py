@@ -112,8 +112,8 @@ def download_user( user_uuid, outdir='/wintmp/vibout/test/', verbose=False ):
                             tmp_outname += '_'
 
                     outname = tmp_outname
-                    outname.strip()
-                    outext.strip()
+                    outname = outname.strip()
+                    outext = outext.strip()
 
                     if outname in seen_outnames:
                         seen_outnames[outname] += 1
@@ -170,7 +170,7 @@ def download_user( user_uuid, outdir='/wintmp/vibout/test/', verbose=False ):
                             else:
                                 print "Skpping download of duplicate file:", download_name
                                 # DEBUG
-                                #print "DOWNLOAD", download_name
+                                #addaprint "DOWNLOAD", download_name
 
                         except Exception as e:
                             print "Error with asset:", e
